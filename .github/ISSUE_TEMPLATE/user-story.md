@@ -9,7 +9,7 @@ assignees: 'D3nnis249 & AlexF090'
 
 ## Value statement - a requirement, not a solution
 As a **(role)** 
-I need **(an action)** 
+We need **(an action)** 
 so that **(a benefit)** 
 
 ## Description (Text, Scribble, Wireframe, Design)
