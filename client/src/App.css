@@ -37,11 +37,15 @@
   }
 }
 
-.listItems {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.ListItems {
   list-style: none;
   border: 1px solid black;
-  margin: 5px;
+
+}
+
+.Ulist{
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+gap: 10px;
 }

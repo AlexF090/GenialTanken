@@ -512,6 +512,6 @@ const data = [
     diesel: 1.969,
     e5: 1.969,
     e10: 1.919,
-  }]
-
-export default data;
+  },]
+  
+  export default data;
