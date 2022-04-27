@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import './App.css';
+import data from './data/db';
 
 function App() {
   const [users, setUsers] = useState([]);
-
+  console.log(data);
   function fetchSomething() {
     fetch('/api')
       .then(res => res.json())
