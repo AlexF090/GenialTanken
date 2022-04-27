@@ -1,5 +1,5 @@
 import React from 'react';
-
+import Header from './components/Header'
 import './App.css';
 import data from './data/db';
 import FavoriteIconDeactivated from './img/favorite_icon_deactivated.svg'
@@ -10,7 +10,7 @@ function App() {
 
   return (
     <div className="App">
-      <h1>Start</h1>
+      <Header />
       <ul className="Ulist">
         {data.map(station => (
           <li className="ListItems" key={station.uuid}>
