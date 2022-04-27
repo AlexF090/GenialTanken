@@ -36,3 +36,12 @@
     transform: rotate(360deg);
   }
 }
+
+.listItems {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  list-style: none;
+  border: 1px solid black;
+  margin: 5px;
+}
