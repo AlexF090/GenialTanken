@@ -1,5 +1,4 @@
 const data = [
-  
   {
     uuid: '00006210-0037-4444-8888-acdc00006210',
     name: 'Beducker - Qualität günstig tanken',
@@ -29,8 +28,7 @@ const data = [
     diesel: 1.999,
     e5: 1.999,
     e10: 1.949,
-  }
-  ,
+  },
   {
     uuid: '00041414-208c-4444-8888-acdc00000414',
     name: 'SELGROS',
@@ -378,6 +376,7 @@ const data = [
     diesel: 1.969,
     e5: 1.969,
     e10: 1.919,
-  },]
-  
-  export default data;
+  },
+];
+
+export default data;

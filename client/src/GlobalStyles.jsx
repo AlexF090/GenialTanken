@@ -13,7 +13,7 @@ const GlobalStyle = createGlobalStyle`
     width: 100%;
 }
 
-body {
+  body {
     display: flex;
     flex-direction: column;
 }
