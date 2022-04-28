@@ -3,7 +3,7 @@ import styled from 'styled-components';
 
 function Header() {
   return (
-    <StyledHeader>Header</StyledHeader>
+    <StyledHeader>Start</StyledHeader>
   )
 }
 
