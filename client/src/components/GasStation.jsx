@@ -5,13 +5,13 @@ import FavoriteIconDeactivated from '../icons/favorite_icon_deactivated.svg';
 
 function GasStation() {
   return (
-    // <StyledMain>
+    
     <GasStationList role="list">
       {data.map(station => (
         <GasStationItem className="ListItems" key={station.uuid}>
           <p>{station.e5}</p>
-          <h2>{station.brand}</h2>
-          <h3>{station.name.length > 14 ? `${station.name.substring(0, 14)}...` : station.name}</h3>
+          <p>{station.brand}</p>
+          <p>{station.name.length > 14 ? `${station.name.substring(0, 14)}...` : station.name}</p>
           <p>{station.street}</p>
           <p>{station.post_code}</p>
           <p>{station.city}</p>
@@ -19,7 +19,7 @@ function GasStation() {
         </GasStationItem>
       ))}
     </GasStationList>
-    // </StyledMain>
+    
   );
 }
 
