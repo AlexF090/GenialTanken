@@ -11,20 +11,20 @@ function NavBar() {
       <NavList role="list">
         <NavLinkStyled to="/">
           <li>
-            <Icon src={StartIcon} alt="Start Icon" />
+            <img src={StartIcon} alt="Start Icon" />
             <figcaption>Start</figcaption>
             </li>
         </NavLinkStyled>
         <NavLinkStyled to="/Karte">
           <li>
-            <Icon src={MapIcon} alt="Karten Icon" />
+            <img src={MapIcon} alt="Karten Icon" />
             <figcaption>Karte</figcaption>
           </li>
         </NavLinkStyled>
         
         <NavLinkStyled to="/Favoriten">
           <li>
-            <Icon src={FavoriteIcon} alt="Favoriten Icon" />
+            <img src={FavoriteIcon} alt="Favoriten Icon" />
             <figcaption>Favoriten</figcaption>
           </li>
         </NavLinkStyled>
@@ -62,10 +62,6 @@ const NavLinkStyled = styled(NavLink)`
     text-decoration: none;
     color: black;
   }
-`;
-
-const Icon = styled.img`
-  width: 2rem;
 `;
 
 export default NavBar;
