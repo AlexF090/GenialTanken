@@ -3,7 +3,6 @@ import { NavLink } from 'react-router-dom';
 import styled from 'styled-components';
 import StartIcon from '../icons/start_icon.svg';
 import MapIcon from '../icons/map_icon.svg';
-import SettingsIcon from '../icons/settings_icon.svg';
 import FavoriteIcon from '../icons/favorite_icon.svg';
 
 function NavBar() {
@@ -12,25 +11,20 @@ function NavBar() {
       <NavList role="list">
         <NavLinkStyled to="/">
           <li>
-            <img src={StartIcon} alt="Start Icon" />
+            <Icon src={StartIcon} alt="Start Icon" />
             <figcaption>Start</figcaption>
             </li>
         </NavLinkStyled>
         <NavLinkStyled to="/Karte">
           <li>
-            <img src={MapIcon} alt="Karten Icon" />
+            <Icon src={MapIcon} alt="Karten Icon" />
             <figcaption>Karte</figcaption>
           </li>
         </NavLinkStyled>
-        <NavLinkStyled to="/Einstellungen">
-          <li>
-            <img src={SettingsIcon} alt="Einstellungs Icon" />
-            <figcaption>Einstellungen</figcaption>
-          </li>
-        </NavLinkStyled>
+        
         <NavLinkStyled to="/Favoriten">
           <li>
-            <img src={FavoriteIcon} alt="Favoriten Icon" />
+            <Icon src={FavoriteIcon} alt="Favoriten Icon" />
             <figcaption>Favoriten</figcaption>
           </li>
         </NavLinkStyled>
@@ -45,8 +39,9 @@ const Navigation = styled.nav`
   height: 4.6875rem;
   position: fixed;
   bottom: 0;
-  border: 1px solid black;
+  border-top: 1px solid black;
   background-color: #ffffff;
+  
 `;
 
 const NavList = styled.ul`
@@ -55,7 +50,7 @@ const NavList = styled.ul`
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: space-around;
   color: #2196f3;
   list-style: none;
 `;
