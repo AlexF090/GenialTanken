@@ -39,7 +39,6 @@ const GasStationItem = styled.li`
   width: 100%;
   grid-template-columns: 0.1fr 1fr 0.1fr 1fr 1fr 0.1fr;
   grid-template-rows: 1fr 1fr 1fr;
-  gap: 0px 0px;
   grid-template-areas:
     '. gasStationName . brand . .'
     'price street . . . favoriteIcon'

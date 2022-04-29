@@ -46,7 +46,6 @@ const NavList = styled.ul`
   width: 100%;
   text-align: center;
   display: flex;
-  flex-direction: row;
   align-items: center;
   justify-content: space-around;
   color: #2196f3;

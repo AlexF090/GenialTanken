@@ -1,7 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
-import Header from './components/Header';
 import NavBar from './components/NavBar';
 import LandingPage from './pages/LandingPage';
 import MapPage from '../src/pages/MapPage';
