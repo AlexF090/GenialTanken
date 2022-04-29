@@ -1,62 +1,65 @@
 import React from 'react';
+import { NavLink } from 'react-router-dom';
 import styled from 'styled-components';
 import StartIcon from '../icons/start_icon.svg';
 import MapIcon from '../icons/map_icon.svg';
-import SettingsIcon from '../icons/settings_icon.svg';
 import FavoriteIcon from '../icons/favorite_icon.svg';
 
 function NavBar() {
   return (
-    <Wrapper>
-      <UnorderedList role="list">
-        <li>
-          <Icon src={StartIcon} alt="Start Icon" />
-          <figcaption>Start</figcaption>
-        </li>
-        <li>
-          <Icon src={MapIcon} alt="Karten Icon" />
-          <figcaption>Karte</figcaption>
-        </li>
-        <li>
-          <Icon src={SettingsIcon} alt="Einstellungs Icon" />
-          <figcaption>Einstellungen</figcaption>
-        </li>
-        <li>
-          <Icon src={FavoriteIcon} alt="Favoriten Icon" />
-          <figcaption>Favoriten</figcaption>
-        </li>
-        <li>
-          <Icon src={FavoriteIcon} alt="Favoriten Icon" />
-          <figcaption>Favoriten</figcaption>
-        </li>
-      </UnorderedList>
-    </Wrapper>
+    <Navigation>
+      <NavList role="list">
+        <NavigationLink to="/">
+          <li>
+            <img src={StartIcon} alt="Start Icon" />
+            <p>Start</p>
+          </li>
+        </NavigationLink>
+        <NavigationLink to="/map">
+          <li>
+            <img src={MapIcon} alt="Karten Icon" />
+            <p>Karte</p>
+          </li>
+        </NavigationLink>
+        <NavigationLink to="/favorites">
+          <li>
+            <img src={FavoriteIcon} alt="Favoriten Icon" />
+            <p>Favoriten</p>
+          </li>
+        </NavigationLink>
+      </NavList>
+    </Navigation>
   );
 }
 
-const Wrapper = styled.nav`
+const Navigation = styled.nav`
   display: flex;
+  flex-wrap: wrap;
   width: 100%;
   height: 4.6875rem;
   position: fixed;
   bottom: 0;
-  border: 1px solid black;
+  border-top: 1px solid black;
   background-color: #ffffff;
 `;
 
-const UnorderedList = styled.ul`
+const NavList = styled.ul`
   width: 100%;
   text-align: center;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: space-around;
   color: #2196f3;
   list-style: none;
 `;
 
-const Icon = styled.img`
-  width: 2rem;
+const NavigationLink = styled(NavLink)`
+  text-decoration: none;
+  color: #2196f3;
+  &.active {
+    text-decoration: none;
+    color: black;
+  }
 `;
 
 export default NavBar;

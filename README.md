@@ -1,8 +1,5 @@
 # Capstone-Project: Tanke
 
-
-
-
 # Tech Stack
 
     React
@@ -15,8 +12,6 @@
     npm
     Vercel
 
-
-
 # Project Setup
 
     Clone this repository
@@ -25,4 +20,3 @@
     Server: http://localhost:3000/
     Run tests via $ npm run test
     Run Storybook with $ npm run storybook
-
