@@ -3,21 +3,21 @@ import { NavLink } from 'react-router-dom';
 import styled from 'styled-components';
 import SettingsIcon from '../icons/settings_icon.svg';
 
-function Header() {
+function Header({ title }) {
   return (
     <>
-      <StyledHeader>Start</StyledHeader>
-      <NavLinkStyled to="/Einstellungen">
+      <PageTitle>{title}</PageTitle>
+      <NavigationLink role="list" to="/settings">
         <li>
-          <Icon src={SettingsIcon} alt="Einstellungs Icon" />
+          <img src={SettingsIcon} alt="Einstellungs Icon" />
           <figcaption>Einstellungen</figcaption>
         </li>
-      </NavLinkStyled>
+      </NavigationLink>
     </>
   );
 }
 
-const StyledHeader = styled.h1`
+const PageTitle = styled.h1`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -26,14 +26,12 @@ const StyledHeader = styled.h1`
   position: fixed;
   top: 0;
   border-bottom: 1px solid black;
-
   background-color: #ffffff;
 `;
 
-const NavLinkStyled = styled(NavLink)`
+const NavigationLink = styled(NavLink)`
   text-decoration: none;
   color: #2196f3;
-  cursor: pointer;
   position: fixed;
   right: 1%;
   top: 22px;
@@ -44,19 +42,5 @@ const NavLinkStyled = styled(NavLink)`
     color: black;
   }
 `;
-
-const Icon = styled.img`
-  width: 2rem;
-`;
-
-// const SettingButton = styled(Link)`
-//   all: unset;
-//   cursor: pointer;
-//   position: absolute;
-//   right: 5%;
-//   top: 22px;
-//   list-style: none;
-//  text-align: center;
-// `
 
 export default Header;

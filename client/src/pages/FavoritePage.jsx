@@ -1,9 +1,12 @@
-import React from 'react'
+import React from 'react';
+import Header from '../components/Header.jsx';
 
 function FavoritePage() {
   return (
-    <div>FavoritePage</div>
-  )
+    <>
+      <Header title="Favoriten" />
+    </>
+  );
 }
 
-export default FavoritePage
+export default FavoritePage;

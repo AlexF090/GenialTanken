@@ -1,9 +1,12 @@
-import React from 'react'
+import React from 'react';
+import Header from '../components/Header.jsx';
 
 function SettingsPage() {
   return (
-    <div>SettingsPage</div>
-  )
+    <>
+      <Header title="Einstellungen" />
+    </>
+  );
 }
 
-export default SettingsPage
+export default SettingsPage;

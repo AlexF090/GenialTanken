@@ -1,9 +1,12 @@
-import React from 'react'
+import React from 'react';
+import Header from '../components/Header.jsx';
 
 function MapPage() {
   return (
-    <div>MapPage</div>
-  )
+    <>
+      <Header title="Karte" />
+    </>
+  );
 }
 
-export default MapPage
+export default MapPage;

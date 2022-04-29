@@ -9,25 +9,24 @@ function NavBar() {
   return (
     <Navigation>
       <NavList role="list">
-        <NavLinkStyled to="/">
+        <NavigationLink to="/">
           <li>
             <img src={StartIcon} alt="Start Icon" />
             <figcaption>Start</figcaption>
-            </li>
-        </NavLinkStyled>
-        <NavLinkStyled to="/Karte">
+          </li>
+        </NavigationLink>
+        <NavigationLink to="/map">
           <li>
             <img src={MapIcon} alt="Karten Icon" />
             <figcaption>Karte</figcaption>
           </li>
-        </NavLinkStyled>
-        
-        <NavLinkStyled to="/Favoriten">
+        </NavigationLink>
+        <NavigationLink to="/favorites">
           <li>
             <img src={FavoriteIcon} alt="Favoriten Icon" />
             <figcaption>Favoriten</figcaption>
           </li>
-        </NavLinkStyled>
+        </NavigationLink>
       </NavList>
     </Navigation>
   );
@@ -41,7 +40,6 @@ const Navigation = styled.nav`
   bottom: 0;
   border-top: 1px solid black;
   background-color: #ffffff;
-  
 `;
 
 const NavList = styled.ul`
@@ -55,9 +53,9 @@ const NavList = styled.ul`
   list-style: none;
 `;
 
-const NavLinkStyled = styled(NavLink)`
+const NavigationLink = styled(NavLink)`
   text-decoration: none;
-  color: #2196F3;
+  color: #2196f3;
   &.active {
     text-decoration: none;
     color: black;

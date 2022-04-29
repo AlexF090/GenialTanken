@@ -11,15 +11,12 @@ import FavoritePage from '../src/pages/FavoritePage';
 function App() {
   return (
     <Wrapper>
-      <Header />
-      <Main>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="Karte" element={<MapPage />} />
-          <Route path="Einstellungen" element={<SettingsPage />} />
-          <Route path="Favoriten" element={<FavoritePage />} />
-        </Routes>
-      </Main>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="map" element={<MapPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="favorites" element={<FavoritePage />} />
+      </Routes>
       <NavBar />
     </Wrapper>
   );
@@ -28,12 +25,6 @@ function App() {
 const Wrapper = styled.div`
   display: flex;
   width: 100%;
-  justify-content: center;
-`;
-
-const Main = styled.main`
-  display: flex;
-  width: 70vw;
   justify-content: center;
 `;
 
