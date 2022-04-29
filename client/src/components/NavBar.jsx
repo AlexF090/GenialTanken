@@ -12,19 +12,19 @@ function NavBar() {
         <NavigationLink to="/">
           <li>
             <img src={StartIcon} alt="Start Icon" />
-            <figcaption>Start</figcaption>
+            <p>Start</p>
           </li>
         </NavigationLink>
         <NavigationLink to="/map">
           <li>
             <img src={MapIcon} alt="Karten Icon" />
-            <figcaption>Karte</figcaption>
+            <p>Karte</p>
           </li>
         </NavigationLink>
         <NavigationLink to="/favorites">
           <li>
             <img src={FavoriteIcon} alt="Favoriten Icon" />
-            <figcaption>Favoriten</figcaption>
+            <p>Favoriten</p>
           </li>
         </NavigationLink>
       </NavList>
@@ -34,6 +34,7 @@ function NavBar() {
 
 const Navigation = styled.nav`
   display: flex;
+  flex-wrap: wrap;
   width: 100%;
   height: 4.6875rem;
   position: fixed;

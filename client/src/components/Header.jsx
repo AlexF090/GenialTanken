@@ -5,19 +5,17 @@ import SettingsIcon from '../icons/settings_icon.svg';
 
 function Header({ title }) {
   return (
-    <>
+    <HeaderContainer>
       <PageTitle>{title}</PageTitle>
-      <NavigationLink role="list" to="/settings">
-        <li>
-          <img src={SettingsIcon} alt="Einstellungs Icon" />
-          <figcaption>Einstellungen</figcaption>
-        </li>
-      </NavigationLink>
-    </>
+      <HeaderLink role="list" to="/settings">
+        <img src={SettingsIcon} alt="Einstellungs Icon" />
+        <p>Einstellungen</p>
+      </HeaderLink>
+    </HeaderContainer>
   );
 }
 
-const PageTitle = styled.h1`
+const HeaderContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -29,7 +27,11 @@ const PageTitle = styled.h1`
   background-color: #ffffff;
 `;
 
-const NavigationLink = styled(NavLink)`
+const PageTitle = styled.h1`
+  text-align: center;
+`;
+
+const HeaderLink = styled(NavLink)`
   text-decoration: none;
   color: #2196f3;
   position: fixed;
