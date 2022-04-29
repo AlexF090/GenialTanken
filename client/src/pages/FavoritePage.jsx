@@ -1,10 +1,10 @@
 import React from 'react';
 import Header from '../components/Header.jsx';
 
-function FavoritePage() {
+function FavoritePage({title}) {
   return (
     <>
-      <Header title="Favoriten" />
+      <Header title= {title} />
     </>
   );
 }

@@ -11,10 +11,10 @@ function App() {
   return (
     <Wrapper>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="map" element={<MapPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="favorites" element={<FavoritePage />} />
+        <Route path="/" element={<LandingPage title="Start" />} />
+        <Route path="map" element={<MapPage title="Karte" />} />
+        <Route path="settings" element={<SettingsPage title="Einstellungen" />} />
+        <Route path="favorites" element={<FavoritePage title="Favoriten" />} />
       </Routes>
       <NavBar />
     </Wrapper>

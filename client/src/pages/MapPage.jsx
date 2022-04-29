@@ -1,10 +1,10 @@
 import React from 'react';
 import Header from '../components/Header.jsx';
 
-function MapPage() {
+function MapPage({title}) {
   return (
     <>
-      <Header title="Karte" />
+      <Header title= {title} />
     </>
   );
 }

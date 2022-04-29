@@ -1,10 +1,10 @@
 import React from 'react';
 import Header from '../components/Header.jsx';
 
-function SettingsPage() {
+function SettingsPage({title}) {
   return (
     <>
-      <Header title="Einstellungen" />
+      <Header title= {title} />
     </>
   );
 }
