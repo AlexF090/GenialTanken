@@ -55,19 +55,23 @@ const Price = styled.p`
   justify-self: start;
   margin-right: 1em;
   font-size: 1.5rem;
+  align-self: center;
 `;
 
 const Brand = styled.p`
   grid-area: brand;
+  align-self: center;
 `;
 
 const Name = styled.p`
   grid-area: gasStationName;
+  align-self: center;
 `;
 
 const Street = styled.p`
   grid-area: street;
   font-size: 0.75rem;
+  align-self: end;
 `;
 
 const Adress = styled.p`
@@ -78,6 +82,7 @@ const Adress = styled.p`
 const FavoriteIcon = styled.img`
   grid-area: favoriteIcon;
   justify-self: end;
+  align-self: center;
 `;
 
 export default GasStation;
