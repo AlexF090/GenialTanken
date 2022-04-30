@@ -4,7 +4,7 @@ import { MdHome } from 'react-icons/md';
 
 function HomeIcon() {
   return (
-    <IconContext.Provider value={{size: '3em' }}>
+    <IconContext.Provider value={{ size: '3em' }}>
       <>
         <MdHome />
       </>

@@ -1,7 +1,9 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+// Style
 import styled from 'styled-components';
-import SettingsIcon from './icons/SettingsIcon.jsx';
+// Navigation Icons
+import SettingsIcon from './icons/navigation/SettingsIcon.jsx';
 
 function Header({ title }) {
   return (
@@ -41,7 +43,7 @@ const HeaderLink = styled(NavLink)`
   text-align: center;
   &.active {
     text-decoration: none;
-    color: #0367B4;
+    color: #0367b4;
   }
 `;
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { IconContext } from 'react-icons';
 import { MdStar } from 'react-icons/md';
 
-function FavoriteIconActivated() {
+function FavoriteIcon() {
   return (
     <IconContext.Provider value={{ color: 'lightgrey', size: '3em' }}>
       <>
@@ -12,4 +12,4 @@ function FavoriteIconActivated() {
   );
 }
 
-export default FavoriteIconActivated;
+export default FavoriteIcon;

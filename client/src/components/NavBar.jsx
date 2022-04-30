@@ -1,13 +1,11 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+// Style
 import styled from 'styled-components';
-// import StartIcon from '../icons/start_icon.svg';
-// import MapIcon from '../icons/map_icon.svg';
-// import FavoriteIcon from '../icons/favorite_icon.svg';
-// import { BsStarFill, BsStar } from 'react-icons/bs';
-import HomeIcon from './icons/HomeIcon.jsx';
-import MapIcon from './icons/MapIcon.jsx';
-import FavoriteIconActivated from './icons/FavoriteIconActivated.jsx';
+// Navigation Icons
+import HomeIcon from './icons/navigation/HomeIcon.jsx';
+import MapIcon from './icons/navigation/MapIcon.jsx';
+import FavoriteIcon from './icons/navigation/FavoriteIcon.jsx';
 
 function NavBar() {
   return (
@@ -15,7 +13,6 @@ function NavBar() {
       <NavList role="list">
         <NavigationLink to="/">
           <li>
-            {/* <img src={StartIcon} alt="Start Icon" /> */}
             <HomeIcon />
             <p>Start</p>
           </li>
@@ -23,15 +20,12 @@ function NavBar() {
         <NavigationLink to="/map">
           <li>
             <MapIcon />
-            {/* <img src={MapIcon} alt="Karten Icon" /> */}
-            {/* <GrMap size={'3em'} color={'#00ff00'} /> */}
             <p>Karte</p>
           </li>
         </NavigationLink>
         <NavigationLink to="/favorites">
           <li>
-            {/* <img src={FavoriteIcon} alt="Favoriten Icon" /> */}
-            <FavoriteIconActivated />
+            <FavoriteIcon />
             <p>Favoriten</p>
           </li>
         </NavigationLink>
@@ -66,8 +60,7 @@ const NavigationLink = styled(NavLink)`
   color: #2196f3;
   &.active {
     text-decoration: none;
-    color: #0367B4;
-    
+    color: #0367b4;
   }
 `;
 
