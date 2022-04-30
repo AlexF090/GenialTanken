@@ -1,14 +1,14 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import styled from 'styled-components';
-import SettingsIcon from '../icons/settings_icon.svg';
+import SettingsIcon from './icons/SettingsIcon.jsx';
 
 function Header({ title }) {
   return (
     <HeaderContainer>
       <PageTitle>{title}</PageTitle>
       <HeaderLink role="list" to="/settings">
-        <img src={SettingsIcon} alt="Einstellungs Icon" />
+        <SettingsIcon />
         <p>Einstellungen</p>
       </HeaderLink>
     </HeaderContainer>
@@ -41,7 +41,7 @@ const HeaderLink = styled(NavLink)`
   text-align: center;
   &.active {
     text-decoration: none;
-    color: black;
+    color: #0367B4;
   }
 `;
 
