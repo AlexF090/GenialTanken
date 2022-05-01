@@ -1,8 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-// Style
 import styled from 'styled-components';
-// Navigation Icons
 import HomeIcon from './icons/navigation/HomeIcon.jsx';
 import MapIcon from './icons/navigation/MapIcon.jsx';
 import FavoriteIcon from './icons/navigation/FavoriteIcon.jsx';
