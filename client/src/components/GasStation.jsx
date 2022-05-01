@@ -52,10 +52,9 @@ const GasStationItem = styled.li`
 
 const Price = styled.p`
   grid-area: price;
-  justify-self: start;
+  align-self: center;
   margin-right: 1em;
   font-size: 1.5rem;
-  align-self: center;
 `;
 
 const Brand = styled.p`
@@ -81,8 +80,9 @@ const Adress = styled.p`
 
 const FavoriteIcon = styled.img`
   grid-area: favoriteIcon;
-  justify-self: end;
   align-self: center;
+  justify-self: end;
+  
 `;
 
 export default GasStation;
