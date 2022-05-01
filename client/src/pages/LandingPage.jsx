@@ -2,10 +2,10 @@ import React from 'react';
 import GasStation from '../components/GasStation.jsx';
 import Header from '../components/Header.jsx';
 
-function LandingPage({title}) {
+function LandingPage({ title }) {
   return (
     <>
-      <Header title= {title} />
+      <Header title={title} />
       <GasStation />
     </>
   );

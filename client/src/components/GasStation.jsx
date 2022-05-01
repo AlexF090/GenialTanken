@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import data from '../data/db';
-import FavoriteIconDeactivated from '../icons/favorite_icon_deactivated.svg';
+import { MdStarOutline } from 'react-icons/md';
 
 function GasStation() {
   return (
@@ -18,7 +18,7 @@ function GasStation() {
             {station.post_code} {station.city}
           </Adress>
 
-          <FavoriteIcon src={FavoriteIconDeactivated} alt="Favorite icon deactivated" />
+          <FavoriteIcon />
         </GasStationItem>
       ))}
     </GasStationList>
@@ -78,11 +78,10 @@ const Adress = styled.p`
   font-size: 0.75rem;
 `;
 
-const FavoriteIcon = styled.img`
+const FavoriteIcon = styled(MdStarOutline)`
   grid-area: favoriteIcon;
   align-self: center;
   justify-self: end;
-  
 `;
 
 export default GasStation;

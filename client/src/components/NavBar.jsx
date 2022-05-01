@@ -1,9 +1,9 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import styled from 'styled-components';
-import StartIcon from '../icons/start_icon.svg';
-import MapIcon from '../icons/map_icon.svg';
-import FavoriteIcon from '../icons/favorite_icon.svg';
+import HomeIcon from './icons/navigation/HomeIcon.jsx';
+import MapIcon from './icons/navigation/MapIcon.jsx';
+import FavoriteIcon from './icons/navigation/FavoriteIcon.jsx';
 
 function NavBar() {
   return (
@@ -11,19 +11,19 @@ function NavBar() {
       <NavList role="list">
         <NavigationLink to="/">
           <li>
-            <img src={StartIcon} alt="Start Icon" />
+            <HomeIcon />
             <p>Start</p>
           </li>
         </NavigationLink>
         <NavigationLink to="/map">
           <li>
-            <img src={MapIcon} alt="Karten Icon" />
+            <MapIcon />
             <p>Karte</p>
           </li>
         </NavigationLink>
         <NavigationLink to="/favorites">
           <li>
-            <img src={FavoriteIcon} alt="Favoriten Icon" />
+            <FavoriteIcon />
             <p>Favoriten</p>
           </li>
         </NavigationLink>
@@ -58,7 +58,7 @@ const NavigationLink = styled(NavLink)`
   color: #2196f3;
   &.active {
     text-decoration: none;
-    color: black;
+    color: #0367b4;
   }
 `;
 
