@@ -82,6 +82,7 @@ const FavoriteIcon = styled(MdStarOutline)`
   grid-area: favoriteIcon;
   align-self: center;
   justify-self: end;
+  font-size: 2rem;
 `;
 
 export default GasStation;
