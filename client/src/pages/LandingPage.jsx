@@ -1,12 +1,13 @@
 import React from 'react';
-import GasStation from '../components/GasStation.jsx';
+import GasStationList from '../components/GasStationList.jsx';
 import Header from '../components/Header.jsx';
+import stations from '../data/db';
 
-function LandingPage({ title }) {
+function LandingPage({ title, toggleFavorite, favoriteIDs }) {
   return (
     <>
       <Header title={title} />
-      <GasStation />
+      <GasStationList stations={stations} toggleFavorite={toggleFavorite} favoriteIDs={favoriteIDs} />
     </>
   );
 }

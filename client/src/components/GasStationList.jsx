@@ -1,12 +1,11 @@
 import React from 'react';
 import styled from 'styled-components';
-import data from '../data/db';
-import { MdStarOutline } from 'react-icons/md';
+import { MdStar, MdStarOutline } from 'react-icons/md';
 
-function GasStation() {
+function GasStation({ stations, toggleFavorite, favoriteIDs }) {
   return (
     <GasStationList role="list">
-      {data.map(station => (
+      {stations.map(station => (
         <GasStationItem className="ListItems" key={station.uuid}>
           <Price>{station.e5}</Price>
           <Brand>{station.brand}</Brand>
@@ -17,8 +16,17 @@ function GasStation() {
           <Adress>
             {station.post_code} {station.city}
           </Adress>
-
-          <FavoriteIcon />
+          {favoriteIDs?.includes(station.uuid) ? (
+            <ActiveStar
+              onClick={() => toggleFavorite(station.uuid)}
+              isFavorite={favoriteIDs.includes(station.uuid)}
+            />
+          ) : (
+            <InactiveStar
+              onClick={() => toggleFavorite(station.uuid)}
+              isFavorite={favoriteIDs.includes(station.uuid)}
+            />
+          )}
         </GasStationItem>
       ))}
     </GasStationList>
@@ -78,11 +86,20 @@ const Adress = styled.p`
   font-size: 0.75rem;
 `;
 
-const FavoriteIcon = styled(MdStarOutline)`
+const ActiveStar = styled(MdStar)`
   grid-area: favoriteIcon;
   align-self: center;
   justify-self: end;
   font-size: 2rem;
+  color: blue;
+`;
+
+const InactiveStar = styled(MdStarOutline)`
+  grid-area: favoriteIcon;
+  align-self: center;
+  justify-self: end;
+  font-size: 2rem;
+  color: blue;
 `;
 
 export default GasStation;

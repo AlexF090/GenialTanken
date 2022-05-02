@@ -1,4 +1,4 @@
-const data = [
+const stations = [
   {
     uuid: '00006210-0037-4444-8888-acdc00006210',
     name: 'Beducker - Qualität günstig tanken',
@@ -379,4 +379,4 @@ const data = [
   },
 ];
 
-export default data;
+export default stations;
