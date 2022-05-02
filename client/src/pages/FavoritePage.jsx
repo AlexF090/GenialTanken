@@ -1,6 +1,6 @@
 import React from 'react';
 import Header from '../components/Header.jsx';
-import GasStation from '../components/GasStation.jsx';
+import GasStationList from '../components/GasStationList.jsx';
 import stations from '../data/db.js';
 
 function Favorites({ title, favoriteIDs, toggleFavorite }) {
@@ -8,7 +8,7 @@ function Favorites({ title, favoriteIDs, toggleFavorite }) {
     <>
       <Header title={title} />
       {favoriteIDs.length > 0 ? (
-        <GasStation
+        <GasStationList
           favoriteIDs={favoriteIDs}
           toggleFavorite={toggleFavorite}
           stations={stations.filter(station => favoriteIDs.includes(station.uuid))}

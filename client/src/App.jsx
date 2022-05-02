@@ -9,7 +9,7 @@ import FavoritePage from '../src/pages/FavoritePage';
 
 function App() {
   const [favoriteIDs, setFavoriteIDs] = useState(
-    () => JSON.parse(localStorage.getItem('favoriteIDs')) || []
+    () => JSON.parse(localStorage.getItem('favoriteIDs')) ?? []
   );
 
   function toggleFavorite(uuid) {
