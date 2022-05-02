@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { MdStar, MdStarOutline } from 'react-icons/md'; //active, inactive
+import { MdStar, MdStarOutline } from 'react-icons/md';
 
 function GasStation({ stations, toggleFavorite, favoriteIDs }) {
   return (
@@ -17,12 +17,12 @@ function GasStation({ stations, toggleFavorite, favoriteIDs }) {
             {station.post_code} {station.city}
           </Adress>
           {favoriteIDs?.includes(station.uuid) ? (
-            <FilledStar
+            <ActiveStar
               onClick={() => toggleFavorite(station.uuid)}
               isFavorite={favoriteIDs.includes(station.uuid)}
             />
           ) : (
-            <OutlinedStar
+            <InactiveStar
               onClick={() => toggleFavorite(station.uuid)}
               isFavorite={favoriteIDs.includes(station.uuid)}
             />
@@ -86,7 +86,7 @@ const Adress = styled.p`
   font-size: 0.75rem;
 `;
 
-const FilledStar = styled(MdStar)`
+const ActiveStar = styled(MdStar)`
   grid-area: favoriteIcon;
   align-self: center;
   justify-self: end;
@@ -94,7 +94,7 @@ const FilledStar = styled(MdStar)`
   color: blue;
 `;
 
-const OutlinedStar = styled(MdStarOutline)`
+const InactiveStar = styled(MdStarOutline)`
   grid-area: favoriteIcon;
   align-self: center;
   justify-self: end;

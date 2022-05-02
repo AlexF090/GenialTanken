@@ -1,11 +1,9 @@
 import React from 'react';
 import Header from '../components/Header.jsx';
-import styled from 'styled-components';
-import stations from '../data/db.js';
 import GasStation from '../components/GasStation.jsx';
+import stations from '../data/db.js';
 
-export default function Favorites({ title, favoriteIDs, toggleFavorite }) {
-  console.log(title, favoriteIDs);
+function Favorites({ title, favoriteIDs, toggleFavorite }) {
   return (
     <>
       <Header title={title} />
@@ -21,3 +19,5 @@ export default function Favorites({ title, favoriteIDs, toggleFavorite }) {
     </>
   );
 }
+
+export default Favorites;
