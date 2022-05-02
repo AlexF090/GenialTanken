@@ -4,7 +4,7 @@ import { MdStar } from 'react-icons/md';
 
 function FavoriteIcon() {
   return (
-    <IconContext.Provider value={{ color: 'lightgrey', size: '3em' }}>
+    <IconContext.Provider value={{ size: '3em' }}>
       <>
         <MdStar />
       </>

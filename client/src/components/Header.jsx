@@ -1,8 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-// Style
 import styled from 'styled-components';
-// Navigation Icons
 import SettingsIcon from './icons/navigation/SettingsIcon.jsx';
 
 function Header({ title }) {
