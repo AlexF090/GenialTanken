@@ -1,12 +1,14 @@
 import React from 'react';
 import styled from 'styled-components';
-import data from '../data/db';
-import { MdStarOutline } from 'react-icons/md';
+import { useParams } from 'react-router-dom';
+import { MdStar as FilledStar, MdStarOutline as OutlinedStar } from 'react-icons/md'; //active, inactive
 
-function GasStation() {
+function GasStation({ stations, toggleFavorite, favoriteIDs }) {
+  const { id: uuid } = useParams();
+  console.log(uuid);
   return (
     <GasStationList role="list">
-      {data.map(station => (
+      {stations.map(station => (
         <GasStationItem className="ListItems" key={station.uuid}>
           <Price>{station.e5}</Price>
           <Brand>{station.brand}</Brand>
@@ -17,8 +19,19 @@ function GasStation() {
           <Adress>
             {station.post_code} {station.city}
           </Adress>
-
-          <FavoriteIcon />
+          
+          {favoriteIDs.includes(station.uuid) ? (
+              <FilledStar
+              onClick={() => toggleFavorite(station.uuid)}
+              isFavorite={favoriteIDs.includes(station.uuid)}
+              />
+            ) : (
+              <OutlinedStar
+              onClick={() => toggleFavorite(station.uuid)}
+              isFavorite={favoriteIDs.includes(station.uuid)}
+              />
+            )}
+          
         </GasStationItem>
       ))}
     </GasStationList>
@@ -78,11 +91,12 @@ const Adress = styled.p`
   font-size: 0.75rem;
 `;
 
-const FavoriteIcon = styled(MdStarOutline)`
+const FavoriteIcon = styled(OutlinedStar)`
   grid-area: favoriteIcon;
   align-self: center;
   justify-self: end;
   font-size: 2rem;
+  color: ${props => (props.isFavorite ? 'blue' : '')};
 `;
 
 export default GasStation;
