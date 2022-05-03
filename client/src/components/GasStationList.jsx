@@ -14,7 +14,9 @@ function GasStation({ stations, toggleFavorite, favoriteIDs }) {
             <Name>
               {station.name.length > 14 ? `${station.name.substring(0, 14)}...` : station.name}
             </Name>
-            <Street>{station.street} {station.house_number}</Street>
+            <Street>
+              {station.street} {station.house_number}
+            </Street>
             <Adress>
               {station.post_code} {station.city}
             </Adress>
