@@ -8,7 +8,7 @@ function GasStation({ stations, toggleFavorite, favoriteIDs }) {
     <GasStationList role="list">
       {stations.map(station => (
         <GasStationItem className="ListItems" key={station.uuid}>
-          <ContentWrapper to={`/${station.uuid}`}>
+          <CustomLink to={`/${station.uuid}`}>
             <Price>{station.e5}</Price>
             <Brand>{station.brand}</Brand>
             <Name>
@@ -18,7 +18,7 @@ function GasStation({ stations, toggleFavorite, favoriteIDs }) {
             <Adress>
               {station.post_code} {station.city}
             </Adress>
-          </ContentWrapper>
+          </CustomLink>
           <FavoriteStarWrapper>
             {favoriteIDs?.includes(station.uuid) ? (
               <ActiveStar
@@ -51,7 +51,7 @@ const GasStationItem = styled.li`
   position: relative;
 `;
 
-const ContentWrapper = styled(Link)`
+const CustomLink = styled(Link)`
   display: grid;
   width: 100%;
   grid-template-columns: 0.1fr 1fr 0.1fr 1fr 1fr 0.1fr;
@@ -97,7 +97,7 @@ const Adress = styled.p`
 
 const FavoriteStarWrapper = styled.div`
   position: absolute;
-  top: 35%;
+  top: calc(50% - 1rem);
   right: 5%;
 `;
 
