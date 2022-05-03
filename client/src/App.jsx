@@ -46,7 +46,16 @@ function App() {
             />
           }
         />
-        <Route path=":id" element={<DetailedGasStationPage title="Details" />} />
+        <Route
+          path=":id"
+          element={
+            <DetailedGasStationPage
+              title="Details"
+              toggleFavorite={toggleFavorite}
+              favoriteIDs={favoriteIDs}
+            />
+          }
+        />
       </Routes>
       <NavBar />
     </Wrapper>
