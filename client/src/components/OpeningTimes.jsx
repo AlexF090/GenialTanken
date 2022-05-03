@@ -7,7 +7,7 @@ function OpeningTimes({ currentStation }) {
       return (
         <p>Uns liegen leider keine Informationen zu den Öffnungzeiten dieser Tankstelle vor</p>
       );
-    } else return <p>Hier liegen Tankstellenpreise vor.</p>;
+    } else return <p>Hier liegen Öffnungszeit der Tankstelle vor.</p>;
   };
 
   return <div>{convertOpeningTimes()}</div>;
