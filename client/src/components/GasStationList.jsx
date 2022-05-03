@@ -7,26 +7,30 @@ function GasStation({ stations, toggleFavorite, favoriteIDs }) {
     <GasStationList role="list">
       {stations.map(station => (
         <GasStationItem className="ListItems" key={station.uuid}>
-          <Price>{station.e5}</Price>
-          <Brand>{station.brand}</Brand>
-          <Name>
-            {station.name.length > 14 ? `${station.name.substring(0, 14)}...` : station.name}
-          </Name>
-          <Street>{station.street}</Street>
-          <Adress>
-            {station.post_code} {station.city}
-          </Adress>
-          {favoriteIDs?.includes(station.uuid) ? (
-            <ActiveStar
-              onClick={() => toggleFavorite(station.uuid)}
-              isFavorite={favoriteIDs.includes(station.uuid)}
-            />
-          ) : (
-            <InactiveStar
-              onClick={() => toggleFavorite(station.uuid)}
-              isFavorite={favoriteIDs.includes(station.uuid)}
-            />
-          )}
+          <ContentWrapper>
+            <Price>{station.e5}</Price>
+            <Brand>{station.brand}</Brand>
+            <Name>
+              {station.name.length > 14 ? `${station.name.substring(0, 14)}...` : station.name}
+            </Name>
+            <Street>{station.street}</Street>
+            <Adress>
+              {station.post_code} {station.city}
+            </Adress>
+          </ContentWrapper>
+          <FavoriteStarWrapper>
+            {favoriteIDs?.includes(station.uuid) ? (
+              <ActiveStar
+                onClick={() => toggleFavorite(station.uuid)}
+                isFavorite={favoriteIDs.includes(station.uuid)}
+              />
+            ) : (
+              <InactiveStar
+                onClick={() => toggleFavorite(station.uuid)}
+                isFavorite={favoriteIDs.includes(station.uuid)}
+              />
+            )}
+          </FavoriteStarWrapper>
         </GasStationItem>
       ))}
     </GasStationList>
@@ -43,13 +47,17 @@ const GasStationList = styled.ul`
 `;
 
 const GasStationItem = styled.li`
+  position: relative;
+`;
+
+const ContentWrapper = styled.div`
   display: grid;
   width: 100%;
   grid-template-columns: 0.1fr 1fr 0.1fr 1fr 1fr 0.1fr;
   grid-template-rows: 1fr 1fr 1fr;
   grid-template-areas:
     '. gasStationName . brand . .'
-    'price street . . . favoriteIcon'
+    'price street . . . .'
     '. adress city . . .';
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
   border-radius: 10px;
@@ -86,18 +94,18 @@ const Adress = styled.p`
   font-size: 0.75rem;
 `;
 
+const FavoriteStarWrapper = styled.div`
+  position: absolute;
+  top: 35%;
+  right: 5%;
+`;
+
 const ActiveStar = styled(MdStar)`
-  grid-area: favoriteIcon;
-  align-self: center;
-  justify-self: end;
   font-size: 2rem;
   color: blue;
 `;
 
 const InactiveStar = styled(MdStarOutline)`
-  grid-area: favoriteIcon;
-  align-self: center;
-  justify-self: end;
   font-size: 2rem;
   color: blue;
 `;

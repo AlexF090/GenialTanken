@@ -7,7 +7,11 @@ function LandingPage({ title, toggleFavorite, favoriteIDs }) {
   return (
     <>
       <Header title={title} />
-      <GasStationList stations={stations} toggleFavorite={toggleFavorite} favoriteIDs={favoriteIDs} />
+      <GasStationList
+        stations={stations}
+        toggleFavorite={toggleFavorite}
+        favoriteIDs={favoriteIDs}
+      />
     </>
   );
 }
