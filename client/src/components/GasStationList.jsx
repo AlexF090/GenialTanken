@@ -104,12 +104,12 @@ const FavoriteStarWrapper = styled.div`
 
 const ActiveStar = styled(MdStar)`
   font-size: 2rem;
-  color: blue;
+  color: #0367b4;
 `;
 
 const InactiveStar = styled(MdStarOutline)`
   font-size: 2rem;
-  color: blue;
+  color: #2196f3;
 `;
 
 export default GasStation;
