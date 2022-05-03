@@ -1,15 +1,21 @@
 import React from 'react';
 import styled from 'styled-components';
+import OpeningTimes from './OpeningTimes';
 
 function GasStationDetail({ currentStation }) {
   return (
     <Wrapper>
       <Brand>{currentStation.brand}</Brand>
       <Name>{currentStation.name}</Name>
-      <Street>{currentStation.street}</Street>
+      <Street>
+        {currentStation.street} {currentStation.house_number}
+      </Street>
       <Adress>
         {currentStation.post_code} {currentStation.city}
       </Adress>
+      <OpeningTimesWrapper>
+        <OpeningTimes currentStation={currentStation} />
+      </OpeningTimesWrapper>
     </Wrapper>
   );
 }
@@ -46,7 +52,7 @@ const Adress = styled.p`
   font-size: 0.75rem;
 `;
 
-const OpeningTimes = styled.p`
+const OpeningTimesWrapper = styled.p`
   grid-area: openingTimes;
   font-size: 0.75rem;
 `;
