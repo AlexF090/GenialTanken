@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { MdStar, MdStarOutline } from 'react-icons/md';
 
@@ -7,7 +8,7 @@ function GasStation({ stations, toggleFavorite, favoriteIDs }) {
     <GasStationList role="list">
       {stations.map(station => (
         <GasStationItem className="ListItems" key={station.uuid}>
-          <ContentWrapper>
+          <ContentWrapper to={`/${station.uuid}`}>
             <Price>{station.e5}</Price>
             <Brand>{station.brand}</Brand>
             <Name>
@@ -50,7 +51,7 @@ const GasStationItem = styled.li`
   position: relative;
 `;
 
-const ContentWrapper = styled.div`
+const ContentWrapper = styled(Link)`
   display: grid;
   width: 100%;
   grid-template-columns: 0.1fr 1fr 0.1fr 1fr 1fr 0.1fr;
