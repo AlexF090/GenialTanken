@@ -40,7 +40,6 @@ function GasStation({ stations, toggleFavorite, favoriteIDs }) {
 
 const GasStationList = styled.ul`
   display: flex;
-  margin-top: 7rem;
   margin-bottom: 100px;
   flex-direction: column;
   gap: 10px;
@@ -65,7 +64,6 @@ const CustomLink = styled(Link)`
   border-radius: 10px;
   margin-bottom: 4px;
   padding: 15px;
-  
 `;
 
 const Price = styled.p`
