@@ -11,12 +11,16 @@ function DetailedGasStationPage({ title, toggleFavorite, favoriteIDs }) {
   return (
     <>
       <Header title={title} />
-      <GasStationDetail
-        currentStation={currentStation}
-        stations={stations}
-        toggleFavorite={toggleFavorite}
-        favoriteIDs={favoriteIDs}
-      />
+      {currentStation ? (
+        <GasStationDetail
+          currentStation={currentStation}
+          stations={stations}
+          toggleFavorite={toggleFavorite}
+          favoriteIDs={favoriteIDs}
+        />
+      ) : (
+        <h2>This gas station does not exist </h2>
+      )}
     </>
   );
 }
