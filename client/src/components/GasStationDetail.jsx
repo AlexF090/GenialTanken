@@ -72,24 +72,24 @@ const Diesel = styled.li`
   grid-area: diesel;
   list-style: none;
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
-
-  padding-left: 0.5em;
+  padding: 1em 0;
+  padding-left: 1em;
 `;
 
 const SuperE5 = styled.li`
   grid-area: superE5;
   list-style: none;
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
-
-  padding-left: 0.5em;
+  padding: 1em 0;
+  padding-left: 1em;
 `;
 
 const SuperE10 = styled.li`
   grid-area: superE10;
   list-style: none;
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
-
-  padding-left: 0.5em;
+  padding: 1em 0;
+  padding-left: 1em;
 `;
 
 const Brand = styled.p`
@@ -129,7 +129,7 @@ const InactiveStar = styled(MdStarOutline)`
   color: #2196f3;
 `;
 
-const OpeningTimesWrapper = styled.p`
+const OpeningTimesWrapper = styled.ul`
   grid-area: openingTimes;
   border-top: 1px solid black;
   border-bottom: 1px solid black;
