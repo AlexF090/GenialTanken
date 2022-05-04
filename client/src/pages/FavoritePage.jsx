@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import Header from '../components/Header.jsx';
 import GasStationList from '../components/GasStationList.jsx';
-import stations from '../data/db.js';
+import stations from '../data/dbnew.js';
 
 function Favorites({ title, favoriteIDs, toggleFavorite }) {
   return (

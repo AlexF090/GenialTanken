@@ -4,32 +4,37 @@ import styled from 'styled-components';
 import { MdStar, MdStarOutline } from 'react-icons/md';
 
 function GasStation({ stations, toggleFavorite, favoriteIDs }) {
+  console.log(stations[0].fuelPrices.e5.price);
+  console.log(stations[0].id);
   return (
     <GasStationList role="list">
-      {stations.map(station => (
-        <GasStationItem className="ListItems" key={station.uuid}>
-          <CustomLink to={`/${station.uuid}`}>
-            <Price>{station.e5}</Price>
-            <Brand>{station.brand}</Brand>
-            <Name>
-              {station.name.length > 14 ? `${station.name.substring(0, 14)}...` : station.name}
-            </Name>
-            <Street>
-              {station.street} {station.house_number}
-            </Street>
-            <Adress>
-              {station.post_code} {station.city}
-            </Adress>
-          </CustomLink>
-          <FavoriteStarWrapper>
-            {favoriteIDs?.includes(station.uuid) ? (
-              <ActiveStar onClick={() => toggleFavorite(station.uuid)} />
-            ) : (
-              <InactiveStar onClick={() => toggleFavorite(station.uuid)} />
-            )}
-          </FavoriteStarWrapper>
-        </GasStationItem>
-      ))}
+      {stations.map(station => {
+        console.log(station.fuelPrices.e5.price);
+        return (
+          <GasStationItem className="ListItems" key={station.id}>
+            <CustomLink to={`/${station.id}`}>
+              <Price>{station.fuelPrices.e5.price < 0 ? 0 : station.fuelPrices.e5.price}</Price>
+              <Brand>{station.brand}</Brand>
+              <Name>
+                {station.name.length > 14 ? `${station.name.substring(0, 14)}...` : station.name}
+              </Name>
+              <Street>
+                {station.address.street} {station.address.houseNumber}
+              </Street>
+              <Adress>
+                {station.address.postalCode} {station.address.city}
+              </Adress>
+            </CustomLink>
+            <FavoriteStarWrapper>
+              {favoriteIDs?.includes(station.id) ? (
+                <ActiveStar onClick={() => toggleFavorite(station.id)} />
+              ) : (
+                <InactiveStar onClick={() => toggleFavorite(station.id)} />
+              )}
+            </FavoriteStarWrapper>
+          </GasStationItem>
+        );
+      })}
     </GasStationList>
   );
 }

@@ -13,12 +13,12 @@ function App() {
     () => JSON.parse(localStorage.getItem('favoriteIDs')) ?? []
   );
 
-  function toggleFavorite(uuid) {
-    if (favoriteIDs.includes(uuid)) {
-      const updatedFavoriteIDs = favoriteIDs.filter(favID => favID !== uuid);
+  function toggleFavorite(id) {
+    if (favoriteIDs.includes(id)) {
+      const updatedFavoriteIDs = favoriteIDs.filter(favID => favID !== id);
       setFavoriteIDs(updatedFavoriteIDs);
     } else {
-      setFavoriteIDs([...favoriteIDs, uuid]);
+      setFavoriteIDs([...favoriteIDs, id]);
     }
   }
 
