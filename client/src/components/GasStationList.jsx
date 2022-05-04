@@ -58,8 +58,8 @@ const CustomLink = styled(Link)`
     '. adress city . . .';
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
   border-radius: 10px;
-  margin-bottom: 4px;
-  padding: 15px;
+  margin-bottom: 0.25rem;
+  padding: 1rem;
   text-decoration: none;
   color: #000000;
 `;
