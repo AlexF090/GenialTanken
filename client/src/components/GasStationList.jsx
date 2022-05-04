@@ -23,15 +23,9 @@ function GasStation({ stations, toggleFavorite, favoriteIDs }) {
           </CustomLink>
           <FavoriteStarWrapper>
             {favoriteIDs?.includes(station.uuid) ? (
-              <ActiveStar
-                onClick={() => toggleFavorite(station.uuid)}
-                isFavorite={favoriteIDs.includes(station.uuid)}
-              />
+              <ActiveStar onClick={() => toggleFavorite(station.uuid)} />
             ) : (
-              <InactiveStar
-                onClick={() => toggleFavorite(station.uuid)}
-                isFavorite={favoriteIDs.includes(station.uuid)}
-              />
+              <InactiveStar onClick={() => toggleFavorite(station.uuid)} />
             )}
           </FavoriteStarWrapper>
         </GasStationItem>
@@ -66,6 +60,8 @@ const CustomLink = styled(Link)`
   border-radius: 10px;
   margin-bottom: 4px;
   padding: 15px;
+  text-decoration: none;
+  color: #000000;
 `;
 
 const Price = styled.p`

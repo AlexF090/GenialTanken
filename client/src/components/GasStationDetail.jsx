@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import OpeningTimes from './OpeningTimes';
 import { MdStar, MdStarOutline } from 'react-icons/md';
 
-function GasStationDetail({ currentStation, stations, toggleFavorite, favoriteIDs }) {
+function GasStationDetail({ currentStation, toggleFavorite, favoriteIDs }) {
   return (
     <>
       <Wrapper>
@@ -20,15 +20,9 @@ function GasStationDetail({ currentStation, stations, toggleFavorite, favoriteID
         </OpeningTimesWrapper>
         <FavoriteStarWrapper>
           {favoriteIDs?.includes(currentStation.uuid) ? (
-            <ActiveStar
-              onClick={() => toggleFavorite(currentStation.uuid)}
-              isFavorite={favoriteIDs.includes(currentStation.uuid)}
-            />
+            <ActiveStar onClick={() => toggleFavorite(currentStation.uuid)} />
           ) : (
-            <InactiveStar
-              onClick={() => toggleFavorite(currentStation.uuid)}
-              isFavorite={favoriteIDs.includes(currentStation.uuid)}
-            />
+            <InactiveStar onClick={() => toggleFavorite(currentStation.uuid)} />
           )}
         </FavoriteStarWrapper>
         <PriceWrapper className="ListItems" key={currentStation.uuid}>
@@ -41,7 +35,7 @@ function GasStationDetail({ currentStation, stations, toggleFavorite, favoriteID
   );
 }
 
-const Wrapper = styled.section`
+const Wrapper = styled.article`
   display: grid;
   width: 70vw;
   grid-template-columns: 1.5fr 0.5fr;

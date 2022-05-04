@@ -8,12 +8,12 @@ function OpeningTimes({ currentStation }) {
     // console.log(`Test: ${Object.keys(currentStation.openingtimes_json.openingTimes[0])}`);
     if (Object.keys(openingtimesJson).length === 0) {
       return (
-        <p>Uns liegen leider keine Informationen zu den Öffnungzeiten dieser Tankstelle vor</p>
+        <>Uns liegen leider keine Informationen zu den Öffnungzeiten dieser Tankstelle vor</>
       );
-    } else return <p>Hier liegen Öffnungszeiten der Tankstelle vor.</p>;
+    } else return <>Hier liegen Öffnungszeiten der Tankstelle vor.</>;
   };
 
-  return <p>{convertOpeningTimes()}</p>;
+  return <>{convertOpeningTimes()}</>;
 }
 
 export default OpeningTimes;
