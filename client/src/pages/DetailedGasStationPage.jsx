@@ -5,8 +5,8 @@ import Header from '../components/Header.jsx';
 import stations from '../data/dbnew.js';
 
 function DetailedGasStationPage({ title, toggleFavorite, favoriteIDs }) {
-  const { id: uuid } = useParams();
-  const currentStation = stations.find(station => station.uuid === uuid);
+  const { id } = useParams();
+  const currentStation = stations.find(station => station.id === id);
 
   return (
     <>

@@ -10,25 +10,25 @@ function GasStationDetail({ currentStation, toggleFavorite, favoriteIDs }) {
         <Brand>{currentStation.brand}</Brand>
         <Name>{currentStation.name}</Name>
         <Street>
-          {currentStation.street} {currentStation.house_number}
+          {currentStation.address.street} {currentStation.address.houseNumber}
         </Street>
         <Adress>
-          {currentStation.post_code} {currentStation.city}
+          {currentStation.address.postalCode} {currentStation.address.city}
         </Adress>
         <OpeningTimesWrapper>
           <OpeningTimes currentStation={currentStation} />
         </OpeningTimesWrapper>
         <FavoriteStarWrapper>
-          {favoriteIDs?.includes(currentStation.uuid) ? (
-            <ActiveStar onClick={() => toggleFavorite(currentStation.uuid)} />
+          {favoriteIDs?.includes(currentStation.id) ? (
+            <ActiveStar onClick={() => toggleFavorite(currentStation.id)} />
           ) : (
-            <InactiveStar onClick={() => toggleFavorite(currentStation.uuid)} />
+            <InactiveStar onClick={() => toggleFavorite(currentStation.id)} />
           )}
         </FavoriteStarWrapper>
-        <PriceWrapper className="ListItems" key={currentStation.uuid}>
-          <Diesel>{currentStation.diesel} Diesel</Diesel>
-          <SuperE5> {currentStation.e5} Super E5 </SuperE5>
-          <SuperE10> {currentStation.e10} Super E10 </SuperE10>
+        <PriceWrapper className="ListItems" key={currentStation.id}>
+          <Diesel>{currentStation.fuelPrices.diesel.price} Diesel</Diesel>
+          <SuperE5> {currentStation.fuelPrices.e5.price} Super E5 </SuperE5>
+          <SuperE10> {currentStation.fuelPrices.e10.price} Super E10 </SuperE10>
         </PriceWrapper>
       </Wrapper>
     </>

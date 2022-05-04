@@ -1,15 +1,9 @@
 import React from 'react';
 
 const OpeningTimes = ({ currentStation }) => {
-  const openingTimesJson = currentStation.openingtimes_json;
+  const isOpen = currentStation.isOpen;
 
-  return (
-    <>
-      {Object.keys(openingTimesJson).length === 0
-        ? 'Uns liegen leider keine Informationen zu den Öffnungzeiten dieser Tankstelle vor'
-        : 'Hier liegen Öffnungszeiten der Tankstelle vor.'}
-    </>
-  );
+  return <>{isOpen ? 'Die Tankstelle ist geöffnet' : 'Die Tankstelle hat leider gesschlossen'}</>;
 };
 
 export default OpeningTimes;

@@ -4,16 +4,13 @@ import styled from 'styled-components';
 import { MdStar, MdStarOutline } from 'react-icons/md';
 
 function GasStation({ stations, toggleFavorite, favoriteIDs }) {
-  console.log(stations[0].fuelPrices.e5.price);
-  console.log(stations[0].id);
   return (
     <GasStationList role="list">
       {stations.map(station => {
-        console.log(station.fuelPrices.e5.price);
         return (
           <GasStationItem className="ListItems" key={station.id}>
             <CustomLink to={`/${station.id}`}>
-              <Price>{station.fuelPrices.e5.price < 0 ? 0 : station.fuelPrices.e5.price}</Price>
+              <Price>{station.fuelPrices.e5.price}</Price>
               <Brand>{station.brand}</Brand>
               <Name>
                 {station.name.length > 14 ? `${station.name.substring(0, 14)}...` : station.name}
