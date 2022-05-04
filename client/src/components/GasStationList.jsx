@@ -14,22 +14,18 @@ function GasStation({ stations, toggleFavorite, favoriteIDs }) {
             <Name>
               {station.name.length > 14 ? `${station.name.substring(0, 14)}...` : station.name}
             </Name>
-            <Street>{station.street}</Street>
+            <Street>
+              {station.street} {station.house_number}
+            </Street>
             <Adress>
               {station.post_code} {station.city}
             </Adress>
           </CustomLink>
           <FavoriteStarWrapper>
             {favoriteIDs?.includes(station.uuid) ? (
-              <ActiveStar
-                onClick={() => toggleFavorite(station.uuid)}
-                isFavorite={favoriteIDs.includes(station.uuid)}
-              />
+              <ActiveStar onClick={() => toggleFavorite(station.uuid)} />
             ) : (
-              <InactiveStar
-                onClick={() => toggleFavorite(station.uuid)}
-                isFavorite={favoriteIDs.includes(station.uuid)}
-              />
+              <InactiveStar onClick={() => toggleFavorite(station.uuid)} />
             )}
           </FavoriteStarWrapper>
         </GasStationItem>
@@ -40,7 +36,6 @@ function GasStation({ stations, toggleFavorite, favoriteIDs }) {
 
 const GasStationList = styled.ul`
   display: flex;
-  margin-top: 120px;
   margin-bottom: 100px;
   flex-direction: column;
   gap: 10px;
@@ -49,6 +44,7 @@ const GasStationList = styled.ul`
 
 const GasStationItem = styled.li`
   position: relative;
+  list-style: none;
 `;
 
 const CustomLink = styled(Link)`
@@ -62,9 +58,10 @@ const CustomLink = styled(Link)`
     '. adress city . . .';
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
   border-radius: 10px;
-  margin-bottom: 4px;
-  padding: 15px;
-  list-style: none;
+  margin-bottom: 0.25rem;
+  padding: 1rem;
+  text-decoration: none;
+  color: #000000;
 `;
 
 const Price = styled.p`
@@ -103,12 +100,12 @@ const FavoriteStarWrapper = styled.div`
 
 const ActiveStar = styled(MdStar)`
   font-size: 2rem;
-  color: blue;
+  color: #0367b4;
 `;
 
 const InactiveStar = styled(MdStarOutline)`
   font-size: 2rem;
-  color: blue;
+  color: #2196f3;
 `;
 
 export default GasStation;

@@ -6,6 +6,7 @@ import LandingPage from './pages/LandingPage';
 import MapPage from '../src/pages/MapPage';
 import SettingsPage from '../src/pages/SettingsPage';
 import FavoritePage from '../src/pages/FavoritePage';
+import DetailedGasStationPage from '../src/pages/DetailedGasStationPage';
 
 function App() {
   const [favoriteIDs, setFavoriteIDs] = useState(
@@ -45,6 +46,17 @@ function App() {
             />
           }
         />
+        <Route
+          path=":id"
+          element={
+            <DetailedGasStationPage
+              title="Details"
+              toggleFavorite={toggleFavorite}
+              favoriteIDs={favoriteIDs}
+            />
+          }
+        />
+        
       </Routes>
       <NavBar />
     </Wrapper>
@@ -55,6 +67,7 @@ const Wrapper = styled.div`
   display: flex;
   width: 100%;
   justify-content: center;
+  margin-top: 7rem;
 `;
 
 export default App;

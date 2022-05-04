@@ -25,6 +25,7 @@ const HeaderContainer = styled.div`
   top: 0;
   border-bottom: 1px solid black;
   background-color: #ffffff;
+  z-index: 20;
 `;
 
 const PageTitle = styled.h1`
