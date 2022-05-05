@@ -8,7 +8,7 @@ const OpeningTimes = ({ currentStation }) => {
   return (
     <>
       <h2>{isOpen ? 'Die Tankstelle ist geöffnet.' : 'Die Tankstelle hat leider gesschlossen.'}</h2>
-      <ul >
+      <ul>
         <Day>
           Montag:
           <time>
