@@ -11,54 +11,48 @@ const OpeningTimes = ({ currentStation }) => {
         {isOpen ? 'Die Tankstelle ist geöffnet.' : 'Die Tankstelle hat leider gesschlossen.'}
       </OpenStatus>
 
-      <Week>
+      <Week role="list">
         <Day>
           Montag:
-          <p>
+          <time>
             {openingDay.monday[0].opening} - {openingDay.monday[0].closing}
-          </p>
+          </time>
         </Day>
-
         <Day>
           Dienstag:
-          <p>
+          <time>
             {openingDay.tuesday[0].opening} - {openingDay.tuesday[0].closing}
-          </p>
+          </time>
         </Day>
-
         <Day>
           Mittwoch:
-          <p>
+          <time>
             {openingDay.wednesday[0].opening} - {openingDay.wednesday[0].closing}
-          </p>
+          </time>
         </Day>
-
         <Day>
           Donnerstag:
-          <p>
+          <time>
             {openingDay.thursday[0].opening} - {openingDay.thursday[0].closing}
-          </p>
+          </time>
         </Day>
-
         <Day>
           Freitag:
-          <p>
+          <time>
             {openingDay.friday[0].opening} - {openingDay.friday[0].closing}
-          </p>
+          </time>
         </Day>
-
         <Day>
           Samstag:
-          <p>
+          <time>
             {openingDay.saturday[0].opening} - {openingDay.saturday[0].closing}
-          </p>
+          </time>
         </Day>
-
         <Day>
           Sonntag:
-          <p>
+          <time>
             {openingDay.sunday[0].opening} - {openingDay.sunday[0].closing}
-          </p>
+          </time>
         </Day>
       </Week>
     </>
