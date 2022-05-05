@@ -4,37 +4,59 @@ import styled from 'styled-components';
 const OpeningTimes = ({ currentStation }) => {
   const isOpen = currentStation.isOpen;
   const openingDay = currentStation.openingTimes;
-  console.log(openingDay.monday[0].opening);
 
   return (
     <>
-      <h2>{isOpen ? 'Die Tankstelle ist geöffnet' : 'Die Tankstelle hat leider gesschlossen'}</h2>
-      <Days>
-        Montag: {openingDay.monday[0].opening} - {openingDay.monday[0].closing}{' '}
-      </Days>
-      <Days>
-        Dienstag: {openingDay.tuesday[0].opening} - {openingDay.tuesday[0].closing}{' '}
-      </Days>
-      <Days>
-        Mittwoch: {openingDay.wednesday[0].opening} - {openingDay.wednesday[0].closing}{' '}
-      </Days>
-      <Days>
-        Donnerstag: {openingDay.thursday[0].opening} - {openingDay.thursday[0].closing}{' '}
-      </Days>
-      <Days>
-        Freitag: {openingDay.friday[0].opening} - {openingDay.friday[0].closing}{' '}
-      </Days>
-      <Days>
-        Samstag: {openingDay.saturday[0].opening} - {openingDay.saturday[0].closing}{' '}
-      </Days>
-      <Days>
-        Sonntag: {openingDay.sunday[0].opening} - {openingDay.sunday[0].closing}{' '}
-      </Days>
+      <h2>{isOpen ? 'Die Tankstelle ist geöffnet.' : 'Die Tankstelle hat leider gesschlossen.'}</h2>
+      <ul role="list">
+        <Day>
+          Montag:
+          <time>
+            {openingDay.monday[0].opening} - {openingDay.monday[0].closing}
+          </time>
+        </Day>
+        <Day>
+          Dienstag:
+          <time>
+            {openingDay.tuesday[0].opening} - {openingDay.tuesday[0].closing}
+          </time>
+        </Day>
+        <Day>
+          Mittwoch:
+          <time>
+            {openingDay.wednesday[0].opening} - {openingDay.wednesday[0].closing}
+          </time>
+        </Day>
+        <Day>
+          Donnerstag:
+          <time>
+            {openingDay.thursday[0].opening} - {openingDay.thursday[0].closing}
+          </time>
+        </Day>
+        <Day>
+          Freitag:
+          <time>
+            {openingDay.friday[0].opening} - {openingDay.friday[0].closing}
+          </time>
+        </Day>
+        <Day>
+          Samstag:
+          <time>
+            {openingDay.saturday[0].opening} - {openingDay.saturday[0].closing}
+          </time>
+        </Day>
+        <Day>
+          Sonntag:
+          <time>
+            {openingDay.sunday[0].opening} - {openingDay.sunday[0].closing}
+          </time>
+        </Day>
+      </ul>
     </>
   );
 };
 
-const Days = styled.li`
+const Day = styled.li`
   list-style: none;
 `;
 

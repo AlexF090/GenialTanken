@@ -5,7 +5,6 @@ import { MdStar, MdStarOutline } from 'react-icons/md';
 
 function GasStationDetail({ currentStation, toggleFavorite, favoriteIDs }) {
   return (
-    <>
       <Wrapper>
         <Brand>{currentStation.brand}</Brand>
         <Name>{currentStation.name}</Name>
@@ -31,7 +30,7 @@ function GasStationDetail({ currentStation, toggleFavorite, favoriteIDs }) {
           <SuperE10> {currentStation.fuelPrices.e10.price} Super E10 </SuperE10>
         </PriceWrapper>
       </Wrapper>
-    </>
+    
   );
 }
 
@@ -129,7 +128,7 @@ const InactiveStar = styled(MdStarOutline)`
   color: #2196f3;
 `;
 
-const OpeningTimesWrapper = styled.ul`
+const OpeningTimesWrapper = styled.section`
   grid-area: openingTimes;
   border-top: 1px solid black;
   border-bottom: 1px solid black;
