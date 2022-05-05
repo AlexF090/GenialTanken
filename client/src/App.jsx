@@ -14,18 +14,6 @@ function App() {
     () => JSON.parse(localStorage.getItem('favoriteIDs')) ?? []
   );
 
-  // function togglefuelValue () {
-  //   if (fuelValue === "e5"){
-  //     return "e5"
-  //   }
-  //   else if (fuelValue === "e10"){
-  //     return "e10"
-  //   }
-  //   else if (fuelValue === "diesel"){
-  //     return "diesel"
-  //   }
-  // }
-
   function toggleFavorite(id) {
     if (favoriteIDs.includes(id)) {
       const updatedFavoriteIDs = favoriteIDs.filter(favID => favID !== id);
