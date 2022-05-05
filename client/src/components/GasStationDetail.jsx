@@ -5,32 +5,31 @@ import { MdStar, MdStarOutline } from 'react-icons/md';
 
 function GasStationDetail({ currentStation, toggleFavorite, favoriteIDs }) {
   return (
-      <Wrapper>
-        <Brand>{currentStation.brand}</Brand>
-        <Name>{currentStation.name}</Name>
-        <Street>
-          {currentStation.address.street} {currentStation.address.houseNumber}
-        </Street>
-        <Adress>
-          {currentStation.address.postalCode} {currentStation.address.city}
-        </Adress>
-        <OpeningTimesWrapper>
-          <OpeningTimes currentStation={currentStation} />
-        </OpeningTimesWrapper>
-        <FavoriteStarWrapper>
-          {favoriteIDs?.includes(currentStation.id) ? (
-            <ActiveStar onClick={() => toggleFavorite(currentStation.id)} />
-          ) : (
-            <InactiveStar onClick={() => toggleFavorite(currentStation.id)} />
-          )}
-        </FavoriteStarWrapper>
-        <PriceWrapper className="ListItems" key={currentStation.id}>
-          <Diesel>{currentStation.fuelPrices.diesel.price} Diesel</Diesel>
-          <SuperE5> {currentStation.fuelPrices.e5.price} Super E5 </SuperE5>
-          <SuperE10> {currentStation.fuelPrices.e10.price} Super E10 </SuperE10>
-        </PriceWrapper>
-      </Wrapper>
-    
+    <Wrapper>
+      <Brand>{currentStation.brand}</Brand>
+      <Name>{currentStation.name}</Name>
+      <Street>
+        {currentStation.address.street} {currentStation.address.houseNumber}
+      </Street>
+      <Adress>
+        {currentStation.address.postalCode} {currentStation.address.city}
+      </Adress>
+      <OpeningTimesWrapper>
+        <OpeningTimes currentStation={currentStation} />
+      </OpeningTimesWrapper>
+      <FavoriteStarWrapper>
+        {favoriteIDs?.includes(currentStation.id) ? (
+          <ActiveStar onClick={() => toggleFavorite(currentStation.id)} />
+        ) : (
+          <InactiveStar onClick={() => toggleFavorite(currentStation.id)} />
+        )}
+      </FavoriteStarWrapper>
+      <PriceWrapper className="ListItems" key={currentStation.id}>
+        <Diesel>{currentStation.fuelPrices.diesel.price} Diesel</Diesel>
+        <SuperE5> {currentStation.fuelPrices.e5.price} Super E5 </SuperE5>
+        <SuperE10> {currentStation.fuelPrices.e10.price} Super E10 </SuperE10>
+      </PriceWrapper>
+    </Wrapper>
   );
 }
 
@@ -48,10 +47,9 @@ const Wrapper = styled.article`
     'openingTimes openingTimes'
     '. .'
     'priceWrapper priceWrapper';
-  gap: 15px;
+  gap: 5px;
   box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.25), inset 0px 0px 5px rgba(0, 0, 0, 0.25);
   border-radius: 10px;
-
   padding: 20px;
 `;
 
@@ -64,14 +62,14 @@ const PriceWrapper = styled.ul`
     'diesel'
     'superE5'
     'superE10';
-  gap: 20px;
+  gap: 10px;
 `;
 
 const Diesel = styled.li`
   grid-area: diesel;
   list-style: none;
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
-  padding: 1em 0;
+  padding: 0.25em 0;
   padding-left: 1em;
 `;
 
@@ -79,7 +77,7 @@ const SuperE5 = styled.li`
   grid-area: superE5;
   list-style: none;
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
-  padding: 1em 0;
+  padding: 0.25em 0;
   padding-left: 1em;
 `;
 
@@ -87,7 +85,7 @@ const SuperE10 = styled.li`
   grid-area: superE10;
   list-style: none;
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
-  padding: 1em 0;
+  padding: 0.25em 0;
   padding-left: 1em;
 `;
 
