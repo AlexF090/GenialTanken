@@ -2,11 +2,11 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import GasStationDetail from '../components/GasStationDetail.jsx';
 import Header from '../components/Header.jsx';
-import stations from '../data/db';
+import stations from '../data/db.js';
 
 function DetailedGasStationPage({ title, toggleFavorite, favoriteIDs }) {
-  const { id: uuid } = useParams();
-  const currentStation = stations.find(station => station.uuid === uuid);
+  const { id } = useParams();
+  const currentStation = stations.find(station => station.id === id);
 
   return (
     <>

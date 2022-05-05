@@ -12,7 +12,7 @@ function Favorites({ title, favoriteIDs, toggleFavorite }) {
         <GasStationList
           favoriteIDs={favoriteIDs}
           toggleFavorite={toggleFavorite}
-          stations={stations.filter(station => favoriteIDs.includes(station.uuid))}
+          stations={stations.filter(station => favoriteIDs.includes(station.id))}
         />
       ) : (
         <Empty>Keine Favoriten gespeichert</Empty>
