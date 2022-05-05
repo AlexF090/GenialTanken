@@ -4,7 +4,7 @@ import Header from '../components/Header.jsx';
 import GasStationList from '../components/GasStationList.jsx';
 import stations from '../data/db.js';
 
-function Favorites({ title, favoriteIDs, toggleFavorite }) {
+function Favorites({ title, fuelValue, favoriteIDs, toggleFavorite }) {
   return (
     <>
       <Header title={title} />
@@ -12,6 +12,7 @@ function Favorites({ title, favoriteIDs, toggleFavorite }) {
         <GasStationList
           favoriteIDs={favoriteIDs}
           toggleFavorite={toggleFavorite}
+          fuelValue={fuelValue}
           stations={stations.filter(station => favoriteIDs.includes(station.id))}
         />
       ) : (

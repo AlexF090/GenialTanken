@@ -9,9 +9,22 @@ import FavoritePage from '../src/pages/FavoritePage';
 import DetailedGasStationPage from '../src/pages/DetailedGasStationPage';
 
 function App() {
+  const [fuelValue, setFuelValue] = useState('e5');
   const [favoriteIDs, setFavoriteIDs] = useState(
     () => JSON.parse(localStorage.getItem('favoriteIDs')) ?? []
   );
+
+  // function togglefuelValue () {
+  //   if (fuelValue === "e5"){
+  //     return "e5"
+  //   }
+  //   else if (fuelValue === "e10"){
+  //     return "e10"
+  //   }
+  //   else if (fuelValue === "diesel"){
+  //     return "diesel"
+  //   }
+  // }
 
   function toggleFavorite(id) {
     if (favoriteIDs.includes(id)) {
@@ -31,17 +44,28 @@ function App() {
         <Route
           path="/"
           element={
-            <LandingPage toggleFavorite={toggleFavorite} favoriteIDs={favoriteIDs} title="Start" />
+            <LandingPage
+              toggleFavorite={toggleFavorite}
+              favoriteIDs={favoriteIDs}
+              fuelValue={fuelValue}
+              title="Start"
+            />
           }
         />
         <Route path="map" element={<MapPage title="Karte" />} />
-        <Route path="settings" element={<SettingsPage title="Einstellungen" />} />
+        <Route
+          path="settings"
+          element={
+            <SettingsPage fuelValue={fuelValue} setFuelValue={setFuelValue} title="Einstellungen" />
+          }
+        />
         <Route
           path="favorites"
           element={
             <FavoritePage
               toggleFavorite={toggleFavorite}
               favoriteIDs={favoriteIDs}
+              fuelValue={fuelValue}
               title="Favoriten"
             />
           }

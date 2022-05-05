@@ -3,14 +3,15 @@ import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { MdStar, MdStarOutline } from 'react-icons/md';
 
-function GasStation({ stations, toggleFavorite, favoriteIDs }) {
+function GasStation({ stations, toggleFavorite, favoriteIDs, fuelValue }) {
+  console.log(fuelValue);
   return (
     <GasStationList role="list">
       {stations.map(station => {
         return (
           <GasStationItem className="ListItems" key={station.id}>
             <CustomLink to={`/${station.id}`}>
-              <Price>{station.fuelPrices.e5.price}</Price>
+              <Price>{station.fuelPrices[fuelValue].price}</Price>
               <Brand>{station.brand}</Brand>
               <Name>
                 {station.name.length > 14 ? `${station.name.substring(0, 14)}...` : station.name}
