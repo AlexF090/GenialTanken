@@ -27,7 +27,7 @@ function GasStationDetail({ currentStation, toggleFavorite, favoriteIDs }) {
       <PriceWrapper className="ListItems" key={currentStation.id}>
         <Diesel>{currentStation.fuelPrices.diesel.price} Diesel</Diesel>
         <SuperE5> {currentStation.fuelPrices.e5.price} Super E5 </SuperE5>
-        <SuperE10> {currentStation.fuelPrices.e10.price} Super E10 </SuperE10>
+        <SuperE10> {currentStation.fuelPrices.e10 === null ? "Kein Preis für Super E10 vorhanden" : currentStation.fuelPrices.e10.price + " Super E10"}</SuperE10>
       </PriceWrapper>
     </Wrapper>
   );
