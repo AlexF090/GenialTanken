@@ -27,7 +27,12 @@ function GasStationDetail({ currentStation, toggleFavorite, favoriteIDs }) {
       <PriceWrapper className="ListItems" key={currentStation.id}>
         <Diesel>{currentStation.fuelPrices.diesel.price} Diesel</Diesel>
         <SuperE5> {currentStation.fuelPrices.e5.price} Super E5 </SuperE5>
-        <SuperE10> {currentStation.fuelPrices.e10 === null ? "Kein Preis für Super E10 vorhanden" : currentStation.fuelPrices.e10.price + " Super E10"}</SuperE10>
+        <SuperE10>
+          {' '}
+          {currentStation.fuelPrices.e10 === null
+            ? 'Kein Preis für Super E10 vorhanden'
+            : currentStation.fuelPrices.e10.price + ' Super E10'}
+        </SuperE10>
       </PriceWrapper>
     </Wrapper>
   );
@@ -50,7 +55,6 @@ const Wrapper = styled.article`
   gap: 15px;
   box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.25), inset 0px 0px 5px rgba(0, 0, 0, 0.25);
   border-radius: 10px;
-
   padding: 20px;
 `;
 

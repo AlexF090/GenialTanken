@@ -4,13 +4,13 @@ import GasStationDetail from '../components/GasStationDetail.jsx';
 import Header from '../components/Header.jsx';
 import stations from '../data/db.js';
 
-function DetailedGasStationPage({ title, toggleFavorite, favoriteIDs }) {
+function DetailedGasStationPage({ title, fuelValue, toggleFavorite, favoriteIDs }) {
   const { id } = useParams();
   const currentStation = stations.find(station => station.id === id);
 
   return (
     <>
-      <Header title={title} />
+      <Header title={title} fuelValue={fuelValue} />
       {currentStation ? (
         <GasStationDetail
           currentStation={currentStation}

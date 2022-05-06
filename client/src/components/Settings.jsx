@@ -43,13 +43,3 @@ const Wrapper = styled.div`
 `;
 
 export default Settings;
-
-// {
-//   <div>
-//   {stations.filter(station => station.fuelPrices === e5 || e10 || diesel ).map(station => (
-//     <li>
-//       {station.name}
-//       </li>
-//   ))}
-// </div>
-// }

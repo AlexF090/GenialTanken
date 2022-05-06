@@ -14,6 +14,8 @@ function App() {
     () => JSON.parse(localStorage.getItem('favoriteIDs')) ?? []
   );
 
+  const FuelInfo = fuelValue.charAt(0).toUpperCase(0) + fuelValue.slice(1);
+
   function toggleFavorite(id) {
     if (favoriteIDs.includes(id)) {
       const updatedFavoriteIDs = favoriteIDs.filter(favID => favID !== id);
@@ -36,15 +38,24 @@ function App() {
               toggleFavorite={toggleFavorite}
               favoriteIDs={favoriteIDs}
               fuelValue={fuelValue}
+              gasInfoHead={FuelInfo}
               title="Start"
             />
           }
         />
-        <Route path="map" element={<MapPage title="Karte" />} />
+        <Route
+          path="map"
+          element={<MapPage title="Karte" fuelValue={fuelValue} gasInfoHead={FuelInfo} />}
+        />
         <Route
           path="settings"
           element={
-            <SettingsPage fuelValue={fuelValue} setFuelValue={setFuelValue} title="Einstellungen" />
+            <SettingsPage
+              title="Einstellungen"
+              setFuelValue={setFuelValue}
+              fuelValue={fuelValue}
+              gasInfoHead={FuelInfo}
+            />
           }
         />
         <Route
@@ -54,6 +65,7 @@ function App() {
               toggleFavorite={toggleFavorite}
               favoriteIDs={favoriteIDs}
               fuelValue={fuelValue}
+              gasInfoHead={FuelInfo}
               title="Favoriten"
             />
           }
@@ -65,6 +77,8 @@ function App() {
               title="Details"
               toggleFavorite={toggleFavorite}
               favoriteIDs={favoriteIDs}
+              fuelValue={fuelValue}
+              gasInfoHead={FuelInfo}
             />
           }
         />

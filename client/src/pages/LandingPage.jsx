@@ -3,10 +3,10 @@ import GasStationList from '../components/GasStationList.jsx';
 import Header from '../components/Header.jsx';
 import stations from '../data/db.js';
 
-function LandingPage({ title, toggleFavorite, favoriteIDs, fuelValue }) {
+function LandingPage({ gasInfoHead, title, toggleFavorite, favoriteIDs, fuelValue }) {
   return (
     <>
-      <Header title={title} />
+      <Header title={title} gasInfoHead={gasInfoHead} fuelValue={fuelValue} />
       <GasStationList
         stations={stations}
         toggleFavorite={toggleFavorite}
