@@ -28,7 +28,6 @@ function GasStationDetail({ currentStation, toggleFavorite, favoriteIDs }) {
         <Diesel>{currentStation.fuelPrices.diesel.price} Diesel</Diesel>
         <SuperE5> {currentStation.fuelPrices.e5.price} Super E5 </SuperE5>
         <SuperE10>
-          {' '}
           {currentStation.fuelPrices.e10 === null
             ? 'Kein Preis für Super E10 vorhanden'
             : currentStation.fuelPrices.e10.price + ' Super E10'}
@@ -52,7 +51,7 @@ const Wrapper = styled.article`
     'openingTimes openingTimes'
     '. .'
     'priceWrapper priceWrapper';
-  gap: 15px;
+  gap: 5px;
   box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.25), inset 0px 0px 5px rgba(0, 0, 0, 0.25);
   border-radius: 10px;
   padding: 20px;
@@ -67,14 +66,14 @@ const PriceWrapper = styled.ul`
     'diesel'
     'superE5'
     'superE10';
-  gap: 20px;
+  gap: 10px;
 `;
 
 const Diesel = styled.li`
   grid-area: diesel;
   list-style: none;
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
-  padding: 1em 0;
+  padding: 0.25em 0;
   padding-left: 1em;
 `;
 
@@ -82,7 +81,7 @@ const SuperE5 = styled.li`
   grid-area: superE5;
   list-style: none;
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
-  padding: 1em 0;
+  padding: 0.25em 0;
   padding-left: 1em;
 `;
 
@@ -90,7 +89,7 @@ const SuperE10 = styled.li`
   grid-area: superE10;
   list-style: none;
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
-  padding: 1em 0;
+  padding: 0.25em 0;
   padding-left: 1em;
 `;
 
