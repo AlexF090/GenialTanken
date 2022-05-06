@@ -9,9 +9,12 @@ import FavoritePage from '../src/pages/FavoritePage';
 import DetailedGasStationPage from '../src/pages/DetailedGasStationPage';
 
 function App() {
+  const [fuelValue, setFuelValue] = useState('e5');
   const [favoriteIDs, setFavoriteIDs] = useState(
     () => JSON.parse(localStorage.getItem('favoriteIDs')) ?? []
   );
+
+  const FuelInfo = fuelValue.charAt(0).toUpperCase() + fuelValue.slice(1);
 
   function toggleFavorite(id) {
     if (favoriteIDs.includes(id)) {
@@ -31,17 +34,38 @@ function App() {
         <Route
           path="/"
           element={
-            <LandingPage toggleFavorite={toggleFavorite} favoriteIDs={favoriteIDs} title="Start" />
+            <LandingPage
+              toggleFavorite={toggleFavorite}
+              favoriteIDs={favoriteIDs}
+              fuelValue={fuelValue}
+              gasInfoHead={FuelInfo}
+              title="Start"
+            />
           }
         />
-        <Route path="map" element={<MapPage title="Karte" />} />
-        <Route path="settings" element={<SettingsPage title="Einstellungen" />} />
+        <Route
+          path="map"
+          element={<MapPage title="Karte" fuelValue={fuelValue} gasInfoHead={FuelInfo} />}
+        />
+        <Route
+          path="settings"
+          element={
+            <SettingsPage
+              title="Einstellungen"
+              setFuelValue={setFuelValue}
+              fuelValue={fuelValue}
+              gasInfoHead={FuelInfo}
+            />
+          }
+        />
         <Route
           path="favorites"
           element={
             <FavoritePage
               toggleFavorite={toggleFavorite}
               favoriteIDs={favoriteIDs}
+              fuelValue={fuelValue}
+              gasInfoHead={FuelInfo}
               title="Favoriten"
             />
           }
@@ -53,6 +77,8 @@ function App() {
               title="Details"
               toggleFavorite={toggleFavorite}
               favoriteIDs={favoriteIDs}
+              fuelValue={fuelValue}
+              gasInfoHead={FuelInfo}
             />
           }
         />

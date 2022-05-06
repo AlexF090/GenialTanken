@@ -2,10 +2,12 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import styled from 'styled-components';
 import SettingsIcon from './icons/navigation/SettingsIcon.jsx';
+import GasInfoHead from '../components/GasInfoHead.jsx';
 
-function Header({ title }) {
+function Header({ gasInfoHead, fuelValue, title }) {
   return (
     <HeaderContainer>
+      <GasInfoHead gasInfoHead={gasInfoHead} fuelValue={fuelValue} />
       <PageTitle>{title}</PageTitle>
       <HeaderLink role="list" to="/settings">
         <SettingsIcon />
