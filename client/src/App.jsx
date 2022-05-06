@@ -14,7 +14,7 @@ function App() {
     () => JSON.parse(localStorage.getItem('favoriteIDs')) ?? []
   );
 
-  const FuelInfo = fuelValue.charAt(0).toUpperCase(0) + fuelValue.slice(1);
+  const FuelInfo = fuelValue.charAt(0).toUpperCase() + fuelValue.slice(1);
 
   function toggleFavorite(id) {
     if (favoriteIDs.includes(id)) {

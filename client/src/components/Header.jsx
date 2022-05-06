@@ -5,8 +5,6 @@ import SettingsIcon from './icons/navigation/SettingsIcon.jsx';
 import GasInfoHead from '../components/GasInfoHead.jsx';
 
 function Header({ gasInfoHead, fuelValue, title }) {
-  console.clear();
-  console.log(gasInfoHead);
   return (
     <HeaderContainer>
       <GasInfoHead gasInfoHead={gasInfoHead} fuelValue={fuelValue} />

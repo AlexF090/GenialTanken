@@ -4,7 +4,7 @@ import styled from 'styled-components';
 function GasInfoHead({ gasInfoHead, fuelValue }) {
   return (
     <>
-      {gasInfoHead === fuelValue.charAt(0).toUpperCase(0) + fuelValue.slice(1) ? (
+      {gasInfoHead === fuelValue.charAt(0).toUpperCase() + fuelValue.slice(1) ? (
         <Wrapper>{gasInfoHead}</Wrapper>
       ) : (
         <></>
@@ -15,7 +15,7 @@ function GasInfoHead({ gasInfoHead, fuelValue }) {
 
 const Wrapper = styled.h2`
   position: fixed;
-  padding: 10px;
+  padding: 0.5em;
   left: 15px;
   top: 30px;
   border-radius: 50%;
