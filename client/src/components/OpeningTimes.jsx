@@ -7,8 +7,11 @@ const OpeningTimes = ({ currentStation }) => {
 
   return (
     <>
-      <h2>{isOpen ? 'Die Tankstelle ist geöffnet.' : 'Die Tankstelle hat leider gesschlossen.'}</h2>
-      <ul>
+      <OpenStatus>
+        {isOpen ? 'Die Tankstelle ist geöffnet.' : 'Die Tankstelle hat leider gesschlossen.'}
+      </OpenStatus>
+
+      <Week role="list">
         <Day>
           Montag:
           <time>
@@ -51,13 +54,24 @@ const OpeningTimes = ({ currentStation }) => {
             {openingDay.sunday[0].opening} - {openingDay.sunday[0].closing}
           </time>
         </Day>
-      </ul>
+      </Week>
     </>
   );
 };
 
-const Day = styled.li`
+const OpenStatus = styled.h2`
+  font-weight: bold;
+  font-size: 0.9rem;
+`;
+
+const Week = styled.ul`
   list-style: none;
+`;
+
+const Day = styled.li`
+  margin: 0.2em 0;
+  font-size: 0.8rem;
+  border-top: 1px solid black;
 `;
 
 export default OpeningTimes;
