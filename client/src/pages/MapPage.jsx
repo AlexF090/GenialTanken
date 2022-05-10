@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import stations from '../data/db.js';
 import Header from '../components/Header.jsx';
 import Map from '../components/Map.jsx';
-import { MapContainer, TileLayer, useMap, useMapEvents, Marker, Popup } from 'react-leaflet';
+import { useMapEvents, Marker, Popup } from 'react-leaflet';
 
 function MapPage({ gasInfoHead, title, fuelValue }) {
   function LocationMarker() {
     const [position, setPosition] = useState(null);
+
     const map = useMapEvents({
       click() {
         map.locate();
@@ -16,7 +17,6 @@ function MapPage({ gasInfoHead, title, fuelValue }) {
         map.flyTo(e.latlng, map.getZoom());
       },
     });
-
     return position === null ? null : (
       <Marker position={position}>
         <Popup> Du bist hier !</Popup>
