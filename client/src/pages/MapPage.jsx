@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import stations from '../data/db.js';
 import Header from '../components/Header.jsx';
 import Map from '../components/Map.jsx';
 import { MapContainer, TileLayer, useMap, useMapEvents, Marker, Popup } from 'react-leaflet';
@@ -18,7 +19,7 @@ function MapPage({ gasInfoHead, title, fuelValue }) {
 
     return position === null ? null : (
       <Marker position={position}>
-        <Popup>Du bist hier !</Popup>
+        <Popup> Du bist hier !</Popup>
       </Marker>
     );
   }
@@ -26,7 +27,7 @@ function MapPage({ gasInfoHead, title, fuelValue }) {
   return (
     <>
       <Header title={title} gasInfoHead={gasInfoHead} fuelValue={fuelValue} />
-      <Map LocationMarker={LocationMarker} />
+      <Map LocationMarker={LocationMarker} stations={stations} fuelValue={fuelValue} />
     </>
   );
 }

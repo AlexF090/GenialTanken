@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { MapContainer, TileLayer, useMap, Marker, Popup } from 'react-leaflet';
 
-function Map({ LocationMarker }) {
+function Map({ LocationMarker, stations, fuelValue }) {
   const mapToken = process.env.REACT_APP_API_KEY;
 
   return (
@@ -14,9 +14,17 @@ function Map({ LocationMarker }) {
           mapToken
         }
       />
-      <Marker position={[52.500478, 13.376696]}>
-        <Popup>Erste Tanke</Popup>
-      </Marker>
+      {stations
+        .filter(station => station.fuelPrices[fuelValue] !== null)
+        .map(station => {
+          return (
+            <Marker
+              key={station.id}
+              position={[station.address.latitude, station.address.longitude]}>
+              <Popup>{station.fuelPrices[fuelValue].price + ' €'}</Popup>
+            </Marker>
+          );
+        })}
       <LocationMarker />
     </MapWrapper>
   );
