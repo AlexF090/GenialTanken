@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { MapContainer, TileLayer, useMap, Marker, Popup } from 'react-leaflet';
 
@@ -21,7 +22,10 @@ function Map({ LocationMarker, stations, fuelValue }) {
             <Marker
               key={station.id}
               position={[station.address.latitude, station.address.longitude]}>
-              <Popup>{station.fuelPrices[fuelValue].price + ' €'}</Popup>
+              <Popup>
+                <Price>{station.fuelPrices[fuelValue].price + ' €'}</Price>
+                <CustomLink to={`/${station.id}`}>Mehr Anzeigen</CustomLink>
+              </Popup>
             </Marker>
           );
         })}
@@ -38,6 +42,15 @@ const MapWrapper = styled(MapContainer)`
   bottom: 6rem;
   overflow: hidden;
   z-index: 10;
+`;
+
+const Price = styled.p`
+  font-size: 1.2rem;
+  text-align: center;
+`;
+
+const CustomLink = styled(Link)`
+  text-decoration: none;
 `;
 
 export default Map;
