@@ -2,30 +2,28 @@ import React from 'react';
 import styled from 'styled-components';
 import { MapContainer, TileLayer, useMap, Marker, Popup } from 'react-leaflet';
 
-function Map () {
+function Map({ LocationMarker }) {
+  const mapToken = process.env.REACT_APP_API_KEY;
 
-    const mapToken = process.env.REACT_APP_API_KEY;
-
-
-return(
-
-    
- <MapWrapper center={[52.500478, 13.376696]} zoom={13} scrollWheelZoom={true}>
-  <TileLayer
-    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    url={"https://api.mapbox.com/styles/v1/alexf090/cl2uhl8gx008p14qop192uczn/tiles/256/{z}/{x}/{y}@2x?access_token=" + mapToken}
-  />
-  <Marker position={[52.500478, 13.376696]}>
-    <Popup>
-      Erste Tanke 
-    </Popup>
-  </Marker>
-</MapWrapper>
-)
+  return (
+    <MapWrapper center={[52.500478, 13.376696]} zoom={13} scrollWheelZoom={true}>
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url={
+          'https://api.mapbox.com/styles/v1/alexf090/cl2uhl8gx008p14qop192uczn/tiles/256/{z}/{x}/{y}@2x?access_token=' +
+          mapToken
+        }
+      />
+      <Marker position={[52.500478, 13.376696]}>
+        <Popup>Erste Tanke</Popup>
+      </Marker>
+      <LocationMarker />
+    </MapWrapper>
+  );
 }
 
 const MapWrapper = styled(MapContainer)`
-position: absolute;
+  position: absolute;
   top: 6.25rem;
   right: 0;
   left: 0;
