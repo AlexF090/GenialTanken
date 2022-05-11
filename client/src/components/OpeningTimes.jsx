@@ -15,43 +15,50 @@ const OpeningTimes = ({ currentStation }) => {
         <Day>
           Montag:
           <time>
-            {openingDay.monday[0].opening} - {openingDay.monday[0].closing}
+            {' '}
+            {openingDay.monday[0]?.opening} - {openingDay.monday[0]?.closing}
           </time>
         </Day>
         <Day>
           Dienstag:
           <time>
-            {openingDay.tuesday[0].opening} - {openingDay.tuesday[0].closing}
+            {' '}
+            {openingDay.tuesday[0]?.opening} - {openingDay.tuesday[0]?.closing}
           </time>
         </Day>
         <Day>
           Mittwoch:
           <time>
-            {openingDay.wednesday[0].opening} - {openingDay.wednesday[0].closing}
+            {' '}
+            {openingDay.wednesday[0]?.opening} - {openingDay.wednesday[0]?.closing}
           </time>
         </Day>
         <Day>
           Donnerstag:
           <time>
-            {openingDay.thursday[0].opening} - {openingDay.thursday[0].closing}
+            {' '}
+            {openingDay.thursday[0]?.opening} - {openingDay.thursday[0]?.closing}
           </time>
         </Day>
         <Day>
           Freitag:
           <time>
-            {openingDay.friday[0].opening} - {openingDay.friday[0].closing}
+            {' '}
+            {openingDay.friday[0]?.opening} - {openingDay.friday[0]?.closing}
           </time>
         </Day>
         <Day>
           Samstag:
           <time>
-            {openingDay.saturday[0].opening} - {openingDay.saturday[0].closing}
+            {' '}
+            {openingDay.saturday[0]?.opening} - {openingDay.saturday[0]?.closing}
           </time>
         </Day>
         <Day>
           Sonntag:
           <time>
-            {openingDay.sunday[0].opening} - {openingDay.sunday[0].closing}
+            {' '}
+            {openingDay.sunday[0]?.opening} - {openingDay.sunday[0]?.closing}
           </time>
         </Day>
       </Week>

@@ -62,7 +62,7 @@ const CustomLink = styled(Link)`
   grid-template-areas:
     '. gasStationName . . . .'
     'price street . . . .'
-    '. adress city . . .';
+    '. adress . . . .';
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
   border-radius: 10px;
   margin-bottom: 0.25rem;

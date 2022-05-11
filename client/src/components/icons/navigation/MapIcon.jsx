@@ -4,7 +4,7 @@ import { RiRoadMapFill } from 'react-icons/ri';
 
 function MapIcon() {
   return (
-    <IconContext.Provider value={{ color: 'lightgrey', size: '3em' }}>
+    <IconContext.Provider value={{ size: '3em' }}>
       <>
         <RiRoadMapFill />
       </>

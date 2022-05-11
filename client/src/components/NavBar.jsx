@@ -36,11 +36,12 @@ const Navigation = styled.nav`
   display: flex;
   flex-wrap: wrap;
   width: 100%;
-  height: 4.6875rem;
+  height: 6em;
   position: fixed;
   bottom: 0;
   border-top: 1px solid black;
   background-color: #ffffff;
+  z-index: 20;
 `;
 
 const NavList = styled.ul`
