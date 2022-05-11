@@ -13,7 +13,7 @@ function LocationMarker() {
 
   useEffect(() => {
     map.locate();
-  }, []);
+  });
 
   return position === null ? null : (
     <Marker position={position}>
