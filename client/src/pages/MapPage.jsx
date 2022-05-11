@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import stations from '../data/db.js';
 import Header from '../components/Header.jsx';
 import Map from '../components/Map.jsx';
@@ -8,10 +8,11 @@ function MapPage({ gasInfoHead, title, fuelValue }) {
   function LocationMarker() {
     const [position, setPosition] = useState(null);
 
+    useEffect(() => {
+      map.locate();
+    }, []);
+
     const map = useMapEvents({
-      click() {
-        map.locate();
-      },
       locationfound(e) {
         setPosition(e.latlng);
         map.flyTo(e.latlng, map.getZoom());
