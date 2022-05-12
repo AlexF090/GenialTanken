@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/", "status": 200 },
+    { "source": "/map", "destination": "/", "status": 200 },
+    { "source": "/settings", "destination": "/", "status": 200 },
+    { "source": "/favorites", "destination": "/", "status": 200 },
+    { "source": "/:id", "destination": "/", "status": 200 }
+  ]
+}
