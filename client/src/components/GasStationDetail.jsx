@@ -2,10 +2,12 @@ import React from 'react';
 import styled from 'styled-components';
 import OpeningTimes from './OpeningTimes';
 import { MdStar, MdStarOutline } from 'react-icons/md';
+import DetailMap from '../components/map/DetailMap.jsx';
 
-function GasStationDetail({ currentStation, toggleFavorite, favoriteIDs }) {
+function GasStationDetail({ fuelValue, currentStation, toggleFavorite, favoriteIDs }) {
   return (
     <Wrapper>
+      <Map fuelValue={fuelValue} currentStation={currentStation} />
       <Brand>{currentStation.brand}</Brand>
       <Name>{currentStation.name}</Name>
       <Street>
@@ -39,10 +41,11 @@ function GasStationDetail({ currentStation, toggleFavorite, favoriteIDs }) {
 
 const Wrapper = styled.article`
   display: grid;
-  width: 70vw;
+  width: 80vw;
   grid-template-columns: 1.5fr 0.5fr;
-  grid-template-rows: auto auto auto auto auto auto auto auto;
+  grid-template-rows: auto auto auto auto auto auto auto auto auto;
   grid-template-areas:
+    'map map'
     'brand .'
     'gasStationName .'
     'street favoriteIcon'
@@ -55,6 +58,10 @@ const Wrapper = styled.article`
   box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.25), inset 0px 0px 5px rgba(0, 0, 0, 0.25);
   border-radius: 10px;
   padding: 20px;
+`;
+
+const Map = styled(DetailMap)`
+  grid-area: map;
 `;
 
 const PriceWrapper = styled.ul`

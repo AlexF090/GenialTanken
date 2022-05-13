@@ -13,11 +13,11 @@ function LocationMarker() {
 
   useEffect(() => {
     map.locate();
-  });
+  },[]);
 
   return position === null ? null : (
     <Marker position={position}>
-      <Popup> Du bist hier !</Popup>
+      <Popup> Du bist hier!</Popup>
     </Marker>
   );
 }
