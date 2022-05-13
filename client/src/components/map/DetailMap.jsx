@@ -37,7 +37,7 @@ function DetailMap({ currentStation, fuelValue }) {
 
 const MapWrapper = styled(MapContainer)`
   height: 10rem;
-  width: 135%;
+  grid-area: map;
   overflow: hidden;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
   border-radius: 10px;
