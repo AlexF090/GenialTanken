@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 const mapToken = process.env.REACT_APP_API_KEY;
 
 function DetailMap({ currentStation, fuelValue }) {
-  const [GPSButtonIsClicked, setGPSButtonIsClicked] = useState(false);
-
   return (
     <MapWrapper
       center={[currentStation.address.latitude, currentStation.address.longitude]}

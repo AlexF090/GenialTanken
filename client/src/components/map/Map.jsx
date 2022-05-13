@@ -54,7 +54,7 @@ function Map({ stations, fuelValue }) {
                   <Price>{station.fuelPrices[fuelValue].price + ' €'}</Price>
                   <Link to={`/${station.id}`}>Mehr Anzeigen</Link>
                 </NewPopup>
-                </MyMarker>
+              </MyMarker>
             );
           })}
         {GPSButtonIsClicked ? <LocationMarker /> : null}
