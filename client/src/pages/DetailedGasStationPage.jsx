@@ -19,7 +19,7 @@ function DetailedGasStationPage({ title, fuelValue, toggleFavorite, favoriteIDs 
           favoriteIDs={favoriteIDs}
         />
       ) : (
-        <h2>This gas station does not exist </h2>
+        <h2>Diese Tankstelle existiert nicht!</h2>
       )}
     </>
   );
