@@ -54,7 +54,6 @@ const Wrapper = styled.article`
     'openingTimes openingTimes'
     '. .'
     'priceWrapper priceWrapper';
-  gap: 5px;
   box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.25), inset 0px 0px 5px rgba(0, 0, 0, 0.25);
   border-radius: 10px;
   padding: 20px;
@@ -74,6 +73,7 @@ const PriceWrapper = styled.ul`
     'superE5'
     'superE10';
   gap: 10px;
+  margin-top: 0.8em;
 `;
 
 const Diesel = styled.li`

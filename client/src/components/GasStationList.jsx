@@ -43,7 +43,7 @@ function GasStation({ stations, toggleFavorite, favoriteIDs, fuelValue }) {
 
 const GasStationList = styled.ul`
   display: flex;
-  margin-bottom: 100px;
+  margin-bottom: 7rem;
   flex-direction: column;
   gap: 10px;
   width: 70vw;
