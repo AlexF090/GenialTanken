@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import { MdGpsFixed } from 'react-icons/md';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import LocationMarker from '../map/LocationMarker.jsx';
+import MarkerCluster from '../map/MarkerCluster.jsx'
 const mapToken = process.env.REACT_APP_API_KEY;
 
 function Map({ stations, fuelValue }) {
@@ -30,6 +31,7 @@ function Map({ stations, fuelValue }) {
       >
         <MdGpsFixed />
       </GPSButton>
+      <MarkerCluster>
       {stations
         .filter(station => station.fuelPrices[fuelValue] !== null)
         .map(station => {
@@ -46,6 +48,7 @@ function Map({ stations, fuelValue }) {
           );
         })}
       {GPSButtonIsClicked ? <LocationMarker /> : null}
+      </MarkerCluster>
     </MapWrapper>
   );
 }
