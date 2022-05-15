@@ -2,15 +2,18 @@
 
 # Tech Stack
 
-    React
-    React Hooks
-    React Router
-    JavaScript
-    Storybook
-    styled-components
-    localStorage
-    npm
-    Vercel
+    - React
+    - React Hooks
+    - React Router
+    - React Leaflet
+    - React Leaflet MarkerCluster
+    - React Icons
+    - JavaScript
+    - Storybook
+    - Styled-components
+    - LocalStorage
+    - Npm
+    - Vercel
 
 # Project Setup
 
