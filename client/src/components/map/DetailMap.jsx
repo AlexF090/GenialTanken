@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import markerIcon from '../icons/CustomMapMarker.jsx';
 const mapToken = process.env.REACT_APP_API_KEY;
 
