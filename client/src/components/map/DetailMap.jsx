@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import markerIcon from '../icons/CustomMapMarker.jsx';
@@ -27,9 +26,7 @@ function DetailMap({ currentStation, fuelValue }) {
       <Marker
         key={currentStation.id}
         position={[currentStation.address.latitude, currentStation.address.longitude]}
-        icon={markerIcon}
-        >
-      </Marker>
+        icon={markerIcon}></Marker>
     </MapWrapper>
   );
 }
@@ -42,31 +39,6 @@ const MapWrapper = styled(MapContainer)`
   border-radius: 10px;
   z-index: 10;
   margin-bottom: 1.3rem;
-`;
-
-const NewPopup = styled(Popup)`
-  padding: 0;
-  .leaflet-popup-content-wrapper {
-    /* border-radius: 0; */
-    text-align: center;
-  }
-  .leaflet-popup-content {
-    margin: 0;
-  }
-  .leaflet-popup-content p {
-    margin: 0.5em 0.5em;
-    padding: 0 1em;
-    font-size: 1rem;
-    text-align: center;
-  }
-  .leaflet-popup-content a {
-    text-decoration: none;
-    color: #2196f3;
-  }
-`;
-
-const Price = styled.p`
-  margin: 0;
 `;
 
 export default DetailMap;
