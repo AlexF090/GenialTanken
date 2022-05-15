@@ -69,16 +69,19 @@ const OpeningTimes = ({ currentStation }) => {
 const OpenStatus = styled.h2`
   font-weight: bold;
   font-size: 0.9rem;
+  align-self: center;
 `;
 
 const Week = styled.ul`
+align-items: center;
   list-style: none;
 `;
 
 const Day = styled.li`
   margin: 0.2em 0;
   font-size: 0.8rem;
-  border-top: 1px solid black;
+  
+  border-top: 1px solid #E0E0E0;
 `;
 
 export default OpeningTimes;
