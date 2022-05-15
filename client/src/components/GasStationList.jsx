@@ -46,7 +46,8 @@ const GasStationList = styled.ul`
   margin-bottom: 7rem;
   flex-direction: column;
   gap: 10px;
-  width: 70vw;
+  width: 80vw;
+  max-width: 768px;
 `;
 
 const GasStationItem = styled.li`
@@ -57,12 +58,12 @@ const GasStationItem = styled.li`
 const CustomLink = styled(Link)`
   display: grid;
   width: 100%;
-  grid-template-columns: 0.1fr 1fr 0.1fr 1fr 1fr 0.1fr;
+  grid-template-columns: 0.1fr 1fr 0.25fr;
   grid-template-rows: 1fr 1fr 1fr;
   grid-template-areas:
-    '. gasStationName . . . .'
-    'price street . . . .'
-    '. adress . . . .';
+    '. gasStationName . '
+    'price street . '
+    '. adress . ';
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
   border-radius: 10px;
   margin-bottom: 0.25rem;

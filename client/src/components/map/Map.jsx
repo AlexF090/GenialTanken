@@ -5,6 +5,7 @@ import { MdGpsFixed } from 'react-icons/md';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import LocationMarker from '../map/LocationMarker.jsx';
 import MarkerCluster from '../map/MarkerCluster.jsx';
+import markerIcon from '../icons/CustomMapMarker.jsx';
 const mapToken = process.env.REACT_APP_API_KEY;
 
 function Map({ stations, fuelValue }) {
@@ -44,7 +45,8 @@ function Map({ stations, fuelValue }) {
             return (
               <MyMarker
                 key={station.id}
-                position={[station.address.latitude, station.address.longitude]}>
+                position={[station.address.latitude, station.address.longitude]}
+                icon={markerIcon}>
                 <NewPopup
                   autoClose={false}
                   closeOnEscapeKey={false}

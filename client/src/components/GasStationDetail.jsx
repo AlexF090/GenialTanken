@@ -42,6 +42,7 @@ function GasStationDetail({ fuelValue, currentStation, toggleFavorite, favoriteI
 const Wrapper = styled.article`
   display: grid;
   width: 80vw;
+  max-width: 768px;
   grid-template-columns: 1.5fr 0.5fr;
   grid-template-rows: auto auto auto auto auto auto auto auto auto;
   grid-template-areas:

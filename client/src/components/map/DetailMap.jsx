@@ -2,14 +2,20 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import markerIcon from '../icons/CustomMapMarker.jsx';
 const mapToken = process.env.REACT_APP_API_KEY;
 
 function DetailMap({ currentStation, fuelValue }) {
   return (
     <MapWrapper
       center={[currentStation.address.latitude, currentStation.address.longitude]}
-      zoom={17}
+      zoom={16}
+      dragging={false}
+      touchZoom={false}
+      doubleClickZoom={false}
       scrollWheelZoom={false}
+      boxZoom={false}
+      keyboard={false}
       zoomControl={false}>
       <TileLayer
         url={
@@ -20,16 +26,9 @@ function DetailMap({ currentStation, fuelValue }) {
 
       <Marker
         key={currentStation.id}
-        position={[currentStation.address.latitude, currentStation.address.longitude]}>
-        <NewPopup
-          autoClose={false}
-          closeOnEscapeKey={false}
-          closeButton={false}
-          closeOnClick={false}
-          popupOpen={true}>
-          <Price>{currentStation.fuelPrices[fuelValue]?.price + ' €'}</Price>
-          <Link to={`/${currentStation.id}`}>Mehr Anzeigen</Link>
-        </NewPopup>
+        position={[currentStation.address.latitude, currentStation.address.longitude]}
+        icon={markerIcon}
+        >
       </Marker>
     </MapWrapper>
   );
