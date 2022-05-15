@@ -7,7 +7,6 @@ function Settings({ fuelValue, setFuelValue }) {
   return (
     <Wrapper>
       <Fuel>Kraftstoff</Fuel>
-
       <E5 htmlFor="e5">E5</E5>
       <E5RadioButton
         checked={fuelValue === 'e5'}
@@ -35,7 +34,6 @@ function Settings({ fuelValue, setFuelValue }) {
         value="diesel"
         onChange={() => setFuelValue('diesel')}
       />
-
       <RadiusText>Radius: {radius} km</RadiusText>
       <RadiusSlider
         type="range"
@@ -66,9 +64,6 @@ const Wrapper = styled.main`
     'radiusText radiusText radiusText'
     '. . .'
     'radiusSlider radiusSlider radiusSlider';
-
-  /* display: flex;
-  flex-direction: column; */
   width: 70vw;
   max-width: 768px;
   box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.25), inset 0px 0px 5px rgba(0, 0, 0, 0.25);
