@@ -1,15 +1,20 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import markerIcon from '../icons/CustomMapMarker.jsx';
 const mapToken = process.env.REACT_APP_API_KEY;
 
 function DetailMap({ currentStation, fuelValue }) {
   return (
     <MapWrapper
       center={[currentStation.address.latitude, currentStation.address.longitude]}
-      zoom={17}
+      zoom={16}
+      dragging={false}
+      touchZoom={false}
+      doubleClickZoom={false}
       scrollWheelZoom={false}
+      boxZoom={false}
+      keyboard={false}
       zoomControl={false}>
       <TileLayer
         url={
@@ -20,54 +25,20 @@ function DetailMap({ currentStation, fuelValue }) {
 
       <Marker
         key={currentStation.id}
-        position={[currentStation.address.latitude, currentStation.address.longitude]}>
-        <NewPopup
-          autoClose={false}
-          closeOnEscapeKey={false}
-          closeButton={false}
-          closeOnClick={false}
-          popupOpen={true}>
-          <Price>{currentStation.fuelPrices[fuelValue]?.price + ' €'}</Price>
-          <Link to={`/${currentStation.id}`}>Mehr Anzeigen</Link>
-        </NewPopup>
-      </Marker>
+        position={[currentStation.address.latitude, currentStation.address.longitude]}
+        icon={markerIcon}></Marker>
     </MapWrapper>
   );
 }
 
 const MapWrapper = styled(MapContainer)`
   height: 10rem;
-  width: 135%;
+  grid-area: map;
   overflow: hidden;
   box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
   border-radius: 10px;
   z-index: 10;
   margin-bottom: 1.3rem;
-`;
-
-const NewPopup = styled(Popup)`
-  padding: 0;
-  .leaflet-popup-content-wrapper {
-    /* border-radius: 0; */
-    text-align: center;
-  }
-  .leaflet-popup-content {
-    margin: 0;
-  }
-  .leaflet-popup-content p {
-    margin: 0.5em 0.5em;
-    padding: 0 1em;
-    font-size: 1rem;
-    text-align: center;
-  }
-  .leaflet-popup-content a {
-    text-decoration: none;
-    color: #2196f3;
-  }
-`;
-
-const Price = styled.p`
-  margin: 0;
 `;
 
 export default DetailMap;
