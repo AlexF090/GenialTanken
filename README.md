@@ -1,4 +1,4 @@
-# Capstone-Project: Tanke
+# Capstone-Project: GenialTanken
 
 # Tech Stack
 
