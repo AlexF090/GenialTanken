@@ -8,7 +8,7 @@ import MarkerCluster from '../map/MarkerCluster.jsx';
 import markerIcon from '../icons/CustomMapMarker.jsx';
 const mapToken = process.env.REACT_APP_API_KEY;
 
-function Map({ stations, fuelValue }) {
+function Map({ position, setPosition, stations, fuelValue }) {
   const [GPSButtonIsClicked, setGPSButtonIsClicked] = useState(false);
 
   const MyMarker = props => {
@@ -59,7 +59,7 @@ function Map({ stations, fuelValue }) {
               </MyMarker>
             );
           })}
-        {GPSButtonIsClicked ? <LocationMarker /> : null}
+        {GPSButtonIsClicked ? <LocationMarker position={position} setPosition={setPosition}/> : null}
       </MarkerCluster>
     </MapWrapper>
   );

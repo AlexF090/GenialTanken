@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 
-function Settings({ fuelValue, setFuelValue }) {
-  const [radius, setRadius] = useState(15);
+function Settings({ fuelValue, setFuelValue, radius, setRadius }) {
+  
 
   return (
     <Wrapper>
@@ -38,7 +38,7 @@ function Settings({ fuelValue, setFuelValue }) {
       <RadiusSlider
         type="range"
         min="5"
-        max="25"
+        max="30"
         step="5"
         value={radius}
         onChange={event => setRadius(Number(event.target.value))}
