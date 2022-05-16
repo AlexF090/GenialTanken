@@ -44,11 +44,11 @@ const Wrapper = styled.article`
   width: 80vw;
   max-width: 768px;
   grid-template-columns: 1.5fr 0.5fr;
-  grid-template-rows: auto auto auto auto auto auto auto auto auto;
+  grid-template-rows: auto auto auto auto auto 1rem auto 1rem auto;
   grid-template-areas:
     'map map'
     'brand .'
-    'gasStationName .'
+    'gasStationName favoriteIcon'
     'street favoriteIcon'
     'adress favoriteIcon'
     '. .'
@@ -136,8 +136,8 @@ const InactiveStar = styled(MdStarOutline)`
 
 const OpeningTimesWrapper = styled.section`
   grid-area: openingTimes;
-  border-top: 1px solid black;
-  border-bottom: 1px solid black;
+  border-top: 1px solid #E0E0E0;
+  border-bottom: 1px solid #E0E0E0;
 `;
 
 export default GasStationDetail;
