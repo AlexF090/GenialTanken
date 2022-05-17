@@ -34,7 +34,7 @@ function GasStationDetail({ fuelValue, currentStation, toggleFavorite, favoriteI
         <Diesel>
         {currentStation.fuelPrices.diesel === null
             ? 'Kein Preis für Super Diesel vorhanden'
-            : <><Price price={dieselPrice} /> Super DieselPrice</>}
+            : <><Price price={dieselPrice} />  Diesel</>}
         </Diesel>
         <SuperE5>
         {currentStation.fuelPrices.e5 === null
