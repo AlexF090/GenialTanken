@@ -3,53 +3,31 @@ import styled from 'styled-components';
 import Header from '../components/Header.jsx';
 import GasStationList from '../components/GasStationList.jsx';
 
-
 const stationsApiKey = process.env.REACT_APP_STATIONS_API_KEY;
 
 function FavoritesPage({ gasInfoHead, title, fuelValue, favoriteIDs, toggleFavorite }) {
   const [favoriteStations, setFavoriteStations] = useState([]);
   const url = 'https://api.tankentanken.de/gas-stations/';
 
-  
+  const getFavoriteObjects = () => {
+    // const stations = [];
+    const favoriteFetches = favoriteIDs.map(favoriteID =>
+      fetch(url + favoriteID, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${stationsApiKey}`,
+        },
+      }).then(data => data.json())
+    );
 
-
-    // must be async function somehow...
-    const getFavoriteObjects = () => {
-// const stations = [];
-    const favoriteObjects = await Promise.all(
-        favoriteIDs.map(favoriteID => {
-          fetch(`url${favoriteID}`)
-            .then(resp => console.log(resp.json()))
-            // .then(data => stations.push(data)) 
-        })
-      )
-      setFavoriteStations(favoriteObjects)
-    }
+    Promise.all(favoriteFetches).then(data => {
+      console.log(data);
+    });
+  };
 
   useEffect(() => {
-    getFavoriteObjects()
-  }, [])
-
-  // Fetch Stations
-  //   Promise.all(urls.map(url =>
-  //     fetch(url).then(resp => resp.text())
-  // )).then(texts => {
-  // })
-
-  // function fetchStations() {
-  //   fetch(url, {
-  //     headers: {
-  //       'Content-Type': 'application/json',
-  //       Authorization: `Bearer ${stationsApiKey}`,
-  //     },
-  //   })
-  //     .then(response => response.json())
-  //     .then(json => setFavoriteStations(json));
-  // }
-
-  // useEffect(() => {
-  //   fetchStations();
-  // }, []);
+    getFavoriteObjects();
+  }, []);
 
   return (
     <>
