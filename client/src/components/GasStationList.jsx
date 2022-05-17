@@ -9,10 +9,11 @@ function GasStation({ stations, toggleFavorite, favoriteIDs, fuelValue }) {
       {stations
         .filter(station => station.fuelPrices[fuelValue] !== null)
         .map(station => {
+          const fuelPrice = station.fuelPrices[fuelValue].price.toString();
           return (
             <GasStationItem className="ListItems" key={station.id}>
               <CustomLink to={`/${station.id}`}>
-                <Price>{station.fuelPrices[fuelValue].price}</Price>
+                <Price>{fuelPrice.substring(0, 4)}<sup>{fuelPrice.substring(4, 5)}</sup></Price>
                 <Name>
                   {station.brand === null
                     ? station.name.length > 14

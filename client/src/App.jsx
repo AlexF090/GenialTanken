@@ -12,8 +12,8 @@ const stationsApiKey = process.env.REACT_APP_STATIONS_API_KEY;
 
 function App() {
   const [stations, setStations] = useState([]);
-  const [radius, setRadius] = useState(15);
-  const [apiRadius, setApiRadius] = useState(15000);
+  const [radius, setRadius] = useState(5);
+  const [apiRadius, setApiRadius] = useState(5000);
   const [latitude, setLatitude] = useState(null);
   const [longitude, setLongitude] = useState(null);
   const [position, setPosition] = useState(null);
@@ -21,22 +21,19 @@ function App() {
   const [favoriteIDs, setFavoriteIDs] = useState(
     () => JSON.parse(localStorage.getItem('favoriteIDs')) ?? []
   );
-  
-  const url = `https://api.tankentanken.de/gas-stations?latitude=${latitude}&longitude=${longitude}&radius=${apiRadius}`;
 
+  const url = `https://api.tankentanken.de/gas-stations?latitude=${latitude}&longitude=${longitude}&radius=${apiRadius}`;
   const FuelInfo = fuelValue.charAt(0).toUpperCase() + fuelValue.slice(1);
 
   //Calculate radius for API
-    function calculateApiRadius (radius) {
-  const calculate = radius*1000;
-    setApiRadius(calculate)
-  };
+  function calculateApiRadius(radius) {
+    const calculate = radius * 1000;
+    setApiRadius(calculate);
+  }
 
-  
   useEffect(() => {
-    calculateApiRadius(radius)
+    calculateApiRadius(radius);
   }, [radius]);
- 
 
   //Toggle favorites
   function toggleFavorite(id) {
@@ -57,35 +54,35 @@ function App() {
       },
     })
       .then(response => response.json())
-      .then(json => console.log(json));
+      .then(json => setStations(json));
   }
 
-  
+  useEffect(() => {
+    if (latitude && longitude !== null) {
+      fetchStations();
+    }
+  }, [latitude, longitude]);
+
+  //Location query
+  function getCurrentPosition() {
+    navigator.geolocation.getCurrentPosition(position => {
+      setLatitude(position.coords.latitude);
+      setLongitude(position.coords.longitude);
+      setPosition([position.coords.latitude, position.coords.longitude]);
+    });
+  }
 
   useEffect(() => {
-    fetchStations(url);
+    if (position === null) {
+      getCurrentPosition();
+    }
   }, []);
-
-
-//Location query
-  useEffect(() => {
-    navigator.geolocation.getCurrentPosition((position) => {
-      setLatitude(position.coords.latitude)
-      setLongitude(position.coords.longitude)
-    })
-  }, []);
-  // componentDidMount() => {
-  //   navigator.geolocation.getCurrentPosition(function(position) {
-  //     console.log("Latitude is :", position.coords.latitude);
-  //     console.log("Longitude is :", position.coords.longitude);
-  //   });
-
-  // }
 
   //Set Favorites to localStorage
   useEffect(() => {
     localStorage.setItem('favoriteIDs', JSON.stringify(favoriteIDs));
   }, [favoriteIDs]);
+
   return (
     <Wrapper>
       <Routes>
@@ -93,14 +90,13 @@ function App() {
           path="/"
           element={
             <LandingPage
-            title="GenialTanken"  
-            toggleFavorite={toggleFavorite}
-              favoriteIDs={favoriteIDs}
-              fuelValue={fuelValue}
+              title="GenialTanken"
               gasInfoHead={FuelInfo}
-              setPosition={setPosition}
-              fetchStations={fetchStations}
-
+              stations={stations}
+              fuelValue={fuelValue}
+              toggleFavorite={toggleFavorite}
+              favoriteIDs={favoriteIDs}
+              getCurrentPosition={getCurrentPosition}
             />
           }
         />
@@ -109,8 +105,10 @@ function App() {
           element={
             <MapPage
               title="Karte"
-              fuelValue={fuelValue}
               gasInfoHead={FuelInfo}
+              stations={stations}
+              fuelValue={fuelValue}
+              getCurrentPosition={getCurrentPosition}
               position={position}
               setPosition={setPosition}
             />
@@ -121,9 +119,10 @@ function App() {
           element={
             <SettingsPage
               title="Einstellungen"
-              setFuelValue={setFuelValue}
-              fuelValue={fuelValue}
               gasInfoHead={FuelInfo}
+              fuelValue={fuelValue}
+              setFuelValue={setFuelValue}
+              getCurrentPosition={getCurrentPosition}
               radius={radius}
               setRadius={setRadius}
             />

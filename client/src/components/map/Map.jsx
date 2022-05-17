@@ -1,16 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { MdGpsFixed } from 'react-icons/md';
+
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
-import LocationMarker from '../map/LocationMarker.jsx';
+
 import MarkerCluster from '../map/MarkerCluster.jsx';
 import markerIcon from '../icons/CustomMapMarker.jsx';
 const mapToken = process.env.REACT_APP_API_KEY;
 
-function Map({ position, setPosition, stations, fuelValue }) {
-  const [GPSButtonIsClicked, setGPSButtonIsClicked] = useState(false);
-
+function Map({ stations, fuelValue }) {
   const MyMarker = props => {
     const leafletRef = useRef();
     useEffect(() => {
@@ -21,8 +19,8 @@ function Map({ position, setPosition, stations, fuelValue }) {
 
   return (
     <MapWrapper
-      center={[52.500478, 13.376696]}
-      zoom={13}
+      center={[50.9548223, 10.1686673]}
+      zoom={6}
       scrollWheelZoom={true}
       zoomControl={false}>
       <TileLayer
@@ -32,12 +30,6 @@ function Map({ position, setPosition, stations, fuelValue }) {
         }
       />
       <ZoomControl position="topright" />
-      <GPSButton
-        onClick={() => {
-          setGPSButtonIsClicked(true);
-        }}>
-        <MdGpsFixed />
-      </GPSButton>
       <MarkerCluster>
         {stations
           .filter(station => station.fuelPrices[fuelValue] !== null)
@@ -59,7 +51,6 @@ function Map({ position, setPosition, stations, fuelValue }) {
               </MyMarker>
             );
           })}
-        {GPSButtonIsClicked ? <LocationMarker position={position} setPosition={setPosition}/> : null}
       </MarkerCluster>
     </MapWrapper>
   );

@@ -1,9 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
+import Button from '../components/Button';
 
-function Settings({ fuelValue, setFuelValue, radius, setRadius }) {
-  
-
+function Settings({ fuelValue, setFuelValue, getCurrentPosition, radius, setRadius,  }) {
   return (
     <Wrapper>
       <Fuel>Kraftstoff</Fuel>
@@ -42,6 +41,12 @@ function Settings({ fuelValue, setFuelValue, radius, setRadius }) {
         step="5"
         value={radius}
         onChange={event => setRadius(Number(event.target.value))}
+      />
+      <Button
+        buttonTitle={'Speichern'}
+        myFunction={() => {
+          getCurrentPosition();
+        }}
       />
     </Wrapper>
   );
