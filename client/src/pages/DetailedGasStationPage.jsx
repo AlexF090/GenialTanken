@@ -1,12 +1,31 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import GasStationDetail from '../components/GasStationDetail.jsx';
 import Header from '../components/Header.jsx';
-import stations from '../data/db.js';
+// import stations from '../data/db.js';
+
+const stationsApiKey = process.env.REACT_APP_STATIONS_API_KEY;
 
 function DetailedGasStationPage({ title, fuelValue, toggleFavorite, favoriteIDs }) {
   const { id } = useParams();
-  const currentStation = stations.find(station => station.id === id);
+  const [currentStation, setCurrentStation] = useState();
+  const url = 'https://api.tankentanken.de/gas-stations/' + id;
+
+  //Fetch Station
+  function fetchStation() {
+    fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${stationsApiKey}`,
+      },
+    })
+      .then(response => response.json())
+      .then(json => setCurrentStation(json));
+  }
+
+  useEffect(() => {
+    fetchStation();
+  }, []);
 
   return (
     <>
@@ -14,11 +33,10 @@ function DetailedGasStationPage({ title, fuelValue, toggleFavorite, favoriteIDs 
       {currentStation ? (
         <GasStationDetail
           currentStation={currentStation}
-          stations={stations}
           toggleFavorite={toggleFavorite}
           favoriteIDs={favoriteIDs}
         />
-      ) : (
+      ) : ( 
         <h2>Diese Tankstelle existiert nicht!</h2>
       )}
     </>
