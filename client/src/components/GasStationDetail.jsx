@@ -3,8 +3,12 @@ import styled from 'styled-components';
 import OpeningTimes from './OpeningTimes';
 import { MdStar, MdStarOutline } from 'react-icons/md';
 import DetailMap from '../components/map/DetailMap.jsx';
+import Price from './Price.jsx';
 
 function GasStationDetail({ fuelValue, currentStation, toggleFavorite, favoriteIDs }) {
+  const dieselPrice = currentStation.fuelPrices.diesel.price;
+  const e5Price = currentStation.fuelPrices.e5.price;
+  const e10Price = currentStation.fuelPrices.e10.price;
   return (
     <Wrapper>
       <DetailMap fuelValue={fuelValue} currentStation={currentStation} />
@@ -27,8 +31,8 @@ function GasStationDetail({ fuelValue, currentStation, toggleFavorite, favoriteI
         )}
       </FavoriteStarWrapper>
       <PriceWrapper className="ListItems" key={currentStation.id}>
-        <Diesel>{currentStation.fuelPrices.diesel.price} Diesel</Diesel>
-        <SuperE5> {currentStation.fuelPrices.e5.price} Super E5 </SuperE5>
+        <Diesel><Price price={dieselPrice} /> Diesel</Diesel>
+        <SuperE5><Price price={e5Price} /> Super E5 </SuperE5>
         <SuperE10>
           {currentStation.fuelPrices.e10 === null
             ? 'Kein Preis für Super E10 vorhanden'

@@ -1,11 +1,10 @@
 import React, { useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
-
 import MarkerCluster from '../map/MarkerCluster.jsx';
 import markerIcon from '../icons/CustomMapMarker.jsx';
+import Price from '../Price.jsx';
 const mapToken = process.env.REACT_APP_API_KEY;
 
 function Map({ stations, fuelValue }) {
@@ -45,7 +44,9 @@ function Map({ stations, fuelValue }) {
                   closeButton={false}
                   closeOnClick={false}
                   popupOpen={true}>
-                  <Price>{station.fuelPrices[fuelValue].price + ' €'}</Price>
+                  <PriceWrapper>
+                    <Price price={station.fuelPrices[fuelValue].price} />
+                  </PriceWrapper>
                   <Link to={`/${station.id}`}>Mehr Anzeigen</Link>
                 </NewPopup>
               </MyMarker>
@@ -87,7 +88,7 @@ const NewPopup = styled(Popup)`
   }
 `;
 
-const Price = styled.p`
+const PriceWrapper = styled.p`
   margin: 0;
 `;
 

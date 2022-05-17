@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { MdStar, MdStarOutline } from 'react-icons/md';
+import Price from './Price.jsx'
 
 function GasStation({ stations, toggleFavorite, favoriteIDs, fuelValue }) {
   return (
@@ -9,11 +10,11 @@ function GasStation({ stations, toggleFavorite, favoriteIDs, fuelValue }) {
       {stations
         .filter(station => station.fuelPrices[fuelValue] !== null)
         .map(station => {
-          const fuelPrice = station.fuelPrices[fuelValue].price.toString();
+          const fuelPrice = station.fuelPrices[fuelValue].price;
           return (
             <GasStationItem className="ListItems" key={station.id}>
               <CustomLink to={`/${station.id}`}>
-                <Price>{fuelPrice.substring(0, 4)}<sup>{fuelPrice.substring(4, 5)}</sup></Price>
+                <PriceWrapper><Price price={fuelPrice}/></PriceWrapper>
                 <Name>
                   {station.brand === null
                     ? station.name.length > 14
@@ -73,7 +74,7 @@ const CustomLink = styled(Link)`
   color: #000000;
 `;
 
-const Price = styled.p`
+const PriceWrapper = styled.p`
   grid-area: price;
   align-self: center;
   margin-right: 1em;
