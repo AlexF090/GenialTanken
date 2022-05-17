@@ -9,8 +9,8 @@ function FavoritesPage({ gasInfoHead, title, fuelValue, favoriteIDs, toggleFavor
   const [favoriteStations, setFavoriteStations] = useState([]);
   const url = 'https://api.tankentanken.de/gas-stations/';
 
+  //Favorite fetch function
   const getFavoriteObjects = () => {
-    // const stations = [];
     const favoriteFetches = favoriteIDs.map(favoriteID =>
       fetch(url + favoriteID, {
         headers: {
@@ -19,9 +19,8 @@ function FavoritesPage({ gasInfoHead, title, fuelValue, favoriteIDs, toggleFavor
         },
       }).then(data => data.json())
     );
-
     Promise.all(favoriteFetches).then(data => {
-      console.log(data);
+      setFavoriteStations(data);
     });
   };
 
@@ -37,7 +36,7 @@ function FavoritesPage({ gasInfoHead, title, fuelValue, favoriteIDs, toggleFavor
           favoriteIDs={favoriteIDs}
           toggleFavorite={toggleFavorite}
           fuelValue={fuelValue}
-          stations={favoriteStations.filter(station => favoriteIDs.includes(station.id))}
+          stations={favoriteStations}
         />
       ) : (
         <Empty>Keine Favoriten gespeichert</Empty>
