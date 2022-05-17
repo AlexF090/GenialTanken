@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import GasStationList from '../components/GasStationList.jsx';
 import Header from '../components/Header.jsx';

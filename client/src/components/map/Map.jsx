@@ -66,29 +66,6 @@ const MapWrapper = styled(MapContainer)`
   z-index: 10;
 `;
 
-const GPSButton = styled.button`
-  position: absolute;
-  text-align: center;
-  right: 0.8px;
-  top: 70px;
-  height: 2rem;
-  width: 2.1rem;
-  line-height: 33px;
-  margin: 10px;
-  color: black;
-  background-color: #fff;
-  font-size: 22px;
-  cursor: pointer;
-  border-radius: 4px;
-  border: 2px solid rgba(0, 0, 0, 0.2);
-  -webkit-background-clip: padding-box; //for Safari
-  background-clip: padding-box; //for IE9+, Firefox 4+, Opera, Chrome
-  z-index: 1000;
-  &:hover {
-    background-color: #f4f4f4;
-  }
-`;
-
 const NewPopup = styled(Popup)`
   padding: 0;
   .leaflet-popup-content-wrapper {
