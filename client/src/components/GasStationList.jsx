@@ -90,7 +90,6 @@ const PriceWrapper = styled.p`
   grid-area: price;
   align-self: center;
   font-weight: 600;
-  /* margin-right: 1em; */
   font-size: 1.5rem;
 `;
 
@@ -134,7 +133,6 @@ const DistanceWrapper = styled.p`
   justify-self: end;
   align-self: end;
   font-weight: 600;
-  /* align-self: center; */
 `;
 
 export default GasStation;
