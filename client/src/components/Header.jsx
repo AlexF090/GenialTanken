@@ -17,7 +17,7 @@ function Header({ gasInfoHead, fuelValue, title }) {
   );
 }
 
-const HeaderContainer = styled.div`
+const HeaderContainer = styled.header`
   display: flex;
   align-items: center;
   justify-content: center;
