@@ -17,9 +17,12 @@ function DetailedGasStationPage({ title, fuelValue, toggleFavorite, favoriteIDs 
         Authorization: `Bearer ${stationsApiKey}`,
       },
     })
+    
       .then(response => response.json())
-      .then(json => setCurrentStation(json));
-  }
+      .then(json => setCurrentStation(json))
+      .catch(error => {
+        console.log('There has been a problem with your fetch operation:', error);
+  })}
 
   useEffect(() => {
     fetchStation();
@@ -35,7 +38,7 @@ function DetailedGasStationPage({ title, fuelValue, toggleFavorite, favoriteIDs 
           favoriteIDs={favoriteIDs}
         />
       ) : (
-        <h2>Diese Tankstelle existiert nicht!</h2>
+        ''
       )}
     </>
   );

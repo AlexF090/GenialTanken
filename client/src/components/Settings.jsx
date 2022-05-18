@@ -54,9 +54,8 @@ function Settings({ fuelValue, setFuelValue, getCurrentPosition, radius, setRadi
 
 const Wrapper = styled.main`
   display: grid;
-  grid-auto-columns: 1fr;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 1fr 0.5fr 1fr 0.5fr 1fr 0.5fr 1fr 1fr 1fr 0.5fr 1fr;
+  grid-template-rows: 1fr 0.25fr 1fr 0.25fr 1fr 0.25fr 1fr 1fr 0.25fr 0.5fr 1fr 0.5fr 1fr 0.5fr;
   grid-template-areas:
     'fuel fuel fuel'
     '. . .'
@@ -68,7 +67,10 @@ const Wrapper = styled.main`
     '. . .'
     'radiusText radiusText radiusText'
     '. . .'
-    'radiusSlider radiusSlider radiusSlider';
+    'radiusSlider radiusSlider radiusSlider'
+    '. . .'
+    '. saveButton .'
+    '. . .';
   width: 70vw;
   max-width: 768px;
   box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.25), inset 0px 0px 5px rgba(0, 0, 0, 0.25);
