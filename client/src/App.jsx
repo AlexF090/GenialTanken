@@ -23,19 +23,17 @@ function App() {
   );
 
   const url = `https://api.tankentanken.de/gas-stations?latitude=${latitude}&longitude=${longitude}&radius=${apiRadius}`;
-  const FuelInfo = fuelValue.charAt(0).toUpperCase() + fuelValue.slice(1);
+  const fuelInfo = fuelValue.charAt(0).toUpperCase() + fuelValue.slice(1);
 
-  //Calculate radius for API
-  function calculateApiRadius(radius) {
+  function calculateRadius(radius) {
     const calculate = radius * 1000;
     setApiRadius(calculate);
   }
 
   useEffect(() => {
-    calculateApiRadius(radius);
+    calculateRadius(radius);
   }, [radius]);
 
-  //Toggle favorites
   function toggleFavorite(id) {
     if (favoriteIDs.includes(id)) {
       const updatedFavoriteIDs = favoriteIDs.filter(favID => favID !== id);
@@ -45,7 +43,6 @@ function App() {
     }
   }
 
-  // Fetch Stations
   function fetchStations() {
     fetch(url, {
       headers: {
@@ -63,7 +60,6 @@ function App() {
     }
   }, [latitude, longitude]);
 
-  //Location query
   function getCurrentPosition() {
     navigator.geolocation.getCurrentPosition(position => {
       setLatitude(position.coords.latitude);
@@ -78,7 +74,6 @@ function App() {
     }
   }, []);
 
-  //Set Favorites to localStorage
   useEffect(() => {
     localStorage.setItem('favoriteIDs', JSON.stringify(favoriteIDs));
   }, [favoriteIDs]);
@@ -91,7 +86,7 @@ function App() {
           element={
             <LandingPage
               title="GenialTanken"
-              gasInfoHead={FuelInfo}
+              gasInfoHead={fuelInfo}
               stations={stations}
               fuelValue={fuelValue}
               toggleFavorite={toggleFavorite}
@@ -105,7 +100,7 @@ function App() {
           element={
             <MapPage
               title="Karte"
-              gasInfoHead={FuelInfo}
+              gasInfoHead={fuelInfo}
               stations={stations}
               fuelValue={fuelValue}
               getCurrentPosition={getCurrentPosition}
@@ -119,7 +114,7 @@ function App() {
           element={
             <SettingsPage
               title="Einstellungen"
-              gasInfoHead={FuelInfo}
+              gasInfoHead={fuelInfo}
               fuelValue={fuelValue}
               setFuelValue={setFuelValue}
               getCurrentPosition={getCurrentPosition}
@@ -135,7 +130,7 @@ function App() {
               toggleFavorite={toggleFavorite}
               favoriteIDs={favoriteIDs}
               fuelValue={fuelValue}
-              gasInfoHead={FuelInfo}
+              gasInfoHead={fuelInfo}
               title="Favoriten"
             />
           }
@@ -148,7 +143,7 @@ function App() {
               toggleFavorite={toggleFavorite}
               favoriteIDs={favoriteIDs}
               fuelValue={fuelValue}
-              gasInfoHead={FuelInfo}
+              gasInfoHead={fuelInfo}
             />
           }
         />
