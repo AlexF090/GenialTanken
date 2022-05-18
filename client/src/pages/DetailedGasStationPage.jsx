@@ -17,12 +17,12 @@ function DetailedGasStationPage({ title, fuelValue, toggleFavorite, favoriteIDs 
         Authorization: `Bearer ${stationsApiKey}`,
       },
     })
-    
       .then(response => response.json())
       .then(json => setCurrentStation(json))
       .catch(error => {
         console.log('There has been a problem with your fetch operation:', error);
-  })}
+      });
+  }
 
   useEffect(() => {
     fetchStation();

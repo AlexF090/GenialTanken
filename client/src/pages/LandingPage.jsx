@@ -14,26 +14,23 @@ function LandingPage({
   favoriteIDs,
   getCurrentPosition,
 }) {
-
-
-
   return (
     <>
       <Header title={title} gasInfoHead={gasInfoHead} fuelValue={fuelValue} />
       <Wrapper>
         <ButtonWrapper>
-        <Button
-          buttonTitle={<IoReload />}
-          myFunction={() => {
-            getCurrentPosition();
-          }}
-        />
-        <Button
-          buttonTitle={'Sortiert nach: km'}
-          myFunction={() => {
-            getCurrentPosition();
-          }}
-        />
+          <Button
+            buttonTitle={<IoReload />}
+            myFunction={() => {
+              getCurrentPosition();
+            }}
+          />
+          <Button
+            buttonTitle={'Sortiert nach: km'}
+            myFunction={() => {
+              getCurrentPosition();
+            }}
+          />
         </ButtonWrapper>
         <GasStationList
           stations={stations}
@@ -41,7 +38,6 @@ function LandingPage({
           favoriteIDs={favoriteIDs}
           fuelValue={fuelValue}
         />
-        <a href="https://www.tankentanken.de/">Unterstüzt von TankenTanken</a>
       </Wrapper>
     </>
   );
@@ -55,8 +51,8 @@ const Wrapper = styled.main`
 `;
 
 const ButtonWrapper = styled.main`
-display: flex;
-justify-content: space-around;
+  display: flex;
+  justify-content: space-around;
 `;
 
 export default LandingPage;
