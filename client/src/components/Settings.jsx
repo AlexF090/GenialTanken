@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
+import Button from '../components/Button';
 
-function Settings({ fuelValue, setFuelValue }) {
-  const [radius, setRadius] = useState(15);
-
+function Settings({ fuelValue, setFuelValue, getCurrentPosition, radius, setRadius,  }) {
   return (
     <Wrapper>
       <Fuel>Kraftstoff</Fuel>
@@ -38,10 +37,16 @@ function Settings({ fuelValue, setFuelValue }) {
       <RadiusSlider
         type="range"
         min="5"
-        max="25"
+        max="30"
         step="5"
         value={radius}
         onChange={event => setRadius(Number(event.target.value))}
+      />
+      <Button
+        buttonTitle={'Speichern'}
+        myFunction={() => {
+          getCurrentPosition();
+        }}
       />
     </Wrapper>
   );

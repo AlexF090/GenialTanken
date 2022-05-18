@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { MdStar, MdStarOutline } from 'react-icons/md';
+import Price from './Price.jsx';
+import Distance from '../components/Distance.jsx';
 
 function GasStation({ stations, toggleFavorite, favoriteIDs, fuelValue }) {
   return (
@@ -9,10 +11,13 @@ function GasStation({ stations, toggleFavorite, favoriteIDs, fuelValue }) {
       {stations
         .filter(station => station.fuelPrices[fuelValue] !== null)
         .map(station => {
+          const fuelPrice = station.fuelPrices[fuelValue].price;
           return (
             <GasStationItem className="ListItems" key={station.id}>
               <CustomLink to={`/${station.id}`}>
-                <Price>{station.fuelPrices[fuelValue].price}</Price>
+                <PriceWrapper>
+                  <Price price={fuelPrice} />
+                </PriceWrapper>
                 <Name>
                   {station.brand === null
                     ? station.name.length > 14
@@ -26,6 +31,15 @@ function GasStation({ stations, toggleFavorite, favoriteIDs, fuelValue }) {
                 <Adress>
                   {station.address.postalCode} {station.address.city}
                 </Adress>
+                <DistanceWrapper>
+                  {station.distance > 0 ? (
+                    <>
+                      <Distance distance={station.distance} />
+                    </>
+                  ) : (
+                    ''
+                  )}
+                </DistanceWrapper>
               </CustomLink>
               <FavoriteStarWrapper>
                 {favoriteIDs?.includes(station.id) ? (
@@ -58,12 +72,12 @@ const GasStationItem = styled.li`
 const CustomLink = styled(Link)`
   display: grid;
   width: 100%;
-  grid-template-columns: 0.1fr 1fr 0.25fr;
+  grid-template-columns: 0.5fr 1fr 0.5fr;
   grid-template-rows: 1fr 1fr 1fr;
   grid-template-areas:
     '. gasStationName . '
     'price street . '
-    '. adress . ';
+    '. adress distance ';
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);
   border-radius: 10px;
   margin-bottom: 0.25rem;
@@ -72,16 +86,19 @@ const CustomLink = styled(Link)`
   color: #000000;
 `;
 
-const Price = styled.p`
+const PriceWrapper = styled.p`
   grid-area: price;
   align-self: center;
-  margin-right: 1em;
+  font-weight: 600;
   font-size: 1.5rem;
 `;
 
 const Name = styled.p`
   grid-area: gasStationName;
+  text-decoration: underline;
+  font-weight: 600;
   align-self: center;
+  color: #2196f3;
 `;
 
 const Street = styled.p`
@@ -97,18 +114,25 @@ const Adress = styled.p`
 
 const FavoriteStarWrapper = styled.div`
   position: absolute;
-  top: calc(50% - 1rem);
-  right: 5%;
+  top: calc(49% - 1.125rem);
+  right: 4%;
 `;
 
 const ActiveStar = styled(MdStar)`
-  font-size: 2rem;
+  font-size: 2.25rem;
   color: #0367b4;
 `;
 
 const InactiveStar = styled(MdStarOutline)`
-  font-size: 2rem;
+  font-size: 2.25rem;
   color: #2196f3;
+`;
+
+const DistanceWrapper = styled.p`
+  grid-area: distance;
+  justify-self: end;
+  align-self: end;
+  font-weight: 600;
 `;
 
 export default GasStation;

@@ -2,11 +2,25 @@ import React from 'react';
 import Header from '../components/Header.jsx';
 import Settings from '../components/Settings.jsx';
 
-function SettingsPage({ gasInfoHead, title, fuelValue, setFuelValue }) {
+function SettingsPage({
+  title,
+  gasInfoHead,
+  fuelValue,
+  setFuelValue,
+  getCurrentPosition,
+  radius,
+  setRadius,
+}) {
   return (
     <>
       <Header title={title} gasInfoHead={gasInfoHead} fuelValue={fuelValue} />
-      <Settings fuelValue={fuelValue} setFuelValue={setFuelValue} />
+      <Settings
+        fuelValue={fuelValue}
+        setFuelValue={setFuelValue}
+        getCurrentPosition={getCurrentPosition}
+        radius={radius}
+        setRadius={setRadius}
+      />
     </>
   );
 }

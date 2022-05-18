@@ -3,8 +3,13 @@ import styled from 'styled-components';
 import OpeningTimes from './OpeningTimes';
 import { MdStar, MdStarOutline } from 'react-icons/md';
 import DetailMap from '../components/map/DetailMap.jsx';
+import Price from './Price.jsx';
+import Distance from '../components/Distance.jsx';
 
 function GasStationDetail({ fuelValue, currentStation, toggleFavorite, favoriteIDs }) {
+  const dieselPrice = currentStation.fuelPrices.diesel.price;
+  const e5Price = currentStation.fuelPrices.e5.price;
+  const e10Price = currentStation.fuelPrices.e10.price;
   return (
     <Wrapper>
       <DetailMap fuelValue={fuelValue} currentStation={currentStation} />
@@ -27,12 +32,32 @@ function GasStationDetail({ fuelValue, currentStation, toggleFavorite, favoriteI
         )}
       </FavoriteStarWrapper>
       <PriceWrapper className="ListItems" key={currentStation.id}>
-        <Diesel>{currentStation.fuelPrices.diesel.price} Diesel</Diesel>
-        <SuperE5> {currentStation.fuelPrices.e5.price} Super E5 </SuperE5>
+        <Diesel>
+          {currentStation.fuelPrices.diesel === null ? (
+            'Kein Preis für Diesel vorhanden'
+          ) : (
+            <>
+              <Price price={dieselPrice} /> Diesel
+            </>
+          )}
+        </Diesel>
+        <SuperE5>
+          {currentStation.fuelPrices.e5 === null ? (
+            'Kein Preis für Super E5 vorhanden'
+          ) : (
+            <>
+              <Price price={e5Price} /> Super E5
+            </>
+          )}
+        </SuperE5>
         <SuperE10>
-          {currentStation.fuelPrices.e10 === null
-            ? 'Kein Preis für Super E10 vorhanden'
-            : currentStation.fuelPrices.e10.price + ' Super E10'}
+          {currentStation.fuelPrices.e10 === null ? (
+            'Kein Preis für Super E10 vorhanden'
+          ) : (
+            <>
+              <Price price={e10Price} /> Super E10
+            </>
+          )}
         </SuperE10>
       </PriceWrapper>
     </Wrapper>
@@ -136,8 +161,8 @@ const InactiveStar = styled(MdStarOutline)`
 
 const OpeningTimesWrapper = styled.section`
   grid-area: openingTimes;
-  border-top: 1px solid #E0E0E0;
-  border-bottom: 1px solid #E0E0E0;
+  border-top: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
 `;
 
 export default GasStationDetail;
