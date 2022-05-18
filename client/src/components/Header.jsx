@@ -9,7 +9,7 @@ function Header({ gasInfoHead, fuelValue, title }) {
     <HeaderContainer>
       <FuelFilter gasInfoHead={gasInfoHead} fuelValue={fuelValue} />
       <PageTitle>{title}</PageTitle>
-      <TankenTanken href="https://www.tankentanken.de/">
+      <TankenTanken href="https://www.tankentanken.de/" target="_blank">
         Unterstüzt von TankenTanken.de
       </TankenTanken>
       <SettingsLink role="list" to="/settings">
