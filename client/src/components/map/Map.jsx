@@ -7,7 +7,7 @@ import markerIcon from '../icons/CustomMapMarker.jsx';
 import Price from '../Price.jsx';
 const mapToken = process.env.REACT_APP_API_KEY;
 
-function Map({ stations, fuelValue }) {
+function Map({ stations, fuelValue, latitude, longitude }) {
   const MyMarker = props => {
     const leafletRef = useRef();
     useEffect(() => {
@@ -44,15 +44,28 @@ function Map({ stations, fuelValue }) {
                   closeButton={false}
                   closeOnClick={false}
                   popupOpen={true}>
-                  <PriceWrapper>
+                  <p>
                     <Price price={station.fuelPrices[fuelValue].price} />
-                  </PriceWrapper>
+                  </p>
                   <Link to={`/${station.id}`}>Mehr Anzeigen</Link>
                 </NewPopup>
               </MyMarker>
             );
           })}
       </MarkerCluster>
+
+      {latitude && longitude !== null && (
+        <MyMarker position={[latitude, longitude]}>
+          <NewPopup
+            autoClose={false}
+            closeOnEscapeKey={false}
+            closeButton={false}
+            closeOnClick={false}
+            popupOpen={true}>
+            Du bist hier !
+          </NewPopup>
+        </MyMarker>
+      )}
     </MapWrapper>
   );
 }
@@ -70,26 +83,22 @@ const MapWrapper = styled(MapContainer)`
 const NewPopup = styled(Popup)`
   padding: 0;
   .leaflet-popup-content-wrapper {
-    /* border-radius: 0; */
     text-align: center;
   }
   .leaflet-popup-content {
     margin: 0;
+    padding: 0.25em;
   }
   .leaflet-popup-content p {
     margin: 0.5em 0.5em;
-    padding: 0 1em;
     font-size: 1rem;
     text-align: center;
   }
   .leaflet-popup-content a {
+    margin: 0.5em 0.5em;
     text-decoration: none;
     color: #2196f3;
   }
-`;
-
-const PriceWrapper = styled.p`
-  margin: 0;
 `;
 
 export default Map;

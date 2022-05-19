@@ -111,6 +111,8 @@ function App() {
               getCurrentPosition={getCurrentPosition}
               position={position}
               setPosition={setPosition}
+              latitude={latitude}
+              longitude={longitude}
             />
           }
         />
