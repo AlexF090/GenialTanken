@@ -20,7 +20,7 @@ function DetailedGasStationPage({ title, fuelValue, toggleFavorite, favoriteIDs 
       .then(response => response.json())
       .then(json => setCurrentStation(json))
       .catch(error => {
-        console.log('There has been a problem with your fetch operation:', error);
+        console.error('There has been a problem with your fetch operation:', error);
       });
   }
 

@@ -53,7 +53,6 @@ function Map({ stations, fuelValue, latitude, longitude }) {
             );
           })}
       </MarkerCluster>
-
       {latitude && longitude !== null && (
         <MyMarker position={[latitude, longitude]}>
           <NewPopup

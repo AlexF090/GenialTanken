@@ -18,10 +18,10 @@ function LandingPage({
   const [isManuallySorted, setIsManuallySorted] = useState(false);
 
   function sortByPrice() {
-    const copy = [...stations];
+    const stationsToBeSorted = [...stations];
     isManuallySorted
       ? setSortedStations(
-          copy.sort((a, b) =>
+          stationsToBeSorted.sort((a, b) =>
             a.fuelPrices[fuelValue].price > b.fuelPrices[fuelValue].price ? 1 : -1
           )
         )

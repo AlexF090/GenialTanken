@@ -9,9 +9,9 @@ function Header({ gasInfoHead, fuelValue, title }) {
     <HeaderContainer>
       <FuelFilter gasInfoHead={gasInfoHead} fuelValue={fuelValue} />
       <PageTitle>{title}</PageTitle>
-      <TankenTanken href="https://www.tankentanken.de/" target="_blank">
+      <Hyperlink href="https://www.tankentanken.de/" target="_blank">
         Unterstüzt von TankenTanken.de
-      </TankenTanken>
+      </Hyperlink>
       <SettingsLink role="list" to="/settings">
         <SettingsIcon />
       </SettingsLink>
@@ -27,8 +27,8 @@ const HeaderContainer = styled.header`
   grid-template-areas:
     '. . .'
     'fuelFilter title settingsIcon'
-    'tankenTankenTag tankenTankenTag tankenTankenTag'
-    'tankenTankenTag tankenTankenTag tankenTankenTag';
+    'hyperLink hyperLink hyperLink'
+    'hyperLink hyperLink hyperLink';
   width: 100%;
   height: 6.25rem;
   position: fixed;
@@ -48,8 +48,8 @@ const PageTitle = styled.h1`
   align-self: center;
 `;
 
-const TankenTanken = styled.a`
-  grid-area: tankenTankenTag;
+const Hyperlink = styled.a`
+  grid-area: hyperLink;
   justify-self: center;
   align-self: center;
   font-size: 0.75rem;
