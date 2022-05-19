@@ -51,6 +51,11 @@ function App() {
       },
     })
       .then(response => response.json())
+      .then(json =>
+        json.filter(item => {
+          return item.fuelPrices[fuelValue];
+        })
+      )
       .then(json => setStations(json));
   }
 

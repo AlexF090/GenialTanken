@@ -66,7 +66,7 @@ const SettingsLink = styled(NavLink)`
   list-style: none;
   &.active {
     text-decoration: none;
-    color: #0367b4;
+    color: #002c76;
   }
 `;
 

@@ -14,5 +14,9 @@ const TestButton = styled.button`
   border: none;
   font-size: 1.25rem;
   grid-area: saveButton;
+
+  &:active {
+    background-color: #002c76;
+  }
 `;
 export default Button;

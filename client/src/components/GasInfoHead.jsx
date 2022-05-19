@@ -24,8 +24,7 @@ const FuelFilter = styled.h2`
   font-size: 0.8rem;
   color: white;
   text-align: center;
-  background: rgb(2, 0, 36);
-  background: #0367b4;
+  background: #2196f3;
 `;
 
 export default GasInfoHead;

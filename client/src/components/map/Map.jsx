@@ -21,8 +21,7 @@ function Map({ stations, fuelValue }) {
       center={[50.9548223, 10.1686673]}
       zoom={6}
       scrollWheelZoom={true}
-      zoomControl={false}
-    >
+      zoomControl={false}>
       <TileLayer
         url={
           'https://api.mapbox.com/styles/v1/alexf090/cl2uhl8gx008p14qop192uczn/tiles/256/{z}/{x}/{y}@2x?access_token=' +
@@ -38,15 +37,13 @@ function Map({ stations, fuelValue }) {
               <MyMarker
                 key={station.id}
                 position={[station.address.latitude, station.address.longitude]}
-                icon={markerIcon}
-              >
+                icon={markerIcon}>
                 <NewPopup
                   autoClose={false}
                   closeOnEscapeKey={false}
                   closeButton={false}
                   closeOnClick={false}
-                  popupOpen={true}
-                >
+                  popupOpen={true}>
                   <PriceWrapper>
                     <Price price={station.fuelPrices[fuelValue].price} />
                   </PriceWrapper>

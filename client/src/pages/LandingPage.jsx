@@ -19,7 +19,6 @@ function LandingPage({
 
   function sortByPrice() {
     const copy = [...stations];
-
     isManuallySorted
       ? setSortedStations(
           copy.sort((a, b) =>
@@ -48,6 +47,7 @@ function LandingPage({
             buttonTitle={isManuallySorted === false ? 'Sortiert nach: km' : 'Sortiert nach: Preis'}
             myFunction={() => {
               setIsManuallySorted(!isManuallySorted);
+              sortByPrice();
             }}
           />
         </ButtonWrapper>
