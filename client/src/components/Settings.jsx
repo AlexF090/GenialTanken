@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import Button from '../components/Button';
 
-function Settings({ fuelValue, setFuelValue, getCurrentPosition, radius, setRadius,  }) {
+function Settings({ fuelValue, setFuelValue, getCurrentPosition, radius, setRadius }) {
   return (
     <Wrapper>
       <Fuel>Kraftstoff</Fuel>

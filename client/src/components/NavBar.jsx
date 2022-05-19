@@ -59,7 +59,7 @@ const NavigationLink = styled(NavLink)`
   color: #2196f3;
   &.active {
     text-decoration: none;
-    color: #0367b4;
+    color: #002c76;
   }
 `;
 

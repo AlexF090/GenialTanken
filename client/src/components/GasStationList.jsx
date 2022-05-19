@@ -120,7 +120,7 @@ const FavoriteStarWrapper = styled.div`
 
 const ActiveStar = styled(MdStar)`
   font-size: 2.25rem;
-  color: #0367b4;
+  color: #002c76;
 `;
 
 const InactiveStar = styled(MdStarOutline)`

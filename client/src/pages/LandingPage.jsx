@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { IoReload } from 'react-icons/io5';
 import GasStationList from '../components/GasStationList.jsx';
@@ -14,34 +14,50 @@ function LandingPage({
   favoriteIDs,
   getCurrentPosition,
 }) {
+  const [sortedStations, setSortedStations] = useState(stations);
+  const [isManuallySorted, setIsManuallySorted] = useState(false);
 
+  function sortByPrice() {
+    const stationsToBeSorted = [...stations];
+    isManuallySorted
+      ? setSortedStations(
+          stationsToBeSorted.sort((a, b) =>
+            a.fuelPrices[fuelValue].price > b.fuelPrices[fuelValue].price ? 1 : -1
+          )
+        )
+      : setSortedStations(stations);
+  }
 
+  useEffect(() => {
+    sortByPrice();
+  }, [isManuallySorted]);
 
   return (
     <>
       <Header title={title} gasInfoHead={gasInfoHead} fuelValue={fuelValue} />
       <Wrapper>
         <ButtonWrapper>
-        <Button
-          buttonTitle={<IoReload />}
-          myFunction={() => {
-            getCurrentPosition();
-          }}
-        />
-        <Button
-          buttonTitle={'Sortiert nach: km'}
-          myFunction={() => {
-            getCurrentPosition();
-          }}
-        />
+          <Button
+            buttonTitle={<IoReload />}
+            myFunction={() => {
+              getCurrentPosition();
+            }}
+          />
+          <Button
+            buttonTitle={isManuallySorted === false ? 'Sortiert nach: km' : 'Sortiert nach: Preis'}
+            myFunction={() => {
+              setIsManuallySorted(!isManuallySorted);
+              sortByPrice();
+            }}
+          />
         </ButtonWrapper>
+
         <GasStationList
-          stations={stations}
+          stations={sortedStations.length === 0 ? stations : sortedStations}
           toggleFavorite={toggleFavorite}
           favoriteIDs={favoriteIDs}
           fuelValue={fuelValue}
         />
-        <a href="https://www.tankentanken.de/">Unterstüzt von TankenTanken</a>
       </Wrapper>
     </>
   );
@@ -55,8 +71,8 @@ const Wrapper = styled.main`
 `;
 
 const ButtonWrapper = styled.main`
-display: flex;
-justify-content: space-around;
+  display: flex;
+  justify-content: space-around;
 `;
 
 export default LandingPage;

@@ -51,6 +51,11 @@ function App() {
       },
     })
       .then(response => response.json())
+      .then(json =>
+        json.filter(item => {
+          return item.fuelPrices[fuelValue];
+        })
+      )
       .then(json => setStations(json));
   }
 
@@ -106,6 +111,8 @@ function App() {
               getCurrentPosition={getCurrentPosition}
               position={position}
               setPosition={setPosition}
+              latitude={latitude}
+              longitude={longitude}
             />
           }
         />

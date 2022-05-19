@@ -9,7 +9,6 @@ function FavoritesPage({ gasInfoHead, title, fuelValue, favoriteIDs, toggleFavor
   const [favoriteStations, setFavoriteStations] = useState([]);
   const url = 'https://api.tankentanken.de/gas-stations/';
 
-  
   const getFavoriteObjects = () => {
     const favoriteFetches = favoriteIDs.map(favoriteID =>
       fetch(url + favoriteID, {

@@ -5,7 +5,7 @@ function GasInfoHead({ gasInfoHead, fuelValue }) {
   return (
     <>
       {gasInfoHead === fuelValue.charAt(0).toUpperCase() + fuelValue.slice(1) ? (
-        <Wrapper>{gasInfoHead}</Wrapper>
+        <FuelFilter>{gasInfoHead}</FuelFilter>
       ) : (
         <></>
       )}
@@ -13,22 +13,18 @@ function GasInfoHead({ gasInfoHead, fuelValue }) {
   );
 }
 
-const Wrapper = styled.h2`
-  position: fixed;
-  padding: 0.5em;
-  left: 15px;
-  top: 30px;
+const FuelFilter = styled.h2`
+  grid-area: fuelFilter;
+  justify-self: center;
+  align-self: center;
+  width: 3.125rem;
+  height: 2.125rem;
+  padding-top: 0.5rem;
   border-radius: 50%;
-  font-size: 1rem;
+  font-size: 0.8rem;
   color: white;
   text-align: center;
-  background: rgb(2, 0, 36);
-  background: linear-gradient(
-    0deg,
-    rgba(2, 0, 36, 1) 0%,
-    rgba(3, 103, 180, 1) 39%,
-    rgba(33, 150, 243, 1) 100%
-  );
+  background: #2196f3;
 `;
 
 export default GasInfoHead;

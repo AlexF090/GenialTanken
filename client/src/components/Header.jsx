@@ -7,20 +7,28 @@ import GasInfoHead from '../components/GasInfoHead.jsx';
 function Header({ gasInfoHead, fuelValue, title }) {
   return (
     <HeaderContainer>
-      <GasInfoHead gasInfoHead={gasInfoHead} fuelValue={fuelValue} />
+      <FuelFilter gasInfoHead={gasInfoHead} fuelValue={fuelValue} />
       <PageTitle>{title}</PageTitle>
-      <HeaderLink role="list" to="/settings">
+      <Hyperlink href="https://www.tankentanken.de/" target="_blank">
+        Unterstüzt von TankenTanken.de
+      </Hyperlink>
+      <SettingsLink role="list" to="/settings">
         <SettingsIcon />
-        <p>Einstellungen</p>
-      </HeaderLink>
+      </SettingsLink>
     </HeaderContainer>
   );
 }
 
 const HeaderContainer = styled.header`
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 0.5fr 1fr 0.5fr;
+  grid-template-rows: 1fr 1fr 1fr 1fr;
+  gap: 0px 0px;
+  grid-template-areas:
+    '. . .'
+    'fuelFilter title settingsIcon'
+    'hyperLink hyperLink hyperLink'
+    'hyperLink hyperLink hyperLink';
   width: 100%;
   height: 6.25rem;
   position: fixed;
@@ -30,21 +38,35 @@ const HeaderContainer = styled.header`
   z-index: 20;
 `;
 
-const PageTitle = styled.h1`
-  text-align: center;
+const FuelFilter = styled(GasInfoHead)`
+  grid-area: fuelFilter;
 `;
 
-const HeaderLink = styled(NavLink)`
+const PageTitle = styled.h1`
+  grid-area: title;
+  text-align: center;
+  align-self: center;
+`;
+
+const Hyperlink = styled.a`
+  grid-area: hyperLink;
+  justify-self: center;
+  align-self: center;
+  font-size: 0.75rem;
+  text-decoration: none;
+  color: #a3a3a3;
+`;
+
+const SettingsLink = styled(NavLink)`
+  grid-area: settingsIcon;
+  justify-self: center;
+  align-self: end;
   text-decoration: none;
   color: #2196f3;
-  position: fixed;
-  right: 1%;
-  top: 22px;
   list-style: none;
-  text-align: center;
   &.active {
     text-decoration: none;
-    color: #0367b4;
+    color: #002c76;
   }
 `;
 
