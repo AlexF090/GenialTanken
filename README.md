@@ -8,7 +8,6 @@
     - React Router
     - React Leaflet
     - React Leaflet MarkerCluster
-    - React Icons
     - JavaScript
     - Storybook
     - Styled-components
