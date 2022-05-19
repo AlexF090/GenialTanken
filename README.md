@@ -15,7 +15,7 @@
     - LocalStorage
     - Npm
     - Vercel
-    -E xternal API
+    - External API
 
 # Project Setup
 
