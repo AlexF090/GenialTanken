@@ -3,7 +3,6 @@
 # Tech Stack
 
     - React
-    - React Hooks
     - React Router
     - React Leaflet
     - React Leaflet MarkerCluster
@@ -14,12 +13,13 @@
     - LocalStorage
     - Npm
     - Vercel
+    -E xternal API
 
 # Project Setup
 
     Clone this repository
-    Install all dependencies with $ npm install
-    Run app in dev mode with $ npm run dev
+    Install all dependencies with $ npm install:all
+    Run app in dev mode with $ npm run client
     Server: http://localhost:3000/
     Run tests via $ npm run test
     Run Storybook with $ npm run storybook
