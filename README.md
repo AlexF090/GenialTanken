@@ -27,5 +27,6 @@ A gas station app that displays all daily gas station prices in a list or map by
     Install all dependencies with $ npm install:all
     Run app in dev mode with $ npm run client
     Server: http://localhost:3000/
+    Storybook: http://localhost:6006/
     Run tests via $ npm run test
     Run Storybook with $ npm run storybook
