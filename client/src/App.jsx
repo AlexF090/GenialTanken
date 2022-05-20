@@ -7,6 +7,7 @@ import MapPage from '../src/pages/MapPage';
 import SettingsPage from '../src/pages/SettingsPage';
 import FavoritePage from '../src/pages/FavoritePage';
 import DetailedGasStationPage from '../src/pages/DetailedGasStationPage';
+import PageNotFound from '../src/pages/PageNotFound.jsx';
 
 const stationsApiKey = process.env.REACT_APP_STATIONS_API_KEY;
 
@@ -88,6 +89,7 @@ function App() {
       <Routes>
         <Route
           path="/"
+          ex
           element={
             <LandingPage
               title="GenialTanken"
@@ -154,12 +156,21 @@ function App() {
             />
           }
         />
+        <Route
+          path="*"
+          element={
+            <PageNotFound
+              title="GenialTanken"
+              gasInfoHead={fuelInfo}
+              fuelValue={fuelValue}
+            />
+          }
+        />
       </Routes>
       <NavBar />
     </Wrapper>
   );
 }
-
 const Wrapper = styled.div`
   display: flex;
   width: 100%;

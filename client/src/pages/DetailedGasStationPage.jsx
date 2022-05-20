@@ -8,6 +8,7 @@ const stationsApiKey = process.env.REACT_APP_STATIONS_API_KEY;
 function DetailedGasStationPage({ title, fuelValue, toggleFavorite, favoriteIDs }) {
   const { id } = useParams();
   const [currentStation, setCurrentStation] = useState();
+  const [error, setError] = useState();
   const url = 'https://api.tankentanken.de/gas-stations/' + id;
 
   function fetchStation() {
@@ -18,9 +19,13 @@ function DetailedGasStationPage({ title, fuelValue, toggleFavorite, favoriteIDs 
       },
     })
       .then(response => response.json())
-      .then(json => setCurrentStation(json))
+      .then(json => {
+        json.message
+          ? setError('Die Tankstelle konnte in unserer Datenbank nicht gefunden werden')
+          : setCurrentStation(json);
+      })
       .catch(error => {
-        console.error('There has been a problem with your fetch operation:', error);
+        setError('Die Tankstelle konnte in unserer Datenbank nicht gefunden werden');
       });
   }
 
@@ -31,6 +36,7 @@ function DetailedGasStationPage({ title, fuelValue, toggleFavorite, favoriteIDs 
   return (
     <>
       <Header title={title} fuelValue={fuelValue} />
+      {error && <h3>{error}</h3>}
       {currentStation ? (
         <GasStationDetail
           currentStation={currentStation}
