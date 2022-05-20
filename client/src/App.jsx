@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
-import NavBar from './components/NavBar';
-import LandingPage from './pages/LandingPage';
-import MapPage from '../src/pages/MapPage';
-import SettingsPage from '../src/pages/SettingsPage';
-import FavoritePage from '../src/pages/FavoritePage';
-import DetailedGasStationPage from '../src/pages/DetailedGasStationPage';
+import NavBar from './components/NavBar/NavBar.jsx';
+import LandingPage from './pages/LandingPage.jsx';
+import MapPage from '../src/pages/MapPage.jsx';
+import SettingsPage from '../src/pages/SettingsPage.jsx';
+import FavoritePage from '../src/pages/FavoritePage.jsx';
+import DetailedGasStationPage from '../src/pages/DetailedGasStationPage.jsx';
 
 const stationsApiKey = process.env.REACT_APP_STATIONS_API_KEY;
 

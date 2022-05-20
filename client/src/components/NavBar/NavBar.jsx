@@ -1,9 +1,9 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import styled from 'styled-components';
-import HomeIcon from './icons/navigation/HomeIcon.jsx';
-import MapIcon from './icons/navigation/MapIcon.jsx';
-import FavoriteIcon from './icons/navigation/FavoriteIcon.jsx';
+import HomeIcon from '../icons/navigation/HomeIcon.jsx';
+import MapIcon from '../icons/navigation/MapIcon.jsx';
+import FavoriteIcon from '../icons/navigation/FavoriteIcon.jsx';
 
 function NavBar() {
   return (

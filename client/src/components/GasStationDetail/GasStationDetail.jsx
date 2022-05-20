@@ -1,10 +1,10 @@
 import React from 'react';
 import styled from 'styled-components';
-import OpeningTimes from './OpeningTimes';
+import OpeningTimes from '../OpeningTimes/OpeningTimes';
 import { MdStar, MdStarOutline } from 'react-icons/md';
-import DetailMap from '../components/map/DetailMap.jsx';
-import Price from './Price.jsx';
-import Distance from '../components/Distance.jsx';
+import DetailMap from '../map/DetailMap.jsx';
+import Price from '../Price/Price.jsx';
+import Distance from '../Distance/Distance.jsx';
 
 function GasStationDetail({ fuelValue, currentStation, toggleFavorite, favoriteIDs }) {
   const dieselPrice = currentStation.fuelPrices.diesel.price;

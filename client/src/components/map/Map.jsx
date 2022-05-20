@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl } from 'react-leaflet';
 import MarkerCluster from '../map/MarkerCluster.jsx';
 import markerIcon from '../icons/CustomMapMarker.jsx';
-import Price from '../Price.jsx';
+import Price from '../Price/Price.jsx';
 const mapToken = process.env.REACT_APP_API_KEY;
 
 function Map({ stations, fuelValue, latitude, longitude }) {

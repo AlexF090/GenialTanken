@@ -1,6 +1,6 @@
 import React from 'react';
-import Header from '../components/Header.jsx';
-import Settings from '../components/Settings.jsx';
+import Header from '../components/Header/Header.jsx';
+import Settings from '../components/Settings/Settings.jsx';
 
 function SettingsPage({
   title,

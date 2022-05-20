@@ -1,5 +1,5 @@
 import React from 'react';
-import Header from '../components/Header.jsx';
+import Header from '../components/Header/Header.jsx';
 import Map from '../components/map/Map.jsx';
 
 function MapPage({ title, gasInfoHead, stations, fuelValue, latitude, longitude }) {

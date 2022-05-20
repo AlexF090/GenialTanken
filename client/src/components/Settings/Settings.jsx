@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import Button from '../components/Button';
+import Button from './Button/Button';
 
 function Settings({ fuelValue, setFuelValue, getCurrentPosition, radius, setRadius }) {
   return (
