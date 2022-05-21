@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { IoReload } from 'react-icons/io5';
-import GasStationList from '../components/GasStationList.jsx';
-import Header from '../components/Header.jsx';
-import Button from '../components/Button.jsx';
+import GasStationList from '../components/GasStationList/GasStationList.jsx';
+import Header from '../components/Header/Header.jsx';
+import Button from '../components/Button/Button.jsx';
 
 function LandingPage({
   title,

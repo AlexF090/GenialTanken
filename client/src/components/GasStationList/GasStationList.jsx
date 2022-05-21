@@ -2,8 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { MdStar, MdStarOutline } from 'react-icons/md';
-import Price from './Price.jsx';
-import Distance from '../components/Distance.jsx';
+import Price from '../Price/Price.jsx';
+import Distance from '../Distance/Distance.jsx';
 
 function GasStation({ stations, toggleFavorite, favoriteIDs, fuelValue }) {
   return (
