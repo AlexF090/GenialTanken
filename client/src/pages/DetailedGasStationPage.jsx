@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import GasStationDetail from '../components/GasStationDetail.jsx';
-import Header from '../components/Header.jsx';
+import GasStationDetail from '../components/GasStationDetail/GasStationDetail.jsx';
+import Header from '../components/Header/Header.jsx';
 
 const stationsApiKey = process.env.REACT_APP_STATIONS_API_KEY;
 

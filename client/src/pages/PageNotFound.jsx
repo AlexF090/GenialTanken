@@ -1,5 +1,5 @@
 import React from 'react';
-import Header from '../components/Header.jsx';
+import Header from '../components/Header/Header.jsx';
 import styled from 'styled-components';
 
 function PageNotFound({title, gasInfoHead, fuelValue}) {

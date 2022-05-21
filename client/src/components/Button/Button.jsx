@@ -2,10 +2,10 @@ import React from 'react';
 import styled from 'styled-components';
 
 function Button({ myFunction, buttonTitle }) {
-  return <TestButton onClick={myFunction}>{buttonTitle}</TestButton>;
+  return <GlobalButton onClick={myFunction}>{buttonTitle}</GlobalButton>;
 }
 
-const TestButton = styled.button`
+const GlobalButton = styled.button`
   padding: 0.5rem;
   color: white;
   box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.25), inset 0px 0px 2px rgba(0, 0, 0, 0.25);

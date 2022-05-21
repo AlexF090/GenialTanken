@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
-import Header from '../components/Header.jsx';
-import GasStationList from '../components/GasStationList.jsx';
+import Header from '../components/Header/Header.jsx';
+import GasStationList from '../components/GasStationList/GasStationList.jsx';
 
 const stationsApiKey = process.env.REACT_APP_STATIONS_API_KEY;
 

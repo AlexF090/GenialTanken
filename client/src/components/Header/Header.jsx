@@ -1,8 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import styled from 'styled-components';
-import SettingsIcon from './icons/navigation/SettingsIcon.jsx';
-import GasInfoHead from '../components/GasInfoHead.jsx';
+import SettingsIcon from '../icons/navigation/SettingsIcon.jsx';
+import GasInfoHead from '../GasInfoHead/GasInfoHead.jsx';
 
 function Header({ gasInfoHead, fuelValue, title }) {
   return (
