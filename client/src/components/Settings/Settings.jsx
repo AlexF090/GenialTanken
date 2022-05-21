@@ -5,7 +5,7 @@ import Button from '../Button/Button.jsx';
 function Settings({ fuelValue, setFuelValue, getCurrentPosition, radius, setRadius }) {
   return (
     <Wrapper>
-      <Fuel>Kraftstoff</Fuel>
+      <FuelHeader>Kraftstoff</FuelHeader>
       <E5 htmlFor="e5">E5</E5>
       <E5RadioButton
         checked={fuelValue === 'e5'}
@@ -33,7 +33,7 @@ function Settings({ fuelValue, setFuelValue, getCurrentPosition, radius, setRadi
         value="diesel"
         onChange={() => setFuelValue('diesel')}
       />
-      <RadiusText>Radius: {radius} km</RadiusText>
+      <RadiusHeader>Radius: {radius} km</RadiusHeader>
       <RadiusSlider
         type="range"
         min="5"
@@ -117,13 +117,15 @@ const RadiusSlider = styled.input`
   width: 100%;
 `;
 
-const RadiusText = styled.h2`
+const RadiusHeader = styled.h3`
   grid-area: radiusText;
+  font-size: 1.5rem;
   text-decoration: underline;
 `;
 
-const Fuel = styled.h2`
+const FuelHeader = styled.h3`
   grid-area: fuel;
+  font-size: 1.5rem;
   text-decoration: underline;
 `;
 

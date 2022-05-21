@@ -1,6 +1,5 @@
 import React from 'react';
 import styled from 'styled-components';
-import { IconContext } from 'react-icons';
 import { MdSettings } from 'react-icons/md';
 
 function SettingsIcon() {

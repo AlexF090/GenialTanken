@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import styled from 'styled-components';
 import NavBar from './components/NavBar/NavBar.jsx';
-import LandingPage from './pages/LandingPage.jsx';
-import MapPage from '../src/pages/MapPage.jsx';
-import SettingsPage from '../src/pages/SettingsPage.jsx';
-import FavoritePage from '../src/pages/FavoritePage.jsx';
-import DetailedGasStationPage from '../src/pages/DetailedGasStationPage.jsx';
+import LandingPage from './pages/LandingPage';
+import MapPage from '../src/pages/MapPage';
+import SettingsPage from '../src/pages/SettingsPage';
+import FavoritePage from '../src/pages/FavoritePage';
+import DetailedGasStationPage from '../src/pages/DetailedGasStationPage';
+import PageNotFound from '../src/pages/PageNotFound.jsx';
 
 const stationsApiKey = process.env.REACT_APP_STATIONS_API_KEY;
 
@@ -88,6 +89,7 @@ function App() {
       <Routes>
         <Route
           path="/"
+          ex
           element={
             <LandingPage
               title="GenialTanken"
@@ -154,12 +156,17 @@ function App() {
             />
           }
         />
+        <Route
+          path="*"
+          element={
+            <PageNotFound title="GenialTanken" gasInfoHead={fuelInfo} fuelValue={fuelValue} />
+          }
+        />
       </Routes>
       <NavBar />
     </Wrapper>
   );
 }
-
 const Wrapper = styled.div`
   display: flex;
   width: 100%;
