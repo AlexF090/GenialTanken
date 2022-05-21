@@ -8,7 +8,7 @@ A gas station app that displays all daily gas station prices in a list or map by
 
 # Demo
 
-Have a look at the hosted version on Vercel: [GenialTanken Demo](genialtanken.vercel.app/)  (we prefer a test with mozilla firefox).
+Have a look at the hosted version on Vercel: [GenialTanken Demo](https://genialtanken.vercel.app/)  (we prefer a test with mozilla firefox).
 
 
 
