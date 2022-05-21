@@ -1,15 +1,17 @@
 import React from 'react';
-import { IconContext } from 'react-icons';
+import styled from 'styled-components';
 import { MdStar } from 'react-icons/md';
 
 function FavoriteIcon() {
   return (
-    <IconContext.Provider value={{ size: '3em' }}>
-      <>
-        <MdStar />
-      </>
-    </IconContext.Provider>
+    <>
+      <StarIcon />
+    </>
   );
 }
+
+const StarIcon = styled(MdStar)`
+  font-size: 3em;
+`;
 
 export default FavoriteIcon;

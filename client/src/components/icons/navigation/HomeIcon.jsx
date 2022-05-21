@@ -1,15 +1,17 @@
 import React from 'react';
-import { IconContext } from 'react-icons';
+import styled from 'styled-components';
 import { MdHome } from 'react-icons/md';
 
 function HomeIcon() {
   return (
-    <IconContext.Provider value={{ size: '3em' }}>
-      <>
-        <MdHome />
-      </>
-    </IconContext.Provider>
+    <>
+      <StarIcon />
+    </>
   );
 }
+
+const StarIcon = styled(MdHome)`
+  font-size: 3em;
+`;
 
 export default HomeIcon;
