@@ -89,7 +89,6 @@ function App() {
       <Routes>
         <Route
           path="/"
-          ex
           element={
             <LandingPage
               title="GenialTanken"
