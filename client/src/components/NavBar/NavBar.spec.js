@@ -21,6 +21,6 @@ describe('Navigation', () => {
       </Router>
     );
     const links = screen.getAllByRole('link');
-    expect(links.length).toBeGreaterThan(2);
+    q.toBeGreaterThan(2);
   });
 });
