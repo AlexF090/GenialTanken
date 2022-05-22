@@ -5,6 +5,6 @@
     { "source": "/settings", "destination": "/" },
     { "source": "/favorites", "destination": "/" },
     { "source": "/:id", "destination": "/" },
-    { "source": "/*", "destination": "/" }
+    { "source": "/PageNotFound", "destination": "/" }
   ]
 }
