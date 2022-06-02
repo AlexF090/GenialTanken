@@ -14,7 +14,6 @@ function DetailedGasStationPage({ title, fuelValue, toggleFavorite, favoriteIDs 
   function fetchStation() {
     fetch(url, {
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${stationsApiKey}`,
       },
     })
