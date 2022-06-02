@@ -47,7 +47,6 @@ function App() {
   function fetchStations() {
     fetch(url, {
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${stationsApiKey}`,
       },
     })
