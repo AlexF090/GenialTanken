@@ -13,7 +13,6 @@ function FavoritesPage({ gasInfoHead, title, fuelValue, favoriteIDs, toggleFavor
     const favoriteFetches = favoriteIDs.map(favoriteID =>
       fetch(url + favoriteID, {
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${stationsApiKey}`,
         },
       }).then(data => data.json())
