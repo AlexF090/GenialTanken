@@ -14,7 +14,9 @@ const GlobalButton = styled.button`
   border: none;
   font-size: 1.25rem;
   grid-area: saveButton;
-
+  @media only screen and (min-width: 600px) {
+    width: 200px;
+  }
   &:active {
     background-color: #002c76;
   }
