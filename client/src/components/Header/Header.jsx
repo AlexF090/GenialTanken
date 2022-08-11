@@ -12,7 +12,7 @@ function Header({ gasInfoHead, fuelValue, title }) {
       <Hyperlink href="https://www.tankentanken.de/" target="_blank">
         Unterstüzt von TankenTanken.de
       </Hyperlink>
-      <SettingsLink role="list" to="/settings">
+      <SettingsLink role="button" aria-label='Einstellungen' to="/settings">
         <SettingsIcon />
       </SettingsLink>
     </HeaderContainer>

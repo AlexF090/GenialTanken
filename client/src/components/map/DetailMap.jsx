@@ -15,8 +15,7 @@ function DetailMap({ currentStation, fuelValue }) {
       scrollWheelZoom={false}
       boxZoom={false}
       keyboard={false}
-      zoomControl={false}
-    >
+      zoomControl={false}>
       <TileLayer
         url={
           'https://api.mapbox.com/styles/v1/alexf090/cl2uhl8gx008p14qop192uczn/tiles/256/{z}/{x}/{y}@2x?access_token=' +
@@ -27,8 +26,7 @@ function DetailMap({ currentStation, fuelValue }) {
       <Marker
         key={currentStation.id}
         position={[currentStation.address.latitude, currentStation.address.longitude]}
-        icon={markerIcon}
-      ></Marker>
+        icon={markerIcon}></Marker>
     </MapWrapper>
   );
 }

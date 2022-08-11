@@ -9,24 +9,24 @@ function NavBar() {
   return (
     <Navigation>
       <NavList role="list">
-        <NavigationLink to="/">
-          <li>
+        <li>
+          <NavigationLink to="/">
             <HomeIcon />
             <p>Start</p>
-          </li>
-        </NavigationLink>
-        <NavigationLink to="/map">
-          <li>
+          </NavigationLink>
+        </li>
+        <li>
+          <NavigationLink to="/map">
             <MapIcon />
             <p>Karte</p>
-          </li>
-        </NavigationLink>
-        <NavigationLink to="/favorites">
-          <li>
+          </NavigationLink>
+        </li>
+        <li>
+          <NavigationLink to="/favorites">
             <FavoriteIcon />
             <p>Favoriten</p>
-          </li>
-        </NavigationLink>
+          </NavigationLink>
+        </li>
       </NavList>
     </Navigation>
   );

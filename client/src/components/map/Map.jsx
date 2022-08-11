@@ -17,6 +17,7 @@ function Map({ stations, fuelValue, latitude, longitude }) {
   };
 
   return (
+    <main>
     <MapWrapper
       center={[50.9548223, 10.1686673]}
       zoom={6}
@@ -66,6 +67,7 @@ function Map({ stations, fuelValue, latitude, longitude }) {
         </MyMarker>
       )}
     </MapWrapper>
+    </main>
   );
 }
 
