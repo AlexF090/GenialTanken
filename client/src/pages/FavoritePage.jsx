@@ -29,16 +29,18 @@ function FavoritesPage({ gasInfoHead, title, fuelValue, favoriteIDs, toggleFavor
   return (
     <>
       <Header title={title} gasInfoHead={gasInfoHead} fuelValue={fuelValue} />
-      {favoriteIDs.length > 0 ? (
-        <GasStationList
-          favoriteIDs={favoriteIDs}
-          toggleFavorite={toggleFavorite}
-          fuelValue={fuelValue}
-          stations={favoriteStations}
-        />
-      ) : (
-        <Empty>Keine Favoriten gespeichert</Empty>
-      )}
+      <main>
+        {favoriteIDs.length > 0 ? (
+          <GasStationList
+            favoriteIDs={favoriteIDs}
+            toggleFavorite={toggleFavorite}
+            fuelValue={fuelValue}
+            stations={favoriteStations}
+          />
+        ) : (
+          <Empty>Keine Favoriten gespeichert</Empty>
+        )}
+      </main>
     </>
   );
 }

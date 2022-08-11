@@ -2,7 +2,13 @@ import React from 'react';
 import styled from 'styled-components';
 
 function Button({ myFunction, buttonTitle }) {
-  return <GlobalButton onClick={myFunction}>{buttonTitle}</GlobalButton>;
+  return (
+    <GlobalButton
+      onClick={myFunction}
+      aria-label={typeof buttonTitle === 'string' ? buttonTitle : 'aktualisieren'}>
+      {buttonTitle}
+    </GlobalButton>
+  );
 }
 
 const GlobalButton = styled.button`

@@ -70,7 +70,7 @@ const Wrapper = styled.main`
   gap: 1rem;
 `;
 
-const ButtonWrapper = styled.main`
+const ButtonWrapper = styled.section`
   display: flex;
   justify-content: space-around;
 `;
