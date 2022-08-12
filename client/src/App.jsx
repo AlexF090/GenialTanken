@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import styled from 'styled-components';
 import NavBar from './components/NavBar/NavBar.jsx';
 import LandingPage from './pages/LandingPage';
 import MapPage from '../src/pages/MapPage';
