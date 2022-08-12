@@ -84,7 +84,7 @@ function App() {
   }, [favoriteIDs]);
 
   return (
-    <Wrapper>
+    <>
       <Routes>
         <Route
           path="/"
@@ -162,14 +162,8 @@ function App() {
         />
       </Routes>
       <NavBar />
-    </Wrapper>
+    </>
   );
 }
-const Wrapper = styled.div`
-  display: flex;
-  width: 100%;
-  justify-content: center;
-  margin-top: 7rem;
-`;
 
 export default App;

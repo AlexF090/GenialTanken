@@ -1,6 +1,14 @@
 import { createGlobalStyle } from 'styled-components';
 
 const GlobalStyle = createGlobalStyle`
+
+  #root{
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    margin-top: 7rem;
+  }
+
   * {
     box-sizing: border-box;
     margin: 0;
