@@ -258,6 +258,60 @@ describe('StationsMap', () => {
     });
   });
 
+  describe('choosing a cluster', () => {
+    const coveredByBottomSheet = { top: 0, right: 0, bottom: 400, left: 0 };
+    const neighborOf = (station: Station, offsetInDegrees: number): Station => ({
+      ...station,
+      id: `${station.id}-neighbor`,
+      address: {
+        ...station.address,
+        latitude: station.address.latitude + offsetInDegrees,
+      },
+    });
+    const clusterButton = (element: HTMLElement): HTMLElement => {
+      const cluster = element.querySelector<HTMLElement>('.price-cluster-marker');
+      if (cluster === null) {
+        throw new Error('No cluster on the map');
+      }
+      return cluster;
+    };
+
+    it('zooms the cluster into the part of the map left visible by the overlays', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture, element } = await render([totalStation, neighborOf(totalStation, 0.001)]);
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+      fitBounds.mockClear();
+
+      clusterButton(element).click();
+
+      expect(fitBounds).toHaveBeenCalledOnce();
+      expect(fitBounds.mock.calls[0]?.[1]).toMatchObject({
+        // The top keeps room for the price tags standing above their points.
+        paddingTopLeft: [24, 64],
+        paddingBottomRight: [24, 424],
+      });
+    });
+
+    it('fans out a cluster that zooming cannot separate and centers it', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const panTo = vi.spyOn(L.Map.prototype, 'panTo');
+      const spiderfy = vi.spyOn(L.MarkerCluster.prototype, 'spiderfy');
+      const { fixture, element } = await render([totalStation, neighborOf(totalStation, 0)]);
+      const map = fitBounds.mock.contexts[0] as L.Map;
+      // As if the map were at its maximum zoom already
+      vi.spyOn(map, 'getMaxZoom').mockReturnValue(map.getZoom());
+      await fixture.whenStable();
+      fitBounds.mockClear();
+
+      clusterButton(element).click();
+
+      expect(spiderfy).toHaveBeenCalledOnce();
+      expect(panTo).toHaveBeenCalledOnce();
+      expect(fitBounds).not.toHaveBeenCalled();
+    });
+  });
+
   describe('centerForVisibleArea', () => {
     it('is the point itself without overlays and shifts by half of each overlay', async () => {
       const panTo = vi.spyOn(L.Map.prototype, 'panTo');

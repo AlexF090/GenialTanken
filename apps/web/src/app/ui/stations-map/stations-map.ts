@@ -54,6 +54,8 @@ const NO_VIEWPORT_PADDING: ViewportPadding = { top: 0, right: 0, bottom: 0, left
 /** Keeps the radius circle and revealed markers off the very edge of the visible map. */
 const EDGE_SPACING_IN_PIXELS = 24;
 const METERS_PER_KILOMETER = 1000;
+/** A price tag stands above its map point; fitting points alone would cut off the top tags. */
+const PRICE_TAG_HEIGHT_IN_PIXELS = 40;
 const CLUSTER_RADIUS_IN_PIXELS = 56;
 
 const toPaddingOptions = (
@@ -156,6 +158,10 @@ export class StationsMap {
     iconCreateFunction: createClusterIcon,
     showCoverageOnHover: false,
     maxClusterRadius: CLUSTER_RADIUS_IN_PIXELS,
+    // The default zoom ignores the overlays; `zoomIntoCluster` fits into the visible part and
+    // decides alone when to fan out.
+    zoomToBoundsOnClick: false,
+    spiderfyOnMaxZoom: false,
   });
   private revealedStationId: string | undefined;
   private markerReveal: MarkerReveal | undefined;
@@ -181,6 +187,12 @@ export class StationsMap {
         .zoom({ position: 'topright', zoomInTitle: 'Hineinzoomen', zoomOutTitle: 'Herauszoomen' })
         .addTo(map);
       this.markerClusterGroup.addTo(map);
+      this.markerClusterGroup.on('clusterclick', event => {
+        const cluster: unknown = event.propagatedFrom;
+        if (cluster instanceof L.MarkerCluster) {
+          this.zoomIntoCluster(map, cluster);
+        }
+      });
       map.on('dragstart', () => {
         this.hasUserMovedMap = true;
         this.hasUserMovedMapSinceReveal = true;
@@ -360,6 +372,32 @@ export class StationsMap {
       this.stationSelected.emit(station.id);
     });
     return marker;
+  }
+
+  /**
+   * Zooms so the cluster's stations fill the part of the map not covered by overlays. When
+   * zooming cannot separate them (maximum zoom), they fan out around the centered cluster.
+   */
+  private zoomIntoCluster(map: L.Map, cluster: L.MarkerCluster): void {
+    const viewportPadding = this.viewportPadding();
+    const paddingForTags = {
+      ...viewportPadding,
+      top: viewportPadding.top + PRICE_TAG_HEIGHT_IN_PIXELS,
+    };
+    const paddingOptions = toPaddingOptions(paddingForTags);
+    const animate = !this.prefersReducedMotion();
+    const bounds = cluster.getBounds();
+    const totalPadding = L.point(
+      viewportPadding.left + viewportPadding.right + 2 * EDGE_SPACING_IN_PIXELS,
+      paddingForTags.top + paddingForTags.bottom + 2 * EDGE_SPACING_IN_PIXELS
+    );
+    const targetZoom = Math.min(map.getBoundsZoom(bounds, false, totalPadding), map.getMaxZoom());
+    if (targetZoom <= map.getZoom()) {
+      cluster.spiderfy();
+      map.panTo(centerForVisibleArea(map, cluster.getLatLng(), viewportPadding), { animate });
+      return;
+    }
+    map.fitBounds(bounds, { ...paddingOptions, maxZoom: map.getMaxZoom(), animate });
   }
 
   /** Centers the selected station again, e.g. when its row in the list is chosen once more. */
