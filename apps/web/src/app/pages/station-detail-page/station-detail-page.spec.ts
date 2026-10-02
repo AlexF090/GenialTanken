@@ -40,7 +40,6 @@ describe('StationDetailPage', () => {
 
     const article = element.querySelector('article');
     expect(textOf(element.querySelector('header h1'))).toBe('Details');
-    expect(element.querySelector('header .page-header__fuel')).toBeNull();
     expect(textOf(article?.querySelector('h2'))).toBe('Aral');
     expect(textOf(article?.querySelector('address'))).toBe('Wilhelmshöher Allee 100 34119 Kassel');
     expect(article?.textContent).toContain('Aral Tankstelle Kassel');

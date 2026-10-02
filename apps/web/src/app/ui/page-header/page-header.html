@@ -1,23 +1,11 @@
 <header class="page-header">
-  @if (fuelLabel(); as fuelLabel) {
-    <p class="page-header__fuel">
-      <span class="visually-hidden">Kraftstoff: </span>{{ fuelLabel }}
-    </p>
-  }
-  <h1 class="page-header__title">{{ title() }}</h1>
-  <a
-    class="page-header__settings"
-    routerLink="/settings"
-    routerLinkActive="page-header__settings--active"
-    ariaCurrentWhenActive="page"
-    aria-label="Einstellungen">
-    <app-icon name="settings" />
-  </a>
-  <a
-    class="page-header__credit"
-    href="https://www.prix-carburants.gouv.fr/"
-    target="_blank"
-    rel="noopener">
-    Preisdaten: prix-carburants.gouv.fr<span class="visually-hidden"> (öffnet in neuem Tab)</span>
-  </a>
+  <div class="page-header__inner">
+    @if (backLink(); as backLink) {
+      <a class="page-header__back" [routerLink]="backLink">
+        <app-icon class="page-header__back-icon" name="arrow-back" />
+        <span>Zurück</span>
+      </a>
+    }
+    <h1 class="page-header__title">{{ title() }}</h1>
+  </div>
 </header>

@@ -1,3 +1,8 @@
+@use 'breakpoints';
+
+// Slim, quiet header on the canvas: the title is aligned with the page content column. It
+// absorbs the top safe area, so pages below it do not have to.
+
 :host {
   position: sticky;
   top: 0;
@@ -6,59 +11,55 @@
 }
 
 .page-header {
-  display: grid;
-  grid-template-areas:
-    'fuel title settings'
-    'credit credit credit';
-  grid-template-columns: 1fr auto 1fr;
+  padding-top: var(--safe-area-top);
+  border-bottom: var(--border-width-hairline) solid var(--color-hairline);
+  background-color: var(--color-canvas);
+}
+
+.page-header__inner {
+  display: flex;
   align-items: center;
-  height: var(--layout-header-height);
-  padding: var(--space-xs) var(--space-md) var(--space-2xs);
-  border-bottom: var(--border-width-thin) solid var(--color-border);
-  background-color: var(--color-surface);
-}
+  gap: var(--space-xs);
+  max-width: var(--layout-content-max-width);
+  min-height: calc(var(--layout-touch-target) + var(--space-sm));
+  margin: 0 auto;
+  padding: var(--space-2xs) var(--space-md);
 
-.page-header__fuel {
-  display: grid;
-  grid-area: fuel;
-  place-items: center;
-  justify-self: center;
-  width: var(--layout-fuel-badge-width);
-  height: var(--layout-fuel-badge-height);
-  border-radius: var(--radius-round);
-  background-color: var(--color-primary);
-  color: var(--color-on-primary);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-}
-
-.page-header__title {
-  grid-area: title;
-  font-size: var(--font-size-2xl);
-  text-align: center;
-}
-
-.page-header__settings {
-  display: inline-flex;
-  grid-area: settings;
-  justify-self: center;
-  color: var(--color-primary);
-  font-size: var(--icon-size-lg);
-  border-radius: var(--radius-sm);
-
-  &--active {
-    color: var(--color-primary-strong);
+  @include breakpoints.medium-and-up {
+    min-height: calc(var(--layout-touch-target) + var(--space-xl));
+    padding-block: var(--space-sm);
   }
 }
 
-.page-header__credit {
-  grid-area: credit;
-  justify-self: center;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
+.page-header__back {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-height: var(--layout-touch-target);
+  // Pulls the arrow onto the content edge while keeping the touch target
+  margin-left: calc(-1 * var(--space-xs));
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
   text-decoration: none;
+  touch-action: manipulation;
 
   &:hover {
     text-decoration: underline;
+  }
+}
+
+.page-header__back-icon {
+  font-size: var(--icon-size-sm);
+}
+
+.page-header__title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-xl);
+
+  @include breakpoints.medium-and-up {
+    font-size: var(--font-size-2xl);
   }
 }

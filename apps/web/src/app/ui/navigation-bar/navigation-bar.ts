@@ -7,14 +7,14 @@ interface NavigationLink {
   path: string;
   label: string;
   icon: IconName;
-  /** The start page must only be active on `/`, not on every route below it. */
+  /** The explore page must only be active on `/`, not on every route below it. */
   matchesExactly: boolean;
 }
 
 const NAVIGATION_LINKS: readonly NavigationLink[] = [
-  { path: '/', label: 'Start', icon: 'home', matchesExactly: true },
-  { path: '/map', label: 'Karte', icon: 'map', matchesExactly: false },
+  { path: '/', label: 'Erkunden', icon: 'explore', matchesExactly: true },
   { path: '/favorites', label: 'Favoriten', icon: 'star', matchesExactly: false },
+  { path: '/settings', label: 'Einstellungen', icon: 'settings', matchesExactly: false },
 ];
 
 @Component({

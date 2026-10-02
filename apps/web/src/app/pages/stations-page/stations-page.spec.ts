@@ -42,11 +42,10 @@ describe('StationsPage', () => {
     context.httpTesting.verify();
   });
 
-  it('shows the title and the selected fuel type in the header', async () => {
+  it('shows the title in the header', async () => {
     const { element } = await renderComponent(StationsPage);
 
     expect(textOf(element.querySelector('header h1'))).toBe('GenialTanken');
-    expect(textOf(element.querySelector('header .page-header__fuel'))).toBe('Kraftstoff: E5');
     context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL);
   });
 
@@ -98,7 +97,6 @@ describe('StationsPage', () => {
       )
       .flush([carrefourStation]);
     await context.settle();
-    expect(textOf(element.querySelector('header .page-header__fuel'))).toBe('Kraftstoff: Diesel');
     expect(stationTitles(element)).toEqual(['Carrefour Market']);
     expect(textOf(element.querySelector('main li'))).toContain('1,669 €');
   });

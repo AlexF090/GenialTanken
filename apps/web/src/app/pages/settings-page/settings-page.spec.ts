@@ -56,7 +56,6 @@ describe('SettingsPage', () => {
     await context.settle();
 
     expect(TestBed.inject(SettingsStore).fuelType()).toBe('diesel');
-    expect(textOf(element.querySelector('header .page-header__fuel'))).toBe('Kraftstoff: Diesel');
     expect(context.storage.getItem('genialtanken.settings')).toBe(
       '{"fuelType":"diesel","radiusInKilometers":5,"colorScheme":"system"}'
     );
