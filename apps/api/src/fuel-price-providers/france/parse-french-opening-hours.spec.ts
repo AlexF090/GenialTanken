@@ -65,6 +65,19 @@ describe('parseFrenchOpeningHours', () => {
     });
   });
 
+  it('reads an interval from midnight to midnight as open around the clock', () => {
+    const horaires = JSON.stringify({
+      '@automate-24-24': '',
+      jour: [
+        { '@id': '1', '@ferme': '', horaire: { '@ouverture': '00.00', '@fermeture': '00.00' } },
+      ],
+    });
+
+    expect(parseFrenchOpeningHours(horaires).monday).toEqual([
+      { opening: '00:00', closing: '24:00' },
+    ]);
+  });
+
   it('accepts a single day object and single-digit hours', () => {
     const openingHours = JSON.stringify({
       jour: {

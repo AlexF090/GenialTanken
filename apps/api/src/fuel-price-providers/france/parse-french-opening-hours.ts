@@ -20,6 +20,7 @@ const WEEKDAYS_BY_FRENCH_DAY_NUMBER: Readonly<Record<string, Weekday>> = {
 
 const FLAG_SET = '1';
 const ALL_DAY: OpeningInterval = { opening: '00:00', closing: '24:00' };
+const MIDNIGHT = '00:00';
 const TIME_PATTERN = /^(\d{1,2})[.:](\d{2})$/;
 
 const intervalSchema = z.object({ '@ouverture': z.string(), '@fermeture': z.string() });
@@ -60,7 +61,14 @@ const toIntervals = (horaire: z.infer<typeof daySchema>['horaire']): OpeningInte
   return intervals.flatMap(interval => {
     const opening = toTime(interval['@ouverture']);
     const closing = toTime(interval['@fermeture']);
-    return opening === null || closing === null ? [] : [{ opening, closing }];
+    if (opening === null || closing === null) {
+      return [];
+    }
+    // The dataset encodes "open around the clock" as an interval from midnight to midnight
+    if (opening === MIDNIGHT && closing === MIDNIGHT) {
+      return [ALL_DAY];
+    }
+    return [{ opening, closing }];
   });
 };
 
