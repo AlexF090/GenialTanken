@@ -35,6 +35,11 @@
         <app-icon name="my-location" />
       </button>
     </div>
+    @if (isAreaSearchOffered()) {
+      <button type="button" class="explore-page__area-search" (click)="searchVisibleArea()">
+        In diesem Bereich suchen
+      </button>
+    }
     @if (locationErrorMessage(); as message) {
       <p class="message message--error explore-page__search-message" role="alert">
         {{ message }}
@@ -106,5 +111,6 @@
     [cheapestStationIds]="cheapestStationIds()"
     [colorScheme]="colorScheme()"
     [viewportPadding]="mapViewportPadding()"
-    (stationSelected)="selectFromMap($event)" />
+    (stationSelected)="selectFromMap($event)"
+    (visibleCenterChanged)="updateVisibleMapCenter($event)" />
 </main>

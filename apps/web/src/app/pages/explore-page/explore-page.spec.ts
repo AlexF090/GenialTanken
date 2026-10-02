@@ -405,6 +405,34 @@ describe('ExplorePage', () => {
     );
   });
 
+  it('offers a search in the area the map was moved to and searches there', async () => {
+    const { fixture, element } = await renderWithStations();
+    const map = childComponent(fixture, StationsMap);
+    const areaSearchButton = () =>
+      [...element.querySelectorAll('button')].find(
+        button => textOf(button) === 'In diesem Bereich suchen'
+      );
+
+    map.visibleCenterChanged.emit({ latitude: 48.8586, longitude: 2.2955 });
+    await context.settle();
+    expect(areaSearchButton()).toBeUndefined();
+
+    map.visibleCenterChanged.emit({ latitude: 48.8532, longitude: 2.3692 });
+    await context.settle();
+    areaSearchButton()?.click();
+    await context.settle();
+
+    context.httpTesting
+      .expectOne('/api/stations?latitude=48.8532&longitude=2.3692&radiusInKilometers=5&fuel=e5')
+      .flush([carrefourStation]);
+    await context.settle();
+    expect(areaSearchButton()).toBeUndefined();
+    expect(placeSearchInput(element).placeholder).toBe('Position auf Karte');
+    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+      '1 Tankstelle im Umkreis von 5 km um die Kartenmitte'
+    );
+  });
+
   it('selects the station whose price tag was chosen on the map', async () => {
     const { element, fixture } = await renderWithStations();
     const map = childComponent(fixture, StationsMap);

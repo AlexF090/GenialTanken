@@ -79,6 +79,32 @@
   min-width: 0;
 }
 
+// Capsule below the search field, like "Search here" in Apple Maps.
+.explore-page__area-search {
+  align-self: center;
+  min-height: var(--layout-touch-target);
+  margin: 0;
+  padding: 0 var(--space-md);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--material-menu);
+  color: var(--color-action-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  box-shadow: var(--shadow-floating);
+  backdrop-filter: var(--material-blur);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    opacity var(--duration-short) var(--easing-standard),
+    transform var(--duration-short) var(--easing-standard);
+
+  @starting-style {
+    opacity: 0;
+    transform: translateY(calc(-1 * var(--space-xs)));
+  }
+}
+
 .explore-page__search-message {
   box-shadow: var(--shadow-floating);
 }

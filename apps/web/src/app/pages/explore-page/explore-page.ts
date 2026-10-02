@@ -15,9 +15,11 @@ import { FUEL_TYPES } from '@genialtanken/contracts';
 import type { FuelType, Place, Station } from '@genialtanken/contracts';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
 import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
+import type { Coordinates } from '../../core/geolocation/coordinates';
 import { Viewport } from '../../core/layout/viewport';
 import { PlacesApi } from '../../core/places/places-api';
 import { describePlacesError } from '../../core/places/places-error-message';
+import { shouldOfferAreaSearch } from '../../core/search-center/area-search';
 import type { SearchCenter } from '../../core/search-center/search-center';
 import { SearchCenterStore } from '../../core/search-center/search-center-store';
 import { radiusStepsIncluding } from '../../core/settings/radius-steps';
@@ -107,6 +109,14 @@ export class ExplorePage {
   );
   protected readonly center = this.searchCenter.center;
   protected readonly isLocating = this.searchCenter.isLocating;
+  /** Where the user moved the map to; forgotten whenever the search center changes. */
+  private readonly visibleMapCenter = linkedSignal<SearchCenter, Coordinates | undefined>({
+    source: this.center,
+    computation: () => undefined,
+  });
+  protected readonly isAreaSearchOffered = computed(() =>
+    shouldOfferAreaSearch(this.center(), this.visibleMapCenter(), this.radiusInKilometers())
+  );
   protected readonly isAtOwnPosition = computed(() => this.center().source === 'own-position');
 
   /** Text in the search field: the chosen place, or what the user is typing. */
@@ -221,6 +231,17 @@ export class ExplorePage {
     this.isTypingPlaceQuery.set(false);
     if (this.center().source === 'place') {
       this.searchCenter.useMapArea(this.center());
+    }
+  }
+
+  protected updateVisibleMapCenter(visibleMapCenter: Coordinates): void {
+    this.visibleMapCenter.set(visibleMapCenter);
+  }
+
+  protected searchVisibleArea(): void {
+    const visibleMapCenter = this.visibleMapCenter();
+    if (visibleMapCenter !== undefined) {
+      this.searchCenter.useMapArea(visibleMapCenter);
     }
   }
 
