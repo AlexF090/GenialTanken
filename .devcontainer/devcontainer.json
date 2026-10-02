@@ -1,6 +1,6 @@
 {
   "name": "GenialTanken",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:24-trixie",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:5.2.1-24-trixie@sha256:7a81958053c4e3b5b20fa122f7a422d32dd0eebe87a6726f7b14483585ea60fd",
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "forwardPorts": [4200, 3000, 9323],
   "portsAttributes": {
