@@ -5,7 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { carrefourStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
 import { StationsApi } from './stations-api';
 import type { StationsSearch } from './stations-api';
-import { UnexpectedResponseError } from './unexpected-response-error';
+import { UnexpectedResponseError } from '../http/unexpected-response-error';
 
 const PARIS_SEARCH: StationsSearch = {
   latitude: 48.8566,

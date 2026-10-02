@@ -6,7 +6,7 @@ import type { FuelType, Station } from '@genialtanken/contracts';
 import { firstValueFrom } from 'rxjs';
 import type { Coordinates } from '../geolocation/coordinates';
 import { isNotFoundError } from './stations-error-message';
-import { UnexpectedResponseError } from './unexpected-response-error';
+import { UnexpectedResponseError } from '../http/unexpected-response-error';
 
 export interface StationsSearch extends Coordinates {
   radiusInKilometers: number;

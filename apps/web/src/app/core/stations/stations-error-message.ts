@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { UnexpectedResponseError } from './unexpected-response-error';
+import { UnexpectedResponseError } from '../http/unexpected-response-error';
 
 export const STATION_NOT_FOUND_MESSAGE =
   'Die Tankstelle konnte in unserer Datenbank nicht gefunden werden.';
