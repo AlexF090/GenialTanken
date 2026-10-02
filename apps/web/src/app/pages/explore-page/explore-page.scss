@@ -1,0 +1,131 @@
+@use 'breakpoints';
+
+// Full-height page: the map fills it, the station panel floats over it (phones) or stands next
+// to it (from 48rem). The page has no page header, so it absorbs the top safe area itself.
+:host {
+  height: var(--layout-page-height);
+  overflow: hidden;
+}
+
+.explore-page {
+  position: relative;
+  height: 100%;
+
+  @include breakpoints.medium-and-up {
+    display: grid;
+    grid-template-columns: minmax(20rem, 24rem) minmax(0, 1fr);
+
+    @include breakpoints.expanded {
+      grid-template-columns: 26rem minmax(0, 1fr);
+    }
+  }
+}
+
+.explore-page__map {
+  @include breakpoints.compact {
+    position: absolute;
+    inset: var(--safe-area-top) 0 0;
+  }
+
+  @include breakpoints.medium-and-up {
+    height: 100%;
+  }
+}
+
+.explore-page__panel {
+  @include breakpoints.medium-and-up {
+    min-height: 0;
+    padding-top: var(--safe-area-top);
+    background-color: var(--color-surface);
+  }
+}
+
+.explore-page__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: 0 var(--space-md) var(--space-sm);
+  border-bottom: var(--border-width-hairline) solid var(--color-hairline);
+}
+
+// Phones: the map is the page's heading, the title only names it for assistive technology.
+.explore-page__title {
+  @include breakpoints.compact {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  @include breakpoints.medium-and-up {
+    padding-block-end: var(--space-2xs);
+    font-family: var(--font-family-numerals);
+    font-size: var(--font-size-xl);
+    letter-spacing: -0.01em;
+  }
+}
+
+.explore-page__place-search:empty {
+  display: none;
+}
+
+.explore-page__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+
+.explore-page__locate {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+
+  &[aria-busy='true'] {
+    cursor: progress;
+  }
+}
+
+// Like the fuel badge on a pump: a plate in the text color (petrol in light, pale in dark mode,
+// where the chrome color would vanish on the surface), condensed numerals, links to settings.
+.explore-page__fuel {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--layout-touch-target);
+  min-height: var(--layout-touch-target);
+  padding-inline: var(--space-sm);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-text);
+  color: var(--color-canvas);
+  font-family: var(--font-family-numerals);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-price);
+  line-height: var(--line-height-numerals);
+  text-decoration: none;
+  touch-action: manipulation;
+
+  &:hover {
+    color: var(--color-canvas);
+    text-decoration: underline;
+  }
+}
+
+.explore-page__summary {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.explore-page__empty {
+  margin: var(--space-md);
+}
+
+.explore-page__credit {
+  padding: var(--space-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+}

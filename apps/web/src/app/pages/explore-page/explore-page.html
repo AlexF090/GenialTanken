@@ -1,0 +1,83 @@
+<main class="explore-page">
+  <app-bottom-sheet
+    class="explore-page__panel"
+    label="Tankstellen"
+    [(snapPosition)]="snapPosition"
+    (heightChanged)="updateSheetHeight($event)">
+    <div class="explore-page__header" bottomSheetHeader>
+      <h1 class="explore-page__title" translate="no">GenialTanken</h1>
+
+      <!-- Place search: the place combobox goes into this container (calls SearchCenterStore.usePlace). -->
+      <div class="explore-page__place-search"></div>
+
+      <div class="explore-page__toolbar">
+        <button
+          type="button"
+          class="button button--quiet explore-page__locate"
+          [attr.aria-disabled]="isLocating()"
+          [attr.aria-busy]="isLocating()"
+          (click)="useOwnPosition()">
+          <app-icon name="my-location" />
+          Meinen Standort verwenden
+        </button>
+        <a class="explore-page__fuel" routerLink="/settings"
+          ><span class="visually-hidden">Kraftstoff: </span>{{ fuelLabel() }}</a
+        >
+      </div>
+
+      @if (locationErrorMessage(); as message) {
+        <p class="message message--error" role="alert">{{ message }}</p>
+      }
+
+      <div class="explore-page__toolbar">
+        <app-sort-order-control [(sortOrder)]="sortOrder" />
+        <button type="button" class="button button--quiet" (click)="refresh()">
+          <app-icon name="refresh" />
+          Aktualisieren
+        </button>
+      </div>
+
+      <p class="explore-page__summary" role="status">{{ resultSummary() }}</p>
+
+      @if (stationsErrorMessage(); as message) {
+        <p class="message message--error" role="alert">{{ message }}</p>
+      }
+      <app-loading-state [isLoading]="isLoading()" />
+    </div>
+
+    @if (hasLoaded() && stations().length === 0) {
+      <p class="message explore-page__empty">
+        Keine Tankstellen mit Preis für {{ fuelLabel() }} im Umkreis von
+        {{ radiusInKilometers() }}&nbsp;km gefunden.
+      </p>
+    }
+    <app-station-list
+      [stations]="stations()"
+      [fuelType]="fuelType()"
+      [favoriteStationIds]="favoriteStationIds()"
+      [cheapestStationIds]="cheapestStationIds()"
+      [selectedStationId]="selectedStationId()"
+      [showOnMapAction]="true"
+      (stationSelected)="showOnMap($event)"
+      (favoriteToggled)="toggleFavorite($event)" />
+    <p class="explore-page__credit">
+      <a href="https://www.prix-carburants.gouv.fr/" target="_blank" rel="noopener"
+        >Preisdaten: prix-carburants.gouv.fr<span class="visually-hidden">
+          (öffnet in neuem Tab)</span
+        ></a
+      >
+    </p>
+  </app-bottom-sheet>
+
+  <app-stations-map
+    class="explore-page__map"
+    [stations]="mapStations()"
+    [fuelType]="fuelType()"
+    [center]="center()"
+    [radiusInKilometers]="radiusInKilometers()"
+    [selectedStationId]="selectedStationId()"
+    [cheapestStationIds]="cheapestStationIds()"
+    [colorScheme]="colorScheme()"
+    [viewportPadding]="mapViewportPadding()"
+    (stationSelected)="selectFromMap($event)" />
+</main>

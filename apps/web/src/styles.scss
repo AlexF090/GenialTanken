@@ -111,10 +111,11 @@ select {
   background-color: var(--color-surface);
   color: var(--color-action-text);
   font-weight: var(--font-weight-medium);
-  box-shadow: var(--shadow-floating);
   transform: translateY(calc(-100% - var(--space-md) - var(--safe-area-top)));
 
+  // Only when shown: the floating shadow would otherwise peek into the viewport.
   &:focus-visible {
+    box-shadow: var(--shadow-floating);
     transform: none;
   }
 }
@@ -198,11 +199,4 @@ select {
     background-color: var(--color-error-surface);
     color: var(--color-error);
   }
-}
-
-// The routed page fills the space between the top of the viewport and the navigation bar.
-app-root > router-outlet + * {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
 }

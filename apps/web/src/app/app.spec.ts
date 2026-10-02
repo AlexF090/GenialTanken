@@ -69,16 +69,43 @@ describe('App', () => {
   });
 
   it.each(['/', '/favorites', '/settings', '/stations/fr-75001001', '/unknown'])(
-    'renders exactly one header, main and navigation landmark on %s',
+    'renders exactly one main and navigation landmark on %s',
     async url => {
       const element = await navigateTo(url);
 
-      expect(element.querySelectorAll('header')).toHaveLength(1);
       expect(element.querySelectorAll('main')).toHaveLength(1);
       expect(element.querySelectorAll('nav')).toHaveLength(1);
       context.httpTesting.match(() => true);
     }
   );
+
+  it.each(['/favorites', '/settings', '/stations/fr-75001001', '/unknown'])(
+    'renders exactly one page header on %s',
+    async url => {
+      const element = await navigateTo(url);
+
+      expect(element.querySelectorAll('header')).toHaveLength(1);
+      context.httpTesting.match(() => true);
+    }
+  );
+
+  it('opens the explore page with list and map as start page', async () => {
+    const element = await navigateTo('/');
+
+    expect(textOf(element.querySelector('main h1'))).toBe('GenialTanken');
+    expect(element.querySelector('main app-station-list')).not.toBeNull();
+    expect(element.querySelector('main app-stations-map')).not.toBeNull();
+    expect(document.title).toBe('GenialTanken');
+    context.httpTesting.expectOne(request => request.url === '/api/stations');
+  });
+
+  it('redirects the former map page to the explore page', async () => {
+    const element = await navigateTo('/map');
+
+    expect(TestBed.inject(Router).url).toBe('/');
+    expect(navigationLink(element, 'Erkunden').getAttribute('aria-current')).toBe('page');
+    context.httpTesting.expectOne(request => request.url === '/api/stations');
+  });
 
   it('reaches the settings through the navigation', async () => {
     const element = await navigateTo('/settings');

@@ -1,15 +1,17 @@
 import type { Routes } from '@angular/router';
-import { StationsPage } from './pages/stations-page/stations-page';
 
 const APPLICATION_NAME = 'GenialTanken';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', title: APPLICATION_NAME, component: StationsPage },
   {
-    path: 'map',
-    title: `Karte – ${APPLICATION_NAME}`,
-    loadComponent: () => import('./pages/map-page/map-page').then(module => module.MapPage),
+    path: '',
+    pathMatch: 'full',
+    title: APPLICATION_NAME,
+    loadComponent: () =>
+      import('./pages/explore-page/explore-page').then(module => module.ExplorePage),
   },
+  // The map used to be a page of its own; it is part of the start page now.
+  { path: 'map', redirectTo: '' },
   {
     path: 'favorites',
     title: `Favoriten – ${APPLICATION_NAME}`,
