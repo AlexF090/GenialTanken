@@ -1,0 +1,21 @@
+// Shared type treatments. Usage in a component stylesheet (`src/styles` is an include path):
+//   @use 'typography';
+//   .station-row__price { @include typography.price-numerals(var(--font-size-price-list)); }
+
+// Price board numerals: condensed, tabular and lining so prices line up in a column, with the
+// tenth-of-a-cent digit (`<sup>` in `app-price`) raised to cap height like on a price pylon.
+@mixin price-numerals($font-size: var(--font-size-price-list)) {
+  font-family: var(--font-family-numerals);
+  font-size: $font-size;
+  font-weight: var(--font-weight-price);
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: var(--line-height-numerals);
+  letter-spacing: -0.01em;
+
+  sup {
+    // Keeps the raised digit from stretching the line box
+    line-height: 0;
+    font-size: 0.55em;
+    vertical-align: 0.6em;
+  }
+}

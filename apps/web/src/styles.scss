@@ -1,3 +1,10 @@
+// TODO(fonts): import the latin subsets once @fontsource/barlow and
+// @fontsource/barlow-semi-condensed are installed (blocked by the minimum release age for now):
+//   @use '@fontsource/barlow/latin-400.css';
+//   @use '@fontsource/barlow/latin-500.css';
+//   @use '@fontsource/barlow/latin-600.css';
+//   @use '@fontsource/barlow-semi-condensed/latin-600.css';
+//   @use '@fontsource/barlow-semi-condensed/latin-700.css';
 @use 'styles/tokens';
 @use 'styles/map';
 
@@ -7,6 +14,11 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 html,
 body {
   margin: 0;
@@ -14,13 +26,14 @@ body {
 }
 
 body {
-  font-family: var(--font-family-base);
+  font-family: var(--font-family-ui);
   font-size: var(--font-size-md);
   line-height: var(--line-height-base);
   color: var(--color-text);
-  background-color: var(--color-surface);
+  background-color: var(--color-canvas);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
 }
 
 h1,
@@ -38,13 +51,36 @@ fieldset {
   padding: 0;
 }
 
+h1,
+h2,
+h3,
+h4 {
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  text-wrap: balance;
+}
+
 a {
-  color: var(--color-primary);
+  color: var(--color-action-text);
+  text-underline-offset: 0.15em;
+
+  &:hover {
+    color: var(--color-action-text-hover);
+  }
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
+  color: inherit;
+}
+
+// Explicit colors keep native selects readable in Windows dark mode.
+select {
+  background-color: var(--color-surface);
+  color: var(--color-text);
 }
 
 :focus-visible {
@@ -64,12 +100,33 @@ input {
   border: 0;
 }
 
+// Hidden until focused with the keyboard, then pinned to the top left above the chrome.
+.skip-link {
+  position: fixed;
+  top: calc(var(--safe-area-top) + var(--space-xs));
+  left: calc(var(--safe-area-left) + var(--space-xs));
+  z-index: calc(var(--layer-chrome) + 1);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-action-text);
+  font-weight: var(--font-weight-medium);
+  box-shadow: var(--shadow-floating);
+  transform: translateY(calc(-100% - var(--space-md) - var(--safe-area-top)));
+
+  &:focus-visible {
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
+    scroll-behavior: auto !important;
     transition-duration: 0s !important;
     animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
   }
 }
 
@@ -86,30 +143,55 @@ input {
   padding: var(--space-lg) var(--space-md);
 }
 
+// Primary action: filled teal. `.button--quiet` is the outlined secondary action.
 .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-xs);
+  min-height: var(--layout-touch-target);
   padding: var(--space-xs) var(--space-md);
-  border: none;
-  border-radius: var(--radius-md);
-  background-color: var(--color-primary);
-  box-shadow: var(--shadow-card);
-  color: var(--color-on-primary);
+  border: var(--border-width-thin) solid transparent;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-action);
+  color: var(--color-on-action);
   font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
+  text-decoration: none;
   cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--duration-short) var(--easing-standard);
 
-  &:hover,
-  &:active {
-    background-color: var(--color-primary-strong);
+  &:hover:not(:disabled, [aria-disabled='true']) {
+    background-color: var(--color-action-hover);
+    color: var(--color-on-action);
+  }
+
+  &:disabled,
+  &[aria-disabled='true'] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &--quiet {
+    border-color: var(--color-border-control);
+    background-color: transparent;
+    color: var(--color-action-text);
+
+    &:hover:not(:disabled, [aria-disabled='true']) {
+      border-color: var(--color-action-text-hover);
+      background-color: var(--color-surface);
+      color: var(--color-action-text-hover);
+    }
   }
 }
 
 .message {
   padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-md);
-  background-color: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text);
 
   &--error {
     border-left: var(--border-width-focus) solid var(--color-error);

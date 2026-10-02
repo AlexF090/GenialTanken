@@ -1,21 +1,75 @@
-// Design tokens derived from the legacy GenialTanken palette (#2196f3, #0367b4, #002c76).
-// Text colors are darkened where the legacy values failed WCAG AA contrast on white.
+// Design tokens of the "Preismast" design: quiet petrol chrome around a loud price board.
+// Every color token carries its light and dark value via `light-dark()`, resolved against the
+// `color-scheme` set below. Contrast ratios (WCAG 2.2) are recorded next to the pairs that matter.
+
+// Color scheme: `index.html` and `ColorSchemeController` set `data-color-scheme` on <html>.
+// Without the attribute (script blocked or not yet run) the operating system decides.
 :root {
-  // Colors
-  --color-primary: #0367b4;
-  --color-primary-strong: #002c76;
-  --color-accent: #2196f3;
-  --color-on-primary: #ffffff;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f4f7fb;
-  --color-text: #1a1a1a;
-  --color-text-muted: #595959;
-  --color-border: #1a1a1a;
-  --color-divider: #e0e0e0;
-  --color-error: #b3261e;
-  --color-error-surface: #fdecea;
-  --color-focus-ring: #002c76;
+  color-scheme: light;
+
+  @media (prefers-color-scheme: dark) {
+    color-scheme: dark;
+  }
+
+  &[data-color-scheme='light'] {
+    color-scheme: light;
+  }
+
+  &[data-color-scheme='dark'] {
+    color-scheme: dark;
+  }
+}
+
+:root {
+  // Surfaces
+  --color-canvas: light-dark(#f3f5f4, #0a1f27);
+  --color-surface: light-dark(#ffffff, #10303b);
+
+  // Text: light 11.0 / 12.1 and dark 14.4 / 11.9 on canvas / surface
+  --color-text: light-dark(#0e3b4a, #e8eeec);
+  // Light 8.8 / 9.7 and dark 8.2 / 6.7 on canvas / surface
+  --color-text-secondary: light-dark(#3a4650, #a9b6bc);
+
+  // Navigation rail and bottom navigation: light 12.1, dark 15.6
+  --color-chrome: light-dark(#0e3b4a, #06171d);
+  --color-on-chrome: light-dark(#ffffff, #e8eeec);
+  // Inactive navigation items: light 7.3, dark 8.8
+  --color-on-chrome-secondary: light-dark(#b7cdd3, #a9b6bc);
+
+  // Filled actions: light 5.0, dark 7.2
+  --color-action: light-dark(#1f7a8c, #5bb8c9);
+  --color-action-hover: light-dark(#176a7a, #7ccad8);
+  --color-on-action: light-dark(#ffffff, #06222a);
+  // Links and quiet buttons: light 6.2 / 5.7, dark 7.5 / 9.1 on surface / canvas
+  --color-action-text: light-dark(#176a7a, #7ccad8);
+  --color-action-text-hover: light-dark(#0e3b4a, #b5e3eb);
+
+  // Focus ring (non-text, ≥ 3:1): light 4.5 / 5.0, dark 9.1 / 7.5 on canvas / surface
+  --color-focus-ring: light-dark(#1f7a8c, #7ccad8);
+  // On chrome the teal ring would drop to 2.4:1 in light mode; 6.5 (light), 9.8 (dark)
+  --color-focus-ring-on-chrome: #7ccad8;
+
+  // Reserved for the cheapest price only: 6.6 for text on highlight; the edge separates the
+  // yellow from white surfaces (12.1)
+  --color-highlight: #f2b705;
+  --color-on-highlight: #0e3b4a;
+  --color-highlight-edge: #0e3b4a;
+
+  // Errors: light 5.7 / 6.5, dark 9.5 / 8.2 on error surface / surface
+  --color-error: light-dark(#b3261e, #ffb4ab);
+  --color-error-surface: light-dark(#fdecea, #3b1512);
+
+  // Lines: hairlines separate rows (decorative), control borders mark inputs (≥ 3:1;
+  // light 4.4 / 4.1, dark 4.1 / 5.0 on surface / canvas)
+  --color-hairline: light-dark(#dce3e1, #24474f);
+  --color-border-control: light-dark(#6b7a82, #7d8e96);
+
+  // Map
   --color-own-position: #b3261e;
+
+  // The only shadow color; used by `--shadow-floating`
+  --color-shadow: light-dark(rgb(14 59 74 / 18%), rgb(0 0 0 / 55%));
+  --color-scrim: light-dark(rgb(14 59 74 / 32%), rgb(0 0 0 / 56%));
 
   // Spacing
   --space-3xs: 0.125rem;
@@ -27,54 +81,85 @@
   --space-xl: 2rem;
   --space-2xl: 3rem;
 
-  // Radii
+  // Radii: square-ish like a price pylon; only floating layers get the large radius
   --radius-sm: 0.25rem;
-  --radius-md: 0.625rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
   --radius-pill: 999rem;
   --radius-round: 50%;
 
   // Typography
-  --font-family-base:
-    -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, 'Helvetica Neue', arial, sans-serif;
+  // TODO(fonts): Barlow loads from styles.scss once @fontsource is installed; until then the
+  // system fallbacks render.
+  --font-family-ui: 'Barlow', system-ui, sans-serif;
+  --font-family-numerals: 'Barlow Semi Condensed', 'Barlow', system-ui, sans-serif;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-md: 1rem;
-  --font-size-lg: 1.25rem;
-  --font-size-xl: 1.5rem;
-  --font-size-2xl: 2rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.375rem;
+  --font-size-2xl: 1.75rem;
+  // Prices are the loud part of the design
+  --font-size-price-hero: clamp(3rem, 2.25rem + 3.5vw, 4.5rem);
+  --font-size-price-list: 1.875rem;
+  --font-size-price-tag: 1rem;
   --font-weight-regular: 400;
+  --font-weight-medium: 500;
   --font-weight-bold: 600;
-  --line-height-base: 1.4;
+  --font-weight-price: 700;
+  --line-height-base: 1.45;
+  --line-height-tight: 1.2;
+  --line-height-numerals: 1;
 
   // Borders and focus
+  --border-width-hairline: 1px;
   --border-width-thin: 1px;
   --border-width-focus: 3px;
   --focus-offset: 2px;
 
-  // Shadows
-  --shadow-card: 0 0 8px rgb(0 0 0 / 25%), inset 0 0 2px rgb(0 0 0 / 25%);
-  --shadow-raised: 0 0 20px rgb(0 0 0 / 25%), inset 0 0 5px rgb(0 0 0 / 25%);
-  --shadow-map: 0 5px 15px rgb(0 0 0 / 35%);
+  // The only shadow: sheets, the search field and map markers float above the map
+  --shadow-floating: 0 1px 2px var(--color-shadow), 0 6px 20px var(--color-shadow);
 
   // Icons
   --icon-size-sm: 1.25rem;
-  --icon-size-md: 2rem;
+  --icon-size-md: 1.5rem;
   --icon-size-lg: 2.25rem;
 
   // Layout
+  --layout-touch-target: 2.75rem;
+  --layout-rail-width: 5rem;
   --layout-header-height: 6.25rem;
-  --layout-navigation-height: 5rem;
+  --layout-navigation-height: 4.5rem;
   --layout-content-max-width: 48rem;
   --layout-detail-map-height: 10rem;
   --layout-fuel-badge-width: 3.125rem;
   --layout-fuel-badge-height: 2.125rem;
-  --layout-price-column-width: 5.5rem;
+  --layout-price-column-width: 6.5rem;
   --layout-spinner-size: 1.5rem;
   --layout-map-minimum-height: 20rem;
+  --safe-area-top: env(safe-area-inset-top, 0);
+  --safe-area-right: env(safe-area-inset-right, 0);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0);
+  --safe-area-left: env(safe-area-inset-left, 0);
 
   // Stacking: above Leaflet panes and controls (max. 1000)
   --layer-chrome: 1100;
 
   // Motion
   --duration-short: 150ms;
+  --duration-medium: 250ms;
+  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  // Deprecated aliases for components that are not redesigned yet; do not use in new code.
+  --font-family-base: var(--font-family-ui);
+  --color-primary: var(--color-action-text);
+  --color-primary-strong: var(--color-action-text-hover);
+  --color-on-primary: var(--color-on-action);
+  --color-text-muted: var(--color-text-secondary);
+  --color-border: var(--color-hairline);
+  --color-divider: var(--color-hairline);
+  --color-surface-muted: var(--color-canvas);
+  --shadow-card: 0 0 0 var(--border-width-hairline) var(--color-hairline);
+  --shadow-raised: 0 0 0 var(--border-width-hairline) var(--color-hairline);
+  --shadow-map: var(--shadow-floating);
 }

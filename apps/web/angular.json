@@ -35,6 +35,9 @@
               "node_modules/leaflet.markercluster/dist/MarkerCluster.Default.css",
               "src/styles.scss"
             ],
+            "stylePreprocessorOptions": {
+              "includePaths": ["src/styles"]
+            },
             "allowedCommonJsDependencies": ["leaflet", "leaflet.markercluster"]
           },
           "configurations": {
