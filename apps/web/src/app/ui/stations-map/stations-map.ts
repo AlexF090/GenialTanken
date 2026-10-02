@@ -28,6 +28,8 @@ import {
   StationMarker,
 } from '../map/leaflet-layers';
 import { MAPBOX_ACCESS_TOKEN } from '../map/map-configuration';
+import { revealMarker } from '../map/reveal-marker';
+import type { MarkerReveal } from '../map/reveal-marker';
 
 /** Space in pixels covered by overlays (list panel, bottom sheet) on each side of the map. */
 export interface ViewportPadding {
@@ -110,6 +112,7 @@ export class StationsMap {
     maxClusterRadius: CLUSTER_RADIUS_IN_PIXELS,
   });
   private revealedStationId: string | undefined;
+  private markerReveal: MarkerReveal | undefined;
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -175,6 +178,11 @@ export class StationsMap {
           this.createMarker(station, fuelType, cheapestStationIds, selectedStationId),
         ])
       );
+      // A reveal still in progress targets a replaced marker; reveal the new one instead.
+      if (this.markerReveal?.isPending === true) {
+        this.markerReveal.cancel();
+        this.revealedStationId = undefined;
+      }
       this.markerClusterGroup.clearLayers();
       this.markerClusterGroup.addLayers([...markers.values()]);
       this.markersByStationId.set(markers);
@@ -191,6 +199,7 @@ export class StationsMap {
         marker.setSelected(stationId === selectedStationId);
       }
       if (selectedStationId === undefined) {
+        this.markerReveal?.cancel();
         this.revealedStationId = undefined;
         return;
       }
@@ -206,6 +215,7 @@ export class StationsMap {
     });
 
     destroyRef.onDestroy(() => {
+      this.markerReveal?.cancel();
       const map = this.map();
       if (map !== undefined) {
         destroyMap(map);
@@ -235,8 +245,9 @@ export class StationsMap {
 
   /** Opens the marker's cluster if needed, then pans it out from under the overlays. */
   private reveal(map: L.Map, marker: StationMarker): void {
+    this.markerReveal?.cancel();
     const padding = toPaddingOptions(this.viewportPadding());
-    this.markerClusterGroup.zoomToShowLayer(marker, () => {
+    this.markerReveal = revealMarker(map, this.markerClusterGroup, marker, () => {
       map.panInside(marker.getLatLng(), {
         ...padding,
         animate: !this.prefersReducedMotion(),

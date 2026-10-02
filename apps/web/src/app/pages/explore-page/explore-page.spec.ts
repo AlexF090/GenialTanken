@@ -40,15 +40,6 @@ const childComponent = <T>(
   type: new (...args: never[]) => T
 ): T => fixture.debugElement.query(By.directive(type)).componentInstance as T;
 
-/**
- * jsdom has no layout. With a size Leaflet renders the price tags in view, so revealing a
- * selected station does not wait for a pan animation that never ends in jsdom.
- */
-const giveTheMapASize = (): void => {
-  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(800);
-  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(600);
-};
-
 describe('ExplorePage', () => {
   let context: PageTestContext;
 
@@ -63,7 +54,6 @@ describe('ExplorePage', () => {
   };
 
   beforeEach(() => {
-    giveTheMapASize();
     context = configurePageTest();
   });
 
@@ -370,7 +360,6 @@ describe('ExplorePage on a phone', () => {
   });
 
   beforeEach(() => {
-    giveTheMapASize();
     TestBed.overrideProvider(MATCH_MEDIA, {
       useValue: new FakeMatchMedia([COMPACT_MEDIA_QUERY]).matchMedia,
     });

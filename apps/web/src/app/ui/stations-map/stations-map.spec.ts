@@ -12,14 +12,17 @@ import { StationsMap } from './stations-map';
 
 interface RenderOptions {
   center?: SearchCenter;
+  hasSize?: boolean;
   selectedStationId?: string;
   cheapestStationIds?: ReadonlySet<string>;
 }
 
 const render = async (stations: readonly Station[], options: RenderOptions = {}) => {
   // jsdom has no layout; Leaflet needs a map size to decide which markers are visible.
-  vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(800);
-  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(600);
+  if (options.hasSize ?? true) {
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(800);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(600);
+  }
   const fixture = TestBed.createComponent(StationsMap);
   fixture.componentRef.setInput('stations', stations);
   fixture.componentRef.setInput('fuelType', 'e5');
@@ -121,6 +124,27 @@ describe('StationsMap', () => {
     await fixture.whenStable();
 
     expect(pressedNames()).toEqual(['Carrefour Market, 1,839 €']);
+  });
+
+  it('keeps working when the stations change while a selected station is being revealed', async () => {
+    // Without a size no price tag is in view, so revealing the selection has to move the map.
+    const { fixture, element } = await render([totalStation, carrefourStation], {
+      hasSize: false,
+    });
+
+    fixture.componentRef.setInput('selectedStationId', carrefourStation.id);
+    await fixture.whenStable();
+    fixture.componentRef.setInput('stations', [unbrandedStation]);
+    await fixture.whenStable();
+    fixture.componentRef.setInput('center', {
+      latitude: 48.86,
+      longitude: 2.34,
+      label: 'Dein Standort',
+      source: 'own-position',
+    });
+    await fixture.whenStable();
+
+    expect(textOf(element.querySelector('.leaflet-tooltip'))).toBe('Du bist hier!');
   });
 
   it('labels the search center', async () => {
