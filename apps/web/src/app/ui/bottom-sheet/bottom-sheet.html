@@ -1,0 +1,30 @@
+<section
+  #sheet
+  class="bottom-sheet"
+  [class.bottom-sheet--animated]="isMeasured() && !isDragging()"
+  [class.bottom-sheet--dragging]="isDragging()"
+  [style.--bottom-sheet-offset.px]="offset()"
+  [style.--bottom-sheet-settled-offset.px]="settledOffset()"
+  [attr.aria-label]="label()"
+  (focusin)="revealFocusedContent($event)">
+  <button
+    type="button"
+    class="bottom-sheet__handle"
+    [attr.aria-expanded]="isExpanded()"
+    [attr.aria-controls]="contentIdentifier"
+    [attr.aria-label]="handleLabel()"
+    (click)="activateHandle()"
+    (keydown)="handleKeydown($event)"
+    (pointerdown)="startDrag($event)"
+    (pointermove)="drag($event)"
+    (pointerup)="endDrag($event)"
+    (pointercancel)="cancelDrag()">
+    <span class="bottom-sheet__grip" aria-hidden="true"></span>
+  </button>
+  <div #header class="bottom-sheet__header">
+    <ng-content select="[bottomSheetHeader]" />
+  </div>
+  <div #content class="bottom-sheet__content" [id]="contentIdentifier">
+    <ng-content />
+  </div>
+</section>
