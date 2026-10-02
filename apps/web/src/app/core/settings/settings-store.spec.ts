@@ -36,8 +36,73 @@ describe('SettingsStore', () => {
     expect(store.fuelType()).toBe('e10');
     expect(store.radiusInKilometers()).toBe(20);
     expect(storage.getItem('genialtanken.settings')).toBe(
-      '{"fuelType":"e10","radiusInKilometers":20}'
+      '{"fuelType":"e10","radiusInKilometers":20,"colorScheme":"system"}'
     );
+  });
+
+  it('follows the system color scheme when nothing is stored', () => {
+    const store = createStore(new FakeStorage());
+
+    expect(store.colorScheme()).toBe('system');
+  });
+
+  it('restores and persists the color scheme without touching the other settings', () => {
+    const storage = new FakeStorage({
+      'genialtanken.settings': '{"fuelType":"diesel","radiusInKilometers":12,"colorScheme":"dark"}',
+    });
+    const store = createStore(storage);
+
+    expect(store.colorScheme()).toBe('dark');
+
+    store.update({ colorScheme: 'light' });
+
+    expect(store.settings()).toEqual({
+      fuelType: 'diesel',
+      radiusInKilometers: 12,
+      colorScheme: 'light',
+    });
+    expect(storage.getItem('genialtanken.settings')).toBe(
+      '{"fuelType":"diesel","radiusInKilometers":12,"colorScheme":"light"}'
+    );
+  });
+
+  it('keeps settings stored before the color scheme existed without a warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const store = createStore(
+      new FakeStorage({ 'genialtanken.settings': '{"fuelType":"diesel","radiusInKilometers":12}' })
+    );
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(store.fuelType()).toBe('diesel');
+    expect(store.colorScheme()).toBe('system');
+  });
+
+  it('ignores an unknown stored color scheme and keeps the other settings', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const store = createStore(
+      new FakeStorage({
+        'genialtanken.settings':
+          '{"fuelType":"diesel","radiusInKilometers":12,"colorScheme":"sepia"}',
+      })
+    );
+
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      'Stored color scheme "sepia" is not supported; using the default "system" instead.'
+    );
+    expect(store.fuelType()).toBe('diesel');
+    expect(store.colorScheme()).toBe('system');
+  });
+
+  it('does not write to the storage when nothing changes', () => {
+    const storage = new FakeStorage();
+    const setItem = vi.spyOn(storage, 'setItem');
+    const store = createStore(storage);
+
+    store.update({ fuelType: 'e5', radiusInKilometers: 5, colorScheme: 'system' });
+
+    expect(setItem).not.toHaveBeenCalled();
   });
 
   it('falls back to the defaults for corrupt stored settings and says why', () => {

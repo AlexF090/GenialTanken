@@ -58,7 +58,7 @@ describe('SettingsPage', () => {
     expect(TestBed.inject(SettingsStore).fuelType()).toBe('diesel');
     expect(textOf(element.querySelector('header .page-header__fuel'))).toBe('Kraftstoff: Diesel');
     expect(context.storage.getItem('genialtanken.settings')).toBe(
-      '{"fuelType":"diesel","radiusInKilometers":5}'
+      '{"fuelType":"diesel","radiusInKilometers":5,"colorScheme":"system"}'
     );
   });
 
@@ -74,7 +74,7 @@ describe('SettingsPage', () => {
     expect(textOf(element.querySelector('label[for="radius"]'))).toBe('Radius: 15 km');
     expect(TestBed.inject(SettingsStore).radiusInKilometers()).toBe(15);
     expect(context.storage.getItem('genialtanken.settings')).toBe(
-      '{"fuelType":"e5","radiusInKilometers":15}'
+      '{"fuelType":"e5","radiusInKilometers":15,"colorScheme":"system"}'
     );
   });
 

@@ -1,5 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import {
+  colorSchemePreferenceSchema,
+  DEFAULT_COLOR_SCHEME_PREFERENCE,
   DEFAULT_FUEL_TYPE,
   DEFAULT_RADIUS_IN_KILOMETERS,
   fuelTypeSchema,
@@ -7,12 +9,13 @@ import {
   MINIMUM_RADIUS_IN_KILOMETERS,
   stationsQuerySchema,
 } from '@genialtanken/contracts';
-import type { FuelType } from '@genialtanken/contracts';
+import type { ColorSchemePreference, FuelType } from '@genialtanken/contracts';
 import { BROWSER_STORAGE } from '../browser-storage';
 
 export interface Settings {
   fuelType: FuelType;
   radiusInKilometers: number;
+  colorScheme: ColorSchemePreference;
 }
 
 const SETTINGS_STORAGE_KEY = 'genialtanken.settings';
@@ -20,6 +23,7 @@ const SETTINGS_STORAGE_KEY = 'genialtanken.settings';
 const DEFAULT_SETTINGS: Settings = {
   fuelType: DEFAULT_FUEL_TYPE,
   radiusInKilometers: DEFAULT_RADIUS_IN_KILOMETERS,
+  colorScheme: DEFAULT_COLOR_SCHEME_PREFERENCE,
 };
 
 const clampRadius = (radiusInKilometers: number): number =>
@@ -47,6 +51,16 @@ const storedSettingsSchema = stationsQuerySchema.pick({ radiusInKilometers: true
     );
     return DEFAULT_RADIUS_IN_KILOMETERS;
   }),
+  // `.catch` also covers a missing value, so settings stored before this field existed keep
+  // their fuel type and radius.
+  colorScheme: colorSchemePreferenceSchema.catch(({ value }) => {
+    if (value !== undefined) {
+      console.warn(
+        `Stored color scheme ${JSON.stringify(value)} is not supported; using the default "${DEFAULT_COLOR_SCHEME_PREFERENCE}" instead.`
+      );
+    }
+    return DEFAULT_COLOR_SCHEME_PREFERENCE;
+  }),
 });
 
 const parseStoredSettings = (serializedSettings: string | null): Settings => {
@@ -71,7 +85,7 @@ const parseStoredSettings = (serializedSettings: string | null): Settings => {
   return result.data;
 };
 
-/** Fuel type and search radius chosen by the user, persisted across reloads. */
+/** Fuel type, search radius and color scheme chosen by the user, persisted across reloads. */
 @Injectable({ providedIn: 'root' })
 export class SettingsStore {
   private readonly storage = inject(BROWSER_STORAGE);
@@ -82,16 +96,22 @@ export class SettingsStore {
   readonly settings = this.state.asReadonly();
   readonly fuelType = computed(() => this.state().fuelType);
   readonly radiusInKilometers = computed(() => this.state().radiusInKilometers);
+  readonly colorScheme = computed(() => this.state().colorScheme);
 
-  update(settings: Settings): void {
-    const nextSettings: Settings = {
-      fuelType: settings.fuelType,
-      radiusInKilometers: clampRadius(settings.radiusInKilometers),
-    };
+  /** Applies the given fields and keeps the others, so each settings control stays independent. */
+  update(changes: Partial<Settings>): void {
     const currentSettings = this.state();
+    const nextSettings: Settings = {
+      fuelType: changes.fuelType ?? currentSettings.fuelType,
+      radiusInKilometers: clampRadius(
+        changes.radiusInKilometers ?? currentSettings.radiusInKilometers
+      ),
+      colorScheme: changes.colorScheme ?? currentSettings.colorScheme,
+    };
     if (
       nextSettings.fuelType === currentSettings.fuelType &&
-      nextSettings.radiusInKilometers === currentSettings.radiusInKilometers
+      nextSettings.radiusInKilometers === currentSettings.radiusInKilometers &&
+      nextSettings.colorScheme === currentSettings.colorScheme
     ) {
       return;
     }

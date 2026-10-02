@@ -4,9 +4,30 @@
     <meta charset="utf-8" />
     <title>GenialTanken</title>
     <base href="/" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Aktuelle Spritpreise der Tankstellen in deiner Nähe." />
-    <meta name="theme-color" content="#0367b4" />
+    <!-- Chrome colors from src/styles/tokens.scss; ColorSchemeController keeps them current. -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0e3b4a" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#06171d" />
+    <script>
+      // Applies the stored color scheme before the first paint; ColorSchemeController takes
+      // over after bootstrap. Without this script the operating system decides (see tokens.scss).
+      (function () {
+        try {
+          var settings = JSON.parse(localStorage.getItem('genialtanken.settings') || '{}');
+          var preference = settings && settings.colorScheme;
+          var scheme =
+            preference === 'light' || preference === 'dark'
+              ? preference
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.setAttribute('data-color-scheme', scheme);
+        } catch (error) {
+          // Storage blocked or corrupt: leave the choice to the operating system.
+        }
+      })();
+    </script>
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="apple-touch-icon" href="android-chrome-192x192.png" />
     <link rel="manifest" href="manifest.webmanifest" />
