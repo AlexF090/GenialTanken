@@ -28,9 +28,13 @@
   text-wrap: balance;
 }
 
-.station-detail__subtitle,
 .station-detail__address {
   color: var(--color-text-secondary);
+}
+
+.station-detail__subtitle {
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
 }
 
 .station-detail__address {
