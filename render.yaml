@@ -23,9 +23,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Requests pass the Cloudflare Pages Function and Render's proxy before reaching the API
-      - key: TRUSTED_PROXY_HOPS
-        value: '2'
+      # Same value as API_PROXY_SECRET of the Cloudflare Pages project; lets the Pages Function
+      # pass the client address on for per-client rate limiting (at least 32 characters)
+      - key: PROXY_SHARED_SECRET
+        sync: false
       # Optional: enables the German provider (tankentanken). France works without a key.
       - key: TANKENTANKEN_API_KEY
         sync: false

@@ -4,13 +4,15 @@ import { ApplicationConfiguration } from './configuration/application-configurat
 import { createOpenApiDocument } from './openapi/create-openapi-document.js';
 
 export const API_PREFIX = 'api';
+const TRUSTED_PROXY_HOPS = 1;
 
 /** HTTP setup shared by `main.ts` and the end-to-end tests. */
 export const configureApplication = (application: NestExpressApplication): void => {
   const configuration = application.get(ApplicationConfiguration);
 
-  // The rate limit needs the client IP behind Render (and the Cloudflare Pages Function in production)
-  application.set('trust proxy', configuration.trustedProxyHops);
+  // Only Render's own proxy is trusted; anyone can reach the Render URL directly and forge more
+  // X-Forwarded-For entries. The Pages Function names the client via `ClientAddressThrottlerGuard`.
+  application.set('trust proxy', TRUSTED_PROXY_HOPS);
   application.setGlobalPrefix(API_PREFIX, { exclude: ['health'] });
   application.enableCors({ origin: configuration.webOrigins });
   SwaggerModule.setup(`${API_PREFIX}/docs`, application, () => createOpenApiDocument(application));

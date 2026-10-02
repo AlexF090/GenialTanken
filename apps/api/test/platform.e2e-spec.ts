@@ -127,28 +127,78 @@ describe('Rate limit', () => {
     await api.get('/health').expect(200);
   });
 
-  it('limits each client separately behind the Cloudflare and Render proxies', async () => {
-    const api = await startApplication({
-      RATE_LIMIT_REQUESTS_PER_MINUTE: '1',
-      TRUSTED_PROXY_HOPS: '2',
-    });
+  it('trusts only the Render proxy for X-Forwarded-For', async () => {
+    const api = await startApplication({ RATE_LIMIT_REQUESTS_PER_MINUTE: '1' });
     const query = { latitude: '51.3', longitude: '9.4' };
-    const forwardedFor = (clientAddress: string) => `${clientAddress}, 172.68.10.1`;
 
     await api
       .get('/api/stations')
       .query(query)
-      .set('X-Forwarded-For', forwardedFor('198.51.100.7'))
+      .set('X-Forwarded-For', '198.51.100.7, 172.68.10.1')
       .expect(200);
     await api
       .get('/api/stations')
       .query(query)
-      .set('X-Forwarded-For', forwardedFor('203.0.113.9'))
-      .expect(200);
-    await api
-      .get('/api/stations')
-      .query(query)
-      .set('X-Forwarded-For', forwardedFor('198.51.100.7'))
+      .set('X-Forwarded-For', '203.0.113.9, 172.68.10.1')
       .expect(429);
+  });
+});
+
+describe('Rate limit behind the Cloudflare Pages Function', () => {
+  const PROXY_SHARED_SECRET = 'a-proxy-shared-secret-of-at-least-32-characters';
+  const query = { latitude: '51.3', longitude: '9.4' };
+
+  const startBehindPagesFunction = (overrides: EnvironmentOverrides = {}) =>
+    startApplication({ RATE_LIMIT_REQUESTS_PER_MINUTE: '1', PROXY_SHARED_SECRET, ...overrides });
+
+  const requestFrom = (
+    api: Awaited<ReturnType<typeof startApplication>>,
+    clientAddress: string,
+    secret?: string
+  ) => {
+    const pending = api
+      .get('/api/stations')
+      .query(query)
+      .set('X-GenialTanken-Client-Address', clientAddress);
+    return secret === undefined ? pending : pending.set('X-GenialTanken-Proxy-Secret', secret);
+  };
+
+  it('limits each client separately when the Pages Function sends the shared secret', async () => {
+    const api = await startBehindPagesFunction();
+
+    await requestFrom(api, '198.51.100.7', PROXY_SHARED_SECRET).expect(200);
+    await requestFrom(api, '2001:db8::1', PROXY_SHARED_SECRET).expect(200);
+    await requestFrom(api, '198.51.100.7', PROXY_SHARED_SECRET).expect(429);
+  });
+
+  it('ignores the client address without the shared secret', async () => {
+    const api = await startBehindPagesFunction();
+
+    await requestFrom(api, '198.51.100.7').expect(200);
+    await requestFrom(api, '203.0.113.9').expect(429);
+  });
+
+  it.each([
+    ['a wrong secret', 'a-wrong-secret-of-at-least-thirty-two-characters'],
+    ['a prefix of the secret', PROXY_SHARED_SECRET.slice(0, 10)],
+  ])('ignores the client address with %s', async (_description, secret) => {
+    const api = await startBehindPagesFunction();
+
+    await requestFrom(api, '198.51.100.7', secret).expect(200);
+    await requestFrom(api, '203.0.113.9', secret).expect(429);
+  });
+
+  it('ignores the client address when no shared secret is configured', async () => {
+    const api = await startBehindPagesFunction({ PROXY_SHARED_SECRET: undefined });
+
+    await requestFrom(api, '198.51.100.7', PROXY_SHARED_SECRET).expect(200);
+    await requestFrom(api, '203.0.113.9', PROXY_SHARED_SECRET).expect(429);
+  });
+
+  it('falls back to the connecting address when the client address is not an IP', async () => {
+    const api = await startBehindPagesFunction();
+
+    await requestFrom(api, 'not-an-address', PROXY_SHARED_SECRET).expect(200);
+    await requestFrom(api, 'another-made-up-address', PROXY_SHARED_SECRET).expect(429);
   });
 });

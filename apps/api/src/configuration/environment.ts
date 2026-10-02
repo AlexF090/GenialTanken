@@ -1,6 +1,15 @@
 import { z } from 'zod';
 
 const positiveIntegerSchema = z.coerce.number().int().positive();
+const MINIMUM_PROXY_SHARED_SECRET_LENGTH = 32;
+
+/** Treats a blank value like an unset one, as hosting dashboards often store empty strings. */
+const optionalTrimmedString = () =>
+  z
+    .string()
+    .trim()
+    .optional()
+    .transform(value => (value === '' ? undefined : value));
 
 /** Environment variables of the API, validated once at startup. */
 export const environmentSchema = z.object({
@@ -9,11 +18,7 @@ export const environmentSchema = z.object({
     .default('https://data.economie.gouv.fr')
     .transform(url => url.replace(/\/+$/, '')),
   /** Enables the German provider; without it only French stations are served. */
-  TANKENTANKEN_API_KEY: z
-    .string()
-    .trim()
-    .optional()
-    .transform(apiKey => (apiKey === '' ? undefined : apiKey)),
+  TANKENTANKEN_API_KEY: optionalTrimmedString(),
   TANKENTANKEN_BASE_URL: z
     .url()
     .default('https://api.tankentanken.de')
@@ -32,8 +37,19 @@ export const environmentSchema = z.object({
   UPSTREAM_TIMEOUT_IN_MILLISECONDS: positiveIntegerSchema.default(8000),
   CACHE_TIME_TO_LIVE_IN_SECONDS: positiveIntegerSchema.default(300),
   RATE_LIMIT_REQUESTS_PER_MINUTE: positiveIntegerSchema.default(60),
-  /** Reverse proxies in front of the API: 1 = Render only, 2 = Cloudflare Pages Function + Render. */
-  TRUSTED_PROXY_HOPS: positiveIntegerSchema.default(1),
+  /**
+   * Shared with the Cloudflare Pages Function; only requests carrying it may name the client
+   * address for the rate limit. Without it every request is limited by its connecting address.
+   */
+  PROXY_SHARED_SECRET: optionalTrimmedString().pipe(
+    z
+      .string()
+      .min(
+        MINIMUM_PROXY_SHARED_SECRET_LENGTH,
+        `must have at least ${String(MINIMUM_PROXY_SHARED_SECRET_LENGTH)} characters`
+      )
+      .optional()
+  ),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

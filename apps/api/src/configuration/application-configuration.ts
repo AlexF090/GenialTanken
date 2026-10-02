@@ -40,7 +40,8 @@ export class ApplicationConfiguration {
     return this.configService.get('RATE_LIMIT_REQUESTS_PER_MINUTE', { infer: true });
   }
 
-  get trustedProxyHops(): number {
-    return this.configService.get('TRUSTED_PROXY_HOPS', { infer: true });
+  /** `undefined` when the client address header of the Cloudflare Pages Function is ignored. */
+  get proxySharedSecret(): string | undefined {
+    return this.configService.get('PROXY_SHARED_SECRET', { infer: true });
   }
 }
