@@ -84,10 +84,21 @@
     --price-tag-edge: var(--color-hairline);
   }
 
+  // Tinted from cheap (green) to dear (red) within the prices shown
+  @each $level in low, medium, high {
+    &--#{$level} {
+      --price-tag-background: var(--color-price-#{$level});
+      --price-tag-edge: var(--color-price-#{$level}-edge);
+    }
+  }
+
+  // The cheapest stands out: solid green and a little larger than the others.
   &--cheapest {
     --price-tag-background: var(--color-highlight);
     --price-tag-foreground: var(--color-on-highlight);
     --price-tag-edge: var(--color-highlight-edge);
+
+    transform: scale(1.1);
   }
 
   // Tinted like a selected pin in Apple Maps; the surface edge keeps it apart from dark tiles.
@@ -106,6 +117,12 @@
 
   .price-tag-marker:hover > & {
     --price-tag-edge: var(--color-border-control);
+  }
+
+  @each $level in low, medium, high {
+    .price-tag-marker:hover > &--#{$level} {
+      --price-tag-edge: var(--color-price-#{$level}-edge);
+    }
   }
 
   .price-tag-marker:hover > &--cheapest {
@@ -175,6 +192,13 @@
 
 .price-cluster__lowest-price {
   display: grid;
+
+  @each $level in low, medium, high {
+    .price-cluster--#{$level} & {
+      background-color: var(--color-price-#{$level});
+    }
+  }
+
   grid-template-columns: auto auto;
   align-items: baseline;
   align-content: center;

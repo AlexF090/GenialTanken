@@ -56,6 +56,16 @@
   --color-on-highlight: light-dark(#ffffff, #000000);
   --color-highlight-edge: light-dark(#1e7d36, #30d158);
 
+  // Price levels on the map, cheap to dear: a tint with a colored edge. Text on the tints: light
+  // 14.4 / 14.7 / 13.3, dark 13.5 / 13.4 / 15.5. Edges against the surface: light 5.2 / 4.3 / 6.2,
+  // dark 8.4 / 9.5 / 6.0. Color only repeats what the price says.
+  --color-price-low: light-dark(#d9f2df, #12351d);
+  --color-price-low-edge: light-dark(#1e7d36, #30d158);
+  --color-price-medium: light-dark(#fdedc8, #3d2c08);
+  --color-price-medium-edge: light-dark(#c25e00, #ffb340);
+  --color-price-high: light-dark(#fddcd8, #421616);
+  --color-price-high-edge: light-dark(#c4001a, #ff6961);
+
   // Errors: light 5.3 / 6.2, dark 5.8 / 6.0 on error surface / surface
   --color-error: light-dark(#c4001a, #ff6961);
   --color-error-surface: light-dark(#fde8ea, #3a1416);

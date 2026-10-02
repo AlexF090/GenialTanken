@@ -16,6 +16,8 @@ import type { FuelType, Station } from '@genialtanken/contracts';
 import { injectMediaQueryMatches } from '../../core/layout/media-query';
 import type { Coordinates } from '../../core/geolocation/coordinates';
 import type { SearchCenter } from '../../core/search-center/search-center';
+import { priceLevelOf, priceRangeOf } from '../../core/stations/price-level';
+import type { PriceRange } from '../../core/stations/price-level';
 import { priceInEuro, stationTitle } from '../../core/stations/station-display';
 import type { ResolvedColorScheme } from '../../core/theme/color-scheme-controller';
 import {
@@ -38,6 +40,14 @@ export interface ViewportPadding {
   right: number;
   bottom: number;
   left: number;
+}
+
+/** What every price tag of one rendering shares. */
+interface MarkerContext {
+  fuelType: FuelType;
+  priceRange: PriceRange | undefined;
+  cheapestStationIds: ReadonlySet<string>;
+  selectedStationId: string | undefined;
 }
 
 const NO_VIEWPORT_PADDING: ViewportPadding = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -267,10 +277,17 @@ export class StationsMap {
       const fuelType = this.fuelType();
       const cheapestStationIds = this.cheapestStationIds();
       const selectedStationId = untracked(() => this.selectedStationId());
+      const stations = this.stations();
+      const priceRange = priceRangeOf(stations.map(station => priceInEuro(station, fuelType)));
       const markers = new Map(
-        this.stations().map(station => [
+        stations.map(station => [
           station.id,
-          this.createMarker(station, fuelType, cheapestStationIds, selectedStationId),
+          this.createMarker(station, {
+            fuelType,
+            priceRange,
+            cheapestStationIds,
+            selectedStationId,
+          }),
         ])
       );
       // A reveal still in progress targets a replaced marker; reveal the new one instead.
@@ -320,19 +337,19 @@ export class StationsMap {
     });
   }
 
-  private createMarker(
-    station: Station,
-    fuelType: FuelType,
-    cheapestStationIds: ReadonlySet<string>,
-    selectedStationId: string | undefined
-  ): StationMarker {
+  private createMarker(station: Station, context: MarkerContext): StationMarker {
+    const price = priceInEuro(station, context.fuelType);
     const marker = new StationMarker({
       stationId: station.id,
       coordinates: station.address,
       title: stationTitle(station),
-      priceInEuro: priceInEuro(station, fuelType),
-      isCheapest: cheapestStationIds.has(station.id),
-      isSelected: station.id === selectedStationId,
+      priceInEuro: price,
+      priceLevel:
+        price === null || context.priceRange === undefined
+          ? undefined
+          : priceLevelOf(price, context.priceRange),
+      isCheapest: context.cheapestStationIds.has(station.id),
+      isSelected: station.id === context.selectedStationId,
     });
     marker.on('click', () => {
       // A selection does not change when its price tag is clicked again, so center it here.

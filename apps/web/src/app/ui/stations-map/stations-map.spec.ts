@@ -4,6 +4,7 @@ import { DEFAULT_SEARCH_CENTER } from '../../core/search-center/search-center';
 import type { Coordinates } from '../../core/geolocation/coordinates';
 import type { SearchCenter } from '../../core/search-center/search-center';
 import {
+  aralStation,
   carrefourStation,
   totalStation,
   unbrandedStation,
@@ -86,6 +87,23 @@ describe('StationsMap', () => {
       'Carrefour Market, 1,839 €',
       'TotalEnergies, 1,859 €',
     ]);
+  });
+
+  it('tints every price tag from cheap to dear within the prices shown', async () => {
+    const { element } = await render([
+      totalStation,
+      carrefourStation,
+      unbrandedStation,
+      aralStation,
+    ]);
+    const levelOf = (name: string): string | undefined =>
+      /price-tag--(low|medium|high)/.exec(
+        markerButton(element, name).querySelector('.price-tag')?.className ?? ''
+      )?.[1];
+
+    expect(levelOf('40 Avenue de Flandre, 1,799 €')).toBe('low');
+    expect(levelOf('Carrefour Market, 1,839 €')).toBe('medium');
+    expect(levelOf('TotalEnergies, 1,859 €')).toBe('high');
   });
 
   it('replaces the price tags when the stations change', async () => {

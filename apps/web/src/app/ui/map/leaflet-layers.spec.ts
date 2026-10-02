@@ -79,6 +79,14 @@ describe('createPriceTagIcon', () => {
     expect(cheapestCaptionOf(priceTag({ isCheapest: false }))).toBeUndefined();
   });
 
+  it('tints the tag by its price level, and not at all without a level', () => {
+    const tagClasses = (options: Partial<PriceTagIconOptions>): string =>
+      priceTag(options).querySelector('.price-tag')?.className ?? '';
+
+    expect(tagClasses({ priceLevel: 'medium' })).toContain('price-tag--medium');
+    expect(tagClasses({})).not.toMatch(/price-tag--(low|medium|high)/);
+  });
+
   it('shows a dash for a station without a price of the selected fuel', () => {
     const element = priceTag({ priceInEuro: null });
 
@@ -108,6 +116,21 @@ describe('createClusterIcon', () => {
 
     expect(accessibleTextOf(element)).toBe('3 Tankstellen, ab 1,799 €');
     expect(textOf(element.querySelector('[aria-hidden="true"]'))).toBe('3');
+  });
+
+  it('is tinted like the tag of its lowest price', () => {
+    const markers = [
+      stationMarker({ priceInEuro: 1.859, priceLevel: 'high' }),
+      stationMarker({ priceInEuro: 1.799, priceLevel: 'low' }),
+    ];
+
+    const element = renderIcon(
+      createClusterIcon({ getChildCount: () => 2, getAllChildMarkers: () => markers })
+    );
+
+    const clusterClasses = element.querySelector('.price-cluster')?.className ?? '';
+    expect(clusterClasses).toContain('price-cluster--low');
+    expect(clusterClasses).not.toContain('price-cluster--high');
   });
 
   it('marks a cluster containing the cheapest station with a visible caption', () => {

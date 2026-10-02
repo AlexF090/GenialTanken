@@ -4,6 +4,7 @@ import 'leaflet.markercluster';
 import { formatPrice, formatPriceParts } from '../../core/formatting/number-format';
 import type { Coordinates } from '../../core/geolocation/coordinates';
 import type { SearchCenter } from '../../core/search-center/search-center';
+import type { PriceLevel } from '../../core/stations/price-level';
 import type { ResolvedColorScheme } from '../../core/theme/color-scheme-controller';
 
 const MAPBOX_STYLES: Readonly<Record<ResolvedColorScheme, string>> = {
@@ -93,6 +94,8 @@ export interface PriceTagIconOptions {
   /** Usually the station title; price and highlight are appended. */
   accessibleName: string;
   priceInEuro: number | null;
+  /** Tints the tag from cheap to dear; missing without a price. */
+  priceLevel?: PriceLevel;
   isCheapest: boolean;
   isSelected: boolean;
 }
@@ -115,6 +118,9 @@ export const createPriceTagIcon = (options: PriceTagIconOptions): L.DivIcon => {
   tag.classList.toggle('price-tag--cheapest', options.isCheapest);
   tag.classList.toggle('price-tag--selected', options.isSelected);
   tag.classList.toggle('price-tag--without-price', options.priceInEuro === null);
+  if (options.priceLevel !== undefined) {
+    tag.classList.add(`price-tag--${options.priceLevel}`);
+  }
   tag.append(
     createAccessibleName(priceTagAccessibleName(options)),
     createPriceDigits('price-tag__price', options.priceInEuro)
@@ -133,6 +139,7 @@ export interface StationMarkerOptions {
   coordinates: Coordinates;
   title: string;
   priceInEuro: number | null;
+  priceLevel?: PriceLevel;
   isCheapest: boolean;
   isSelected: boolean;
 }
@@ -144,6 +151,7 @@ export interface StationMarkerOptions {
 export class StationMarker extends L.Marker {
   readonly stationId: string;
   readonly stationPriceInEuro: number | null;
+  readonly stationPriceLevel: PriceLevel | undefined;
   readonly isCheapestStation: boolean;
   private readonly stationTitle: string;
   private isSelectedStation: boolean;
@@ -156,6 +164,7 @@ export class StationMarker extends L.Marker {
     this.stationId = options.stationId;
     this.stationTitle = options.title;
     this.stationPriceInEuro = options.priceInEuro;
+    this.stationPriceLevel = options.priceLevel;
     this.isCheapestStation = options.isCheapest;
     this.isSelectedStation = options.isSelected;
     this.applySelection();
@@ -181,6 +190,7 @@ export class StationMarker extends L.Marker {
       createPriceTagIcon({
         accessibleName: this.stationTitle,
         priceInEuro: this.stationPriceInEuro,
+        priceLevel: this.stationPriceLevel,
         isCheapest: this.isCheapestStation,
         isSelected: this.isSelectedStation,
       })
@@ -226,9 +236,16 @@ export const createClusterIcon = (cluster: StationCluster): L.DivIcon => {
       : `${String(stationCount)} Tankstellen, ab ${formatPrice(minimumPrice)}`;
 
   const containsCheapest = stations.some(station => station.isCheapestStation);
+  // Tinted like the tag of its lowest price, so a cheap area is visible before zooming in.
+  const lowestPriceLevel = stations.find(
+    station => station.stationPriceInEuro === minimumPrice
+  )?.stationPriceLevel;
 
   const board = createElement('div', 'price-cluster');
   board.classList.toggle('price-cluster--cheapest', containsCheapest);
+  if (lowestPriceLevel !== undefined) {
+    board.classList.add(`price-cluster--${lowestPriceLevel}`);
+  }
   const count = createElement('span', 'price-cluster__count', String(stationCount));
   count.setAttribute('aria-hidden', 'true');
   const lowestPrice = createElement('span', 'price-cluster__lowest-price');
