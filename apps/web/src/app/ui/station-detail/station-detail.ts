@@ -5,6 +5,7 @@ import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
 import {
   formatCityLine,
   formatStreetLine,
+  navigationDestinationOf,
   priceInEuro,
   stationSubtitle,
   stationTitle,
@@ -12,6 +13,7 @@ import {
 import { FavoriteButton } from '../favorite-button/favorite-button';
 import { OpeningTimes } from '../opening-times/opening-times';
 import { Price } from '../price/price';
+import { RouteButton } from '../route-button/route-button';
 import { StationLocationMap } from '../station-location-map/station-location-map';
 
 interface FuelPrice {
@@ -24,7 +26,7 @@ interface FuelPrice {
 /** Details of one station with all its prices; the user's fuel leads the price board. */
 @Component({
   selector: 'app-station-detail',
-  imports: [FavoriteButton, OpeningTimes, Price, StationLocationMap],
+  imports: [FavoriteButton, OpeningTimes, Price, RouteButton, StationLocationMap],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './station-detail.html',
   styleUrl: './station-detail.scss',
@@ -37,6 +39,7 @@ export class StationDetail {
   readonly favoriteToggled = output();
 
   protected readonly title = computed(() => stationTitle(this.station()));
+  protected readonly destination = computed(() => navigationDestinationOf(this.station()));
   protected readonly subtitle = computed(() => stationSubtitle(this.station()));
   protected readonly streetLine = computed(() => formatStreetLine(this.station()));
   protected readonly cityLine = computed(() => formatCityLine(this.station()));

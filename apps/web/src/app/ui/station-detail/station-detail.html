@@ -21,6 +21,11 @@
       (toggled)="favoriteToggled.emit()" />
   </div>
 
+  <app-route-button
+    class="station-detail__route"
+    [destination]="destination()"
+    [isLabelled]="true" />
+
   <section class="station-detail__section" aria-labelledby="prices-heading">
     <h3 id="prices-heading" class="station-detail__section-title">Preise</h3>
     <ul class="price-board" role="list">

@@ -1,0 +1,51 @@
+:host {
+  display: inline-flex;
+}
+
+.route-button {
+  position: relative;
+  display: inline-flex;
+  gap: var(--space-xs);
+  align-items: center;
+  justify-content: center;
+  min-width: var(--layout-touch-target);
+  min-height: var(--layout-touch-target);
+  border-radius: var(--radius-pill);
+  color: var(--color-action-text);
+  font-size: var(--icon-size-md);
+
+  &:has(:focus-visible) {
+    outline: var(--border-width-focus) solid var(--color-focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+}
+
+// Filled capsule like the primary action of an iOS place card
+.route-button--labelled {
+  padding-inline: var(--space-md) var(--space-lg);
+  background-color: var(--color-action);
+  color: var(--color-on-action);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.route-button__icon {
+  flex: none;
+
+  .route-button--labelled & {
+    font-size: var(--icon-size-md);
+  }
+}
+
+// The native control stays on top for touch, keyboard and assistive technology; the icon is its
+// visible face. 1rem at least, so iOS does not zoom in when it opens.
+.route-button__select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  font-size: var(--font-size-md);
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
+}

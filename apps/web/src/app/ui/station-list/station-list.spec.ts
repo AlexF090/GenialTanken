@@ -107,6 +107,14 @@ describe('StationList', () => {
     expect(linkOf(items[1])?.getAttribute('href')).toBe('/stations/fr%2F12%2034');
   });
 
+  it('offers a route to each station', async () => {
+    const { element } = await render({ stations: [totalStation, carrefourStation] });
+
+    expect(
+      [...element.querySelectorAll('select')].map(select => select.getAttribute('aria-label'))
+    ).toEqual(['Route zu TotalEnergies', 'Route zu Carrefour Market']);
+  });
+
   it('labels the cheapest stations in words', async () => {
     const { items } = await render({
       stations: [totalStation, unbrandedStation],

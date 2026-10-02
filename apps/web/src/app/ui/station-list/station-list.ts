@@ -14,16 +14,20 @@ import { formatDistance } from '../../core/formatting/number-format';
 import {
   formatCityLine,
   formatStreetLine,
+  navigationDestinationOf,
   priceInEuro,
   stationSubtitle,
   stationTitle,
 } from '../../core/stations/station-display';
+import type { NavigationDestination } from '../../core/navigation-apps/navigation-apps';
 import { FavoriteButton } from '../favorite-button/favorite-button';
 import { Icon } from '../icon/icon';
 import { Price } from '../price/price';
+import { RouteButton } from '../route-button/route-button';
 
 interface StationListItem {
   id: string;
+  destination: NavigationDestination;
   title: string;
   subtitle: string | undefined;
   addressLine: string;
@@ -39,7 +43,7 @@ const NO_STATION_IDS: ReadonlySet<string> = new Set();
 /** Price board of stations: one hairline-separated row per station, the price loudest. */
 @Component({
   selector: 'app-station-list',
-  imports: [RouterLink, Price, FavoriteButton, Icon],
+  imports: [RouterLink, Price, FavoriteButton, Icon, RouteButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './station-list.html',
   styleUrl: './station-list.scss',
@@ -62,6 +66,7 @@ export class StationList {
   protected readonly items = computed<StationListItem[]>(() =>
     this.stations().map(station => ({
       id: station.id,
+      destination: navigationDestinationOf(station),
       title: stationTitle(station),
       subtitle: stationSubtitle(station),
       addressLine: [formatStreetLine(station), formatCityLine(station)]

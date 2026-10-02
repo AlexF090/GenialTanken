@@ -35,6 +35,7 @@
         <app-price size="list" [priceInEuro]="item.priceInEuro" />
       </div>
       <div class="station-row__actions">
+        <app-route-button [destination]="item.destination" />
         @if (selectsOnMap()) {
           <a
             class="station-row__action"

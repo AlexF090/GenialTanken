@@ -1,4 +1,5 @@
 import type { FuelType, Station } from '@genialtanken/contracts';
+import type { NavigationDestination } from '../navigation-apps/navigation-apps';
 
 const hasText = (value: string | null): value is string => value !== null && value.trim() !== '';
 
@@ -31,3 +32,10 @@ export const stationSubtitle = (station: Station): string | undefined => {
 /** Price of one fuel type in euros, `null` when the station reports none. */
 export const priceInEuro = (station: Station, fuelType: FuelType): number | null =>
   station.pricesInEuro[fuelType];
+
+/** Where a navigation app should route to: the station's position, named like in the list. */
+export const navigationDestinationOf = (station: Station): NavigationDestination => ({
+  latitude: station.address.latitude,
+  longitude: station.address.longitude,
+  name: stationTitle(station),
+});
