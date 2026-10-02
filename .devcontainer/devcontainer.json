@@ -11,7 +11,7 @@
     "source=${localEnv:HOME}/.agents,target=${localEnv:HOME}/.agents,type=bind,readonly",
     "source=genialtanken-claude-plugins,target=/home/node/.claude/plugins,type=volume"
   ],
-  "forwardPorts": [4200, 3000, 9323],
+  "forwardPorts": [9323],
   "portsAttributes": {
     "4200": {
       "label": "Web (Angular dev server)"
