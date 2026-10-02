@@ -19,7 +19,7 @@ const EIFFEL_TOWER_E5_URL =
   '/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=5&fuel=e5';
 
 const stationTitles = (element: HTMLElement): string[] =>
-  [...element.querySelectorAll('main li .station-card__title')].map(title => textOf(title));
+  [...element.querySelectorAll('main li a')].map(title => textOf(title));
 
 describe('StationsPage', () => {
   let context: PageTestContext;
@@ -60,27 +60,46 @@ describe('StationsPage', () => {
     expect(context.geolocation.pendingRequestCount).toBe(0);
   });
 
-  it('toggles between distance order and ascending price', async () => {
+  it('switches between distance order and ascending price', async () => {
     const { element } = await renderWithStations();
-    const sortButton = getButton(element, /^Sortiert nach:/);
-    expect(textOf(sortButton)).toBe('Sortiert nach: km');
+    const radio = (name: string): HTMLInputElement => {
+      const input = [...element.querySelectorAll('fieldset label')]
+        .find(label => textOf(label) === name)
+        ?.querySelector('input');
+      if (input === null || input === undefined) {
+        throw new Error(`No radio named ${name}`);
+      }
+      return input;
+    };
+    expect(textOf(element.querySelector('fieldset legend'))).toBe('Sortierung');
+    expect(radio('Entfernung').checked).toBe(true);
 
-    sortButton.click();
+    radio('Preis').click();
     await context.settle();
 
-    expect(textOf(sortButton)).toBe('Sortiert nach: Preis');
     expect(stationTitles(element)).toEqual([
       '40 Avenue de Flandre',
       'Carrefour Market',
       'TotalEnergies',
     ]);
 
-    sortButton.click();
+    radio('Entfernung').click();
     await context.settle();
 
     expect(stationTitles(element)).toEqual([
       'TotalEnergies',
       'Carrefour Market',
+      '40 Avenue de Flandre',
+    ]);
+  });
+
+  it('labels the cheapest station', async () => {
+    const { element } = await renderWithStations();
+
+    const cheapestItems = [...element.querySelectorAll('main li')].filter(item =>
+      textOf(item).includes('Günstigster Preis')
+    );
+    expect(cheapestItems.map(item => textOf(item.querySelector('a')))).toEqual([
       '40 Avenue de Flandre',
     ]);
   });

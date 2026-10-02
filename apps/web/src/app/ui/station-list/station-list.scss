@@ -1,74 +1,147 @@
+// A price board, not cards: hairline-separated rows with the price column aligned on the right.
 .station-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
   list-style: none;
 }
 
-.station-card {
+.station-row {
   position: relative;
-}
-
-.station-card__link {
   display: grid;
   grid-template-areas:
-    'price title'
-    'price subtitle'
-    'price address'
-    'price distance';
-  grid-template-columns: minmax(var(--layout-price-column-width), auto) 1fr;
+    'details price'
+    'details actions';
+  grid-template-columns: minmax(0, 1fr) auto;
   column-gap: var(--space-md);
-  align-items: center;
-  padding: var(--space-md);
-  padding-right: calc(var(--icon-size-lg) + var(--space-xl));
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
-  color: var(--color-text);
-  text-decoration: none;
+  row-gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: var(--border-width-hairline) solid var(--color-hairline);
+  transition: background-color var(--duration-short) var(--easing-standard);
 
-  &:hover .station-card__title {
-    color: var(--color-primary-strong);
+  &:hover {
+    background-color: var(--color-canvas);
+  }
+
+  // Marker bar of the station shown on the map
+  &--selected {
+    background-color: var(--color-canvas);
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: 0;
+      width: var(--space-2xs);
+      background-color: var(--color-action);
+    }
   }
 }
 
-.station-card__title {
-  grid-area: title;
-  overflow: hidden;
-  color: var(--color-primary);
-  font-weight: var(--font-weight-bold);
-  text-decoration: underline;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.station-card__subtitle {
-  grid-area: subtitle;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-}
-
-.station-card__address {
+.station-row__details {
   display: flex;
   flex-direction: column;
-  grid-area: address;
-  font-size: var(--font-size-xs);
+  grid-area: details;
+  min-width: 0;
 }
 
-.station-card__price {
+.station-row__title {
+  overflow: hidden;
+  color: var(--color-action-text);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  // The whole row opens the details; the actions sit above this layer
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: none;
+
+    &::after {
+      outline: var(--border-width-focus) solid var(--color-focus-ring);
+      outline-offset: calc(-1 * var(--border-width-focus));
+    }
+  }
+}
+
+.station-row__line {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.station-row__distance {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.station-row__price {
+  display: flex;
+  flex-direction: column;
   grid-area: price;
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-}
-
-.station-card__distance {
-  grid-area: distance;
+  align-items: flex-end;
   justify-self: end;
-  font-weight: var(--font-weight-bold);
+  min-width: var(--layout-price-column-width);
+  padding: var(--space-2xs) var(--space-xs);
+  border: var(--border-width-hairline) solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
 }
 
-.station-card__favorite {
-  position: absolute;
-  top: 50%;
-  right: var(--space-sm);
-  transform: translateY(-50%);
+// The yellow is reserved for the cheapest price and always comes with its label
+.station-row--cheapest .station-row__price {
+  border-color: var(--color-highlight-edge);
+  background-color: var(--color-highlight);
+  color: var(--color-on-highlight);
+}
+
+.station-row__cheapest-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.station-row__actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  grid-area: actions;
+  justify-self: end;
+  align-self: end;
+  // Optically aligns the icons with the price and keeps the touch targets from padding the row
+  margin-block-end: calc(-1 * var(--space-xs));
+  margin-inline-end: calc((var(--icon-size-md) - var(--layout-touch-target)) / 2);
+}
+
+.station-row__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--layout-touch-target);
+  height: var(--layout-touch-target);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-action-text);
+  font-size: var(--icon-size-md);
+  cursor: pointer;
+  touch-action: manipulation;
+
+  &:hover {
+    color: var(--color-action-text-hover);
+  }
+
+  &[aria-pressed='true'] {
+    background-color: var(--color-action);
+    color: var(--color-on-action);
+  }
 }

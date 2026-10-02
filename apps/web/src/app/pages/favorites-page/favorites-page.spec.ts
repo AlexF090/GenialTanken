@@ -12,7 +12,7 @@ import { FavoritesPage } from './favorites-page';
 const NOT_FOUND = { status: 404, statusText: 'Not Found' };
 
 const stationTitles = (element: HTMLElement): string[] =>
-  [...element.querySelectorAll('main li .station-card__title')].map(title => textOf(title));
+  [...element.querySelectorAll('main li a')].map(title => textOf(title));
 
 describe('FavoritesPage', () => {
   let context: PageTestContext;

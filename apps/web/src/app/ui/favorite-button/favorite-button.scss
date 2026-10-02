@@ -1,14 +1,19 @@
 .favorite-button {
   display: inline-flex;
-  padding: var(--space-2xs);
+  align-items: center;
+  justify-content: center;
+  width: var(--layout-touch-target);
+  height: var(--layout-touch-target);
+  padding: 0;
   border: none;
-  border-radius: var(--radius-round);
+  border-radius: var(--radius-sm);
   background: none;
-  color: var(--color-primary);
-  font-size: var(--icon-size-lg);
+  color: var(--color-action-text);
+  font-size: var(--icon-size-md);
   cursor: pointer;
+  touch-action: manipulation;
 
-  &[aria-pressed='true'] {
-    color: var(--color-primary-strong);
+  &:hover {
+    color: var(--color-action-text-hover);
   }
 }

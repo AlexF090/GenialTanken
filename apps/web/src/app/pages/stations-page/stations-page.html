@@ -6,9 +6,7 @@
       <app-icon name="refresh" />
       Aktualisieren
     </button>
-    <button type="button" class="button" (click)="toggleSortOrder()">
-      Sortiert nach: {{ sortOrderLabel() }}
-    </button>
+    <app-sort-order-control [(sortOrder)]="sortOrder" />
   </div>
 
   @if (geolocationErrorMessage(); as message) {
@@ -29,5 +27,6 @@
     [stations]="stations()"
     [fuelType]="fuelType()"
     [favoriteStationIds]="favoriteStationIds()"
+    [cheapestStationIds]="cheapestStationIds()"
     (favoriteToggled)="toggleFavorite($event)" />
 </main>

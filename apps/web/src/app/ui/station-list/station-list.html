@@ -1,31 +1,44 @@
-<ul class="station-list" role="list">
+<ul class="station-list" role="list" aria-label="Tankstellen">
   @for (item of items(); track item.id) {
-    <li class="station-card">
-      <a class="station-card__link" [routerLink]="['/stations', item.id]">
-        <span class="station-card__title">{{ item.title }}</span>
+    <li
+      class="station-row"
+      [class.station-row--selected]="item.isSelected"
+      [class.station-row--cheapest]="item.isCheapest"
+      [attr.data-station-id]="item.id">
+      <div class="station-row__details">
+        <a class="station-row__title" translate="no" [routerLink]="['/stations', item.id]">{{
+          item.title
+        }}</a>
         @if (item.subtitle) {
-          <span class="station-card__subtitle">{{ item.subtitle }}</span>
+          <span class="station-row__line">{{ item.subtitle }}</span>
         }
-        <span class="station-card__address">
-          <span>{{ item.streetLine }}</span
-          >&ngsp;<span>{{ item.cityLine }}</span>
-        </span>
-        <span class="station-card__price">
-          @if (item.priceInEuro !== null) {
-            <app-price [priceInEuro]="item.priceInEuro" />
-          } @else {
-            Kein Preis
-          }
-        </span>
+        <span class="station-row__line">{{ item.addressLine }}</span>
         @if (item.distance) {
-          <span class="station-card__distance">{{ item.distance }}</span>
+          <span class="station-row__line station-row__distance">{{ item.distance }}</span>
         }
-      </a>
-      <app-favorite-button
-        class="station-card__favorite"
-        [stationName]="item.title"
-        [isFavorite]="item.isFavorite"
-        (toggled)="favoriteToggled.emit(item.id)" />
+      </div>
+      <div class="station-row__price">
+        @if (item.isCheapest) {
+          <span class="station-row__cheapest-label">Günstigster Preis</span>
+        }
+        <app-price size="list" [priceInEuro]="item.priceInEuro" />
+      </div>
+      <div class="station-row__actions">
+        @if (showOnMapAction()) {
+          <button
+            type="button"
+            class="station-row__action"
+            [attr.aria-label]="'Auf Karte zeigen: ' + item.title"
+            [attr.aria-pressed]="item.isSelected"
+            (click)="stationSelected.emit(item.id)">
+            <app-icon name="place" />
+          </button>
+        }
+        <app-favorite-button
+          [stationName]="item.title"
+          [isFavorite]="item.isFavorite"
+          (toggled)="favoriteToggled.emit(item.id)" />
+      </div>
     </li>
   }
 </ul>

@@ -3,19 +3,19 @@ import { FavoritesStore } from '../../core/favorites/favorites-store';
 import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
 import { GeolocationService } from '../../core/geolocation/geolocation-service';
 import { SettingsStore } from '../../core/settings/settings-store';
+import { cheapestStationIds } from '../../core/stations/cheapest-station-ids';
 import { NearbyStationsStore } from '../../core/stations/nearby-stations-store';
 import { sortStations } from '../../core/stations/sort-stations';
 import type { SortOrder } from '../../core/stations/sort-stations';
 import { Icon } from '../../ui/icon/icon';
 import { LoadingState } from '../../ui/loading-state/loading-state';
 import { PageHeader } from '../../ui/page-header/page-header';
+import { SortOrderControl } from '../../ui/sort-order-control/sort-order-control';
 import { StationList } from '../../ui/station-list/station-list';
-
-const SORT_ORDER_LABELS: Record<SortOrder, string> = { distance: 'km', price: 'Preis' };
 
 @Component({
   selector: 'app-stations-page',
-  imports: [PageHeader, StationList, LoadingState, Icon],
+  imports: [PageHeader, StationList, SortOrderControl, LoadingState, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './stations-page.html',
   styleUrl: './stations-page.scss',
@@ -35,17 +35,15 @@ export class StationsPage {
   protected readonly hasLoaded = this.nearbyStations.hasLoaded;
 
   protected readonly sortOrder = signal<SortOrder>('distance');
-  protected readonly sortOrderLabel = computed(() => SORT_ORDER_LABELS[this.sortOrder()]);
   protected readonly stations = computed(() =>
     sortStations(this.nearbyStations.stations(), this.sortOrder(), this.fuelType())
+  );
+  protected readonly cheapestStationIds = computed(() =>
+    cheapestStationIds(this.nearbyStations.stations(), this.fuelType())
   );
 
   protected refresh(): void {
     this.nearbyStations.refresh();
-  }
-
-  protected toggleSortOrder(): void {
-    this.sortOrder.update(sortOrder => (sortOrder === 'distance' ? 'price' : 'distance'));
   }
 
   protected toggleFavorite(stationId: string): void {
