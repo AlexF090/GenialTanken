@@ -7,9 +7,11 @@
 .station-row {
   position: relative;
   display: grid;
+  // Actions top right, price bottom right where the eye ends the row. The price stays first in
+  // the markup, so screen readers hear it right after the station.
   grid-template-areas:
-    'details price'
-    'details actions';
+    'details actions'
+    'details price';
   grid-template-columns: minmax(0, 1fr) auto;
   column-gap: var(--space-md);
   row-gap: var(--space-2xs);
@@ -100,6 +102,7 @@
   flex-direction: column;
   grid-area: price;
   align-items: flex-end;
+  align-self: end;
   justify-self: end;
   min-width: var(--layout-price-column-width);
   padding: var(--space-2xs) var(--space-xs);
@@ -127,9 +130,9 @@
   display: flex;
   grid-area: actions;
   justify-self: end;
-  align-self: end;
-  // Optically aligns the icons with the price and keeps the touch targets from padding the row
-  margin-block-end: calc(-1 * var(--space-xs));
+  align-self: start;
+  // Optically aligns the icons with the title and keeps the touch targets from padding the row
+  margin-block-start: calc(-1 * var(--space-xs));
   margin-inline-end: calc((var(--icon-size-md) - var(--layout-touch-target)) / 2);
 }
 
