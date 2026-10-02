@@ -54,4 +54,23 @@ test.describe('map page', () => {
     await expect(page).toHaveURL('/');
     await expect(stationCards(page)).toHaveCount(1);
   });
+
+  test('can be left while the map is still moving without script errors', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    page.on('console', message => {
+      if (message.type() === 'error') {
+        errors.push(message.text());
+      }
+    });
+
+    await page.goto('/settings');
+    for (let round = 0; round < 3; round += 1) {
+      await page.getByRole('link', { name: 'Karte' }).click();
+      await page.getByRole('link', { name: 'Einstellungen' }).click();
+    }
+    await expect(page.getByText('Radius: 5 km')).toBeVisible();
+
+    expect(errors).toEqual([]);
+  });
 });

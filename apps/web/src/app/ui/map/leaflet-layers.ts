@@ -54,3 +54,13 @@ export const createOwnPositionMarker = (coordinates: Coordinates): L.Marker =>
   }).bindTooltip(OWN_POSITION_LABEL, { permanent: true, direction: 'top', offset: [0, -10] });
 
 export { L };
+
+/**
+ * Removes a map even while a pan or zoom animation is still running; a plain `remove()` lets
+ * pending animation frames access the already removed panes (`_leaflet_pos` of undefined).
+ */
+export const destroyMap = (map: L.Map): void => {
+  map.stop();
+  map.off();
+  map.remove();
+};

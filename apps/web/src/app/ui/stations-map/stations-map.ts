@@ -20,6 +20,7 @@ import {
   createOwnPositionMarker,
   createStationMarker,
   createTileLayer,
+  destroyMap,
   L,
 } from '../map/leaflet-layers';
 import {
@@ -97,14 +98,19 @@ export class StationsMap {
         return;
       }
       untracked(() => {
-        map.setView([ownPosition.latitude, ownPosition.longitude], OWN_POSITION_ZOOM);
+        map.setView([ownPosition.latitude, ownPosition.longitude], OWN_POSITION_ZOOM, {
+          animate: false,
+        });
       });
       const marker = createOwnPositionMarker(ownPosition).addTo(map);
       onCleanup(() => marker.remove());
     });
 
     inject(DestroyRef).onDestroy(() => {
-      this.map()?.remove();
+      const map = this.map();
+      if (map !== undefined) {
+        destroyMap(map);
+      }
     });
   }
 

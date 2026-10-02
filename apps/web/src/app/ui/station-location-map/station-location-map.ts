@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import type { ElementRef } from '@angular/core';
 import type { Station } from '@genialtanken/contracts';
-import { createStationMarker, createTileLayer, L } from '../map/leaflet-layers';
+import { createStationMarker, createTileLayer, destroyMap, L } from '../map/leaflet-layers';
 import { MAPBOX_ACCESS_TOKEN, STATION_LOCATION_ZOOM } from '../map/map-configuration';
 
 /** Small static map showing where a single station is. */
@@ -61,7 +61,7 @@ export class StationLocationMap {
         return;
       }
       const { latitude, longitude } = this.station().address;
-      map.setView([latitude, longitude], STATION_LOCATION_ZOOM);
+      map.setView([latitude, longitude], STATION_LOCATION_ZOOM, { animate: false });
       const marker = createStationMarker({ latitude, longitude }, this.stationTitle(), {
         interactive: false,
       }).addTo(map);
@@ -69,7 +69,10 @@ export class StationLocationMap {
     });
 
     inject(DestroyRef).onDestroy(() => {
-      this.map()?.remove();
+      const map = this.map();
+      if (map !== undefined) {
+        destroyMap(map);
+      }
     });
   }
 }
