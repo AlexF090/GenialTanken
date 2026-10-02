@@ -18,5 +18,4 @@ import { NavigationBar } from './ui/navigation-bar/navigation-bar';
     }
   `,
 })
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- the application shell is pure template
 export class App {}

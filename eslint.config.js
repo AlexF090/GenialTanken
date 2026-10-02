@@ -51,6 +51,8 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
+      // Angular and Nest classes are configured entirely through decorators
+      '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }],
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true },
@@ -90,7 +92,6 @@ export default tseslint.config(
       ...forbidImportsFrom('web'),
       // Nest relies on runtime class references for dependency injection
       '@typescript-eslint/consistent-type-imports': 'off',
-      '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }],
     },
   },
   {
