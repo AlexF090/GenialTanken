@@ -15,14 +15,23 @@
     }
   },
   "scripts": {
-    "dev": "pnpm --parallel --recursive run dev",
-    "client": "pnpm --filter client start",
-    "server": "pnpm --filter server start",
-    "build": "pnpm --filter client build",
-    "test": "pnpm --filter client test",
-    "storybook": "pnpm --filter client storybook",
-    "prettier:check": "prettier --check .",
-    "prettier:write": "prettier --write ."
+    "dev": "pnpm --parallel --filter web --filter api run start:dev",
+    "build": "pnpm --recursive --filter \"./apps/*\" --filter \"./packages/*\" run build",
+    "test": "pnpm --recursive --filter \"./apps/*\" --filter \"./packages/*\" run test",
+    "test:e2e": "pnpm --filter e2e test",
+    "lint": "eslint .",
+    "typecheck": "pnpm --recursive --filter \"!client\" --filter \"!server\" run typecheck",
+    "format:check": "prettier --check .",
+    "format:write": "prettier --write ."
   },
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "angular-eslint": "22.5.0",
+    "eslint": "10.11.0",
+    "globals": "17.13.0",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.0"
+  }
 }

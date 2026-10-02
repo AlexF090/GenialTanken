@@ -1,4 +1,10 @@
 node_modules
-package-lock.json
-.*
-build
+dist
+coverage
+pnpm-lock.yaml
+.pnpm-store
+.angular
+playwright-report
+test-results
+client
+server
