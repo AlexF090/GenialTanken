@@ -1,18 +1,26 @@
+import type { ElementRef } from '@angular/core';
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
+  debounced,
+  DestroyRef,
   inject,
   linkedSignal,
   signal,
+  viewChild,
 } from '@angular/core';
 import { FUEL_TYPES } from '@genialtanken/contracts';
-import type { FuelType, Station } from '@genialtanken/contracts';
+import type { FuelType, Place, Station } from '@genialtanken/contracts';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
 import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
 import { Viewport } from '../../core/layout/viewport';
+import { PlacesApi } from '../../core/places/places-api';
+import { describePlacesError } from '../../core/places/places-error-message';
 import type { SearchCenter } from '../../core/search-center/search-center';
 import { SearchCenterStore } from '../../core/search-center/search-center-store';
+import { radiusStepsIncluding } from '../../core/settings/radius-steps';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { NearbyStationsStore } from '../../core/stations/nearby-stations-store';
 import { sortStations } from '../../core/stations/sort-stations';
@@ -23,6 +31,7 @@ import type { SnapPosition } from '../../ui/bottom-sheet/bottom-sheet-snap';
 import { DataSourceCredit } from '../../ui/data-source-credit/data-source-credit';
 import { Icon } from '../../ui/icon/icon';
 import { LoadingState } from '../../ui/loading-state/loading-state';
+import { PlaceSearchField } from '../../ui/place-search-field/place-search-field';
 import { SelectMenu } from '../../ui/select-menu/select-menu';
 import type { SelectMenuOption } from '../../ui/select-menu/select-menu';
 import { SortOrderControl } from '../../ui/sort-order-control/sort-order-control';
@@ -40,6 +49,19 @@ const FUEL_TYPE_OPTIONS: readonly SelectMenuOption<FuelType>[] = FUEL_TYPES.map(
   label: FUEL_TYPE_LABELS[fuelType].long,
 }));
 
+/** Waiting for a typing pause keeps the place search from firing on every keystroke. */
+export const PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS = 300;
+
+const NO_MATCHING_PLACES_MESSAGE = 'Keine passenden Orte gefunden.';
+
+const waitForTypingPause = (query: string | undefined): Promise<void> | undefined =>
+  query === undefined
+    ? undefined
+    : new Promise(resolve => setTimeout(resolve, PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS));
+
+const describeCenter = (center: SearchCenter): string =>
+  center.source === 'map-area' ? 'die Kartenmitte' : center.label;
+
 const describeStationCount = (count: number): string =>
   count === 1 ? '1 Tankstelle' : `${String(count)} Tankstellen`;
 
@@ -55,6 +77,7 @@ const describeStationCount = (count: number): string =>
     DataSourceCredit,
     Icon,
     LoadingState,
+    PlaceSearchField,
     SelectMenu,
     SortOrderControl,
     StationList,
@@ -70,13 +93,54 @@ export class ExplorePage {
   private readonly settings = inject(SettingsStore);
   private readonly favorites = inject(FavoritesStore);
   private readonly isCompactViewport = inject(Viewport).isCompactViewport;
+  private readonly searchOverlay = viewChild.required<ElementRef<HTMLElement>>('searchOverlay');
 
   protected readonly fuelType = this.settings.fuelType;
   protected readonly fuelLabel = computed(() => FUEL_TYPE_LABELS[this.fuelType()].short);
   protected readonly fuelTypeOptions = FUEL_TYPE_OPTIONS;
   protected readonly radiusInKilometers = this.settings.radiusInKilometers;
+  protected readonly radiusOptions = computed(() =>
+    radiusStepsIncluding(this.radiusInKilometers()).map(radius => ({
+      value: radius,
+      label: `${String(radius)}\u00a0km`,
+    }))
+  );
   protected readonly center = this.searchCenter.center;
   protected readonly isLocating = this.searchCenter.isLocating;
+  protected readonly isAtOwnPosition = computed(() => this.center().source === 'own-position');
+
+  /** Text in the search field: the chosen place, or what the user is typing. */
+  protected readonly placeQuery = linkedSignal(() => {
+    const center = this.center();
+    return center.source === 'place' ? center.label : '';
+  });
+  protected readonly placeSearchPlaceholder = computed(() =>
+    this.isAtOwnPosition() ? this.center().label : 'Position auf Karte'
+  );
+  /** Only typed text is searched, not the name of a place that was just chosen. */
+  private readonly isTypingPlaceQuery = signal(false);
+  private readonly placeQueryAfterTypingPause = debounced(
+    () => (this.isTypingPlaceQuery() ? this.placeQuery() : undefined),
+    waitForTypingPause
+  );
+  private readonly placesResource = inject(PlacesApi).placesMatching(() =>
+    this.placeQueryAfterTypingPause.hasValue() ? this.placeQueryAfterTypingPause.value() : undefined
+  );
+  protected readonly placeSuggestions = computed<readonly Place[]>(() =>
+    this.isTypingPlaceQuery() && this.placesResource.hasValue() ? this.placesResource.value() : []
+  );
+  protected readonly placeSearchStatus = computed(() => {
+    if (!this.isTypingPlaceQuery()) {
+      return undefined;
+    }
+    const error = this.placesResource.error();
+    if (error !== undefined) {
+      return describePlacesError(error);
+    }
+    const hasNoMatches =
+      this.placesResource.status() === 'resolved' && this.placesResource.value()?.length === 0;
+    return hasNoMatches ? NO_MATCHING_PLACES_MESSAGE : undefined;
+  });
   protected readonly locationErrorMessage = this.searchCenter.locationErrorMessage;
   protected readonly stationsErrorMessage = this.nearbyStations.errorMessage;
   protected readonly isLoading = this.nearbyStations.isLoading;
@@ -93,7 +157,7 @@ export class ExplorePage {
 
   protected readonly resultSummary = computed(() =>
     this.hasLoaded()
-      ? `${describeStationCount(this.mapStations().length)} im Umkreis von ${String(this.radiusInKilometers())}\u00a0km um ${this.center().label}`
+      ? `${describeStationCount(this.mapStations().length)} im Umkreis von ${String(this.radiusInKilometers())}\u00a0km um ${describeCenter(this.center())}`
       : ''
   );
 
@@ -113,12 +177,56 @@ export class ExplorePage {
 
   protected readonly snapPosition = signal<SnapPosition>('half');
   private readonly sheetHeightInPixels = signal(0);
+  protected readonly isSearchCoveredBySheet = computed(
+    () => this.isCompactViewport() && this.snapPosition() === 'full'
+  );
+  private readonly searchOverlayHeightInPixels = signal(0);
   protected readonly mapViewportPadding = computed<ViewportPadding>(() => ({
-    top: 0,
+    top: this.searchOverlayHeightInPixels(),
     right: 0,
     bottom: this.sheetHeightInPixels(),
     left: 0,
   }));
+
+  constructor() {
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      // jsdom (unit tests) has no ResizeObserver; the map then ignores the search overlay.
+      if (typeof ResizeObserver !== 'function') {
+        return;
+      }
+      const searchOverlay = this.searchOverlay().nativeElement;
+      const observer = new ResizeObserver(() => {
+        this.searchOverlayHeightInPixels.set(searchOverlay.offsetHeight);
+      });
+      observer.observe(searchOverlay);
+      destroyRef.onDestroy(() => {
+        observer.disconnect();
+      });
+    });
+  }
+
+  protected searchPlaces(query: string): void {
+    this.placeQuery.set(query);
+    this.isTypingPlaceQuery.set(true);
+  }
+
+  protected choosePlace(place: Place): void {
+    this.isTypingPlaceQuery.set(false);
+    this.searchCenter.usePlace(place);
+  }
+
+  /** Clearing the search keeps the stations around the same point, just without the place name. */
+  protected clearPlace(): void {
+    this.isTypingPlaceQuery.set(false);
+    if (this.center().source === 'place') {
+      this.searchCenter.useMapArea(this.center());
+    }
+  }
+
+  protected chooseRadius(radiusInKilometers: number): void {
+    this.settings.update({ radiusInKilometers });
+  }
 
   protected useOwnPosition(): void {
     if (this.isLocating()) {

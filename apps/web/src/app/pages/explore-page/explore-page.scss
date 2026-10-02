@@ -31,12 +31,123 @@
   }
 
   @include breakpoints.medium-and-up {
+    grid-row: 1;
+    grid-column: 2;
     height: 100%;
   }
 }
 
+// Floats over the top of the map. Below the sheet: a fully opened sheet covers it, like the
+// map controls of Apple Maps.
+.explore-page__search {
+  z-index: calc(var(--layer-chrome) - 2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  pointer-events: none;
+
+  @include breakpoints.compact {
+    position: absolute;
+    inset: calc(var(--safe-area-top) + var(--space-xs)) var(--space-xs) auto;
+  }
+
+  @include breakpoints.medium-and-up {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: start;
+    width: min(28rem, 100% - 2 * var(--space-md));
+    margin: calc(var(--safe-area-top) + var(--space-md)) var(--space-md);
+  }
+
+  > * {
+    pointer-events: auto;
+  }
+}
+
+.explore-page__search--covered {
+  visibility: hidden;
+}
+
+.explore-page__search-bar {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.explore-page__place-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.explore-page__search-message {
+  box-shadow: var(--shadow-floating);
+}
+
+// Inside the search capsule, set off by a hairline like a second segment.
+.explore-page__radius {
+  flex: none;
+  padding-inline: var(--space-sm) var(--space-xs);
+  border-left: var(--border-width-hairline) solid var(--color-hairline);
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+  color: var(--color-action-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+// Round map button like the location button of Apple Maps; filled arrow while centered on the
+// own position.
+.explore-page__locate {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--layout-touch-target);
+  height: var(--layout-touch-target);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-round);
+  background: var(--material-menu);
+  color: var(--color-action-text);
+  font-size: var(--icon-size-sm);
+  box-shadow: var(--shadow-floating);
+  backdrop-filter: var(--material-blur);
+  cursor: pointer;
+  touch-action: manipulation;
+
+  &[aria-busy='true'] {
+    cursor: progress;
+    opacity: 0.6;
+  }
+}
+
+.explore-page__locate--active {
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+
+.explore-page__refresh {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--layout-touch-target);
+  height: var(--layout-touch-target);
+  margin: 0 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-round);
+  background: none;
+  color: var(--color-action-text);
+  font-size: var(--icon-size-sm);
+  cursor: pointer;
+}
+
 .explore-page__panel {
   @include breakpoints.medium-and-up {
+    grid-row: 1;
+    grid-column: 1;
     min-height: 0;
     padding-top: var(--safe-area-top);
     background-color: var(--color-surface);
@@ -65,25 +176,11 @@
   }
 }
 
-.explore-page__place-search:empty {
-  display: none;
-}
-
 .explore-page__toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-xs);
-}
-
-.explore-page__locate {
-  flex: 1 1 auto;
-  justify-content: flex-start;
-
-  &[aria-busy='true'] {
-    cursor: progress;
-  }
 }
 
 // Like the fuel badge on a pump: a plate in the text color (petrol in light, pale in dark mode,
@@ -100,7 +197,7 @@
   line-height: var(--line-height-numerals);
 }
 
-.explore-page__fuel-chevron {
+.explore-page__chevron {
   font-size: var(--icon-size-sm);
 }
 

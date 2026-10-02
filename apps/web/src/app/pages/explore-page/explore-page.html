@@ -1,4 +1,47 @@
 <main class="explore-page">
+  <div
+    #searchOverlay
+    class="explore-page__search"
+    [class.explore-page__search--covered]="isSearchCoveredBySheet()">
+    <div class="explore-page__search-bar">
+      <app-place-search-field
+        class="explore-page__place-search"
+        [placeholder]="placeSearchPlaceholder()"
+        [query]="placeQuery()"
+        [suggestions]="placeSuggestions()"
+        [statusMessage]="placeSearchStatus()"
+        (queryChange)="searchPlaces($event)"
+        (placeSelected)="choosePlace($event)"
+        (cleared)="clearPlace()">
+        <app-select-menu
+          placeSearchAccessory
+          class="explore-page__radius"
+          label="Radius"
+          [options]="radiusOptions()"
+          [value]="radiusInKilometers()"
+          (valueChange)="chooseRadius($event)">
+          <span class="visually-hidden">Radius: </span>{{ radiusInKilometers() }}&nbsp;km
+          <app-icon name="chevron-down" class="explore-page__chevron" />
+        </app-select-menu>
+      </app-place-search-field>
+      <button
+        type="button"
+        class="explore-page__locate"
+        aria-label="Meinen Standort verwenden"
+        [class.explore-page__locate--active]="isAtOwnPosition()"
+        [attr.aria-disabled]="isLocating()"
+        [attr.aria-busy]="isLocating()"
+        (click)="useOwnPosition()">
+        <app-icon name="my-location" />
+      </button>
+    </div>
+    @if (locationErrorMessage(); as message) {
+      <p class="message message--error explore-page__search-message" role="alert">
+        {{ message }}
+      </p>
+    }
+  </div>
+
   <app-bottom-sheet
     class="explore-page__panel"
     label="Tankstellen"
@@ -7,19 +50,7 @@
     <div class="explore-page__header" bottomSheetHeader>
       <h1 class="explore-page__title" translate="no">GenialTanken</h1>
 
-      <!-- Place search: the place combobox goes into this container (calls SearchCenterStore.usePlace). -->
-      <div class="explore-page__place-search"></div>
-
       <div class="explore-page__toolbar">
-        <button
-          type="button"
-          class="button button--quiet explore-page__locate"
-          [attr.aria-disabled]="isLocating()"
-          [attr.aria-busy]="isLocating()"
-          (click)="useOwnPosition()">
-          <app-icon name="my-location" />
-          Meinen Standort verwenden
-        </button>
         <app-select-menu
           class="explore-page__fuel"
           label="Kraftstoff"
@@ -27,19 +58,15 @@
           [value]="fuelType()"
           (valueChange)="chooseFuelType($event)">
           <span class="visually-hidden">Kraftstoff: </span>{{ fuelLabel() }}
-          <app-icon name="chevron-down" class="explore-page__fuel-chevron" />
+          <app-icon name="chevron-down" class="explore-page__chevron" />
         </app-select-menu>
-      </div>
-
-      @if (locationErrorMessage(); as message) {
-        <p class="message message--error" role="alert">{{ message }}</p>
-      }
-
-      <div class="explore-page__toolbar">
         <app-sort-order-control [(sortOrder)]="sortOrder" />
-        <button type="button" class="button button--quiet" (click)="refresh()">
+        <button
+          type="button"
+          class="explore-page__refresh"
+          aria-label="Aktualisieren"
+          (click)="refresh()">
           <app-icon name="refresh" />
-          Aktualisieren
         </button>
       </div>
 

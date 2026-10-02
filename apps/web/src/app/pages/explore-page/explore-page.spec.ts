@@ -22,7 +22,7 @@ import {
   totalStation,
   unbrandedStation,
 } from '../../../testing/station-fixtures';
-import { ExplorePage } from './explore-page';
+import { ExplorePage, PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS } from './explore-page';
 
 const EIFFEL_TOWER_E5_URL =
   '/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=5&fuel=e5';
@@ -34,6 +34,17 @@ const selectedStationTitles = (element: HTMLElement): string[] =>
   [...element.querySelectorAll('main li[data-station-id]')]
     .filter(row => row.querySelector('button[aria-pressed="true"]') !== null)
     .map(row => textOf(row.querySelector('a')));
+
+const waitForTypingPause = (): Promise<void> =>
+  new Promise(resolve => setTimeout(resolve, PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS + 20));
+
+const placeSearchInput = (element: HTMLElement): HTMLInputElement => {
+  const input = element.querySelector<HTMLInputElement>('input[role="combobox"]');
+  if (input === null) {
+    throw new Error('No place search field');
+  }
+  return input;
+};
 
 const childComponent = <T>(
   fixture: ComponentFixture<unknown>,
@@ -92,7 +103,7 @@ describe('ExplorePage', () => {
   it('summarizes the result with count, radius and search center', async () => {
     const { element } = await renderWithStations();
 
-    expect(textOf(element.querySelector('main [role="status"]'))).toBe(
+    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
       '3 Tankstellen im Umkreis von 5 km um Eiffelturm, Paris'
     );
   });
@@ -103,7 +114,7 @@ describe('ExplorePage', () => {
     context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
     await context.settle();
 
-    expect(textOf(element.querySelector('main [role="status"]'))).toBe(
+    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
       '1 Tankstelle im Umkreis von 5 km um Eiffelturm, Paris'
     );
   });
@@ -140,6 +151,122 @@ describe('ExplorePage', () => {
     await context.settle();
     expect(getButton(element, 'Kraftstoff: Diesel')).toBeDefined();
     expect(TestBed.inject(SettingsStore).fuelType()).toBe('diesel');
+  });
+
+  it('offers the radius steps in a menu inside the search field', async () => {
+    const { element } = await renderWithStations();
+
+    const radiusButton = getButton(element, 'Radius: 5 km');
+    expect(radiusButton.closest('[role="search"]')).not.toBeNull();
+    radiusButton.click();
+    await context.settle();
+    const items = [
+      ...element.querySelectorAll('[role="menu"][aria-label="Radius"] [role="menuitemradio"]'),
+    ];
+    expect(items.map(item => textOf(item))).toEqual([
+      '1 km',
+      '2 km',
+      '5 km',
+      '10 km',
+      '15 km',
+      '25 km',
+    ]);
+
+    getButton(element, '10 km').click();
+    await context.settle();
+
+    context.httpTesting
+      .expectOne('/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=10&fuel=e5')
+      .flush([totalStation]);
+    await context.settle();
+    expect(getButton(element, 'Radius: 10 km')).toBeDefined();
+    expect(TestBed.inject(SettingsStore).radiusInKilometers()).toBe(10);
+  });
+
+  it('shows "Position auf Karte" in the empty search field', async () => {
+    const { element } = await renderWithStations();
+
+    expect(placeSearchInput(element).placeholder).toBe('Position auf Karte');
+    expect(placeSearchInput(element).value).toBe('');
+  });
+
+  it('searches places after a typing pause and moves to the chosen one', async () => {
+    const { fixture, element } = await renderWithStations();
+    const input = placeSearchInput(element);
+
+    input.value = 'Bastille';
+    input.dispatchEvent(new Event('input'));
+    await context.settle();
+    context.httpTesting.expectNone(() => true);
+    await waitForTypingPause();
+    await context.settle();
+    context.httpTesting.expectOne('/api/places?query=Bastille&limit=6').flush([bastillePlace]);
+    await context.settle();
+    await fixture.whenStable();
+
+    const option = element.querySelector<HTMLElement>('[role="option"]');
+    expect(textOf(option)).toBe('Place de la Bastille, 75011 Paris, Frankreich');
+    option?.click();
+    await context.settle();
+
+    context.httpTesting
+      .expectOne('/api/stations?latitude=48.8532&longitude=2.3692&radiusInKilometers=5&fuel=e5')
+      .flush([carrefourStation]);
+    await context.settle();
+    expect(input.value).toBe('Place de la Bastille');
+    expect(element.querySelector('[role="option"]')).toBeNull();
+    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+      '1 Tankstelle im Umkreis von 5 km um Place de la Bastille'
+    );
+    await waitForTypingPause();
+    context.httpTesting.expectNone(request => request.url === '/api/places');
+  });
+
+  it('tells when no place matches and when the place search fails', async () => {
+    const { element } = await renderWithStations();
+    const input = placeSearchInput(element);
+    const typeAndWait = async (query: string) => {
+      input.value = query;
+      input.dispatchEvent(new Event('input'));
+      await context.settle();
+      await waitForTypingPause();
+      await context.settle();
+    };
+
+    await typeAndWait('Xyzzy');
+    context.httpTesting.expectOne('/api/places?query=Xyzzy&limit=6').flush([]);
+    await context.settle();
+    expect(textOf(element.querySelector('.place-search-field__status'))).toBe(
+      'Keine passenden Orte gefunden.'
+    );
+
+    await typeAndWait('Xyzzyx');
+    context.httpTesting
+      .expectOne('/api/places?query=Xyzzyx&limit=6')
+      .flush(null, { status: 502, statusText: 'Bad Gateway' });
+    await context.settle();
+    expect(textOf(element.querySelector('.place-search-field__status'))).toBe(
+      'Die Ortssuche ist gerade nicht erreichbar.'
+    );
+  });
+
+  it('keeps searching around the place but drops its name when the search is cleared', async () => {
+    const { element } = await renderWithStations();
+    TestBed.inject(SearchCenterStore).usePlace(bastillePlace);
+    await context.settle();
+    context.httpTesting
+      .expectOne('/api/stations?latitude=48.8532&longitude=2.3692&radiusInKilometers=5&fuel=e5')
+      .flush([carrefourStation]);
+    await context.settle();
+
+    getButton(element, 'Suche löschen').click();
+    await context.settle();
+
+    context.httpTesting.expectNone(() => true);
+    expect(placeSearchInput(element).value).toBe('');
+    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+      '1 Tankstelle im Umkreis von 5 km um die Kartenmitte'
+    );
   });
 
   it('credits the price data source in a new tab', async () => {
@@ -244,10 +371,12 @@ describe('ExplorePage', () => {
       .flush([carrefourStation]);
     await context.settle();
     expect(stationTitles(element)).toEqual(['Carrefour Market']);
-    expect(textOf(element.querySelector('main [role="status"]'))).toBe(
+    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
       '1 Tankstelle im Umkreis von 5 km um Dein Standort'
     );
     expect(locateButton.getAttribute('aria-busy')).toBe('false');
+    expect(locateButton.classList).toContain('explore-page__locate--active');
+    expect(placeSearchInput(element).placeholder).toBe('Dein Standort');
   });
 
   it('explains a denied location and keeps the Eiffel Tower results', async () => {
@@ -370,7 +499,7 @@ describe('ExplorePage', () => {
     expect(textOf(element.querySelector('main .message'))).toBe(
       'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.'
     );
-    expect(textOf(element.querySelector('main [role="status"]'))).toBe(
+    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
       '0 Tankstellen im Umkreis von 5 km um Eiffelturm, Paris'
     );
   });
