@@ -30,13 +30,17 @@ const applyEnvironment = (overrides: EnvironmentOverrides): (() => void) => {
 
 /**
  * Boots the real application the same way `main.ts` does, configured through the environment.
- * The German provider stays disabled unless the overrides set its API key.
+ * The German provider stays disabled unless the overrides set its API key; French station names
+ * are only looked up when the overrides name a station details server.
  */
 export const createTestApplication = async (
   overrides: EnvironmentOverrides
 ): Promise<NestExpressApplication> => {
   const restoreEnvironment = applyEnvironment({
     TANKENTANKEN_API_KEY: undefined,
+    // A closed local port: tests never reach the real website, and names stay missing unless a
+    // test points this at a fake.
+    FRANCE_STATION_DETAILS_BASE_URL: 'http://127.0.0.1:9',
     ...overrides,
   });
   try {

@@ -91,19 +91,21 @@ The browser asks for your location. Outside France the list stays empty unless t
 
 ### API (`apps/api`)
 
-| Variable                               | Default                         | Purpose                                                                                                                                       |
-| -------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                                 | `3000`                          | HTTP port                                                                                                                                     |
-| `WEB_ORIGIN`                           | `http://localhost:4200`         | Comma-separated CORS origins                                                                                                                  |
-| `FRANCE_FUEL_PRICES_BASE_URL`          | `https://data.economie.gouv.fr` | French open data API                                                                                                                          |
-| `TANKENTANKEN_API_KEY`                 | _(unset)_                       | Enables the German provider                                                                                                                   |
-| `TANKENTANKEN_BASE_URL`                | `https://api.tankentanken.de`   | German API                                                                                                                                    |
-| `PHOTON_BASE_URL`                      | `https://photon.komoot.io`      | Photon (komoot) geocoder behind the place search (`GET /api/places`)                                                                          |
-| `PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS` | `86400`                         | Cache lifetime of place search answers                                                                                                        |
-| `UPSTREAM_TIMEOUT_IN_MILLISECONDS`     | `8000`                          | Timeout per upstream request                                                                                                                  |
-| `CACHE_TIME_TO_LIVE_IN_SECONDS`        | `300`                           | Cache lifetime of upstream responses                                                                                                          |
-| `RATE_LIMIT_REQUESTS_PER_MINUTE`       | `60`                            | Requests per client and minute                                                                                                                |
-| `PROXY_SHARED_SECRET`                  | _(unset)_                       | Shared with the Pages Function (`API_PROXY_SECRET`, at least 32 characters); only then is the forwarded client address used for rate limiting |
+| Variable                                               | Default                               | Purpose                                                                                                                                       |
+| ------------------------------------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                                                 | `3000`                                | HTTP port                                                                                                                                     |
+| `WEB_ORIGIN`                                           | `http://localhost:4200`               | Comma-separated CORS origins                                                                                                                  |
+| `FRANCE_FUEL_PRICES_BASE_URL`                          | `https://data.economie.gouv.fr`       | French open data API                                                                                                                          |
+| `FRANCE_STATION_DETAILS_BASE_URL`                      | `https://www.prix-carburants.gouv.fr` | Website of the French price service; station names and brands come from its station pages                                                     |
+| `FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS` | `604800`                              | How long French station names stay cached (default one week)                                                                                  |
+| `TANKENTANKEN_API_KEY`                                 | _(unset)_                             | Enables the German provider                                                                                                                   |
+| `TANKENTANKEN_BASE_URL`                                | `https://api.tankentanken.de`         | German API                                                                                                                                    |
+| `PHOTON_BASE_URL`                                      | `https://photon.komoot.io`            | Photon (komoot) geocoder behind the place search (`GET /api/places`)                                                                          |
+| `PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS`                 | `86400`                               | Cache lifetime of place search answers                                                                                                        |
+| `UPSTREAM_TIMEOUT_IN_MILLISECONDS`                     | `8000`                                | Timeout per upstream request                                                                                                                  |
+| `CACHE_TIME_TO_LIVE_IN_SECONDS`                        | `300`                                 | Cache lifetime of upstream responses                                                                                                          |
+| `RATE_LIMIT_REQUESTS_PER_MINUTE`                       | `60`                                  | Requests per client and minute                                                                                                                |
+| `PROXY_SHARED_SECRET`                                  | _(unset)_                             | Shared with the Pages Function (`API_PROXY_SECRET`, at least 32 characters); only then is the forwarded client address used for rate limiting |
 
 Invalid values stop the API at startup with a clear message. The API does not read `.env` files; export variables or use `node --env-file`.
 

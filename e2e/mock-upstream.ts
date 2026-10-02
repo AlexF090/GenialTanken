@@ -15,6 +15,10 @@ import { MOCK_UPSTREAM_PORT as PORT, UNEXPECTED_REQUESTS_PATH } from './mock-ups
  * Also stands in for the Photon place search (`GET /api?q=…`), answering with real responses
  * recorded per normalized query in `data/photon-places.json`.
  *
+ * Station pages of prix-carburants.gouv.fr (`GET /map/recuperer_infos_pdv/<id>`, the source of
+ * French station names) answer 404, so the stations keep their street as title like the
+ * recorded fixtures expect.
+ *
  * Requests the mock does not know are answered with 500 and recorded; the test fixture reads
  * them from `UNEXPECTED_REQUESTS_PATH` after every test and fails the test.
  */
@@ -51,6 +55,7 @@ const fixture = franceResponseSchema.parse(
 );
 
 const PHOTON_SEARCH_PATH = '/api';
+const STATION_PAGE_PATH = /^\/map\/recuperer_infos_pdv\/\d+$/;
 
 const photonResponseSchema = z.looseObject({
   type: z.literal('FeatureCollection'),
@@ -140,6 +145,11 @@ const handleRequest = (request: IncomingMessage, response: ServerResponse) => {
   }
   if (request.method === 'GET' && url.pathname === DATASET_PATH) {
     sendJson(response, 200, answerRecordsQuery(url.searchParams.get('where') ?? ''));
+    return;
+  }
+  if (request.method === 'GET' && STATION_PAGE_PATH.test(url.pathname)) {
+    response.writeHead(404, { 'Content-Type': 'text/html' });
+    response.end();
     return;
   }
   const photonResponse =

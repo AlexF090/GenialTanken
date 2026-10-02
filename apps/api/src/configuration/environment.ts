@@ -17,6 +17,16 @@ export const environmentSchema = z.object({
     .url()
     .default('https://data.economie.gouv.fr')
     .transform(url => url.replace(/\/+$/, '')),
+  /**
+   * Website of the French price service; the open data lacks station names and brands, its
+   * station pages (HTML) have them.
+   */
+  FRANCE_STATION_DETAILS_BASE_URL: z
+    .url()
+    .default('https://www.prix-carburants.gouv.fr')
+    .transform(url => url.replace(/\/+$/, '')),
+  /** Names and brands rarely change, so they are cached far longer than fuel prices. */
+  FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS: positiveIntegerSchema.default(604_800),
   /** Enables the German provider; without it only French stations are served. */
   TANKENTANKEN_API_KEY: optionalTrimmedString(),
   TANKENTANKEN_BASE_URL: z

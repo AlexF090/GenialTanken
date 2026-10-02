@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Cache } from 'cache-manager';
 import type { z } from 'zod';
 import { ApplicationConfiguration } from '../configuration/application-configuration.js';
+import { describeUpstreamFailure, requestUpstream } from './request-upstream.js';
 import { UpstreamError } from './upstream-error.js';
 
 const MILLISECONDS_PER_SECOND = 1000;
@@ -15,19 +16,6 @@ export interface UpstreamJsonRequest<Schema extends z.ZodType> {
   /** How long a successful answer stays cached; defaults to `CACHE_TIME_TO_LIVE_IN_SECONDS`. */
   cacheTimeToLiveInMilliseconds?: number;
 }
-
-const describeFailure = (error: unknown): string => {
-  if (error instanceof DOMException && error.name === 'TimeoutError') {
-    return 'timed out';
-  }
-  if (error instanceof SyntaxError) {
-    return 'returned a body that is not JSON';
-  }
-  if (error instanceof Error) {
-    return `failed: ${error.message}`;
-  }
-  return 'failed for an unknown reason';
-};
 
 /**
  * GETs JSON from a data source with timeout, response validation and caching per URL.
@@ -83,27 +71,18 @@ export class UpstreamJsonFetcher {
   }
 
   private async request(url: URL, headers: Record<string, string>): Promise<unknown> {
-    const signal = AbortSignal.timeout(this.configuration.upstreamTimeoutInMilliseconds);
-    let response: Response;
-    try {
-      response = await fetch(url, { headers: { Accept: 'application/json', ...headers }, signal });
-    } catch (error) {
-      throw new UpstreamError(`GET ${url.pathname} ${describeFailure(error)}`);
-    }
-
-    if (response.status === NOT_FOUND_STATUS) {
+    const response = await requestUpstream(url, {
+      accept: 'application/json',
+      headers,
+      timeoutInMilliseconds: this.configuration.upstreamTimeoutInMilliseconds,
+    });
+    if (response === undefined) {
       return undefined;
     }
-    if (!response.ok) {
-      throw new UpstreamError(
-        `GET ${url.pathname} responded with status ${String(response.status)}`
-      );
-    }
-
     try {
       return await response.json();
     } catch (error) {
-      throw new UpstreamError(`GET ${url.pathname} ${describeFailure(error)}`);
+      throw new UpstreamError(`GET ${url.pathname} ${describeUpstreamFailure(error)}`);
     }
   }
 }

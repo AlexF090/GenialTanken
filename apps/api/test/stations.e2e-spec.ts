@@ -194,6 +194,40 @@ describe('GET /api/stations with French open data only', () => {
     ]);
   });
 
+  it('names French stations after their page on the price website, without for failed pages', async () => {
+    const stationPages = await FakeUpstream.start();
+    try {
+      france.respondTo(FRENCH_RECORDS_PATH, { status: 200, body: frenchResponse(frenchRecords) });
+      stationPages.respondTo(`/map/recuperer_infos_pdv/${String(RAPEE_RECORD_ID)}`, {
+        status: 200,
+        body: '<h3 class="fr-text--md">RELAIS DE LA RAPEE</h3><p><strong>TotalEnergies</strong><br />Quai de la Rapée</p>',
+      });
+      stationPages.respondTo(`/map/recuperer_infos_pdv/${String(AUTOMATE_RECORD_ID)}`, {
+        status: 500,
+      });
+      const api = await startApplication({ FRANCE_STATION_DETAILS_BASE_URL: stationPages.baseUrl });
+
+      const response = await api
+        .get('/api/stations')
+        .query({ ...PARIS, radiusInKilometers: '5', fuel: 'e10' })
+        .expect(200);
+
+      const stations = stationsSchema.parse(response.body);
+      expect(stations.map(({ id, brand, name }) => ({ id, brand, name }))).toEqual([
+        { id: 'fr-75012010', brand: 'TotalEnergies', name: 'RELAIS DE LA RAPEE' },
+        { id: 'fr-75015001', brand: null, name: null },
+      ]);
+
+      await api.get('/api/stations').query({ ...PARIS, radiusInKilometers: '5', fuel: 'e10' });
+      const rapeePageRequests = stationPages.requests.filter(recorded =>
+        recorded.url.endsWith(String(RAPEE_RECORD_ID))
+      );
+      expect(rapeePageRequests).toHaveLength(1);
+    } finally {
+      await stationPages.stop();
+    }
+  });
+
   it('asks the French API for stations around the position, nearest first', async () => {
     france.respondTo(FRENCH_RECORDS_PATH, { status: 200, body: frenchResponse([]) });
     const api = await startApplication();

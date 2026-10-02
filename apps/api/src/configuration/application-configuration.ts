@@ -11,6 +11,16 @@ export class ApplicationConfiguration {
     return this.configService.get('FRANCE_FUEL_PRICES_BASE_URL', { infer: true });
   }
 
+  get franceStationDetailsBaseUrl(): string {
+    return this.configService.get('FRANCE_STATION_DETAILS_BASE_URL', { infer: true });
+  }
+
+  get franceStationDetailsCacheTimeToLiveInSeconds(): number {
+    return this.configService.get('FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS', {
+      infer: true,
+    });
+  }
+
   /** `undefined` when the German provider is disabled. */
   get tankenTankenApiKey(): string | undefined {
     return this.configService.get('TANKENTANKEN_API_KEY', { infer: true });
