@@ -67,17 +67,17 @@ The French provider needs no configuration, so the app works out of the box. The
 
 ### API (`apps/api`)
 
-| Variable                           | Default                         | Purpose                                                            |
-| ---------------------------------- | ------------------------------- | ------------------------------------------------------------------ |
-| `PORT`                             | `3000`                          | HTTP port                                                          |
-| `WEB_ORIGIN`                       | `http://localhost:4200`         | Comma-separated CORS origins                                       |
-| `FRANCE_FUEL_PRICES_BASE_URL`      | `https://data.economie.gouv.fr` | French open data API                                               |
-| `TANKENTANKEN_API_KEY`             | _(unset)_                       | Enables the German provider                                        |
-| `TANKENTANKEN_BASE_URL`            | `https://api.tankentanken.de`   | German API                                                         |
-| `UPSTREAM_TIMEOUT_IN_MILLISECONDS` | `8000`                          | Timeout per upstream request                                       |
-| `CACHE_TIME_TO_LIVE_IN_SECONDS`    | `300`                           | Cache lifetime of upstream responses                               |
-| `RATE_LIMIT_REQUESTS_PER_MINUTE`   | `60`                            | Requests per client and minute                                     |
-| `TRUSTED_PROXY_HOPS`               | `1`                             | Reverse proxies in front of the API (2 behind Cloudflare + Render) |
+| Variable                           | Default                         | Purpose                                                                                                                                       |
+| ---------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                             | `3000`                          | HTTP port                                                                                                                                     |
+| `WEB_ORIGIN`                       | `http://localhost:4200`         | Comma-separated CORS origins                                                                                                                  |
+| `FRANCE_FUEL_PRICES_BASE_URL`      | `https://data.economie.gouv.fr` | French open data API                                                                                                                          |
+| `TANKENTANKEN_API_KEY`             | _(unset)_                       | Enables the German provider                                                                                                                   |
+| `TANKENTANKEN_BASE_URL`            | `https://api.tankentanken.de`   | German API                                                                                                                                    |
+| `UPSTREAM_TIMEOUT_IN_MILLISECONDS` | `8000`                          | Timeout per upstream request                                                                                                                  |
+| `CACHE_TIME_TO_LIVE_IN_SECONDS`    | `300`                           | Cache lifetime of upstream responses                                                                                                          |
+| `RATE_LIMIT_REQUESTS_PER_MINUTE`   | `60`                            | Requests per client and minute                                                                                                                |
+| `PROXY_SHARED_SECRET`              | _(unset)_                       | Shared with the Pages Function (`API_PROXY_SECRET`, at least 32 characters); only then is the forwarded client address used for rate limiting |
 
 Invalid values stop the API at startup with a clear message. The API does not read `.env` files; export variables or use `node --env-file`.
 
@@ -100,4 +100,8 @@ All services run on free tiers:
 - **Web:** Cloudflare Pages, deployed by GitHub Actions after CI passed (preview per pull request, production on `main`). A Pages Function forwards `/api/*` to the API.
 - **API:** Render free web service built from `apps/api/Dockerfile` ([render.yaml](render.yaml)); deploys after the GitHub checks of the commit passed. The free tier sleeps after 15 minutes without traffic; the first request can take about a minute, which the web app announces.
 
-Required repository settings: secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, variable `MAPBOX_ACCESS_TOKEN`, environments `preview` and `production`; in Cloudflare Pages the variable `API_ORIGIN` (URL of the Render service).
+Required settings:
+
+- **GitHub:** secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, variable `MAPBOX_ACCESS_TOKEN`, environments `preview` and `production`.
+- **Cloudflare Pages:** variables `API_ORIGIN` (URL of the Render service) and `API_PROXY_SECRET` (random string, at least 32 characters).
+- **Render:** `PROXY_SHARED_SECRET` with the same value as `API_PROXY_SECRET`; optionally `TANKENTANKEN_API_KEY`.
