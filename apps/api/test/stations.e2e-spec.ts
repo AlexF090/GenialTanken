@@ -342,7 +342,7 @@ describe('GET /api/stations with French and German data', () => {
     expect(stationsSchema.parse(response.body)[0]).toEqual(EXPECTED_ARAL_STATION);
   });
 
-  it('asks the German API for the radius in meters with the API key', async () => {
+  it('asks the German API around the rounded position for the radius in meters with the API key', async () => {
     france.respondTo(FRENCH_RECORDS_PATH, { status: 200, body: frenchResponse([]) });
     germany.respondTo(GERMAN_STATIONS_PATH, { status: 200, body: [] });
     const api = await startWithGermany();
@@ -354,7 +354,7 @@ describe('GET /api/stations with French and German data', () => {
 
     expect(germany.requests).toHaveLength(1);
     expect(germany.requests[0]?.url).toBe(
-      '/gas-stations?latitude=51.3127&longitude=9.4797&radius=10000'
+      '/gas-stations?latitude=51.313&longitude=9.48&radius=10000'
     );
     expect(germany.requests[0]?.headers.authorization).toBe(`Bearer ${GERMAN_TEST_API_KEY}`);
   });
@@ -441,6 +441,25 @@ describe('GET /api/stations with French and German data', () => {
     expect(ids).toHaveLength(100);
     expect(ids[0]).toBe('de-00000000-0000-4000-8000-000000000000');
     expect(ids.at(-1)).toBe('fr-1049');
+  });
+
+  it('shares one German request between nearby positions, with exact distances', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, { status: 200, body: frenchResponse([]) });
+    germany.respondTo(GERMAN_STATIONS_PATH, { status: 200, body: germanStations });
+    const api = await startWithGermany();
+
+    const first = await api
+      .get('/api/stations')
+      .query({ latitude: '51.3127', longitude: '9.4797', fuel: 'e5' })
+      .expect(200);
+    const second = await api
+      .get('/api/stations')
+      .query({ latitude: '51.3131', longitude: '9.4803', fuel: 'e5' })
+      .expect(200);
+
+    expect(germany.requests).toHaveLength(1);
+    expect(stationsSchema.parse(first.body)[0]?.distanceInMeters).toBe(721);
+    expect(stationsSchema.parse(second.body)[0]?.distanceInMeters).not.toBe(721);
   });
 
   it('caches both providers', async () => {

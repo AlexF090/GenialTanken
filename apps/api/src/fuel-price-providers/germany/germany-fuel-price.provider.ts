@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { ApplicationConfiguration } from '../../configuration/application-configuration.js';
 import { FuelPriceProviderError } from '../fuel-price-provider.js';
 import type { FuelPriceProvider } from '../fuel-price-provider.js';
+import { roundCoordinate } from '../round-coordinate.js';
 import { UpstreamJsonFetcher } from '../upstream-json-fetcher.js';
 import {
   tankenTankenStationSchema,
@@ -38,18 +39,15 @@ export class GermanyFuelPriceProvider implements FuelPriceProvider {
 
     const url = this.urlFor(STATIONS_PATH);
     url.search = new URLSearchParams({
-      latitude: String(latitude),
-      longitude: String(longitude),
+      latitude: roundCoordinate(latitude),
+      longitude: roundCoordinate(longitude),
       radius: String(Math.round(radiusInKilometers * METERS_PER_KILOMETER)),
     }).toString();
-    const stations = await this.upstreamJsonFetcher.fetch({
+    const stations = await this.upstreamJsonFetcher.fetchRequired({
       url,
       schema: tankenTankenStationsSchema,
       headers: this.authorizationHeaders(),
     });
-    if (stations === undefined) {
-      throw new FuelPriceProviderError(`GET ${url.pathname} responded with status 404`);
-    }
     return stations.map(toStationFromGermany);
   }
 

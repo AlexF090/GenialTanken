@@ -1,8 +1,8 @@
 import type { Station, StationsQuery } from '@genialtanken/contracts';
 import { Injectable, Logger } from '@nestjs/common';
 import { ApplicationConfiguration } from '../../configuration/application-configuration.js';
-import { FuelPriceProviderError } from '../fuel-price-provider.js';
 import type { FuelPriceProvider } from '../fuel-price-provider.js';
+import { roundCoordinate } from '../round-coordinate.js';
 import { UpstreamJsonFetcher } from '../upstream-json-fetcher.js';
 import { frenchRecordSchema, frenchRecordsResponseSchema } from './french-record.schema.js';
 import type { FrenchRecord } from './french-record.schema.js';
@@ -11,17 +11,9 @@ import { FRENCH_PRICE_FIELDS, toStationFromFrance } from './to-station-from-fran
 const RECORDS_PATH =
   '/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records';
 const MAXIMUM_RECORDS_PER_REQUEST = 100;
-/**
- * About 100 m; rounding lets nearby users share cached responses (quota: 50,000 per day).
- * Exact distances are computed afterwards from the unrounded position.
- */
-const COORDINATE_DECIMALS = 3;
 const NUMERIC_IDENTIFIER_PATTERN = /^\d+$/;
 
-const roundCoordinate = (coordinate: number): string =>
-  String(Number(coordinate.toFixed(COORDINATE_DECIMALS)));
-
-/** French fuel prices from the government open data portal (no API key needed). */
+/** French fuel prices from the government open data portal (no API key, 50,000 requests per day). */
 @Injectable()
 export class FranceFuelPriceProvider implements FuelPriceProvider {
   readonly country = 'FR';
@@ -59,13 +51,10 @@ export class FranceFuelPriceProvider implements FuelPriceProvider {
   private async findRecords(parameters: Record<string, string>): Promise<FrenchRecord[]> {
     const url = new URL(`${this.configuration.franceFuelPricesBaseUrl}${RECORDS_PATH}`);
     url.search = new URLSearchParams(parameters).toString();
-    const response = await this.upstreamJsonFetcher.fetch({
+    const response = await this.upstreamJsonFetcher.fetchRequired({
       url,
       schema: frenchRecordsResponseSchema,
     });
-    if (response === undefined) {
-      throw new FuelPriceProviderError(`GET ${url.pathname} responded with status 404`);
-    }
 
     const records = response.results.flatMap(result => {
       const parsed = frenchRecordSchema.safeParse(result);

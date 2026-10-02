@@ -69,6 +69,19 @@ export class UpstreamJsonFetcher {
     return parsed.data;
   }
 
+  /** Like `fetch`, but for resources that always exist: a 404 is a failure. */
+  async fetchRequired<Schema extends z.ZodType>(
+    upstreamJsonRequest: UpstreamJsonRequest<Schema>
+  ): Promise<z.infer<Schema>> {
+    const body = await this.fetch(upstreamJsonRequest);
+    if (body === undefined) {
+      throw new FuelPriceProviderError(
+        `GET ${upstreamJsonRequest.url.pathname} responded with status ${String(NOT_FOUND_STATUS)}`
+      );
+    }
+    return body;
+  }
+
   private async request(url: URL, headers: Record<string, string>): Promise<unknown> {
     const signal = AbortSignal.timeout(this.configuration.upstreamTimeoutInMilliseconds);
     let response: Response;
