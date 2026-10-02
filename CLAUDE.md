@@ -41,7 +41,7 @@ pnpm workspaces with the official Angular and Nest CLIs — deliberately no Nx (
 - `apps/api` — NestJS 12 backend-for-frontend, ESM. The browser never calls upstream sources directly.
 - `apps/web` — Angular 22, standalone, zoneless, signals, `httpResource`, Signal Forms, Leaflet.
 - `apps/web/functions` — Cloudflare Pages Function proxying `/api/*` to the API in production.
-- `e2e` — Playwright against real web + API with a local stand-in for the French open data API (`e2e/mock-upstream.ts`, recorded data in `e2e/data`). Any unmocked outgoing request fails the test.
+- `e2e` — Playwright against real web + API with a local stand-in for the French open data API and Photon (`e2e/mock-upstream.ts`, recorded data in `e2e/data`; Photon answers keyed by normalized query in `photon-places.json`). Any unmocked outgoing request fails the test.
 
 ESLint forbids `apps/web` and `apps/api` from importing each other; shared code goes into contracts.
 
@@ -49,12 +49,14 @@ ESLint forbids `apps/web` and `apps/api` from importing each other; shared code 
 
 1. `StationsController` validates query/params with Nest's built-in Standard Schema validation using the zod schemas from contracts (no `nestjs-zod`).
 2. `StationsService` fans out to all enabled `FuelPriceProvider`s (`FUEL_PRICE_PROVIDERS` injection token) with `Promise.allSettled`. Partial results are fine; only when every provider fails does it throw `BadGatewayException`. It computes exact distances, filters by radius and fuel, sorts and caps at 100.
-3. Providers live in `src/fuel-price-providers/<country>/`: a provider class, a zod schema for the upstream payload, and a pure `to-station-from-<country>.ts` mapper (unit-tested). Upstream HTTP goes through `UpstreamJsonFetcher` (timeout, cache). Providers return `distanceInMeters: null`; the service fills it in. Station IDs are country-prefixed (`fr-…`, `de-…`, see `station-identifier.ts`) so detail lookups route to the right provider.
+3. Providers live in `src/fuel-price-providers/<country>/`: a provider class, a zod schema for the upstream payload, and a pure `to-station-from-<country>.ts` mapper (unit-tested). Upstream HTTP goes through `UpstreamJsonFetcher` (see below). Providers return `distanceInMeters: null`; the service fills it in. Station IDs are country-prefixed (`fr-…`, `de-…`, see `station-identifier.ts`) so detail lookups route to the right provider.
 4. France is always enabled; Germany only when `TANKENTANKEN_API_KEY` is set (factory in `fuel-price-providers.module.ts`). A new country = new provider + register it there + add its code to `COUNTRY_CODES` in contracts.
+5. Place search (`src/places/`): `GET /api/places` validates with `placesQuerySchema`; `PlacesService` asks Photon (komoot, `PHOTON_BASE_URL`) with the normalized query (trim, collapse whitespace, lowercase), twice the limit and a France/Germany bounding box, maps features with the pure `photon/to-place-from-photon.ts` (drops other countries), dedupes by id and cuts to the limit. Answers are cached `PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS` (default one day); upstream failures become `502` with `ERROR_MESSAGES.placeSearchUnavailable`.
 
 Cross-cutting API pieces:
 
 - Environment is validated once at startup by a zod schema (`src/configuration/environment.ts`) and exposed via the injectable `ApplicationConfiguration`; invalid values abort startup. The API does not read `.env` files.
+- `src/upstream/` (`UpstreamModule`) provides `UpstreamJsonFetcher` for every external data source: timeout, zod validation, cache per URL (optional per-request `cacheTimeToLiveInMilliseconds`), failures thrown as `UpstreamError` (`FuelPriceProviderError` extends it). Callers turn `UpstreamError` into `502`.
 - All client-facing error messages live in `src/common/error-messages.ts`; `api-error.filter.ts` shapes every error body to `apiErrorSchema`.
 - `configure-application.ts` holds HTTP setup (prefix `api`, `/health` excluded, CORS, Swagger at `/api/docs`) and is shared by `main.ts` and the e2e tests (`test/support/create-test-application.ts`), so keep setup there, not in `main.ts`.
 - Rate limiting: `ClientAddressThrottlerGuard` trusts the forwarded client address only when the request carries the shared secret (`PROXY_SHARED_SECRET`) set by the Pages Function (`resolve-client-address.ts`); `trust proxy` is limited to one hop on purpose.

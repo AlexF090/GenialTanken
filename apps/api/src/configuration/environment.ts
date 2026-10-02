@@ -23,6 +23,13 @@ export const environmentSchema = z.object({
     .url()
     .default('https://api.tankentanken.de')
     .transform(url => url.replace(/\/+$/, '')),
+  /** Photon (komoot) instance behind the place search. */
+  PHOTON_BASE_URL: z
+    .url()
+    .default('https://photon.komoot.io')
+    .transform(url => url.replace(/\/+$/, '')),
+  /** Place search answers rarely change, so they are cached far longer than fuel prices. */
+  PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS: positiveIntegerSchema.default(86_400),
   WEB_ORIGIN: z
     .string()
     .default('http://localhost:4200')

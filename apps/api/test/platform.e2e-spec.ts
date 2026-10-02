@@ -16,7 +16,11 @@ const openApiInformationSchema = z.object({ info: z.object({ version: z.string()
 const openApiDocumentSchema = z.object({
   paths: z.record(z.string(), z.unknown()),
   components: z.object({
-    schemas: z.object({ Station: requiredPropertiesSchema, ApiError: requiredPropertiesSchema }),
+    schemas: z.object({
+      Station: requiredPropertiesSchema,
+      Place: requiredPropertiesSchema,
+      ApiError: requiredPropertiesSchema,
+    }),
   }),
 });
 
@@ -62,15 +66,23 @@ describe('GET /health', () => {
 });
 
 describe('OpenAPI document', () => {
-  it('documents the stations endpoints with the contract schemas', async () => {
+  it('documents the stations and places endpoints with the contract schemas', async () => {
     const api = await startApplication();
 
     const response = await api.get('/api/docs-json').expect(200);
 
     const { paths, components } = openApiDocumentSchema.parse(response.body);
-    expect(Object.keys(paths)).toEqual(['/health', '/api/stations', '/api/stations/{id}']);
+    expect(Object.keys(paths)).toEqual([
+      '/health',
+      '/api/stations',
+      '/api/stations/{id}',
+      '/api/places',
+    ]);
     expect(components.schemas.Station.required).toEqual(
       expect.arrayContaining(['id', 'pricesInEuro', 'distanceInMeters'])
+    );
+    expect(components.schemas.Place.required).toEqual(
+      expect.arrayContaining(['id', 'name', 'description', 'country', 'latitude', 'longitude'])
     );
     expect(components.schemas.ApiError.required).toEqual(['statusCode', 'message']);
   });

@@ -2,5 +2,6 @@
 export const ERROR_MESSAGES = {
   upstreamUnavailable: 'The fuel price service is unavailable.',
   stationNotFound: 'The station was not found.',
+  placeSearchUnavailable: 'The place search is unavailable.',
   internalServerError: 'An unexpected error occurred.',
 } as const;

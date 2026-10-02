@@ -20,6 +20,14 @@ export class ApplicationConfiguration {
     return this.configService.get('TANKENTANKEN_BASE_URL', { infer: true });
   }
 
+  get photonBaseUrl(): string {
+    return this.configService.get('PHOTON_BASE_URL', { infer: true });
+  }
+
+  get placesCacheTimeToLiveInSeconds(): number {
+    return this.configService.get('PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS', { infer: true });
+  }
+
   get webOrigins(): string[] {
     return this.configService.get('WEB_ORIGIN', { infer: true });
   }

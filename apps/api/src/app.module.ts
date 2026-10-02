@@ -7,6 +7,7 @@ import { ApiErrorFilter } from './common/api-error.filter.js';
 import { ApplicationConfiguration } from './configuration/application-configuration.js';
 import { ConfigurationModule } from './configuration/configuration.module.js';
 import { HealthModule } from './health/health.module.js';
+import { PlacesModule } from './places/places.module.js';
 import { ClientAddressThrottlerGuard } from './rate-limit/client-address-throttler.guard.js';
 import { StationsModule } from './stations/stations.module.js';
 
@@ -36,6 +37,7 @@ export class AppModule {
         }),
         HealthModule,
         StationsModule,
+        PlacesModule,
       ],
       providers: [
         { provide: APP_PIPE, useValue: new StandardSchemaValidationPipe() },

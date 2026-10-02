@@ -28,6 +28,8 @@ describe('Startup configuration', () => {
   it.each([
     ['FRANCE_FUEL_PRICES_BASE_URL', 'not a url'],
     ['TANKENTANKEN_BASE_URL', 'not a url'],
+    ['PHOTON_BASE_URL', 'not a url'],
+    ['PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS', '0'],
     ['WEB_ORIGIN', 'genialtanken'],
     ['PORT', 'eighty'],
     ['UPSTREAM_TIMEOUT_IN_MILLISECONDS', 'soon'],

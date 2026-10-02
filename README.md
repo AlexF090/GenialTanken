@@ -21,6 +21,8 @@ The browser only talks to the BFF. The BFF queries all enabled **fuel price prov
 | France   | French government open data ([prix-carburants.gouv.fr](https://www.prix-carburants.gouv.fr/rubrique/opendata/)) via `data.economie.gouv.fr` | no, always enabled                     |
 | Germany  | [tankentanken.de](https://www.tankentanken.de/) API                                                                                         | yes, enabled by `TANKENTANKEN_API_KEY` |
 
+Place suggestions for the search field (`GET /api/places`) come from the public [Photon](https://photon.komoot.io/) geocoder (OpenStreetMap data), limited to France and Germany and cached for a day.
+
 Only current prices are served; there is no price history. French data is published under the Licence Ouverte / Open Licence 2.0 (Etalab); the app credits the source.
 
 ## Tech stack
@@ -89,17 +91,19 @@ The browser asks for your location. Outside France the list stays empty unless t
 
 ### API (`apps/api`)
 
-| Variable                           | Default                         | Purpose                                                                                                                                       |
-| ---------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                             | `3000`                          | HTTP port                                                                                                                                     |
-| `WEB_ORIGIN`                       | `http://localhost:4200`         | Comma-separated CORS origins                                                                                                                  |
-| `FRANCE_FUEL_PRICES_BASE_URL`      | `https://data.economie.gouv.fr` | French open data API                                                                                                                          |
-| `TANKENTANKEN_API_KEY`             | _(unset)_                       | Enables the German provider                                                                                                                   |
-| `TANKENTANKEN_BASE_URL`            | `https://api.tankentanken.de`   | German API                                                                                                                                    |
-| `UPSTREAM_TIMEOUT_IN_MILLISECONDS` | `8000`                          | Timeout per upstream request                                                                                                                  |
-| `CACHE_TIME_TO_LIVE_IN_SECONDS`    | `300`                           | Cache lifetime of upstream responses                                                                                                          |
-| `RATE_LIMIT_REQUESTS_PER_MINUTE`   | `60`                            | Requests per client and minute                                                                                                                |
-| `PROXY_SHARED_SECRET`              | _(unset)_                       | Shared with the Pages Function (`API_PROXY_SECRET`, at least 32 characters); only then is the forwarded client address used for rate limiting |
+| Variable                               | Default                         | Purpose                                                                                                                                       |
+| -------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                                 | `3000`                          | HTTP port                                                                                                                                     |
+| `WEB_ORIGIN`                           | `http://localhost:4200`         | Comma-separated CORS origins                                                                                                                  |
+| `FRANCE_FUEL_PRICES_BASE_URL`          | `https://data.economie.gouv.fr` | French open data API                                                                                                                          |
+| `TANKENTANKEN_API_KEY`                 | _(unset)_                       | Enables the German provider                                                                                                                   |
+| `TANKENTANKEN_BASE_URL`                | `https://api.tankentanken.de`   | German API                                                                                                                                    |
+| `PHOTON_BASE_URL`                      | `https://photon.komoot.io`      | Photon (komoot) geocoder behind the place search (`GET /api/places`)                                                                          |
+| `PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS` | `86400`                         | Cache lifetime of place search answers                                                                                                        |
+| `UPSTREAM_TIMEOUT_IN_MILLISECONDS`     | `8000`                          | Timeout per upstream request                                                                                                                  |
+| `CACHE_TIME_TO_LIVE_IN_SECONDS`        | `300`                           | Cache lifetime of upstream responses                                                                                                          |
+| `RATE_LIMIT_REQUESTS_PER_MINUTE`       | `60`                            | Requests per client and minute                                                                                                                |
+| `PROXY_SHARED_SECRET`                  | _(unset)_                       | Shared with the Pages Function (`API_PROXY_SECRET`, at least 32 characters); only then is the forwarded client address used for rate limiting |
 
 Invalid values stop the API at startup with a clear message. The API does not read `.env` files; export variables or use `node --env-file`.
 
@@ -113,7 +117,7 @@ Invalid values stop the API at startup with a clear message. The API does not re
 
 - **Unit (Vitest):** contracts schemas, API mappers and parsers, Angular services and components through their public interfaces.
 - **API end-to-end (Supertest):** the real Nest application against fake upstream servers for France and Germany.
-- **Browser end-to-end (Playwright):** web + API + a local stand-in for the French open data API serving recorded real data. Every request leaving the app fails the test unless it is mocked.
+- **Browser end-to-end (Playwright):** web + API + a local stand-in for the French open data API and the Photon place search serving recorded real data. Every request leaving the app fails the test unless it is mocked.
 
 ## Deployment
 
