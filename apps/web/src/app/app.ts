@@ -19,10 +19,7 @@ import { NavigationBar } from './ui/navigation-bar/navigation-bar';
   // The shell styles the host element of whichever page the router renders.
   encapsulation: ViewEncapsulation.None,
   template: `
-    <a
-      class="skip-link shell__skip-link"
-      href="#main-content"
-      (click)="skipToContent($event, content)"
+    <a class="skip-link" href="#main-content" (click)="skipToContent($event, content)"
       >Zum Inhalt springen</a
     >
     <app-navigation-bar class="shell__navigation" />
@@ -92,11 +89,6 @@ import { NavigationBar } from './ui/navigation-bar/navigation-bar';
       @include breakpoints.compact {
         scroll-padding-bottom: calc(var(--layout-navigation-height) + var(--safe-area-bottom));
       }
-    }
-
-    // The floating shadow of the hidden skip link would otherwise peek into the viewport.
-    .shell__skip-link:not(:focus-visible) {
-      box-shadow: none;
     }
 
     // Zero specificity, so a page can override this on its own host.
