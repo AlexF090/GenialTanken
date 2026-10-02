@@ -1,10 +1,5 @@
-import { createApiRequest } from './create-api-request.ts';
-
-/** Bindings configured for the Pages project (production and preview). */
-interface PagesEnvironment {
-  /** Origin of the NestJS API, e.g. `https://genialtanken-api.onrender.com`. */
-  API_ORIGIN: string;
-}
+import { proxyApiRequest } from './proxy-api-request.ts';
+import type { PagesEnvironment } from './proxy-api-request.ts';
 
 /** Subset of the Cloudflare Pages Function context this proxy uses. */
 interface PagesFunctionContext {
@@ -14,4 +9,4 @@ interface PagesFunctionContext {
 
 /** Proxies every `/api/*` request of the web app to the API on Render. */
 export const onRequest = ({ request, env }: PagesFunctionContext): Promise<Response> =>
-  fetch(createApiRequest(request, env.API_ORIGIN));
+  proxyApiRequest(request, env, apiRequest => fetch(apiRequest));
