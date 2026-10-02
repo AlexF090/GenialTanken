@@ -49,15 +49,6 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
-      '@typescript-eslint/no-floating-promises': [
-        'error',
-        {
-          // node:test registers suites and tests; their returned promises are handled by the runner
-          allowForKnownSafeCalls: [
-            { from: 'package', name: ['describe', 'it', 'test'], package: 'node:test' },
-          ],
-        },
-      ],
       // Angular and Nest classes are configured entirely through decorators
       '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }],
       '@typescript-eslint/no-unused-vars': [
