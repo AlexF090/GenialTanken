@@ -1,94 +1,73 @@
+import type { Page } from '@playwright/test';
 import {
-  aralStation,
+  chooseFuel,
   expect,
-  formatPrice,
-  independentStation,
-  jetStation,
-  listName,
-  shellStation,
-  stationListItem,
-  stationListItems,
+  FUEL_OPTION_LABELS,
+  openSettings,
+  openStationList,
+  rueBailleulStation,
+  stationCard,
+  stationCards,
   test,
 } from '../fixtures.js';
-import type { Page } from '@playwright/test';
 
-/**
- * Loads the station list first and then opens the settings via the header link
- * (client-side navigation keeps the already fetched stations in memory).
- */
-const openSettingsAfterStationsLoaded = async (page: Page): Promise<void> => {
-  await page.goto('/');
-  await expect(stationListItems(page)).toHaveCount(3);
-  await page.getByRole('button', { name: 'Einstellungen' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Einstellungen' })).toBeVisible();
-};
+const fuelOptions = (page: Page) => page.getByRole('group', { name: 'Kraftstoff' });
 
 test.describe('settings', () => {
-  test('shows the fuel options with E5 selected and a 5 km radius', async ({ page }) => {
-    await openSettingsAfterStationsLoaded(page);
+  test('offers every fuel type with E5 selected and a 5 km radius by default', async ({ page }) => {
+    await page.goto('/settings');
 
-    await expect(page.getByRole('radio', { name: 'E5' })).toBeChecked();
-    await expect(page.getByRole('radio', { name: 'E10' })).not.toBeChecked();
-    await expect(page.getByRole('radio', { name: 'Diesel' })).not.toBeChecked();
-    await expect(page.getByRole('heading', { name: 'Radius: 5 km' })).toBeVisible();
-    await expect(page.getByRole('slider')).toHaveValue('5');
-    await expect(page.getByRole('button', { name: 'Speichern' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Einstellungen' })).toBeVisible();
+    await expect(fuelOptions(page).getByRole('radio')).toHaveCount(FUEL_OPTION_LABELS.length);
+    for (const fuel of FUEL_OPTION_LABELS) {
+      const radio = fuelOptions(page).getByRole('radio', { name: fuel, exact: true });
+      await (fuel === 'E5' ? expect(radio).toBeChecked() : expect(radio).not.toBeChecked());
+    }
+
+    const radiusSlider = page.getByRole('slider', { name: 'Radius: 5 km' });
+    await expect(radiusSlider).toHaveValue('5');
+    await expect(radiusSlider).toHaveAttribute('min', '1');
+    await expect(radiusSlider).toHaveAttribute('max', '25');
+    // Changes apply immediately, so there is nothing to submit.
+    await expect(page.getByRole('main').getByRole('button')).toHaveCount(0);
   });
 
-  test('changing the radius updates the radius label', async ({ page }) => {
-    await openSettingsAfterStationsLoaded(page);
+  test('changes apply immediately and survive a reload', async ({ page }) => {
+    await page.goto('/settings');
 
-    await page.getByRole('slider').fill('15');
+    await fuelOptions(page).getByRole('radio', { name: 'E10', exact: true }).check();
+    await page.getByRole('slider').fill('12');
 
-    await expect(page.getByRole('heading', { name: 'Radius: 15 km' })).toBeVisible();
-  });
-
-  test('switching to E10 updates the header label and filters the list', async ({ page }) => {
-    await openSettingsAfterStationsLoaded(page);
-
-    await page.getByRole('radio', { name: 'E10' }).check();
-    await expect(page.getByRole('heading', { level: 2, name: 'E10' })).toBeVisible();
-
-    // Known bug: "Speichern" only re-reads the geolocation. Latitude and longitude do not
-    // change, so the stations are not fetched again with the new fuel type.
-    await page.getByRole('button', { name: 'Speichern' }).click();
-    await page.getByRole('link', { name: 'Start' }).click();
-
-    await expect(page.getByRole('heading', { level: 2, name: 'E10' })).toBeVisible();
-    await expect(stationListItems(page)).toHaveCount(2);
-    await expect(stationListItem(page, aralStation)).toContainText(
-      formatPrice(aralStation.fuelPrices.e10?.price ?? 0)
-    );
-    await expect(stationListItem(page, shellStation)).toContainText(
-      formatPrice(shellStation.fuelPrices.e10?.price ?? 0)
-    );
-    // Without an E10 price the station is hidden by the list's own filter.
-    await expect(page.getByText(listName(independentStation))).toHaveCount(0);
-    // Known bug (see above): JET has an E10 price but was already dropped by the E5 fetch filter.
-    await expect(page.getByText(listName(jetStation))).toHaveCount(0);
-  });
-
-  test('switching to Diesel shows diesel prices for all fetched stations', async ({ page }) => {
-    await openSettingsAfterStationsLoaded(page);
-
-    await page.getByRole('radio', { name: 'Diesel' }).check();
-    await expect(page.getByRole('heading', { level: 2, name: 'Diesel' })).toBeVisible();
-    await page.getByRole('link', { name: 'Start' }).click();
-
-    await expect(stationListItems(page)).toHaveCount(3);
-    await expect(stationListItem(page, independentStation)).toContainText(
-      formatPrice(independentStation.fuelPrices.diesel?.price ?? 0)
-    );
-  });
-
-  test('the fuel choice is not persisted across a reload', async ({ page }) => {
-    await openSettingsAfterStationsLoaded(page);
-    await page.getByRole('radio', { name: 'E10' }).check();
-    await expect(page.getByRole('heading', { level: 2, name: 'E10' })).toBeVisible();
+    await expect(page.getByText('Kraftstoff: E10', { exact: true })).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Radius: 12 km' })).toHaveValue('12');
 
     await page.reload();
 
-    await expect(page.getByRole('radio', { name: 'E5' })).toBeChecked();
-    await expect(page.getByRole('heading', { level: 2, name: 'E5' })).toBeVisible();
+    await expect(fuelOptions(page).getByRole('radio', { name: 'E10', exact: true })).toBeChecked();
+    await expect(page.getByRole('slider', { name: 'Radius: 12 km' })).toHaveValue('12');
+    await expect(page.getByText('Kraftstoff: E10', { exact: true })).toBeVisible();
+  });
+
+  test('changing the radius refetches the stations within the new radius', async ({ page }) => {
+    await page.goto('/');
+    await chooseFuel(page, 'Diesel');
+    await openStationList(page);
+    await expect(stationCards(page)).toHaveCount(4);
+
+    await openSettings(page);
+    await page.getByRole('slider').fill('1');
+    await expect(page.getByRole('slider', { name: 'Radius: 1 km' })).toHaveValue('1');
+    await openStationList(page);
+
+    await expect(stationCards(page)).toHaveCount(1);
+    await expect(stationCard(page, rueBailleulStation)).toContainText(rueBailleulStation.distance);
+
+    await chooseFuel(page, 'E10');
+    await openStationList(page);
+
+    await expect(stationCards(page)).toHaveCount(0);
+    await expect(
+      page.getByText('Keine Tankstellen mit Preis für E10 im Umkreis von 1 km gefunden.')
+    ).toBeVisible();
   });
 });

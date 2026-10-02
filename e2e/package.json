@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Playwright characterization tests for the GenialTanken client.",
+  "description": "Playwright end-to-end tests for the GenialTanken web app and API.",
   "scripts": {
     "test": "playwright test",
     "typecheck": "tsc --noEmit"

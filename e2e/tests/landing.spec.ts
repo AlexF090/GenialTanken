@@ -1,91 +1,129 @@
 import {
-  aralStation,
+  boulevardDeLHopitalStation,
+  boulevardVincentAuriolStation,
+  chooseFuel,
   expect,
-  formatPrice,
-  independentStation,
-  jetStation,
-  listName,
-  shellStation,
-  stationListItem,
-  stationListItems,
+  favoriteButton,
+  openStationList,
+  quaiDeLaRapeeStation,
+  rueBailleulStation,
+  stationCard,
+  stationCards,
   test,
 } from '../fixtures.js';
 
-test.describe('landing page', () => {
-  test('lists the stations around the current position with E5 as default fuel', async ({
+test.describe('station list', () => {
+  test('lists the stations with an E5 price around the current position by default', async ({
     page,
   }) => {
     await page.goto('/');
 
+    await expect(page).toHaveTitle('GenialTanken');
     await expect(page.getByRole('heading', { level: 1, name: 'GenialTanken' })).toBeVisible();
-    await expect(page.getByRole('heading', { level: 2, name: 'E5' })).toBeVisible();
+    await expect(page.getByText('Kraftstoff: E5', { exact: true })).toBeVisible();
     await expect(
-      page.getByRole('link', { name: 'Unterstüzt von TankenTanken.de' })
-    ).toHaveAttribute('href', 'https://www.tankentanken.de/');
+      page.getByRole('link', { name: 'Preisdaten: prix-carburants.gouv.fr (öffnet in neuem Tab)' })
+    ).toHaveAttribute('href', 'https://www.prix-carburants.gouv.fr/');
 
-    // The JET station has no E5 price and is dropped by the filter applied while fetching.
-    await expect(stationListItems(page)).toHaveCount(3);
-    await expect(stationListItems(page)).toContainText([
-      listName(aralStation),
-      listName(shellStation),
-      listName(independentStation),
-    ]);
-    await expect(page.getByText(listName(jetStation))).toHaveCount(0);
+    // Only one fixture station sells E5 (sp95); the others are filtered out by the API.
+    await expect(stationCards(page)).toHaveCount(1);
+    await expect(page.getByText('Tankstellen werden geladen …')).toBeHidden();
 
-    const aralItem = stationListItem(page, aralStation);
-    await expect(aralItem).toContainText(formatPrice(aralStation.fuelPrices.e5?.price ?? 0));
-    await expect(aralItem).toContainText('Wilhelmshöher Allee 100');
-    await expect(aralItem).toContainText('34119 Kassel');
-    await expect(aralItem).toContainText('0.85 km');
-
-    // Distance is truncated, not rounded: 1949 m is shown as 1.94 km.
-    await expect(stationListItem(page, shellStation)).toContainText('1.94 km');
-
-    // Stations without a brand show the name, truncated to 14 characters plus an ellipsis.
-    await expect(stationListItem(page, independentStation)).toContainText('Freie Tankstel...');
+    const card = stationCard(page, rueBailleulStation);
+    await expect(card.getByRole('link')).toHaveAttribute(
+      'href',
+      `/stations/${rueBailleulStation.id}`
+    );
+    await expect(card).toContainText(rueBailleulStation.cityLine);
+    await expect(card).toContainText('2,540 €');
+    await expect(card).toContainText(rueBailleulStation.distance);
+    await expect(favoriteButton(card, rueBailleulStation)).toHaveAttribute('aria-pressed', 'false');
   });
 
-  test('each station card links to its detail page', async ({ page }) => {
+  test('a station card opens the detail page of the station', async ({ page }) => {
     await page.goto('/');
 
-    await stationListItem(page, shellStation).getByRole('link').click();
+    await stationCard(page, rueBailleulStation).getByRole('link').click();
 
-    await expect(page).toHaveURL(`/${shellStation.id}`);
+    await expect(page).toHaveURL(`/stations/${rueBailleulStation.id}`);
     await expect(page.getByRole('heading', { level: 1, name: 'Details' })).toBeVisible();
+    await expect(
+      page.getByRole('article').getByRole('heading', { level: 2, name: rueBailleulStation.title })
+    ).toBeVisible();
   });
 
-  test('toggles between API order (km) and ascending E5 price', async ({ page }) => {
+  test('changing the fuel type refetches the stations', async ({ page }) => {
     await page.goto('/');
-    await expect(stationListItems(page)).toHaveCount(3);
+    await expect(stationCards(page)).toHaveCount(1);
+
+    await chooseFuel(page, 'Diesel');
+    await openStationList(page);
+
+    await expect(page.getByText('Kraftstoff: Diesel', { exact: true })).toBeVisible();
+    await expect(stationCards(page)).toHaveCount(4);
+    await expect(stationCards(page)).toContainText([
+      rueBailleulStation.title,
+      quaiDeLaRapeeStation.title,
+      boulevardDeLHopitalStation.title,
+      boulevardVincentAuriolStation.title,
+    ]);
+    await expect(stationCards(page)).toContainText([
+      rueBailleulStation.distance,
+      quaiDeLaRapeeStation.distance,
+      boulevardDeLHopitalStation.distance,
+      boulevardVincentAuriolStation.distance,
+    ]);
+    await expect(stationCards(page)).toContainText(['2,680 €', '2,391 €', '2,250 €', '2,250 €']);
+
+    await chooseFuel(page, 'LPG');
+    await openStationList(page);
+
+    await expect(stationCards(page)).toHaveCount(1);
+    await expect(stationCard(page, boulevardVincentAuriolStation)).toContainText('0,984 €');
+  });
+
+  test('toggles between distance order and ascending price', async ({ page }) => {
+    await page.goto('/');
+    await chooseFuel(page, 'Diesel');
+    await openStationList(page);
+    await expect(stationCards(page)).toHaveCount(4);
 
     const sortButton = page.getByRole('button', { name: /^Sortiert nach:/ });
     await expect(sortButton).toHaveText('Sortiert nach: km');
-    await expect(stationListItems(page)).toContainText([
-      listName(aralStation),
-      listName(shellStation),
-      listName(independentStation),
-    ]);
 
     await sortButton.click();
     await expect(sortButton).toHaveText('Sortiert nach: Preis');
-    await expect(stationListItems(page)).toContainText([
-      listName(independentStation),
-      listName(shellStation),
-      listName(aralStation),
+    // Equal prices keep their distance order.
+    await expect(stationCards(page)).toContainText([
+      boulevardDeLHopitalStation.title,
+      boulevardVincentAuriolStation.title,
+      quaiDeLaRapeeStation.title,
+      rueBailleulStation.title,
     ]);
 
     await sortButton.click();
     await expect(sortButton).toHaveText('Sortiert nach: km');
-    await expect(stationListItems(page)).toContainText([
-      listName(aralStation),
-      listName(shellStation),
-      listName(independentStation),
+    await expect(stationCards(page)).toContainText([
+      rueBailleulStation.title,
+      quaiDeLaRapeeStation.title,
+      boulevardDeLHopitalStation.title,
+      boulevardVincentAuriolStation.title,
     ]);
   });
 
-  test('offers a reload button for the current position', async ({ page }) => {
+  test('the reload button fetches the prices again', async ({ page }) => {
     await page.goto('/');
+    await expect(stationCards(page)).toHaveCount(1);
 
-    await expect(page.getByRole('button', { name: 'aktualisieren' })).toBeVisible();
+    const stationsRequest = page.waitForRequest(
+      request => new URL(request.url()).pathname === '/api/stations'
+    );
+    await page.getByRole('button', { name: 'Aktualisieren' }).click();
+    const requestUrl = new URL((await stationsRequest).url());
+
+    expect(requestUrl.searchParams.get('fuel')).toBe('e5');
+    expect(requestUrl.searchParams.get('radiusInKilometers')).toBe('5');
+    await expect(stationCards(page)).toHaveCount(1);
+    await expect(stationCard(page, rueBailleulStation)).toContainText('2,540 €');
   });
 });

@@ -1,44 +1,57 @@
-import { aralStation, expect, formatPrice, stationListItems, test } from '../fixtures.js';
+import {
+  chooseFuel,
+  expect,
+  quaiDeLaRapeeStation,
+  rueBailleulStation,
+  stationCards,
+  test,
+} from '../fixtures.js';
 
 test.describe('map page', () => {
-  test('clusters the station markers and opens a detail page from a marker popup', async ({
-    page,
-  }) => {
-    await page.goto('/');
-    await expect(stationListItems(page)).toHaveCount(3);
-    await page.getByRole('link', { name: 'Karte' }).click();
+  test('shows the own position and opens the detail page from a marker popup', async ({ page }) => {
+    await page.goto('/map');
 
     await expect(page.getByRole('heading', { level: 1, name: 'Karte' })).toBeVisible();
-    await expect(page.getByRole('heading', { level: 2, name: 'E5' })).toBeVisible();
-    // Leaflet internals have no semantic roles, so the container is located by class.
-    await expect(page.locator('.leaflet-container')).toBeVisible();
+    await expect(page.getByText('Kraftstoff: E5', { exact: true })).toBeVisible();
+    const map = page.getByRole('region', { name: 'Karte der Tankstellen in deiner Nähe' });
+    await expect(map).toBeVisible();
+    await expect(map.getByText('Du bist hier!', { exact: true })).toBeVisible();
 
-    // The own position is an unclustered marker with a permanently open popup.
-    await expect(page.getByText('Du bist hier !')).toBeVisible();
+    const marker = map.getByRole('button', { name: `${rueBailleulStation.title}, 2,540 €` });
+    await marker.click();
+    const popupLink = map.getByRole('link', { name: 'Mehr Anzeigen' });
+    await expect(popupLink).toHaveAttribute('href', `/stations/${rueBailleulStation.id}`);
+    await popupLink.click();
 
-    // At the initial zoom level (6, centered on Germany) the three stations form one cluster.
-    const cluster = page.getByRole('button', { name: '3', exact: true });
+    await expect(page).toHaveURL(`/stations/${rueBailleulStation.id}`);
+    await expect(
+      page.getByRole('article').getByRole('heading', { level: 2, name: rueBailleulStation.title })
+    ).toBeVisible();
+  });
+
+  test('shows a marker for every station of the selected fuel type', async ({ page }) => {
+    await page.goto('/map');
+    await chooseFuel(page, 'Diesel');
+    await page.getByRole('link', { name: 'Karte' }).click();
+
+    const map = page.getByRole('region', { name: 'Karte der Tankstellen in deiner Nähe' });
+    await expect(
+      map.getByRole('button', { name: `${rueBailleulStation.title}, 2,680 €` })
+    ).toBeVisible();
+    await expect(
+      map.getByRole('button', { name: `${quaiDeLaRapeeStation.title}, 2,391 €` })
+    ).toBeVisible();
+    // The two stations in the 13th arrondissement are close enough to form a cluster.
+    const cluster = map.getByRole('button', { name: '2', exact: true });
     await expect(cluster).toBeVisible();
-    await cluster.click();
+  });
 
-    // After zooming in: three station markers plus the own-position marker.
-    const markers = page.getByRole('button', { name: 'Marker' });
-    await expect(markers).toHaveCount(4);
+  test('links to the station list', async ({ page }) => {
+    await page.goto('/map');
 
-    // Station popups only open on interaction. Enter triggers a Leaflet click without
-    // depending on which marker or popup is on top at a given screen position.
-    for (const marker of await markers.all()) {
-      await marker.press('Enter');
-    }
-    await expect(page.getByRole('link', { name: 'Mehr Anzeigen' })).toHaveCount(3);
+    await page.getByRole('link', { name: 'Tankstellen als Liste anzeigen' }).click();
 
-    const aralPopup = page
-      .locator('.leaflet-popup')
-      .filter({ hasText: formatPrice(aralStation.fuelPrices.e5?.price ?? 0) });
-    await aralPopup.getByRole('link', { name: 'Mehr Anzeigen' }).click();
-
-    await expect(page).toHaveURL(`/${aralStation.id}`);
-    await expect(page.getByRole('heading', { level: 1, name: 'Details' })).toBeVisible();
-    await expect(page.getByRole('article')).toContainText(aralStation.name);
+    await expect(page).toHaveURL('/');
+    await expect(stationCards(page)).toHaveCount(1);
   });
 });
