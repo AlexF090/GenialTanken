@@ -79,8 +79,10 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: 4.144.0
+          # Wrangler picks up ./functions from the working directory and bundles it (no execution)
+          workingDirectory: web-dist
           command: >-
-            pages deploy web-dist
+            pages deploy dist/web/browser
             --project-name=genialtanken
             --branch=${{ steps.target.outputs.branch }}
             --commit-hash=${{ github.event.workflow_run.head_sha }}

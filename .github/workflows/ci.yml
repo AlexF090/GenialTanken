@@ -69,11 +69,16 @@ jobs:
           # Public Mapbox token (pk.*), stored as repository variable, not as secret,
           # so that builds of pull requests from forks work as well.
           NG_APP_MAPBOX_ACCESS_TOKEN: ${{ vars.MAPBOX_ACCESS_TOKEN }}
+      # Static build plus the Pages Function that proxies /api to Render. The artifact root is
+      # apps/web, so it contains dist/web/browser/ and functions/ side by side.
       - name: Upload web build
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: web-dist
-          path: apps/web/dist/web/browser
+          path: |
+            apps/web/dist/web/browser
+            apps/web/functions
+            !apps/web/functions/**/*.spec.ts
           if-no-files-found: error
           retention-days: 7
 
