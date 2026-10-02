@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 
 export const FUEL_TYPES = ['e5', 'e10', 'superPlus', 'diesel', 'e85', 'lpg'] as const;
 

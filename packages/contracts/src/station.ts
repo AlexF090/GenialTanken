@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import { fuelTypeSchema } from './stations-query.js';
 
 const priceInEuroSchema = z.number().positive().nullable();
