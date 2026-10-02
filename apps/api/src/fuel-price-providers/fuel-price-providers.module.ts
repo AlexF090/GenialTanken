@@ -4,11 +4,11 @@ import { FranceFuelPriceProvider } from './france/france-fuel-price.provider.js'
 import { FUEL_PRICE_PROVIDERS } from './fuel-price-provider.js';
 import type { FuelPriceProvider } from './fuel-price-provider.js';
 import { GermanyFuelPriceProvider } from './germany/germany-fuel-price.provider.js';
-import { UpstreamJsonFetcher } from './upstream-json-fetcher.js';
+import { UpstreamModule } from '../upstream/upstream.module.js';
 
 @Module({
+  imports: [UpstreamModule],
   providers: [
-    UpstreamJsonFetcher,
     FranceFuelPriceProvider,
     GermanyFuelPriceProvider,
     {

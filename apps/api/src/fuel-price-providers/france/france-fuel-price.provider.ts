@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ApplicationConfiguration } from '../../configuration/application-configuration.js';
 import type { FuelPriceProvider } from '../fuel-price-provider.js';
 import { roundCoordinate } from '../round-coordinate.js';
-import { UpstreamJsonFetcher } from '../upstream-json-fetcher.js';
+import { UpstreamJsonFetcher } from '../../upstream/upstream-json-fetcher.js';
 import { frenchRecordSchema, frenchRecordsResponseSchema } from './french-record.schema.js';
 import type { FrenchRecord } from './french-record.schema.js';
 import { FRENCH_PRICE_FIELDS, toStationFromFrance } from './to-station-from-france.js';

@@ -1,4 +1,5 @@
 import type { CountryCode, Station, StationsQuery } from '@genialtanken/contracts';
+import { UpstreamError } from '../upstream/upstream-error.js';
 
 /** A source of fuel prices for one country. */
 export interface FuelPriceProvider {
@@ -15,7 +16,7 @@ export interface FuelPriceProvider {
 /** Injection token for the list of enabled `FuelPriceProvider`s. */
 export const FUEL_PRICE_PROVIDERS = Symbol('FUEL_PRICE_PROVIDERS');
 
-/** The data source behind a provider failed or answered with something unusable. */
-export class FuelPriceProviderError extends Error {
+/** A provider cannot answer for a reason of its own, e.g. missing credentials. */
+export class FuelPriceProviderError extends UpstreamError {
   override readonly name = 'FuelPriceProviderError';
 }

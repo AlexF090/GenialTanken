@@ -5,7 +5,7 @@ import { ApplicationConfiguration } from '../../configuration/application-config
 import { FuelPriceProviderError } from '../fuel-price-provider.js';
 import type { FuelPriceProvider } from '../fuel-price-provider.js';
 import { roundCoordinate } from '../round-coordinate.js';
-import { UpstreamJsonFetcher } from '../upstream-json-fetcher.js';
+import { UpstreamJsonFetcher } from '../../upstream/upstream-json-fetcher.js';
 import {
   tankenTankenStationSchema,
   tankenTankenStationsSchema,
