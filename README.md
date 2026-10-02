@@ -42,6 +42,8 @@ The French data source needs no API key, so the app works out of the box.
 3. In the VS Code terminal run `pnpm dev`.
 4. Open http://localhost:4200.
 
+The container reuses your Claude Code setup from the host: `~/.claude` (login, settings, skills) is bind-mounted, `~/.claude.json` is copied in once as a seed, and `~/Developer/dotfiles` plus `~/.agents` are mounted at their host paths so the symlinks in `~/.claude` resolve. Plugins get their own Docker volume (`genialtanken-claude-plugins`) and are installed on every start from the plugins enabled in `~/.claude/settings.json`. Mounts only change when the container is rebuilt (**Dev Containers: Rebuild Container**).
+
 ### Option B: devcontainer from the command line
 
 ```bash
