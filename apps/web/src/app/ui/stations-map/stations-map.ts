@@ -55,6 +55,23 @@ const toPaddingOptions = (
   ],
 });
 
+/**
+ * Map center that puts the given point in the middle of the visible part of the map, i.e. the
+ * part not covered by overlays such as the bottom sheet or the search field.
+ */
+export const centerForVisibleArea = (
+  map: L.Map,
+  point: L.LatLng,
+  padding: ViewportPadding
+): L.LatLng => {
+  const zoom = map.getZoom();
+  const visibleAreaOffset = L.point(
+    (padding.left - padding.right) / 2,
+    (padding.top - padding.bottom) / 2
+  );
+  return map.unproject(map.project(point, zoom).subtract(visibleAreaOffset), zoom);
+};
+
 const isSameViewportPadding = (first: ViewportPadding, second: ViewportPadding): boolean =>
   first.top === second.top &&
   first.right === second.right &&
@@ -121,6 +138,8 @@ export class StationsMap {
   private markerReveal: MarkerReveal | undefined;
   /** Set once the user drags the map; overlay changes then no longer move the view. */
   private hasUserMovedMap = false;
+  /** A selected station stays centered while overlays move, until the user moves the map. */
+  private hasUserMovedMapSinceReveal = false;
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -141,6 +160,7 @@ export class StationsMap {
       this.markerClusterGroup.addTo(map);
       map.on('dragstart', () => {
         this.hasUserMovedMap = true;
+        this.hasUserMovedMapSinceReveal = true;
       });
       this.observeHostSize(map, destroyRef);
       this.map.set(map);
@@ -158,11 +178,21 @@ export class StationsMap {
         previousViewportPadding !== undefined &&
         !isSameViewportPadding(previousViewportPadding, viewportPadding);
       previousViewportPadding = viewportPadding;
-      if (
-        !hasPaddingChanged ||
-        this.hasUserMovedMap ||
-        untracked(() => this.selectedStationId()) !== undefined
-      ) {
+      if (!hasPaddingChanged) {
+        return;
+      }
+      const selectedStationId = untracked(() => this.selectedStationId());
+      if (selectedStationId !== undefined) {
+        // E.g. the sheet moved after a price tag was chosen: keep that station in the middle.
+        const selectedMarker = untracked(() => this.markersByStationId()).get(selectedStationId);
+        if (selectedMarker !== undefined && !this.hasUserMovedMapSinceReveal) {
+          untracked(() => {
+            this.reveal(map, selectedMarker);
+          });
+        }
+        return;
+      }
+      if (this.hasUserMovedMap) {
         return;
       }
       untracked(() => {
@@ -278,18 +308,25 @@ export class StationsMap {
       isSelected: station.id === selectedStationId,
     });
     marker.on('click', () => {
+      // A selection does not change when its price tag is clicked again, so center it here.
+      const map = this.map();
+      if (map !== undefined && this.selectedStationId() === station.id) {
+        this.reveal(map, marker);
+      }
       this.stationSelected.emit(station.id);
     });
     return marker;
   }
 
-  /** Opens the marker's cluster if needed, then pans it out from under the overlays. */
+  /**
+   * Opens the marker's cluster if needed, then centers the marker in the visible part of the map,
+   * like a tapped pin in Apple Maps.
+   */
   private reveal(map: L.Map, marker: StationMarker): void {
     this.markerReveal?.cancel();
-    const padding = toPaddingOptions(this.viewportPadding());
+    this.hasUserMovedMapSinceReveal = false;
     this.markerReveal = revealMarker(map, this.markerClusterGroup, marker, () => {
-      map.panInside(marker.getLatLng(), {
-        ...padding,
+      map.panTo(centerForVisibleArea(map, marker.getLatLng(), this.viewportPadding()), {
         animate: !this.prefersReducedMotion(),
       });
     });

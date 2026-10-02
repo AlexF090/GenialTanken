@@ -9,7 +9,7 @@ import {
 } from '../../../testing/station-fixtures';
 import { accessibleTextOf, textOf } from '../../../testing/render-page';
 import { L } from '../map/leaflet-layers';
-import { StationsMap } from './stations-map';
+import { centerForVisibleArea, StationsMap } from './stations-map';
 
 interface RenderOptions {
   center?: SearchCenter;
@@ -17,6 +17,10 @@ interface RenderOptions {
   selectedStationId?: string;
   cheapestStationIds?: ReadonlySet<string>;
 }
+
+/** Pixel offset of a point from the map center the map pans to, at the current zoom. */
+const offsetFromPanTarget = (map: L.Map, target: L.LatLng, point: L.LatLngLiteral): L.Point =>
+  map.project(point, map.getZoom()).subtract(map.project(target, map.getZoom())).round();
 
 const render = async (stations: readonly Station[], options: RenderOptions = {}) => {
   // jsdom has no layout; Leaflet needs a map size to decide which markers are visible.
@@ -162,6 +166,83 @@ describe('StationsMap', () => {
     await fixture.whenStable();
 
     expect(textOf(element.querySelector('.leaflet-tooltip'))).toBe('Du bist hier!');
+  });
+
+  describe('centering a chosen station', () => {
+    const coveredByBottomSheet = { top: 0, right: 0, bottom: 400, left: 0 };
+    const totalPosition = {
+      lat: totalStation.address.latitude,
+      lng: totalStation.address.longitude,
+    };
+
+    it('centers the price tag in the part of the map left visible by the overlays', async () => {
+      const panTo = vi.spyOn(L.Map.prototype, 'panTo');
+      const { fixture } = await render([totalStation, carrefourStation]);
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+
+      fixture.componentRef.setInput('selectedStationId', totalStation.id);
+      await fixture.whenStable();
+
+      const map = panTo.mock.contexts.at(-1) as L.Map;
+      const target = L.latLng(panTo.mock.calls.at(-1)?.[0] as L.LatLngExpression);
+      // Visible area: 800 × 200 px above the sheet, so the tag sits 200 px above the center.
+      expect(offsetFromPanTarget(map, target, totalPosition)).toEqual(L.point(0, -200));
+    });
+
+    it('centers the selected station again when its price tag is clicked again', async () => {
+      const panTo = vi.spyOn(L.Map.prototype, 'panTo');
+      const { element } = await render([totalStation], { selectedStationId: totalStation.id });
+      panTo.mockClear();
+
+      markerButton(element, 'TotalEnergies, 1,859 €').click();
+
+      expect(panTo).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the selected station centered when the overlays move', async () => {
+      const panTo = vi.spyOn(L.Map.prototype, 'panTo');
+      const { fixture } = await render([totalStation], { selectedStationId: totalStation.id });
+      panTo.mockClear();
+
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+
+      expect(panTo).toHaveBeenCalledOnce();
+    });
+
+    it('leaves the view alone when the overlays move after the user moved the map', async () => {
+      const panTo = vi.spyOn(L.Map.prototype, 'panTo');
+      const { fixture } = await render([totalStation], { selectedStationId: totalStation.id });
+      const map = panTo.mock.contexts.at(-1) as L.Map;
+      panTo.mockClear();
+
+      map.fire('dragstart');
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+
+      expect(panTo).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('centerForVisibleArea', () => {
+    it('is the point itself without overlays and shifts by half of each overlay', async () => {
+      const panTo = vi.spyOn(L.Map.prototype, 'panTo');
+      await render([totalStation], { selectedStationId: totalStation.id });
+      const map = panTo.mock.contexts.at(-1) as L.Map;
+      const point = L.latLng(48.86, 2.34);
+
+      const noOverlay = centerForVisibleArea(map, point, { top: 0, right: 0, bottom: 0, left: 0 });
+      const withOverlays = centerForVisibleArea(map, point, {
+        top: 40,
+        right: 0,
+        bottom: 400,
+        left: 100,
+      });
+
+      expect(offsetFromPanTarget(map, noOverlay, point)).toEqual(L.point(0, 0));
+      expect(offsetFromPanTarget(map, withOverlays, point)).toEqual(L.point(50, -180));
+    });
   });
 
   describe('when the overlays covering the map change', () => {
