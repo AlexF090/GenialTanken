@@ -60,13 +60,7 @@
       [showOnMapAction]="true"
       (stationSelected)="showOnMap($event)"
       (favoriteToggled)="toggleFavorite($event)" />
-    <p class="explore-page__credit">
-      <a href="https://www.prix-carburants.gouv.fr/" target="_blank" rel="noopener"
-        >Preisdaten: prix-carburants.gouv.fr<span class="visually-hidden">
-          (öffnet in neuem Tab)</span
-        ></a
-      >
-    </p>
+    <app-data-source-credit class="explore-page__credit" />
   </app-bottom-sheet>
 
   <app-stations-map

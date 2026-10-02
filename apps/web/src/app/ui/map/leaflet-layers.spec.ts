@@ -23,6 +23,19 @@ const priceTag = (options: Partial<PriceTagIconOptions>): HTMLElement =>
     })
   );
 
+/**
+ * Visible caption naming the cheapest price; screen readers get it through the accessible name,
+ * so it must be hidden from them.
+ */
+const cheapestCaptionOf = (element: HTMLElement): string | undefined => {
+  const caption = element.querySelector('.price-tag__caption, .price-cluster__caption');
+  if (caption === null) {
+    return undefined;
+  }
+  expect(caption.closest('[aria-hidden="true"]')).not.toBeNull();
+  return textOf(caption);
+};
+
 const stationMarker = (options: Partial<StationMarkerOptions>): StationMarker =>
   new StationMarker({
     stationId: 'fr-1',
@@ -61,6 +74,11 @@ describe('createPriceTagIcon', () => {
     );
   });
 
+  it('marks the cheapest price with a visible caption, not with color alone', () => {
+    expect(cheapestCaptionOf(priceTag({ isCheapest: true }))).toBe('günstigst');
+    expect(cheapestCaptionOf(priceTag({ isCheapest: false }))).toBeUndefined();
+  });
+
   it('shows a dash for a station without a price of the selected fuel', () => {
     const element = priceTag({ priceInEuro: null });
 
@@ -90,6 +108,30 @@ describe('createClusterIcon', () => {
 
     expect(accessibleTextOf(element)).toBe('3 Tankstellen, ab 1,799 €');
     expect(textOf(element.querySelector('[aria-hidden="true"]'))).toBe('3');
+  });
+
+  it('marks a cluster containing the cheapest station with a visible caption', () => {
+    const markers = [
+      stationMarker({ priceInEuro: 1.799, isCheapest: true }),
+      stationMarker({ priceInEuro: 1.859 }),
+    ];
+
+    const element = renderIcon(
+      createClusterIcon({ getChildCount: () => 2, getAllChildMarkers: () => markers })
+    );
+
+    expect(accessibleTextOf(element)).toBe('2 Tankstellen, ab 1,799 €');
+    expect(cheapestCaptionOf(element)).toBe('günstigst');
+  });
+
+  it('has no caption for a cluster without the cheapest station', () => {
+    const markers = [stationMarker({ priceInEuro: 1.859 }), stationMarker({ priceInEuro: 1.899 })];
+
+    const element = renderIcon(
+      createClusterIcon({ getChildCount: () => 2, getAllChildMarkers: () => markers })
+    );
+
+    expect(cheapestCaptionOf(element)).toBeUndefined();
   });
 
   it('says so when none of the stations has a price', () => {

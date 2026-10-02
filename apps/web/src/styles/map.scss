@@ -3,6 +3,10 @@
 @use 'typography';
 
 .leaflet-container {
+  // Shared by the markers and the labels above them.
+  --location-pin-size: var(--icon-size-md);
+  --own-position-dot-size: var(--icon-size-sm);
+
   background-color: var(--color-canvas);
   font: inherit;
 }
@@ -123,6 +127,20 @@
   @include typography.price-numerals(var(--font-size-price-tag));
 }
 
+// Names the cheapest price in words, so it is not told by the yellow alone.
+.price-tag__caption,
+.price-cluster__caption {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-numerals);
+}
+
+.price-tag__caption {
+  margin-top: var(--space-3xs);
+  text-align: center;
+}
+
 // Clusters: how many stations, and the lowest price among them.
 
 .price-cluster {
@@ -155,9 +173,12 @@
 }
 
 .price-cluster__lowest-price {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto;
   align-items: baseline;
-  gap: var(--space-3xs);
+  align-content: center;
+  column-gap: var(--space-3xs);
+  row-gap: var(--space-3xs);
   padding: var(--space-2xs) var(--space-xs);
 
   .price-cluster--cheapest & {
@@ -175,12 +196,14 @@
   @include typography.price-numerals(var(--font-size-price-tag));
 }
 
+.price-cluster__caption {
+  grid-column: 1 / -1;
+}
+
 // Search center: a petrol pin for places, a red dot for the user's own position. Both are drawn
 // around a zero-sized, non-interactive icon.
 
 .location-pin {
-  --location-pin-size: var(--icon-size-md);
-
   position: absolute;
   // The pin's tip sits on the map point: half the head plus half its diagonal above it.
   top: calc(var(--location-pin-size) * -1.207);
@@ -203,8 +226,8 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: var(--icon-size-sm);
-  height: var(--icon-size-sm);
+  width: var(--own-position-dot-size);
+  height: var(--own-position-dot-size);
   border: var(--border-width-focus) solid var(--color-surface);
   border-radius: var(--radius-round);
   background-color: var(--color-own-position);
@@ -227,11 +250,22 @@
   &.leaflet-tooltip-top::before {
     border-top-color: var(--color-surface);
   }
+
+  // Leaflet anchors the label at the map point; `translate` composes with Leaflet's `transform`
+  // and lifts it above the marker. The rotated pin head reaches √2 of its size above the tip.
+  &--above-pin {
+    translate: 0 calc(var(--location-pin-size) * -1.414);
+  }
+
+  &--above-dot {
+    translate: 0 calc(var(--own-position-dot-size) / -2 - var(--space-2xs));
+  }
 }
 
-// Search radius: a hairline, the area inside only faintly tinted.
+// Search radius: a thin outline, the area inside only faintly tinted.
 .search-radius {
   stroke: var(--color-text);
+  stroke-width: var(--border-width-map-outline);
   stroke-opacity: 0.7;
   fill: var(--color-text);
   fill-opacity: 0.05;

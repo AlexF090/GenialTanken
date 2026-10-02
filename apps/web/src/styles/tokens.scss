@@ -30,7 +30,8 @@
   // Light 8.8 / 9.7 and dark 8.2 / 6.7 on canvas / surface
   --color-text-secondary: light-dark(#3a4650, #a9b6bc);
 
-  // Navigation rail and bottom navigation: light 12.1, dark 15.6
+  // Navigation rail and bottom navigation: light 12.1, dark 15.6. Also the browser UI color:
+  // keep the `theme-color` meta elements in `index.html` in sync.
   --color-chrome: light-dark(#0e3b4a, #06171d);
   --color-on-chrome: light-dark(#ffffff, #e8eeec);
   // Inactive navigation items: light 7.3, dark 8.8
@@ -115,6 +116,8 @@
   --border-width-hairline: 1px;
   --border-width-thin: 1px;
   --border-width-focus: 3px;
+  // Outlines drawn on the map, e.g. the search radius
+  --border-width-map-outline: 1.5px;
   --focus-offset: 2px;
 
   // The only shadow: sheets, the search field and map markers float above the map
@@ -131,6 +134,11 @@
   --layout-header-height: 6.25rem;
   --layout-navigation-height: 4.5rem;
   --layout-content-max-width: 48rem;
+  // Station panel next to the map: fluid between minimum and maximum on medium screens, fixed on
+  // expanded ones
+  --layout-panel-width-minimum: 20rem;
+  --layout-panel-width-maximum: 24rem;
+  --layout-panel-width-expanded: 26rem;
   --layout-detail-map-height: 10rem;
   --layout-fuel-badge-width: 3.125rem;
   --layout-fuel-badge-height: 2.125rem;
@@ -149,17 +157,4 @@
   --duration-short: 150ms;
   --duration-medium: 250ms;
   --easing-standard: cubic-bezier(0.2, 0, 0, 1);
-
-  // Deprecated aliases for components that are not redesigned yet; do not use in new code.
-  --font-family-base: var(--font-family-ui);
-  --color-primary: var(--color-action-text);
-  --color-primary-strong: var(--color-action-text-hover);
-  --color-on-primary: var(--color-on-action);
-  --color-text-muted: var(--color-text-secondary);
-  --color-border: var(--color-hairline);
-  --color-divider: var(--color-hairline);
-  --color-surface-muted: var(--color-canvas);
-  --shadow-card: 0 0 0 var(--border-width-hairline) var(--color-hairline);
-  --shadow-raised: 0 0 0 var(--border-width-hairline) var(--color-hairline);
-  --shadow-map: var(--shadow-floating);
 }

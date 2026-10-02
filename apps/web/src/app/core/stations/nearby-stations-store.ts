@@ -1,4 +1,5 @@
 import { computed, inject, Injectable } from '@angular/core';
+import { isSamePosition } from '../geolocation/coordinates';
 import { SearchCenterStore } from '../search-center/search-center-store';
 import { SettingsStore } from '../settings/settings-store';
 import { cheapestStationIds } from './cheapest-station-ids';
@@ -7,8 +8,7 @@ import { StationsApi } from './stations-api';
 import type { StationsSearch } from './stations-api';
 
 const isSameSearch = (first: StationsSearch, second: StationsSearch): boolean =>
-  first.latitude === second.latitude &&
-  first.longitude === second.longitude &&
+  isSamePosition(first, second) &&
   first.radiusInKilometers === second.radiusInKilometers &&
   first.fuelType === second.fuelType;
 

@@ -1,3 +1,4 @@
+import { isSamePosition } from '../geolocation/coordinates';
 import type { Coordinates } from '../geolocation/coordinates';
 
 /** Where the current search center came from. */
@@ -18,7 +19,4 @@ export const DEFAULT_SEARCH_CENTER: SearchCenter = {
 };
 
 export const isSameSearchCenter = (first: SearchCenter, second: SearchCenter): boolean =>
-  first.latitude === second.latitude &&
-  first.longitude === second.longitude &&
-  first.source === second.source &&
-  first.label === second.label;
+  isSamePosition(first, second) && first.source === second.source && first.label === second.label;

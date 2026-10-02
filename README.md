@@ -117,7 +117,7 @@ Invalid values stop the API at startup with a clear message. The API does not re
 
 - **Unit (Vitest):** contracts schemas, API mappers and parsers, Angular services and components through their public interfaces.
 - **API end-to-end (Supertest):** the real Nest application against fake upstream servers for France and Germany.
-- **Browser end-to-end (Playwright):** web + API + a local stand-in for the French open data API and the Photon place search serving recorded real data. Every request leaving the app fails the test unless it is mocked. A desktop project covers all pages (including axe WCAG 2.2 AA checks in light and dark mode); a phone project (Pixel 7) covers the bottom sheet.
+- **Browser end-to-end (Playwright):** web + API + a local stand-in for the French open data API and the Photon place search serving recorded real data. Every request leaving the app fails the test unless it is mocked. A desktop project covers all pages (including axe WCAG 2.2 AA checks in light and dark mode); a phone project (Pixel 7) covers the bottom sheet and repeats the axe checks in the phone viewport.
 
 ## Deployment
 

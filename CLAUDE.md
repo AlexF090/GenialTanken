@@ -41,7 +41,7 @@ pnpm workspaces with the official Angular and Nest CLIs — deliberately no Nx (
 - `apps/api` — NestJS 12 backend-for-frontend, ESM. The browser never calls upstream sources directly.
 - `apps/web` — Angular 22, standalone, zoneless, signals, `httpResource`, Signal Forms, Leaflet.
 - `apps/web/functions` — Cloudflare Pages Function proxying `/api/*` to the API in production.
-- `e2e` — Playwright against real web + API with a local stand-in for the French open data API and Photon (`e2e/mock-upstream.ts`, recorded data in `e2e/data`; Photon answers keyed by normalized query in `photon-places.json`). Any unmocked outgoing request fails the test. Project `chromium` (desktop) runs every spec except `bottom-sheet.spec.ts`, which only the `mobile` project (Pixel 7) runs.
+- `e2e` — Playwright against real web + API with a local stand-in for the French open data API and Photon (`e2e/mock-upstream.ts`, recorded data in `e2e/data`; Photon answers keyed by normalized query in `photon-places.json`). Any unmocked outgoing request fails the test. Project `chromium` (desktop) runs every spec except `bottom-sheet.spec.ts`; the `mobile` project (Pixel 7) runs `bottom-sheet.spec.ts` and `accessibility.spec.ts`.
 
 ESLint forbids `apps/web` and `apps/api` from importing each other; shared code goes into contracts.
 

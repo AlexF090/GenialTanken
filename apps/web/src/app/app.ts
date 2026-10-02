@@ -84,13 +84,6 @@ import { NavigationBar } from './ui/navigation-bar/navigation-bar';
       }
     }
 
-    // Keeps elements focused by keyboard from scrolling behind the sticky bottom navigation.
-    html {
-      @include breakpoints.compact {
-        scroll-padding-bottom: calc(var(--layout-navigation-height) + var(--safe-area-bottom));
-      }
-    }
-
     // Zero specificity, so a page can override this on its own host.
     :where(.shell__content > router-outlet + *) {
       display: flex;

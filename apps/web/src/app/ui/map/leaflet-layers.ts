@@ -71,6 +71,16 @@ const createPriceDigits = (className: string, priceInEuro: number | null): HTMLE
   return digits;
 };
 
+/** Visible word for the cheapest price, so it is not told by the yellow alone (WCAG 1.4.1). */
+const CHEAPEST_CAPTION = 'günstigst';
+
+/** Screen readers hear "günstigster Preis" in the accessible name instead. */
+const createCheapestCaption = (className: string): HTMLElement => {
+  const caption = createElement('span', className, CHEAPEST_CAPTION);
+  caption.setAttribute('aria-hidden', 'true');
+  return caption;
+};
+
 /** Pins are drawn by their inner element in `map.scss` around the zero-sized icon. */
 const ZERO_SIZE: L.PointTuple = [0, 0];
 /**
@@ -109,6 +119,9 @@ export const createPriceTagIcon = (options: PriceTagIconOptions): L.DivIcon => {
     createAccessibleName(priceTagAccessibleName(options)),
     createPriceDigits('price-tag__price', options.priceInEuro)
   );
+  if (options.isCheapest) {
+    tag.append(createCheapestCaption('price-tag__caption'));
+  }
   return L.divIcon({ html: tag, className: 'price-tag-marker', iconSize: CONTENT_SIZE });
 };
 
@@ -212,11 +225,10 @@ export const createClusterIcon = (cluster: StationCluster): L.DivIcon => {
       ? `${String(stationCount)} Tankstellen, kein Preis`
       : `${String(stationCount)} Tankstellen, ab ${formatPrice(minimumPrice)}`;
 
+  const containsCheapest = stations.some(station => station.isCheapestStation);
+
   const board = createElement('div', 'price-cluster');
-  board.classList.toggle(
-    'price-cluster--cheapest',
-    stations.some(station => station.isCheapestStation)
-  );
+  board.classList.toggle('price-cluster--cheapest', containsCheapest);
   const count = createElement('span', 'price-cluster__count', String(stationCount));
   count.setAttribute('aria-hidden', 'true');
   const lowestPrice = createElement('span', 'price-cluster__lowest-price');
@@ -225,14 +237,14 @@ export const createClusterIcon = (cluster: StationCluster): L.DivIcon => {
     createElement('span', 'price-cluster__from', 'ab'),
     createPriceDigits('price-cluster__price', minimumPrice)
   );
+  if (containsCheapest) {
+    lowestPrice.append(createElement('span', 'price-cluster__caption', CHEAPEST_CAPTION));
+  }
   board.append(createAccessibleName(accessibleName), count, lowestPrice);
   return L.divIcon({ html: board, className: 'price-cluster-marker', iconSize: CONTENT_SIZE });
 };
 
 export const OWN_POSITION_LABEL = 'Du bist hier!';
-
-const PIN_TOOLTIP_OFFSET: L.PointTuple = [0, -34];
-const DOT_TOOLTIP_OFFSET: L.PointTuple = [0, -14];
 
 /** Teardrop pin whose tip marks the location; used for search centers and station locations. */
 const createPinIcon = (): L.DivIcon => {
@@ -271,18 +283,22 @@ export const createCenterMarker = (center: SearchCenter): L.Marker => {
   }).bindTooltip(label, {
     permanent: true,
     direction: 'top',
-    className: 'center-tooltip',
-    offset: isOwnPosition ? DOT_TOOLTIP_OFFSET : PIN_TOOLTIP_OFFSET,
+    // `map.scss` lifts the label above the dot or pin, sized like them in rem.
+    className: isOwnPosition
+      ? 'center-tooltip center-tooltip--above-dot'
+      : 'center-tooltip center-tooltip--above-pin',
   });
 };
 
-/** Hairline outline of the search radius; its bounds are what the map fits into view. */
+/**
+ * Thin outline of the search radius; its bounds are what the map fits into view. `map.scss` sets
+ * its stroke width from a token, which overrides Leaflet's `weight` attribute.
+ */
 export const createRadiusCircle = (center: Coordinates, radiusInKilometers: number): L.Circle =>
   L.circle([center.latitude, center.longitude], {
     radius: radiusInKilometers * METERS_PER_KILOMETER,
     className: 'search-radius',
     interactive: false,
-    weight: 1.5,
   });
 
 export { L };

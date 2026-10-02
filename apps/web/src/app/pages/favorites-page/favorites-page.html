@@ -20,6 +20,9 @@
       [fuelType]="fuelType()"
       [favoriteStationIds]="favoriteStationIds()"
       (favoriteToggled)="toggleFavorite($event)" />
+    @if (showsFrenchPrices()) {
+      <app-data-source-credit />
+    }
   } @else {
     <div class="empty-favorites">
       <h2 #contentHeading class="empty-favorites__title" tabindex="-1">

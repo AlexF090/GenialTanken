@@ -33,6 +33,7 @@ describe('FavoritesPage', () => {
       link => textOf(link) === 'Tankstellen erkunden'
     );
     expect(exploreLink?.getAttribute('href')).toBe('/');
+    expect(element.querySelector('app-data-source-credit')).toBeNull();
   });
 
   const renderWithTwoFavorites = async () => {
@@ -53,6 +54,14 @@ describe('FavoritesPage', () => {
 
     expect(stationTitles(element)).toEqual(['TotalEnergies', 'Carrefour Market']);
     expect(textOf(element.querySelector('main'))).not.toContain('km');
+  });
+
+  it('credits the French open data of the listed prices', async () => {
+    const { element } = await renderWithTwoFavorites();
+
+    expect(
+      textOf(element.querySelector('main a[href="https://www.prix-carburants.gouv.fr/"]'))
+    ).toBe('Preisdaten: prix-carburants.gouv.fr (öffnet in neuem Tab)');
   });
 
   it('neither highlights a cheapest favorite nor offers the map action', async () => {

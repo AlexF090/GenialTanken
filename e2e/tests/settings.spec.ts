@@ -127,6 +127,28 @@ test.describe('settings', () => {
     await expect.poll(() => storedColorScheme(page)).toBe('system');
   });
 
+  test('the stored color scheme tints the browser UI before the app starts', async ({ page }) => {
+    // Without the application bundle only the inline script of index.html runs.
+    await page.route(/\/main(-[A-Z0-9]+)?\.js$/, route => route.abort());
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'genialtanken.settings',
+        JSON.stringify({ fuelType: 'e5', radiusInKilometers: 5, colorScheme: 'dark' })
+      );
+    });
+    await page.goto('/settings');
+
+    await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'dark');
+    // Browsers use the first theme color whose media query matches.
+    const appliedThemeColor = await page.evaluate(
+      () =>
+        [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')].find(
+          meta => window.matchMedia(meta.media).matches
+        )?.content
+    );
+    expect(appliedThemeColor).toBe('#06171d');
+  });
+
   test.describe('on a dark operating system', () => {
     test.use({ colorScheme: 'dark' });
 

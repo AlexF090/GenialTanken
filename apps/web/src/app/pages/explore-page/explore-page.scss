@@ -1,4 +1,5 @@
 @use 'breakpoints';
+@use 'visually-hidden';
 
 // Full-height page: the map fills it, the station panel floats over it (phones) or stands next
 // to it (from 48rem). The page has no page header, so it absorbs the top safe area itself.
@@ -13,10 +14,12 @@
 
   @include breakpoints.medium-and-up {
     display: grid;
-    grid-template-columns: minmax(20rem, 24rem) minmax(0, 1fr);
+    grid-template-columns:
+      minmax(var(--layout-panel-width-minimum), var(--layout-panel-width-maximum))
+      minmax(0, 1fr);
 
     @include breakpoints.expanded {
-      grid-template-columns: 26rem minmax(0, 1fr);
+      grid-template-columns: var(--layout-panel-width-expanded) minmax(0, 1fr);
     }
   }
 }
@@ -51,13 +54,7 @@
 // Phones: the map is the page's heading, the title only names it for assistive technology.
 .explore-page__title {
   @include breakpoints.compact {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+    @include visually-hidden.visually-hidden;
   }
 
   @include breakpoints.medium-and-up {
@@ -126,6 +123,4 @@
 
 .explore-page__credit {
   padding: var(--space-md);
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
 }

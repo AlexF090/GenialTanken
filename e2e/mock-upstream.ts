@@ -2,6 +2,8 @@ import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { z } from 'zod';
+// The API's own normalization, so recorded queries match whatever casing the test types.
+import { normalizePlaceQuery } from '../apps/api/src/places/place-search.ts';
 import { MOCK_UPSTREAM_PORT as PORT, UNEXPECTED_REQUESTS_PATH } from './mock-upstream-endpoints.ts';
 
 /**
@@ -58,10 +60,6 @@ const photonResponseSchema = z.looseObject({
 const photonResponsesByQuery = z
   .record(z.string(), photonResponseSchema)
   .parse(JSON.parse(readFileSync(new URL('./data/photon-places.json', import.meta.url), 'utf8')));
-
-/** Same normalization as the API, so recorded queries match whatever casing the test types. */
-const normalizePlaceQuery = (query: string): string =>
-  query.trim().replace(/\s+/g, ' ').toLowerCase();
 
 const unexpectedRequests: string[] = [];
 

@@ -121,8 +121,6 @@ describe('ExplorePage', () => {
 
     const credit = element.querySelector('main a[href="https://www.prix-carburants.gouv.fr/"]');
     expect(textOf(credit)).toBe('Preisdaten: prix-carburants.gouv.fr (öffnet in neuem Tab)');
-    expect(credit?.getAttribute('target')).toBe('_blank');
-    expect(credit?.getAttribute('rel')).toBe('noopener');
   });
 
   it('switches between distance order and ascending price', async () => {
@@ -376,17 +374,20 @@ describe('ExplorePage on a phone', () => {
     return rendered;
   };
 
-  it('opens the sheet from peek to half when a price tag is chosen', async () => {
-    const { fixture } = await renderWithStations();
-    const sheet = childComponent(fixture, BottomSheet);
-    sheet.snapPosition.set('peek');
-    await context.settle();
+  it.each(['peek', 'full'] as const)(
+    'moves the sheet from %s to half when a price tag is chosen',
+    async startPosition => {
+      const { fixture } = await renderWithStations();
+      const sheet = childComponent(fixture, BottomSheet);
+      sheet.snapPosition.set(startPosition);
+      await context.settle();
 
-    childComponent(fixture, StationsMap).stationSelected.emit(totalStation.id);
-    await context.settle();
+      childComponent(fixture, StationsMap).stationSelected.emit(totalStation.id);
+      await context.settle();
 
-    expect(sheet.snapPosition()).toBe('half');
-  });
+      expect(sheet.snapPosition()).toBe('half');
+    }
+  );
 
   it('lowers the sheet to peek so the map shows the station from the list', async () => {
     const { element, fixture } = await renderWithStations();

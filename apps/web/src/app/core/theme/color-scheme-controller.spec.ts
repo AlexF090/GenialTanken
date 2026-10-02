@@ -37,13 +37,24 @@ describe('ColorSchemeController', () => {
 
   const documentElement = (): HTMLElement => TestBed.inject(DOCUMENT).documentElement;
 
+  /** Browsers tint their UI with the first theme color whose media query matches. */
+  const appliedThemeColors = (): string[] =>
+    themeColors.filter(meta => meta.media === 'all').map(meta => meta.content);
+
   beforeEach(() => {
     matchMedia = new FakeMatchMedia();
-    themeColors = ['(prefers-color-scheme: light)', '(prefers-color-scheme: dark)'].map(media => {
+    // Like `index.html`: one meta element per scheme, chosen by the operating system's scheme.
+    themeColors = (
+      [
+        ['light', '#0e3b4a'],
+        ['dark', '#06171d'],
+      ] as const
+    ).map(([scheme, color]) => {
       const meta = document.createElement('meta');
       meta.name = 'theme-color';
-      meta.media = media;
-      meta.content = '#000000';
+      meta.media = `(prefers-color-scheme: ${scheme})`;
+      meta.content = color;
+      meta.dataset['scheme'] = scheme;
       document.head.append(meta);
       return meta;
     });
@@ -61,7 +72,7 @@ describe('ColorSchemeController', () => {
 
     expect(controller.resolvedScheme()).toBe('light');
     expect(documentElement().dataset['colorScheme']).toBe('light');
-    expect(themeColors.map(meta => meta.content)).toEqual(['#0e3b4a', '#0e3b4a']);
+    expect(appliedThemeColors()).toEqual(['#0e3b4a']);
   });
 
   it('follows the operating system when it switches to dark', () => {
@@ -72,7 +83,7 @@ describe('ColorSchemeController', () => {
 
     expect(controller.resolvedScheme()).toBe('dark');
     expect(documentElement().dataset['colorScheme']).toBe('dark');
-    expect(themeColors.map(meta => meta.content)).toEqual(['#06171d', '#06171d']);
+    expect(appliedThemeColors()).toEqual(['#06171d']);
   });
 
   it('lets an explicit preference override the operating system', () => {
@@ -82,6 +93,7 @@ describe('ColorSchemeController', () => {
 
     expect(controller.resolvedScheme()).toBe('light');
     expect(documentElement().dataset['colorScheme']).toBe('light');
+    expect(appliedThemeColors()).toEqual(['#0e3b4a']);
   });
 
   it('applies a changed preference immediately', () => {
@@ -92,10 +104,12 @@ describe('ColorSchemeController', () => {
 
     expect(controller.resolvedScheme()).toBe('dark');
     expect(documentElement().dataset['colorScheme']).toBe('dark');
+    expect(appliedThemeColors()).toEqual(['#06171d']);
 
     TestBed.inject(SettingsStore).update({ colorScheme: 'system' });
     TestBed.tick();
 
     expect(documentElement().dataset['colorScheme']).toBe('light');
+    expect(appliedThemeColors()).toEqual(['#0e3b4a']);
   });
 });

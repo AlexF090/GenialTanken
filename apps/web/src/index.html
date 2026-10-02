@@ -6,9 +6,19 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Aktuelle Spritpreise der Tankstellen in deiner Nähe." />
-    <!-- Chrome colors from src/styles/tokens.scss; ColorSchemeController keeps them current. -->
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0e3b4a" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#06171d" />
+    <!-- Browser UI colors: the light and dark --color-chrome of src/styles/tokens.scss, kept
+         in sync by hand (the script below runs before any stylesheet loads). The script and
+         ColorSchemeController switch the one of the resolved scheme on through `media`. -->
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: light)"
+      content="#0e3b4a"
+      data-scheme="light" />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#06171d"
+      data-scheme="dark" />
     <script>
       // Applies the stored color scheme before the first paint; ColorSchemeController takes
       // over after bootstrap. Without this script the operating system decides (see tokens.scss).
@@ -23,6 +33,12 @@
                 ? 'dark'
                 : 'light';
           document.documentElement.setAttribute('data-color-scheme', scheme);
+          // A preference overrides the operating system the `media` queries ask.
+          var themeColors = document.querySelectorAll('meta[name="theme-color"][data-scheme]');
+          for (var index = 0; index < themeColors.length; index++) {
+            themeColors[index].media =
+              themeColors[index].getAttribute('data-scheme') === scheme ? 'all' : 'not all';
+          }
         } catch (error) {
           // Storage blocked or corrupt: leave the choice to the operating system.
         }

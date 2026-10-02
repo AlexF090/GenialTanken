@@ -6,19 +6,19 @@ export type ResolvedColorScheme = 'light' | 'dark';
 
 export const PREFERS_DARK_COLOR_SCHEME_MEDIA_QUERY = '(prefers-color-scheme: dark)';
 
-/**
- * Browser UI color per scheme, matching `--color-chrome` in `src/styles/tokens.scss` and the
- * `theme-color` meta elements in `index.html`. Keep all three in sync.
- */
-export const THEME_COLORS: Readonly<Record<ResolvedColorScheme, string>> = {
-  light: '#0e3b4a',
-  dark: '#06171d',
-};
+/** `media` of the theme color meta element that is applied, and of those that are not. */
+const APPLIED_MEDIA = 'all';
+const NOT_APPLIED_MEDIA = 'not all';
 
 /**
  * Applies the color scheme preference: resolves "system" against the operating system, sets
  * `data-color-scheme` on <html> (which `tokens.scss` reads) and tints the browser UI. The inline
  * script in `index.html` does the same before bootstrap to avoid a flash of the wrong scheme.
+ *
+ * The browser UI colors live only in the `theme-color` meta elements of `index.html` (one per
+ * scheme, marked with `data-scheme`), next to `--color-chrome` in `tokens.scss`: the inline
+ * script runs before any stylesheet has loaded, so it cannot read the token. Instead of copying
+ * the colors, the matching meta element is switched on through its `media` attribute.
  */
 @Injectable({ providedIn: 'root' })
 export class ColorSchemeController {
@@ -44,12 +44,12 @@ export class ColorSchemeController {
 
   private apply(scheme: ResolvedColorScheme): void {
     this.document.documentElement.setAttribute('data-color-scheme', scheme);
-    // Both meta elements get the resolved color: their `media` only reflects the operating
-    // system, which an explicit preference overrides.
+    // Their original `media` only reflects the operating system, which a preference overrides.
     for (const themeColor of this.document.querySelectorAll<HTMLMetaElement>(
-      'meta[name="theme-color"]'
+      'meta[name="theme-color"][data-scheme]'
     )) {
-      themeColor.content = THEME_COLORS[scheme];
+      themeColor.media =
+        themeColor.dataset['scheme'] === scheme ? APPLIED_MEDIA : NOT_APPLIED_MEDIA;
     }
   }
 }

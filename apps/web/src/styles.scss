@@ -5,8 +5,10 @@
 //   @use '@fontsource/barlow/latin-600.css';
 //   @use '@fontsource/barlow-semi-condensed/latin-600.css';
 //   @use '@fontsource/barlow-semi-condensed/latin-700.css';
+@use 'styles/breakpoints';
 @use 'styles/tokens';
 @use 'styles/map';
+@use 'styles/visually-hidden';
 
 *,
 *::before,
@@ -17,6 +19,11 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+
+  // Keeps elements focused by keyboard from scrolling behind the sticky bottom navigation.
+  @include breakpoints.compact {
+    scroll-padding-bottom: calc(var(--layout-navigation-height) + var(--safe-area-bottom));
+  }
 }
 
 html,
@@ -89,15 +96,7 @@ select {
 }
 
 .visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
+  @include visually-hidden.visually-hidden;
 }
 
 // Hidden until focused with the keyboard, then pinned to the top left above the chrome.

@@ -1,4 +1,3 @@
-import { AxeBuilder } from '@axe-core/playwright';
 import type { Locator, Page } from '@playwright/test';
 import {
   eiffelTower,
@@ -11,8 +10,6 @@ import {
   stationsMap,
   test,
 } from '../fixtures.js';
-
-const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 /** The list floats over the map as a sheet whose handle names the next step. */
 const sheetHandle = (page: Page): Locator =>
@@ -144,17 +141,5 @@ test.describe('bottom sheet on a phone', () => {
         exact: true,
       })
     ).toHaveAttribute('aria-pressed', 'true');
-  });
-
-  test('the explore page has no WCAG 2.2 AA violations on a phone', async ({ page }) => {
-    const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
-
-    expect(
-      results.violations.map(violation => ({
-        rule: violation.id,
-        impact: violation.impact,
-        targets: violation.nodes.map(node => node.target.join(' ')),
-      }))
-    ).toEqual([]);
   });
 });

@@ -20,6 +20,7 @@ import type { SortOrder } from '../../core/stations/sort-stations';
 import { ColorSchemeController } from '../../core/theme/color-scheme-controller';
 import { BottomSheet } from '../../ui/bottom-sheet/bottom-sheet';
 import type { SnapPosition } from '../../ui/bottom-sheet/bottom-sheet-snap';
+import { DataSourceCredit } from '../../ui/data-source-credit/data-source-credit';
 import { Icon } from '../../ui/icon/icon';
 import { LoadingState } from '../../ui/loading-state/loading-state';
 import { SortOrderControl } from '../../ui/sort-order-control/sort-order-control';
@@ -44,6 +45,7 @@ const describeStationCount = (count: number): string =>
   selector: 'app-explore-page',
   imports: [
     BottomSheet,
+    DataSourceCredit,
     Icon,
     LoadingState,
     RouterLink,
@@ -125,10 +127,10 @@ export class ExplorePage {
     this.favorites.toggle(stationId);
   }
 
-  /** A price tag on the map was chosen: the sheet opens far enough to show its row. */
+  /** A price tag on the map was chosen: the sheet shows its row and leaves the map visible. */
   protected selectFromMap(stationId: string): void {
     this.selectedStationId.set(stationId);
-    if (this.isCompactViewport() && this.snapPosition() === 'peek') {
+    if (this.isCompactViewport()) {
       this.snapPosition.set('half');
     }
   }

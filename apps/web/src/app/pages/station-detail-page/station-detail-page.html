@@ -1,4 +1,4 @@
-<app-page-header title="Details" backLink="/" />
+<app-page-header title="Details" [backLink]="backLink" />
 <main class="page-content">
   <app-loading-state [isLoading]="isLoading()" label="Tankstelle wird geladen …" />
   @if (errorMessage(); as message) {
@@ -10,5 +10,9 @@
       [fuelType]="fuelType()"
       [isFavorite]="isFavorite()"
       (favoriteToggled)="toggleFavorite()" />
+    <!-- The Licence Ouverte requires the credit wherever French prices show. -->
+    @if (station.country === 'FR') {
+      <app-data-source-credit />
+    }
   }
 </main>

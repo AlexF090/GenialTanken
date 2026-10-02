@@ -1,4 +1,11 @@
-import { chooseFuel, expect, quaiDeLaRapeeStation, rueBailleulStation, test } from '../fixtures.js';
+import {
+  chooseFuel,
+  expect,
+  quaiDeLaRapeeStation,
+  rueBailleulStation,
+  stationCard,
+  test,
+} from '../fixtures.js';
 
 test.describe('detail page', () => {
   test('shows address, opening times and every fuel price of a station', async ({ page }) => {
@@ -80,6 +87,30 @@ test.describe('detail page', () => {
 
     await expect(page).toHaveURL('/');
     await expect(page.getByRole('heading', { level: 1, name: 'GenialTanken' })).toBeVisible();
+  });
+
+  test('the back link returns to the favorites when the station was opened there', async ({
+    page,
+  }) => {
+    await page.addInitScript(identifier => {
+      localStorage.setItem('favoriteIDs', JSON.stringify([identifier]));
+    }, quaiDeLaRapeeStation.id);
+    await page.goto('/favorites');
+    await stationCard(page, quaiDeLaRapeeStation).getByRole('link').click();
+    await expect(page).toHaveURL(`/stations/${quaiDeLaRapeeStation.id}`);
+
+    await page.getByRole('link', { name: 'Zurück', exact: true }).click();
+
+    await expect(page).toHaveURL('/favorites');
+    await expect(page.getByRole('heading', { level: 1, name: 'Favoriten' })).toBeVisible();
+  });
+
+  test('credits the French price data', async ({ page }) => {
+    await page.goto(`/stations/${quaiDeLaRapeeStation.id}`);
+
+    await expect(
+      page.getByRole('link', { name: 'Preisdaten: prix-carburants.gouv.fr (öffnet in neuem Tab)' })
+    ).toHaveAttribute('href', 'https://www.prix-carburants.gouv.fr/');
   });
 
   test('loads a station opened directly by its URL-encoded id', async ({ page }) => {

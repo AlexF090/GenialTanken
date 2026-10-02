@@ -1,4 +1,6 @@
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { RouterTestingHarness } from '@angular/router/testing';
 import {
   accessibleTextOf,
   configurePageTest,
@@ -8,6 +10,58 @@ import {
 import type { PageTestContext } from '../../../testing/render-page';
 import { aralStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
 import { StationDetailPage } from './station-detail-page';
+
+@Component({ template: '' })
+class EmptyPage {}
+
+const backLinkOf = (element: Element): string | null | undefined =>
+  [...element.querySelectorAll('header a')]
+    .find(link => accessibleTextOf(link) === 'Zurück')
+    ?.getAttribute('href');
+
+describe('StationDetailPage back link', () => {
+  let context: PageTestContext;
+
+  beforeEach(() => {
+    context = configurePageTest({
+      routes: [
+        { path: '', component: EmptyPage },
+        { path: 'favorites', component: EmptyPage },
+        { path: 'settings', component: EmptyPage },
+        { path: 'stations/:id', component: StationDetailPage },
+      ],
+    });
+  });
+
+  afterEach(() => {
+    context.httpTesting.match(() => true);
+  });
+
+  const openStationAfter = async (previousUrl: string | undefined): Promise<Element> => {
+    const harness = await RouterTestingHarness.create();
+    if (previousUrl !== undefined) {
+      await harness.navigateByUrl(previousUrl);
+    }
+    await harness.navigateByUrl(`/stations/${totalStation.id}`);
+    return harness.routeNativeElement ?? document.createElement('div');
+  };
+
+  it('returns to the favorites when the station was opened there', async () => {
+    expect(backLinkOf(await openStationAfter('/favorites'))).toBe('/favorites');
+  });
+
+  it('returns to the start page when the station was opened from it', async () => {
+    expect(backLinkOf(await openStationAfter('/'))).toBe('/');
+  });
+
+  it('returns to the start page when the station was opened from another page', async () => {
+    expect(backLinkOf(await openStationAfter('/settings'))).toBe('/');
+  });
+
+  it('returns to the start page when the station was opened directly', async () => {
+    expect(backLinkOf(await openStationAfter(undefined))).toBe('/');
+  });
+});
 
 describe('StationDetailPage', () => {
   let context: PageTestContext;
@@ -88,6 +142,26 @@ describe('StationDetailPage', () => {
     expect(element.textContent).not.toContain('Die Tankstelle ist geöffnet.');
     expect(element.textContent).not.toContain('Die Tankstelle hat leider geschlossen.');
     expect(textOf(element.querySelector('article h2'))).toBe('TotalEnergies');
+  });
+
+  it('credits the French open data for a French station', async () => {
+    const { element } = await renderStation(totalStation.id);
+    context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
+    await context.settle();
+
+    expect(
+      textOf(element.querySelector('main a[href="https://www.prix-carburants.gouv.fr/"]'))
+    ).toBe('Preisdaten: prix-carburants.gouv.fr (öffnet in neuem Tab)');
+  });
+
+  it('does not credit the French open data for a German station', async () => {
+    const { element } = await renderStation(aralStation.id);
+    context.httpTesting
+      .expectOne('/api/stations/de-11111111-1111-4111-8111-111111111111')
+      .flush(withoutDistance(aralStation));
+    await context.settle();
+
+    expect(element.querySelector('app-data-source-credit')).toBeNull();
   });
 
   it('stars the station', async () => {

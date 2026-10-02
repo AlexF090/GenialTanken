@@ -14,13 +14,14 @@ import { FavoritesStore } from '../../core/favorites/favorites-store';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { describeStationsError } from '../../core/stations/stations-error-message';
 import { StationsApi } from '../../core/stations/stations-api';
+import { DataSourceCredit } from '../../ui/data-source-credit/data-source-credit';
 import { LoadingState } from '../../ui/loading-state/loading-state';
 import { PageHeader } from '../../ui/page-header/page-header';
 import { StationList } from '../../ui/station-list/station-list';
 
 @Component({
   selector: 'app-favorites-page',
-  imports: [PageHeader, StationList, LoadingState, RouterLink],
+  imports: [PageHeader, StationList, LoadingState, RouterLink, DataSourceCredit],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './favorites-page.html',
   styleUrl: './favorites-page.scss',
@@ -55,6 +56,10 @@ export class FavoritesPage {
       .value()
       .stations.filter(station => favoriteStationIds.has(station.id));
   });
+  /** The Licence Ouverte requires the credit wherever French prices show. */
+  protected readonly showsFrenchPrices = computed(() =>
+    this.stations().some(station => station.country === 'FR')
+  );
   private readonly unavailableStationIds = computed(() => {
     if (!this.favoriteStationsResource.hasValue()) {
       return [];
