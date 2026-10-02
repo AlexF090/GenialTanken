@@ -121,13 +121,13 @@ describe('StationsPage', () => {
   it('stars a station and persists it', async () => {
     const { element } = await renderWithStations();
 
-    getButton(element, 'Zu Favoriten hinzufügen: Carrefour Market').click();
+    getButton(element, 'Favorit: Carrefour Market').click();
     await context.settle();
 
     expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75005002"]');
-    expect(
-      getButton(element, 'Aus Favoriten entfernen: Carrefour Market').getAttribute('aria-pressed')
-    ).toBe('true');
+    expect(getButton(element, 'Favorit: Carrefour Market').getAttribute('aria-pressed')).toBe(
+      'true'
+    );
   });
 
   it('explains a denied location permission', async () => {

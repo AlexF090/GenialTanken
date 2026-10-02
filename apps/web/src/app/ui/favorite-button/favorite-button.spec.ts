@@ -19,14 +19,14 @@ describe('FavoriteButton', () => {
 
     expect(button.type).toBe('button');
     expect(button.getAttribute('aria-pressed')).toBe('false');
-    expect(button.getAttribute('aria-label')).toBe('Zu Favoriten hinzufügen: Aral Tankstelle');
+    expect(button.getAttribute('aria-label')).toBe('Favorit: Aral Tankstelle');
   });
 
-  it('is pressed and offers removal for a favorite', async () => {
+  it('keeps its name and only changes the pressed state for a favorite', async () => {
     const { button } = await render(true);
 
     expect(button.getAttribute('aria-pressed')).toBe('true');
-    expect(button.getAttribute('aria-label')).toBe('Aus Favoriten entfernen: Aral Tankstelle');
+    expect(button.getAttribute('aria-label')).toBe('Favorit: Aral Tankstelle');
   });
 
   it('emits when clicked', async () => {

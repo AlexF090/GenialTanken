@@ -54,13 +54,13 @@ describe('FavoritesPage', () => {
   it('removes an unstarred station from the list immediately', async () => {
     const { element } = await renderWithTwoFavorites();
 
-    getButton(element, 'Aus Favoriten entfernen: TotalEnergies').click();
+    getButton(element, 'Favorit: TotalEnergies').click();
     await context.settle();
 
     expect(stationTitles(element)).toEqual(['Carrefour Market']);
     expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75005002"]');
 
-    getButton(element, 'Aus Favoriten entfernen: Carrefour Market').click();
+    getButton(element, 'Favorit: Carrefour Market').click();
     await context.settle();
 
     expect(textOf(element.querySelector('main h2'))).toBe('Keine Favoriten gespeichert');

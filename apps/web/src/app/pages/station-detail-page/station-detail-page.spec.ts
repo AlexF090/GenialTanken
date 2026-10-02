@@ -95,7 +95,7 @@ describe('StationDetailPage', () => {
     context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
     await context.settle();
 
-    getButton(element, 'Zu Favoriten hinzufügen: TotalEnergies').click();
+    getButton(element, 'Favorit: TotalEnergies').click();
     await context.settle();
 
     expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75001001"]');

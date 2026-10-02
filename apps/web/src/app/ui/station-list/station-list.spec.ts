@@ -99,9 +99,7 @@ describe('StationList', () => {
     const carrefourStar = items[1]?.querySelector('button');
     expect(totalStar?.getAttribute('aria-pressed')).toBe('false');
     expect(carrefourStar?.getAttribute('aria-pressed')).toBe('true');
-    expect(carrefourStar?.getAttribute('aria-label')).toBe(
-      'Aus Favoriten entfernen: Carrefour Market'
-    );
+    expect(carrefourStar?.getAttribute('aria-label')).toBe('Favorit: Carrefour Market');
 
     totalStar?.click();
 

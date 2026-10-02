@@ -22,9 +22,6 @@ export class FavoriteButton {
   readonly isFavorite = input.required<boolean>();
   readonly toggled = output();
 
-  protected readonly accessibleName = computed(() =>
-    this.isFavorite()
-      ? `Aus Favoriten entfernen: ${this.stationName()}`
-      : `Zu Favoriten hinzufügen: ${this.stationName()}`
-  );
+  /** Stays constant; the favorite state is conveyed by `aria-pressed`. */
+  protected readonly accessibleName = computed(() => `Favorit: ${this.stationName()}`);
 }
