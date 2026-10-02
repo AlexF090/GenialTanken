@@ -28,10 +28,6 @@ export class MapPage {
   protected readonly ownPosition = this.geolocation.position;
   protected readonly geolocationErrorMessage = this.geolocation.errorMessage;
 
-  constructor() {
-    this.nearbyStations.ensureLoaded();
-  }
-
   protected showStation(stationId: string): void {
     void this.router.navigate(['/stations', stationId]);
   }

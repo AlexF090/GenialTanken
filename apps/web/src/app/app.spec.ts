@@ -44,6 +44,7 @@ describe('App', () => {
     ]);
     expect(navigationLink(element, 'Start').getAttribute('aria-current')).toBe('page');
     expect(navigationLink(element, 'Karte').getAttribute('aria-current')).toBeNull();
+    context.httpTesting.expectOne(request => request.url === '/api/stations');
   });
 
   it('renders header, main content and navigation landmarks', async () => {

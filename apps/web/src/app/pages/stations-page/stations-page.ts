@@ -1,17 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { Station } from '@genialtanken/contracts';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
 import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
 import { GeolocationService } from '../../core/geolocation/geolocation-service';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { NearbyStationsStore } from '../../core/stations/nearby-stations-store';
-import { priceInEuro } from '../../core/stations/station-display';
+import { sortStations } from '../../core/stations/sort-stations';
+import type { SortOrder } from '../../core/stations/sort-stations';
 import { Icon } from '../../ui/icon/icon';
 import { LoadingState } from '../../ui/loading-state/loading-state';
 import { PageHeader } from '../../ui/page-header/page-header';
 import { StationList } from '../../ui/station-list/station-list';
-
-type SortOrder = 'distance' | 'price';
 
 const SORT_ORDER_LABELS: Record<SortOrder, string> = { distance: 'km', price: 'Preis' };
 
@@ -38,25 +36,12 @@ export class StationsPage {
 
   protected readonly sortOrder = signal<SortOrder>('distance');
   protected readonly sortOrderLabel = computed(() => SORT_ORDER_LABELS[this.sortOrder()]);
-  protected readonly stations = computed<readonly Station[]>(() => {
-    const stations = this.nearbyStations.stations();
-    if (this.sortOrder() === 'distance') {
-      return stations;
-    }
-    const fuelType = this.fuelType();
-    return [...stations].sort(
-      (first, second) =>
-        (priceInEuro(first, fuelType) ?? Number.POSITIVE_INFINITY) -
-        (priceInEuro(second, fuelType) ?? Number.POSITIVE_INFINITY)
-    );
-  });
-
-  constructor() {
-    this.nearbyStations.ensureLoaded();
-  }
+  protected readonly stations = computed(() =>
+    sortStations(this.nearbyStations.stations(), this.sortOrder(), this.fuelType())
+  );
 
   protected refresh(): void {
-    void this.nearbyStations.refresh();
+    this.nearbyStations.refresh();
   }
 
   protected toggleSortOrder(): void {

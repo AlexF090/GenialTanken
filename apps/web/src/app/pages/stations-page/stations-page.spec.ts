@@ -10,13 +10,13 @@ import {
 import type { PageTestContext } from '../../../testing/render-page';
 import {
   carrefourStation,
-  PARIS,
   totalStation,
   unbrandedStation,
 } from '../../../testing/station-fixtures';
 import { StationsPage } from './stations-page';
 
-const PARIS_E5_URL = '/api/stations?latitude=48.8566&longitude=2.3522&radiusInKilometers=5&fuel=e5';
+const EIFFEL_TOWER_E5_URL =
+  '/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=5&fuel=e5';
 
 const stationTitles = (element: HTMLElement): string[] =>
   [...element.querySelectorAll('main li .station-card__title')].map(title => textOf(title));
@@ -26,10 +26,9 @@ describe('StationsPage', () => {
 
   const renderWithStations = async () => {
     const rendered = await renderComponent(StationsPage);
-    context.geolocation.resolvePosition(PARIS.latitude, PARIS.longitude);
     await context.settle();
     context.httpTesting
-      .expectOne(PARIS_E5_URL)
+      .expectOne(EIFFEL_TOWER_E5_URL)
       .flush([totalStation, carrefourStation, unbrandedStation]);
     await context.settle();
     return rendered;
@@ -48,9 +47,10 @@ describe('StationsPage', () => {
 
     expect(textOf(element.querySelector('header h1'))).toBe('GenialTanken');
     expect(textOf(element.querySelector('header .page-header__fuel'))).toBe('Kraftstoff: E5');
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL);
   });
 
-  it('lists the stations around the current position', async () => {
+  it('lists the stations around the Eiffel Tower without locating the user', async () => {
     const { element } = await renderWithStations();
 
     expect(stationTitles(element)).toEqual([
@@ -58,6 +58,7 @@ describe('StationsPage', () => {
       'Carrefour Market',
       '40 Avenue de Flandre',
     ]);
+    expect(context.geolocation.pendingRequestCount).toBe(0);
   });
 
   it('toggles between distance order and ascending price', async () => {
@@ -93,7 +94,7 @@ describe('StationsPage', () => {
 
     context.httpTesting
       .expectOne(
-        '/api/stations?latitude=48.8566&longitude=2.3522&radiusInKilometers=10&fuel=diesel'
+        '/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=10&fuel=diesel'
       )
       .flush([carrefourStation]);
     await context.settle();
@@ -102,48 +103,14 @@ describe('StationsPage', () => {
     expect(textOf(element.querySelector('main li'))).toContain('1,669 €');
   });
 
-  it('relocates on "Aktualisieren" and requests only the new position', async () => {
+  it('requests fresh prices once on "Aktualisieren"', async () => {
     const { element } = await renderWithStations();
 
     getButton(element, 'Aktualisieren').click();
     await context.settle();
-    context.geolocation.resolvePosition(48.85, 2.35);
-    await context.settle();
 
     const requests = context.httpTesting.match(() => true);
-    expect(requests.map(request => request.request.urlWithParams)).toEqual([
-      '/api/stations?latitude=48.85&longitude=2.35&radiusInKilometers=5&fuel=e5',
-    ]);
-    requests[0]?.flush([carrefourStation]);
-    await context.settle();
-    expect(stationTitles(element)).toEqual(['Carrefour Market']);
-  });
-
-  it('requests fresh prices once on "Aktualisieren" when the position stayed the same', async () => {
-    const { element } = await renderWithStations();
-
-    getButton(element, 'Aktualisieren').click();
-    await context.settle();
-    context.geolocation.resolvePosition(PARIS.latitude, PARIS.longitude);
-    await context.settle();
-
-    const requests = context.httpTesting.match(() => true);
-    expect(requests.map(request => request.request.urlWithParams)).toEqual([PARIS_E5_URL]);
-    requests[0]?.flush([totalStation]);
-    await context.settle();
-    expect(stationTitles(element)).toEqual(['TotalEnergies']);
-  });
-
-  it('requests fresh prices for the known position once when relocating fails', async () => {
-    const { element } = await renderWithStations();
-
-    getButton(element, 'Aktualisieren').click();
-    await context.settle();
-    context.geolocation.rejectWithTimeout();
-    await context.settle();
-
-    const requests = context.httpTesting.match(() => true);
-    expect(requests.map(request => request.request.urlWithParams)).toEqual([PARIS_E5_URL]);
+    expect(requests.map(request => request.request.urlWithParams)).toEqual([EIFFEL_TOWER_E5_URL]);
     requests[0]?.flush([totalStation]);
     await context.settle();
     expect(stationTitles(element)).toEqual(['TotalEnergies']);
@@ -161,24 +128,12 @@ describe('StationsPage', () => {
     );
   });
 
-  it('explains a denied location permission', async () => {
-    const { element } = await renderComponent(StationsPage);
-
-    context.geolocation.rejectWithPermissionDenied();
-    await context.settle();
-
-    expect(textOf(element.querySelector('[role="alert"]'))).toBe(
-      'Der Zugriff auf deinen Standort wurde verweigert. Erlaube ihn in den Einstellungen deines Browsers, um Tankstellen in deiner Nähe zu sehen.'
-    );
-  });
-
   it('reports an unavailable upstream API', async () => {
     const { element } = await renderComponent(StationsPage);
-    context.geolocation.resolvePosition(PARIS.latitude, PARIS.longitude);
     await context.settle();
 
     context.httpTesting
-      .expectOne(PARIS_E5_URL)
+      .expectOne(EIFFEL_TOWER_E5_URL)
       .flush(
         { statusCode: 502, message: 'Upstream unavailable' },
         { status: 502, statusText: 'Bad Gateway' }
@@ -192,10 +147,9 @@ describe('StationsPage', () => {
 
   it('reports a response that does not match the contract', async () => {
     const { element } = await renderComponent(StationsPage);
-    context.geolocation.resolvePosition(PARIS.latitude, PARIS.longitude);
     await context.settle();
 
-    context.httpTesting.expectOne(PARIS_E5_URL).flush({ unexpected: true });
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush({ unexpected: true });
     await context.settle();
 
     expect(textOf(element.querySelector('[role="alert"]'))).toBe(
@@ -205,10 +159,9 @@ describe('StationsPage', () => {
 
   it('says so when no station is in range', async () => {
     const { element } = await renderComponent(StationsPage);
-    context.geolocation.resolvePosition(PARIS.latitude, PARIS.longitude);
     await context.settle();
 
-    context.httpTesting.expectOne(PARIS_E5_URL).flush([]);
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([]);
     await context.settle();
 
     expect(textOf(element.querySelector('main .message'))).toBe(
@@ -225,12 +178,10 @@ describe('StationsPage with stored settings', () => {
       }),
     });
     await renderComponent(StationsPage);
-
-    context.geolocation.resolvePosition(PARIS.latitude, PARIS.longitude);
     await context.settle();
 
     context.httpTesting
-      .expectOne('/api/stations?latitude=48.8566&longitude=2.3522&radiusInKilometers=15&fuel=e10')
+      .expectOne('/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=15&fuel=e10')
       .flush([]);
     context.httpTesting.verify();
   });

@@ -74,14 +74,12 @@ describe('GeolocationService', () => {
     expect(service.position()).toEqual({ latitude: 51.3127, longitude: 9.4797 });
   });
 
-  it('requests the position only once with locateOnce', () => {
+  it('does not request the position before locate is called', () => {
     const geolocation = new FakeGeolocation();
     const service = createService(geolocation);
 
-    service.locateOnce();
-    service.locateOnce();
-
-    expect(geolocation.pendingRequestCount).toBe(1);
+    expect(service.position()).toBeUndefined();
+    expect(geolocation.pendingRequestCount).toBe(0);
   });
 
   it('settles the returned promise once the browser answered, also on failure', async () => {

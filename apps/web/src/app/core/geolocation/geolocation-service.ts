@@ -42,7 +42,6 @@ export class GeolocationService {
   });
   private readonly locating = signal(false);
   private readonly failure = signal<GeolocationFailure | undefined>(undefined);
-  private hasRequestedPosition = false;
 
   readonly position = this.currentPosition.asReadonly();
   readonly isLocating = this.locating.asReadonly();
@@ -51,20 +50,12 @@ export class GeolocationService {
     return failure === undefined ? undefined : FAILURE_MESSAGES[failure];
   });
 
-  /** Requests the position unless it was requested before (e.g. on another page). */
-  locateOnce(): void {
-    if (this.hasRequestedPosition) {
-      return;
-    }
-    void this.locate();
-  }
-
   /**
-   * Requests the current position. The returned promise never rejects; it settles once the
-   * browser answered, after `position` or `errorMessage` were updated.
+   * Requests the current position; only call it on an explicit user action, because browsers
+   * ask for the permission on the first call. The returned promise never rejects; it settles once
+   * the browser answered, after `position` or `errorMessage` were updated.
    */
   locate(): Promise<void> {
-    this.hasRequestedPosition = true;
     const geolocation = this.geolocation;
     if (geolocation === null) {
       this.failure.set('unsupported');
