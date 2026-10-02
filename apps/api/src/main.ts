@@ -1,8 +1,21 @@
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module.js';
+import { ApplicationConfiguration } from './configuration/application-configuration.js';
+import { configureApplication } from './configure-application.js';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  await app.listen(process.env['PORT'] ?? 3000);
-}
+const LISTEN_ON_ALL_INTERFACES = '0.0.0.0';
+
+const bootstrap = async (): Promise<void> => {
+  const application = await NestFactory.create<NestExpressApplication>(AppModule.forRoot(), {
+    abortOnError: false,
+  });
+  configureApplication(application);
+  application.enableShutdownHooks();
+  await application.listen(
+    application.get(ApplicationConfiguration).port,
+    LISTEN_ON_ALL_INTERFACES
+  );
+};
+
 await bootstrap();

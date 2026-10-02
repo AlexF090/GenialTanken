@@ -1,0 +1,18 @@
+import type { CountryCode, Station, StationsQuery } from '@genialtanken/contracts';
+
+/** A source of fuel prices for one country. */
+export interface FuelPriceProvider {
+  readonly country: CountryCode;
+  /** Stations around the position with `distanceInMeters` set. */
+  findStationsAround(query: StationsQuery): Promise<Station[]>;
+  /** `null` when the provider does not know the station. */
+  findStationById(localIdentifier: string): Promise<Station | null>;
+}
+
+/** Injection token for the list of enabled `FuelPriceProvider`s. */
+export const FUEL_PRICE_PROVIDERS = Symbol('FUEL_PRICE_PROVIDERS');
+
+/** The data source behind a provider failed or answered with something unusable. */
+export class FuelPriceProviderError extends Error {
+  override readonly name = 'FuelPriceProviderError';
+}

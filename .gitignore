@@ -25,3 +25,4 @@ test-results
 dist
 coverage
 .angular
+*.tsbuildinfo
