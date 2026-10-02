@@ -11,6 +11,8 @@ const ALLOWED_ORIGIN = 'https://genialtanken.pages.dev';
 
 const requiredPropertiesSchema = z.object({ required: z.array(z.string()) });
 
+const openApiInformationSchema = z.object({ info: z.object({ version: z.string() }) });
+
 const openApiDocumentSchema = z.object({
   paths: z.record(z.string(), z.unknown()),
   components: z.object({
@@ -71,6 +73,14 @@ describe('OpenAPI document', () => {
       expect.arrayContaining(['id', 'pricesInEuro', 'distanceInMeters'])
     );
     expect(components.schemas.ApiError.required).toEqual(['statusCode', 'message']);
+  });
+
+  it('reports the released application version', async () => {
+    const api = await startApplication();
+
+    const response = await api.get('/api/docs-json').expect(200);
+
+    expect(openApiInformationSchema.parse(response.body).info.version).toBe('2.0.0');
   });
 });
 
