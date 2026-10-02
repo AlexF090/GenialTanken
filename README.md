@@ -1,18 +1,12 @@
 # Capstone-Project: GenialTanken
+
 A gas station app that displays all daily gas station prices in a list or map by filtering by location/zip code and radius.
-
-
-
 
 ![Slide 16_9 - 1](https://user-images.githubusercontent.com/100355993/169349881-87f8f76e-f312-41c2-af8a-530c0e54e0a7.jpeg)
 
 # Demo
 
-Have a look at the hosted version on Vercel: [GenialTanken Demo](https://genialtanken.vercel.app/)  (we prefer a test with mozilla firefox).
-
-
-
-
+Have a look at the hosted version on Vercel: [GenialTanken Demo](https://genialtanken.vercel.app/) (we prefer a test with mozilla firefox).
 
 # Tech Stack
 
