@@ -9,8 +9,8 @@ export const API_PREFIX = 'api';
 export const configureApplication = (application: NestExpressApplication): void => {
   const configuration = application.get(ApplicationConfiguration);
 
-  // Render terminates TLS in one proxy hop; the rate limit needs the client IP behind it
-  application.set('trust proxy', 1);
+  // The rate limit needs the client IP behind Render (and the Cloudflare Pages Function in production)
+  application.set('trust proxy', configuration.trustedProxyHops);
   application.setGlobalPrefix(API_PREFIX, { exclude: ['health'] });
   application.enableCors({ origin: configuration.webOrigins });
   SwaggerModule.setup(`${API_PREFIX}/docs`, application, () => createOpenApiDocument(application));

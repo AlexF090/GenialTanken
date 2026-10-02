@@ -126,4 +126,29 @@ describe('Rate limit', () => {
     expect(apiErrorSchema.strict().parse(response.body).statusCode).toBe(429);
     await api.get('/health').expect(200);
   });
+
+  it('limits each client separately behind the Cloudflare and Render proxies', async () => {
+    const api = await startApplication({
+      RATE_LIMIT_REQUESTS_PER_MINUTE: '1',
+      TRUSTED_PROXY_HOPS: '2',
+    });
+    const query = { latitude: '51.3', longitude: '9.4' };
+    const forwardedFor = (clientAddress: string) => `${clientAddress}, 172.68.10.1`;
+
+    await api
+      .get('/api/stations')
+      .query(query)
+      .set('X-Forwarded-For', forwardedFor('198.51.100.7'))
+      .expect(200);
+    await api
+      .get('/api/stations')
+      .query(query)
+      .set('X-Forwarded-For', forwardedFor('203.0.113.9'))
+      .expect(200);
+    await api
+      .get('/api/stations')
+      .query(query)
+      .set('X-Forwarded-For', forwardedFor('198.51.100.7'))
+      .expect(429);
+  });
 });

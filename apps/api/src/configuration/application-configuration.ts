@@ -39,4 +39,8 @@ export class ApplicationConfiguration {
   get rateLimitRequestsPerMinute(): number {
     return this.configService.get('RATE_LIMIT_REQUESTS_PER_MINUTE', { infer: true });
   }
+
+  get trustedProxyHops(): number {
+    return this.configService.get('TRUSTED_PROXY_HOPS', { infer: true });
+  }
 }

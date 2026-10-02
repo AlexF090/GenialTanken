@@ -32,6 +32,8 @@ export const environmentSchema = z.object({
   UPSTREAM_TIMEOUT_IN_MILLISECONDS: positiveIntegerSchema.default(8000),
   CACHE_TIME_TO_LIVE_IN_SECONDS: positiveIntegerSchema.default(300),
   RATE_LIMIT_REQUESTS_PER_MINUTE: positiveIntegerSchema.default(60),
+  /** Reverse proxies in front of the API: 1 = Render only, 2 = Cloudflare Pages Function + Render. */
+  TRUSTED_PROXY_HOPS: positiveIntegerSchema.default(1),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;
