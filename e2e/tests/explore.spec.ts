@@ -302,4 +302,42 @@ test.describe('explore page', () => {
 
     expect(errors).toEqual([]);
   });
+  test('the place search moves the search to the chosen place', async ({ page }) => {
+    await page.goto('/');
+
+    const searchField = page.getByRole('combobox', { name: 'Ort suchen' });
+    await expect(searchField).toHaveAttribute('placeholder', 'Position auf Karte');
+    await searchField.pressSequentially('Bastille');
+    const suggestions = page.getByRole('listbox', { name: 'Orte' }).getByRole('option');
+    await expect(suggestions.first()).toContainText('Bastille');
+    await suggestions.first().click();
+
+    await expect(resultSummary(page)).toContainText('um Bastille');
+    await expect(searchField).toHaveValue('Bastille');
+
+    await page.getByRole('button', { name: 'Suche löschen' }).click();
+    await expect(resultSummary(page)).toContainText('um die Kartenmitte');
+    await expect(searchField).toHaveValue('');
+  });
+
+  test('"In diesem Bereich suchen" searches where the map was moved to', async ({ page }) => {
+    await page.goto('/');
+    await expect(resultSummary(page)).toContainText(`um ${eiffelTower.label}`);
+    const areaSearch = page.getByRole('button', { name: 'In diesem Bereich suchen' });
+    await expect(areaSearch).toBeHidden();
+
+    const mapBox = await stationsMap(page).boundingBox();
+    if (mapBox === null) {
+      throw new Error('The map has no size');
+    }
+    const start = { x: mapBox.x + mapBox.width / 2, y: mapBox.y + mapBox.height * 0.75 };
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(start.x - 250, start.y - 250, { steps: 10 });
+    await page.mouse.up();
+
+    await areaSearch.click();
+    await expect(resultSummary(page)).toContainText('um die Kartenmitte');
+    await expect(areaSearch).toBeHidden();
+  });
 });
