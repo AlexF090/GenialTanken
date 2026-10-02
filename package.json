@@ -16,6 +16,7 @@
   },
   "scripts": {
     "dev": "pnpm --parallel --filter web --filter api run start:dev",
+    "dev:container": "pnpm --parallel --filter web --filter api run start:container",
     "build": "pnpm --recursive --filter \"./apps/*\" --filter \"./packages/*\" run build",
     "test": "pnpm --recursive --filter \"./apps/*\" --filter \"./packages/*\" run test",
     "test:e2e": "pnpm --filter e2e test",
