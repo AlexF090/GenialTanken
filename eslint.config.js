@@ -29,8 +29,6 @@ export default tseslint.config(
       '**/coverage/**',
       '**/.angular/**',
       '**/node_modules/**',
-      'client/**',
-      'server/**',
       'e2e/playwright-report/**',
       'e2e/test-results/**',
     ],

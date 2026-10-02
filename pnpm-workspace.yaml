@@ -2,9 +2,6 @@ packages:
   - apps/*
   - packages/*
   - e2e
-  # Legacy React app, removed once the Angular rewrite reaches feature parity
-  - client
-  - server
 
 saveExact: true
 engineStrict: true
@@ -18,5 +15,3 @@ allowBuilds:
   msgpackr-extract: true
   # Telemetry from swagger-ui-dist
   '@scarf/scarf': false
-  core-js: false
-  core-js-pure: false
