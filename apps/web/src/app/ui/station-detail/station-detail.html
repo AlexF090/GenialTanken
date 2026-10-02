@@ -1,0 +1,53 @@
+<article class="station-detail">
+  <app-station-location-map
+    class="station-detail__map"
+    [station]="station()"
+    [stationTitle]="title()" />
+
+  <div class="station-detail__heading">
+    <div>
+      <h2 class="station-detail__title">{{ title() }}</h2>
+      @if (subtitle(); as subtitle) {
+        <p class="station-detail__subtitle">{{ subtitle }}</p>
+      }
+      <address class="station-detail__address">
+        <span>{{ streetLine() }}</span
+        >&ngsp;<span>{{ cityLine() }}</span>
+      </address>
+    </div>
+    <app-favorite-button
+      [stationName]="title()"
+      [isFavorite]="isFavorite()"
+      (toggled)="favoriteToggled.emit()" />
+  </div>
+
+  <section class="station-detail__section" aria-labelledby="opening-times-heading">
+    <h3 id="opening-times-heading" class="station-detail__section-title">Öffnungszeiten</h3>
+    @if (station().isOpen !== null) {
+      <p class="station-detail__open-status">
+        {{
+          station().isOpen
+            ? 'Die Tankstelle ist geöffnet.'
+            : 'Die Tankstelle hat leider geschlossen.'
+        }}
+      </p>
+    }
+    <app-opening-times [openingTimes]="station().openingTimes" />
+  </section>
+
+  <section class="station-detail__section" aria-labelledby="prices-heading">
+    <h3 id="prices-heading" class="station-detail__section-title">Preise</h3>
+    <ul class="station-detail__prices" role="list">
+      @for (fuelPrice of fuelPrices(); track fuelPrice.fuelType) {
+        <li class="station-detail__price">
+          @if (fuelPrice.priceInEuro !== null) {
+            <app-price class="station-detail__price-value" [priceInEuro]="fuelPrice.priceInEuro" />
+            {{ fuelPrice.label }}
+          } @else {
+            Kein Preis für {{ fuelPrice.label }} vorhanden
+          }
+        </li>
+      }
+    </ul>
+  </section>
+</article>

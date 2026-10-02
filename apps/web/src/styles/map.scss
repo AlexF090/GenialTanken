@@ -1,0 +1,37 @@
+// Leaflet renders its markers and popups outside of Angular's view encapsulation,
+// so their styles live here instead of in the map components.
+
+.leaflet-container {
+  font: inherit;
+}
+
+.station-marker-popup {
+  .leaflet-popup-content {
+    margin: var(--space-xs);
+    text-align: center;
+  }
+
+  .station-marker-popup__price {
+    margin: 0 0 var(--space-2xs);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .station-marker-popup__link {
+    color: var(--color-primary);
+  }
+}
+
+.own-position-marker {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+  border: var(--border-width-focus) solid var(--color-surface);
+  border-radius: var(--radius-round);
+  background-color: var(--color-own-position);
+  box-shadow: var(--shadow-card);
+}
+
+.leaflet-marker-icon:focus-visible {
+  outline: var(--border-width-focus) solid var(--color-focus-ring);
+  outline-offset: var(--focus-offset);
+}

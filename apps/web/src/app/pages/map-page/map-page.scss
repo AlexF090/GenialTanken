@@ -1,0 +1,18 @@
+.map-page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.map-page__status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md);
+  font-size: var(--font-size-sm);
+}
+
+.map-page__map {
+  flex: 1;
+  min-height: var(--layout-map-minimum-height);
+}

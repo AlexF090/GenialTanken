@@ -1,0 +1,30 @@
+<app-page-header title="Einstellungen" [fuelLabel]="fuelLabel()" />
+<main class="page-content">
+  <form class="settings" novalidate>
+    <fieldset class="settings__group">
+      <legend class="settings__legend">Kraftstoff</legend>
+      @for (option of fuelTypeOptions; track option.value) {
+        <label class="settings__option">
+          {{ option.label }}
+          <input type="radio" [value]="option.value" [formField]="settingsForm.fuelType" />
+        </label>
+      }
+    </fieldset>
+
+    <div class="settings__group">
+      <label class="settings__legend" for="radius">
+        Radius: {{ settingsModel().radiusInKilometers }} km
+      </label>
+      <input
+        id="radius"
+        class="settings__slider"
+        type="range"
+        step="1"
+        [formField]="settingsForm.radiusInKilometers" />
+      <div class="settings__range-limits" aria-hidden="true">
+        <span>{{ minimumRadiusInKilometers }} km</span>
+        <span>{{ maximumRadiusInKilometers }} km</span>
+      </div>
+    </div>
+  </form>
+</main>

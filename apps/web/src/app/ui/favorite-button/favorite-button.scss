@@ -1,0 +1,14 @@
+.favorite-button {
+  display: inline-flex;
+  padding: var(--space-2xs);
+  border: none;
+  border-radius: var(--radius-round);
+  background: none;
+  color: var(--color-primary);
+  font-size: var(--icon-size-lg);
+  cursor: pointer;
+
+  &[aria-pressed='true'] {
+    color: var(--color-primary-strong);
+  }
+}

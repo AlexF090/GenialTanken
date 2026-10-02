@@ -1,0 +1,11 @@
+<div class="loading-state" role="status">
+  @if (isLoading()) {
+    <span class="loading-state__spinner" aria-hidden="true"></span>
+    <p>{{ label() }}</p>
+    @if (showsColdStartHint()) {
+      <p class="loading-state__hint">
+        Der Server wird gerade gestartet. Das kann beim ersten Aufruf bis zu einer Minute dauern.
+      </p>
+    }
+  }
+</div>

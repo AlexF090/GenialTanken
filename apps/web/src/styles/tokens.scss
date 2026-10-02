@@ -1,0 +1,80 @@
+// Design tokens derived from the legacy GenialTanken palette (#2196f3, #0367b4, #002c76).
+// Text colors are darkened where the legacy values failed WCAG AA contrast on white.
+:root {
+  // Colors
+  --color-primary: #0367b4;
+  --color-primary-strong: #002c76;
+  --color-accent: #2196f3;
+  --color-on-primary: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f4f7fb;
+  --color-text: #1a1a1a;
+  --color-text-muted: #595959;
+  --color-border: #1a1a1a;
+  --color-divider: #e0e0e0;
+  --color-error: #b3261e;
+  --color-error-surface: #fdecea;
+  --color-focus-ring: #002c76;
+  --color-own-position: #b3261e;
+
+  // Spacing
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  // Radii
+  --radius-sm: 0.25rem;
+  --radius-md: 0.625rem;
+  --radius-pill: 999rem;
+  --radius-round: 50%;
+
+  // Typography
+  --font-family-base:
+    -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, 'Helvetica Neue', arial, sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+  --font-size-2xl: 2rem;
+  --font-weight-regular: 400;
+  --font-weight-bold: 600;
+  --line-height-base: 1.4;
+
+  // Borders and focus
+  --border-width-thin: 1px;
+  --border-width-focus: 3px;
+  --focus-offset: 2px;
+
+  // Shadows
+  --shadow-card: 0 0 8px rgb(0 0 0 / 25%), inset 0 0 2px rgb(0 0 0 / 25%);
+  --shadow-raised: 0 0 20px rgb(0 0 0 / 25%), inset 0 0 5px rgb(0 0 0 / 25%);
+  --shadow-map: 0 5px 15px rgb(0 0 0 / 35%);
+
+  // Icons
+  --icon-size-sm: 1.25rem;
+  --icon-size-md: 2rem;
+  --icon-size-lg: 2.25rem;
+
+  // Layout
+  --layout-header-height: 6.25rem;
+  --layout-navigation-height: 5rem;
+  --layout-content-max-width: 48rem;
+  --layout-detail-map-height: 10rem;
+  --layout-fuel-badge-width: 3.125rem;
+  --layout-fuel-badge-height: 2.125rem;
+  --layout-price-column-width: 5.5rem;
+  --layout-spinner-size: 1.5rem;
+  --layout-map-minimum-height: 20rem;
+
+  // Stacking: above Leaflet panes and controls (max. 1000)
+  --layer-chrome: 1100;
+
+  // Motion
+  --duration-short: 150ms;
+}

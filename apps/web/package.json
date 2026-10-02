@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build --define \"MAPBOX_ACCESS_TOKEN='${NG_APP_MAPBOX_ACCESS_TOKEN:-}'\"",
     "test": "ng test --watch=false",
     "test:watch": "ng test",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.spec.json",

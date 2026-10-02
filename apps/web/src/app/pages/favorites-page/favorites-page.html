@@ -1,0 +1,30 @@
+<app-page-header title="Favoriten" [fuelLabel]="fuelLabel()" />
+<main class="page-content">
+  @if (removedStationCount() > 0) {
+    <p class="message" role="status">
+      @if (removedStationCount() === 1) {
+        Eine gespeicherte Tankstelle existiert nicht mehr und wurde aus den Favoriten entfernt.
+      } @else {
+        {{ removedStationCount() }} gespeicherte Tankstellen existieren nicht mehr und wurden aus
+        den Favoriten entfernt.
+      }
+    </p>
+  }
+  @if (hasFavorites()) {
+    <h2 class="visually-hidden">Gespeicherte Tankstellen</h2>
+    <app-loading-state [isLoading]="isLoading()" label="Favoriten werden geladen …" />
+    @if (errorMessage(); as message) {
+      <p class="message message--error" role="alert">{{ message }}</p>
+    }
+    <app-station-list
+      [stations]="stations()"
+      [fuelType]="fuelType()"
+      [favoriteStationIds]="favoriteStationIds()"
+      (favoriteToggled)="toggleFavorite($event)" />
+  } @else {
+    <div class="message">
+      <h2>Keine Favoriten gespeichert</h2>
+      <p>Tippe auf den Stern einer Tankstelle, um sie hier zu speichern.</p>
+    </div>
+  }
+</main>

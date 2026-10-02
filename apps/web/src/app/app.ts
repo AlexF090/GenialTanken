@@ -1,12 +1,22 @@
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { NavigationBar } from './ui/navigation-bar/navigation-bar';
 
 @Component({
-  imports: [RouterOutlet],
   selector: 'app-root',
-  styleUrl: './app.scss',
-  templateUrl: './app.html',
+  imports: [RouterOutlet, NavigationBar],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <router-outlet />
+    <app-navigation-bar />
+  `,
+  styles: `
+    :host {
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+    }
+  `,
 })
-export class App {
-  protected readonly title = signal('web');
-}
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- the application shell is pure template
+export class App {}

@@ -1,0 +1,31 @@
+<ul class="station-list" role="list">
+  @for (item of items(); track item.id) {
+    <li class="station-card">
+      <a class="station-card__link" [routerLink]="['/stations', item.id]">
+        <span class="station-card__title">{{ item.title }}</span>
+        @if (item.subtitle) {
+          <span class="station-card__subtitle">{{ item.subtitle }}</span>
+        }
+        <span class="station-card__address">
+          <span>{{ item.streetLine }}</span
+          >&ngsp;<span>{{ item.cityLine }}</span>
+        </span>
+        <span class="station-card__price">
+          @if (item.priceInEuro !== null) {
+            <app-price [priceInEuro]="item.priceInEuro" />
+          } @else {
+            Kein Preis
+          }
+        </span>
+        @if (item.distance) {
+          <span class="station-card__distance">{{ item.distance }}</span>
+        }
+      </a>
+      <app-favorite-button
+        class="station-card__favorite"
+        [stationName]="item.title"
+        [isFavorite]="item.isFavorite"
+        (toggled)="favoriteToggled.emit(item.id)" />
+    </li>
+  }
+</ul>

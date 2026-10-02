@@ -1,0 +1,19 @@
+<app-page-header title="Karte" [fuelLabel]="fuelLabel()" />
+<main class="map-page">
+  <div class="map-page__status">
+    <a routerLink="/">Tankstellen als Liste anzeigen</a>
+    @if (geolocationErrorMessage(); as message) {
+      <p class="message message--error" role="alert">{{ message }}</p>
+    }
+    @if (stationsErrorMessage(); as message) {
+      <p class="message message--error" role="alert">{{ message }}</p>
+    }
+    <app-loading-state [isLoading]="isLoading()" />
+  </div>
+  <app-stations-map
+    class="map-page__map"
+    [stations]="stations()"
+    [fuelType]="fuelType()"
+    [ownPosition]="ownPosition()"
+    (stationSelected)="showStation($event)" />
+</main>

@@ -1,0 +1,13 @@
+<app-page-header title="Details" />
+<main class="page-content">
+  <app-loading-state [isLoading]="isLoading()" label="Tankstelle wird geladen …" />
+  @if (errorMessage(); as message) {
+    <p class="message message--error" role="alert">{{ message }}</p>
+  }
+  @if (station(); as station) {
+    <app-station-detail
+      [station]="station"
+      [isFavorite]="isFavorite()"
+      (favoriteToggled)="toggleFavorite()" />
+  }
+</main>
