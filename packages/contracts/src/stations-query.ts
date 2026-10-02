@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const FUEL_TYPES = ['e5', 'e10', 'diesel'] as const;
+export const FUEL_TYPES = ['e5', 'e10', 'superPlus', 'diesel', 'e85', 'lpg'] as const;
 
 export const fuelTypeSchema = z.enum(FUEL_TYPES);
 

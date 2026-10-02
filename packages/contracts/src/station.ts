@@ -1,6 +1,13 @@
 import { z } from 'zod';
+import { fuelTypeSchema } from './stations-query.js';
 
 const priceInEuroSchema = z.number().positive().nullable();
+
+export const COUNTRY_CODES = ['FR', 'DE'] as const;
+
+export const countryCodeSchema = z.enum(COUNTRY_CODES);
+
+export type CountryCode = z.infer<typeof countryCodeSchema>;
 
 const openingIntervalSchema = z.object({
   opening: z.string(),
@@ -11,8 +18,11 @@ const openingDaySchema = z.array(openingIntervalSchema);
 
 /** Station as returned by the GenialTanken API to the web app. */
 export const stationSchema = z.object({
+  /** Provider-namespaced identifier, e.g. `fr-92242003`; treat as opaque. */
   id: z.string().min(1),
-  name: z.string(),
+  country: countryCodeSchema,
+  /** `null` when the data source publishes no station name (French open data). */
+  name: z.string().nullable(),
   brand: z.string().nullable(),
   address: z.object({
     street: z.string(),
@@ -22,13 +32,10 @@ export const stationSchema = z.object({
     latitude: z.number(),
     longitude: z.number(),
   }),
-  /** `null` when the station does not sell this fuel or reports no price. */
-  pricesInEuro: z.object({
-    e5: priceInEuroSchema,
-    e10: priceInEuroSchema,
-    diesel: priceInEuroSchema,
-  }),
-  isOpen: z.boolean(),
+  /** One entry per fuel type (exhaustive); `null` when the station reports no price. */
+  pricesInEuro: z.record(fuelTypeSchema, priceInEuroSchema),
+  /** `null` when the data source publishes no live opening status. */
+  isOpen: z.boolean().nullable(),
   openingTimes: z.object({
     monday: openingDaySchema,
     tuesday: openingDaySchema,

@@ -1,21 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { apiErrorSchema, stationSchema, stationsSchema } from './index.js';
+import { apiErrorSchema, countryCodeSchema, stationSchema, stationsSchema } from './index.js';
 
 const openingDay = [{ opening: '06:00', closing: '22:00' }];
 
 const station = {
-  id: '11111111-1111-4111-8111-111111111111',
-  name: 'Aral Tankstelle Wilhelmshöhe',
-  brand: 'Aral',
+  id: 'fr-92242003',
+  country: 'FR',
+  name: null,
+  brand: null,
   address: {
-    street: 'Wilhelmshöher Allee',
-    houseNumber: '100',
-    postalCode: '34119',
-    city: 'Kassel',
-    latitude: 51.315,
-    longitude: 9.47,
+    street: '12 Avenue Pierre Brossolette',
+    houseNumber: null,
+    postalCode: '92240',
+    city: 'Malakoff',
+    latitude: 48.821,
+    longitude: 2.312,
   },
-  pricesInEuro: { e5: 1.859, e10: null, diesel: 1.689 },
+  pricesInEuro: { e5: null, e10: 1.99, superPlus: null, diesel: 2.25, e85: 0.909, lpg: null },
   isOpen: true,
   openingTimes: {
     monday: openingDay,
@@ -30,18 +31,43 @@ const station = {
   distanceInMeters: 850,
 };
 
-describe('stationSchema', () => {
-  it('accepts a station with a missing price', () => {
-    expect(stationSchema.parse(station).pricesInEuro.e10).toBeNull();
+describe('countryCodeSchema', () => {
+  it('accepts France and Germany', () => {
+    expect(countryCodeSchema.parse('FR')).toBe('FR');
+    expect(countryCodeSchema.parse('DE')).toBe('DE');
   });
 
-  it('accepts a station without known distance', () => {
-    expect(stationSchema.parse({ ...station, distanceInMeters: null }).distanceInMeters).toBeNull();
+  it('rejects other countries', () => {
+    expect(countryCodeSchema.safeParse('AT').success).toBe(false);
+  });
+});
+
+describe('stationSchema', () => {
+  it('accepts a French station without name, brand and house number', () => {
+    const parsed = stationSchema.parse(station);
+
+    expect(parsed.name).toBeNull();
+    expect(parsed.pricesInEuro.e85).toBe(0.909);
+  });
+
+  it('accepts a station without known distance or opening status', () => {
+    const parsed = stationSchema.parse({ ...station, distanceInMeters: null, isOpen: null });
+
+    expect(parsed.distanceInMeters).toBeNull();
+    expect(parsed.isOpen).toBeNull();
+  });
+
+  it('requires a price entry for every fuel type', () => {
+    const { lpg: _lpg, ...pricesWithoutLpg } = station.pricesInEuro;
+
+    expect(stationSchema.safeParse({ ...station, pricesInEuro: pricesWithoutLpg }).success).toBe(
+      false
+    );
   });
 
   it('rejects a negative price', () => {
     expect(
-      stationSchema.safeParse({ ...station, pricesInEuro: { e5: -1, e10: null, diesel: null } })
+      stationSchema.safeParse({ ...station, pricesInEuro: { ...station.pricesInEuro, e10: -1 } })
         .success
     ).toBe(false);
   });

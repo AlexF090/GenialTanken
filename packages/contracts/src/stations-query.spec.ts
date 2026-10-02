@@ -2,14 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { fuelTypeSchema, stationsQuerySchema } from './index.js';
 
 describe('fuelTypeSchema', () => {
-  it('accepts the three supported fuel types', () => {
-    expect(fuelTypeSchema.parse('e5')).toBe('e5');
-    expect(fuelTypeSchema.parse('e10')).toBe('e10');
-    expect(fuelTypeSchema.parse('diesel')).toBe('diesel');
+  it.each(['e5', 'e10', 'superPlus', 'diesel', 'e85', 'lpg'])('accepts %s', fuelType => {
+    expect(fuelTypeSchema.parse(fuelType)).toBe(fuelType);
   });
 
   it('rejects unknown fuel types', () => {
-    expect(fuelTypeSchema.safeParse('lpg').success).toBe(false);
+    expect(fuelTypeSchema.safeParse('hydrogen').success).toBe(false);
   });
 });
 
