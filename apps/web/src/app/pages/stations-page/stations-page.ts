@@ -56,7 +56,7 @@ export class StationsPage {
   }
 
   protected refresh(): void {
-    this.nearbyStations.refresh();
+    void this.nearbyStations.refresh();
   }
 
   protected toggleSortOrder(): void {

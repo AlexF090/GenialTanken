@@ -102,20 +102,51 @@ describe('StationsPage', () => {
     expect(textOf(element.querySelector('main li'))).toContain('1,669 €');
   });
 
-  it('relocates and fetches fresh prices on "Aktualisieren"', async () => {
+  it('relocates on "Aktualisieren" and requests only the new position', async () => {
     const { element } = await renderWithStations();
 
     getButton(element, 'Aktualisieren').click();
     await context.settle();
-    context.httpTesting.expectOne(PARIS_E5_URL).flush([totalStation]);
     context.geolocation.resolvePosition(48.85, 2.35);
     await context.settle();
 
-    context.httpTesting
-      .expectOne('/api/stations?latitude=48.85&longitude=2.35&radiusInKilometers=5&fuel=e5')
-      .flush([carrefourStation]);
+    const requests = context.httpTesting.match(() => true);
+    expect(requests.map(request => request.request.urlWithParams)).toEqual([
+      '/api/stations?latitude=48.85&longitude=2.35&radiusInKilometers=5&fuel=e5',
+    ]);
+    requests[0]?.flush([carrefourStation]);
     await context.settle();
     expect(stationTitles(element)).toEqual(['Carrefour Market']);
+  });
+
+  it('requests fresh prices once on "Aktualisieren" when the position stayed the same', async () => {
+    const { element } = await renderWithStations();
+
+    getButton(element, 'Aktualisieren').click();
+    await context.settle();
+    context.geolocation.resolvePosition(PARIS.latitude, PARIS.longitude);
+    await context.settle();
+
+    const requests = context.httpTesting.match(() => true);
+    expect(requests.map(request => request.request.urlWithParams)).toEqual([PARIS_E5_URL]);
+    requests[0]?.flush([totalStation]);
+    await context.settle();
+    expect(stationTitles(element)).toEqual(['TotalEnergies']);
+  });
+
+  it('requests fresh prices for the known position once when relocating fails', async () => {
+    const { element } = await renderWithStations();
+
+    getButton(element, 'Aktualisieren').click();
+    await context.settle();
+    context.geolocation.rejectWithTimeout();
+    await context.settle();
+
+    const requests = context.httpTesting.match(() => true);
+    expect(requests.map(request => request.request.urlWithParams)).toEqual([PARIS_E5_URL]);
+    requests[0]?.flush([totalStation]);
+    await context.settle();
+    expect(stationTitles(element)).toEqual(['TotalEnergies']);
   });
 
   it('stars a station and persists it', async () => {

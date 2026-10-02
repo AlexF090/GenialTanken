@@ -1,6 +1,6 @@
 import { InjectionToken } from '@angular/core';
 import { environment } from '../../../environments/environment';
-import type { Coordinates } from '../../core/geolocation/geolocation-service';
+import type { Coordinates } from '../../core/geolocation/coordinates';
 
 /** Shown until the user's position is known (Paris, where most stations of the data source are). */
 export const FALLBACK_MAP_CENTER: Coordinates = { latitude: 48.8566, longitude: 2.3522 };

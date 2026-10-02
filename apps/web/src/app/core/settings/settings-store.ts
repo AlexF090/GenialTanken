@@ -5,6 +5,7 @@ import {
   fuelTypeSchema,
   MAXIMUM_RADIUS_IN_KILOMETERS,
   MINIMUM_RADIUS_IN_KILOMETERS,
+  stationsQuerySchema,
 } from '@genialtanken/contracts';
 import type { FuelType } from '@genialtanken/contracts';
 import { BROWSER_STORAGE } from '../browser-storage';
@@ -21,17 +22,32 @@ const DEFAULT_SETTINGS: Settings = {
   radiusInKilometers: DEFAULT_RADIUS_IN_KILOMETERS,
 };
 
-const isSupportedRadius = (value: unknown): value is number =>
-  typeof value === 'number' &&
-  Number.isFinite(value) &&
-  value >= MINIMUM_RADIUS_IN_KILOMETERS &&
-  value <= MAXIMUM_RADIUS_IN_KILOMETERS;
-
 const clampRadius = (radiusInKilometers: number): number =>
   Math.min(
     MAXIMUM_RADIUS_IN_KILOMETERS,
     Math.max(MINIMUM_RADIUS_IN_KILOMETERS, Math.round(radiusInKilometers))
   );
+
+/**
+ * Shape of the persisted settings, built from the API contract so stored values follow the same
+ * rules as requests. Each field falls back to its default on its own, so one outdated value
+ * (e.g. a removed fuel type) does not reset the other. The object schema is derived from
+ * `stationsQuerySchema` because the web app has no direct zod dependency.
+ */
+const storedSettingsSchema = stationsQuerySchema.pick({ radiusInKilometers: true }).extend({
+  fuelType: fuelTypeSchema.catch(({ value }) => {
+    console.warn(
+      `Stored fuel type ${JSON.stringify(value)} is not supported; using the default "${DEFAULT_FUEL_TYPE}" instead.`
+    );
+    return DEFAULT_FUEL_TYPE;
+  }),
+  radiusInKilometers: stationsQuerySchema.shape.radiusInKilometers.catch(({ value }) => {
+    console.warn(
+      `Stored radius ${JSON.stringify(value)} km is not supported; using the default ${String(DEFAULT_RADIUS_IN_KILOMETERS)} km instead.`
+    );
+    return DEFAULT_RADIUS_IN_KILOMETERS;
+  }),
+});
 
 const parseStoredSettings = (serializedSettings: string | null): Settings => {
   if (serializedSettings === null) {
@@ -41,20 +57,18 @@ const parseStoredSettings = (serializedSettings: string | null): Settings => {
   try {
     storedValue = JSON.parse(serializedSettings);
   } catch (error) {
-    console.warn('Ignoring stored settings that are not valid JSON', error);
+    console.warn('Stored settings are not valid JSON; using the default settings instead.', error);
     return DEFAULT_SETTINGS;
   }
-  if (typeof storedValue !== 'object' || storedValue === null) {
+  const result = storedSettingsSchema.safeParse(storedValue);
+  if (!result.success) {
+    console.warn(
+      'Stored settings have an unexpected shape; using the default settings instead.',
+      result.error
+    );
     return DEFAULT_SETTINGS;
   }
-  const fuelType = fuelTypeSchema.safeParse(Reflect.get(storedValue, 'fuelType'));
-  const radiusInKilometers: unknown = Reflect.get(storedValue, 'radiusInKilometers');
-  return {
-    fuelType: fuelType.success ? fuelType.data : DEFAULT_SETTINGS.fuelType,
-    radiusInKilometers: isSupportedRadius(radiusInKilometers)
-      ? radiusInKilometers
-      : DEFAULT_SETTINGS.radiusInKilometers,
-  };
+  return result.data;
 };
 
 /** Fuel type and search radius chosen by the user, persisted across reloads. */
@@ -85,7 +99,10 @@ export class SettingsStore {
     try {
       this.storage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(nextSettings));
     } catch (error) {
-      console.warn('Settings could not be persisted; they apply to this session only', error);
+      console.warn(
+        'Settings could not be saved in the browser storage; they apply to this session only.',
+        error
+      );
     }
   }
 }

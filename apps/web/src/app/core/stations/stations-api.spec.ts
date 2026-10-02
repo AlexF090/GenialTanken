@@ -126,30 +126,42 @@ describe('StationsApi', () => {
   });
 
   describe('loadStationsByIds', () => {
-    it('loads every station and reports unknown ids separately', async () => {
-      const result = stationsApi.loadStationsByIds(['fr-75001001', 'stale-id', 'fr-75005002']);
+    it('loads every station and reports unavailable ids separately', async () => {
+      const result = stationsApi.loadStationsByIds([
+        'fr-75001001',
+        'de-unavailable',
+        'fr-75005002',
+      ]);
 
       httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
-      httpTesting.expectOne('/api/stations/stale-id').flush(NOT_FOUND_BODY, NOT_FOUND);
+      httpTesting.expectOne('/api/stations/de-unavailable').flush(NOT_FOUND_BODY, NOT_FOUND);
       httpTesting.expectOne('/api/stations/fr-75005002').flush(withoutDistance(carrefourStation));
 
       await expect(result).resolves.toEqual({
         stations: [withoutDistance(totalStation), withoutDistance(carrefourStation)],
-        unknownStationIds: ['stale-id'],
+        unavailableStationIds: ['de-unavailable'],
+        failures: [],
       });
     });
 
-    it('rejects when the API is unavailable', async () => {
-      const result = stationsApi.loadStationsByIds(['fr-75001001']);
+    it('keeps the loaded stations when other requests fail', async () => {
+      const result = stationsApi.loadStationsByIds(['fr-75001001', 'fr-75005002', 'fr-broken']);
 
+      httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
       httpTesting
-        .expectOne('/api/stations/fr-75001001')
+        .expectOne('/api/stations/fr-75005002')
         .flush(
           { statusCode: 502, message: 'Upstream unavailable' },
           { status: 502, statusText: 'Bad Gateway' }
         );
+      httpTesting.expectOne('/api/stations/fr-broken').flush({ id: 'fr-broken' });
 
-      await expect(result).rejects.toBeInstanceOf(HttpErrorResponse);
+      const { stations, unavailableStationIds, failures } = await result;
+      expect(stations).toEqual([withoutDistance(totalStation)]);
+      expect(unavailableStationIds).toEqual([]);
+      expect(failures.map(failure => failure.stationId)).toEqual(['fr-75005002', 'fr-broken']);
+      expect(failures[0]?.error).toBeInstanceOf(HttpErrorResponse);
+      expect(failures[1]?.error).toBeInstanceOf(UnexpectedResponseError);
     });
   });
 });

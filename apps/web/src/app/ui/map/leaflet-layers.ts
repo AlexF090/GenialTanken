@@ -1,7 +1,7 @@
 // Leaflet has to be imported before the marker cluster plugin, which extends the global `L`.
 import L from 'leaflet';
 import 'leaflet.markercluster';
-import type { Coordinates } from '../../core/geolocation/geolocation-service';
+import type { Coordinates } from '../../core/geolocation/coordinates';
 
 const MAPBOX_TILE_URL =
   'https://api.mapbox.com/styles/v1/alexf090/cl2uhl8gx008p14qop192uczn/tiles/256/{z}/{x}/{y}@2x?access_token=';

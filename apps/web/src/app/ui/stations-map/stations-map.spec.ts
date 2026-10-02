@@ -6,6 +6,7 @@ import {
   totalStation,
   unbrandedStation,
 } from '../../../testing/station-fixtures';
+import { accessibleTextOf } from '../../../testing/render-page';
 import { StationsMap } from './stations-map';
 
 const render = async (stations: readonly Station[]) => {
@@ -82,5 +83,22 @@ describe('StationsMap', () => {
     link?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
 
     expect(selectedStationIds).toEqual(['fr-75001001']);
+  });
+
+  it('shows the popup price like everywhere else, readable for screen readers', async () => {
+    const { element } = await render([
+      totalStation,
+      { ...carrefourStation, pricesInEuro: { ...carrefourStation.pricesInEuro, e5: null } },
+    ]);
+    const openPopupPrice = (markerName: string): Element | null => {
+      element.querySelector<HTMLElement>(`img.leaflet-marker-icon[alt="${markerName}"]`)?.click();
+      return element.querySelector('.leaflet-popup .station-marker-popup__price');
+    };
+
+    const price = openPopupPrice('TotalEnergies, 1,859 €');
+    expect(accessibleTextOf(price)).toBe('1,859 €');
+    expect(price?.querySelector('[aria-hidden="true"] sup')?.textContent).toBe('9');
+
+    expect(accessibleTextOf(openPopupPrice('Carrefour Market'))).toBe('Kein Preis');
   });
 });

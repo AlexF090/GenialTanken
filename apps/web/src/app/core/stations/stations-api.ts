@@ -4,20 +4,29 @@ import { inject, Injectable } from '@angular/core';
 import { stationSchema, stationsSchema } from '@genialtanken/contracts';
 import type { FuelType, Station } from '@genialtanken/contracts';
 import { firstValueFrom } from 'rxjs';
+import type { Coordinates } from '../geolocation/coordinates';
 import { isNotFoundError } from './stations-error-message';
 import { UnexpectedResponseError } from './unexpected-response-error';
 
-export interface StationsSearch {
-  latitude: number;
-  longitude: number;
+export interface StationsSearch extends Coordinates {
   radiusInKilometers: number;
   fuelType: FuelType;
 }
 
+export interface StationLoadFailure {
+  stationId: string;
+  error: unknown;
+}
+
 export interface StationsByIds {
   stations: Station[];
-  /** Ids the API does not know (anymore), e.g. stale favorites. */
-  unknownStationIds: string[];
+  /**
+   * Ids the API answers with 404, e.g. a German station while the optional German provider is
+   * disabled. They may come back, so callers must not treat them as deleted.
+   */
+  unavailableStationIds: string[];
+  /** Stations whose request failed for any other reason (network, 5xx, contract violation). */
+  failures: StationLoadFailure[];
 }
 
 /** Same origin: dev proxy locally, a Cloudflare Pages Function in production. */
@@ -83,28 +92,38 @@ export class StationsApi {
     );
   }
 
-  /** Loads several stations in parallel; unknown ids are reported instead of failing. */
+  /**
+   * Loads several stations in parallel. Never rejects: every id ends up either as a station, as
+   * unavailable (404) or as a failure, so one broken request does not hide the other stations.
+   */
   async loadStationsByIds(stationIds: readonly string[]): Promise<StationsByIds> {
-    const results = await Promise.all(
-      stationIds.map(async stationId => {
-        try {
-          const body = await firstValueFrom(
-            this.httpClient.get<unknown>(`${STATIONS_URL}/${encodeURIComponent(stationId)}`)
-          );
-          return { stationId, station: parseStation(body) };
-        } catch (error) {
-          if (isNotFoundError(error)) {
-            return { stationId, station: undefined };
-          }
-          throw error;
-        }
-      })
+    const results = await Promise.allSettled(
+      stationIds.map(stationId => this.loadStation(stationId))
     );
-    return {
-      stations: results.flatMap(result => (result.station === undefined ? [] : [result.station])),
-      unknownStationIds: results
-        .filter(result => result.station === undefined)
-        .map(result => result.stationId),
-    };
+    const stationsByIds: StationsByIds = { stations: [], unavailableStationIds: [], failures: [] };
+    // `allSettled` keeps the order of its input, so each result belongs to the id at its index.
+    stationIds.forEach((stationId, index) => {
+      const result = results[index];
+      if (result === undefined) {
+        return;
+      }
+      if (result.status === 'fulfilled') {
+        stationsByIds.stations.push(result.value);
+        return;
+      }
+      if (isNotFoundError(result.reason)) {
+        stationsByIds.unavailableStationIds.push(stationId);
+        return;
+      }
+      stationsByIds.failures.push({ stationId, error: result.reason });
+    });
+    return stationsByIds;
+  }
+
+  private async loadStation(stationId: string): Promise<Station> {
+    const body = await firstValueFrom(
+      this.httpClient.get<unknown>(`${STATIONS_URL}/${encodeURIComponent(stationId)}`)
+    );
+    return parseStation(body);
   }
 }

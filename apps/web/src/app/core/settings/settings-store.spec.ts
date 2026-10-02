@@ -40,17 +40,35 @@ describe('SettingsStore', () => {
     );
   });
 
-  it('falls back to the defaults for corrupt stored settings', () => {
+  it('falls back to the defaults for corrupt stored settings and says why', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
     const store = createStore(new FakeStorage({ 'genialtanken.settings': '{not json' }));
 
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      'Stored settings are not valid JSON; using the default settings instead.',
+      expect.any(SyntaxError)
+    );
+    expect(store.fuelType()).toBe('e5');
+    expect(store.radiusInKilometers()).toBe(5);
+  });
+
+  it('falls back to the defaults when the stored settings are not an object', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const store = createStore(new FakeStorage({ 'genialtanken.settings': '[1,2]' }));
+
     expect(warn).toHaveBeenCalledOnce();
+    expect(warn.mock.calls[0]?.[0]).toBe(
+      'Stored settings have an unexpected shape; using the default settings instead.'
+    );
     expect(store.fuelType()).toBe('e5');
     expect(store.radiusInKilometers()).toBe(5);
   });
 
   it('ignores an unknown fuel type and an out-of-range radius', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
     const store = createStore(
       new FakeStorage({
         'genialtanken.settings': '{"fuelType":"kerosene","radiusInKilometers":80}',
@@ -58,6 +76,23 @@ describe('SettingsStore', () => {
     );
 
     expect(store.fuelType()).toBe('e5');
+    expect(store.radiusInKilometers()).toBe(5);
+    expect(warn.mock.calls.map((call: unknown[]) => call[0]).sort()).toEqual([
+      'Stored fuel type "kerosene" is not supported; using the default "e5" instead.',
+      'Stored radius 80 km is not supported; using the default 5 km instead.',
+    ]);
+  });
+
+  it('keeps the valid part of partially invalid stored settings', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    const store = createStore(
+      new FakeStorage({
+        'genialtanken.settings': '{"fuelType":"diesel","radiusInKilometers":"far"}',
+      })
+    );
+
+    expect(store.fuelType()).toBe('diesel');
     expect(store.radiusInKilometers()).toBe(5);
   });
 

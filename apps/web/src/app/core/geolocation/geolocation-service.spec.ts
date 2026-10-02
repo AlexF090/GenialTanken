@@ -12,7 +12,7 @@ describe('GeolocationService', () => {
     const geolocation = new FakeGeolocation();
     const service = createService(geolocation);
 
-    service.locate();
+    void service.locate();
     expect(service.isLocating()).toBe(true);
     expect(service.position()).toBeUndefined();
 
@@ -27,7 +27,7 @@ describe('GeolocationService', () => {
     const geolocation = new FakeGeolocation();
     const service = createService(geolocation);
 
-    service.locate();
+    void service.locate();
     geolocation.rejectWithPermissionDenied();
 
     expect(service.isLocating()).toBe(false);
@@ -41,13 +41,13 @@ describe('GeolocationService', () => {
     const geolocation = new FakeGeolocation();
     const service = createService(geolocation);
 
-    service.locate();
+    void service.locate();
     geolocation.rejectWithTimeout();
     expect(service.errorMessage()).toBe(
       'Die Ermittlung deines Standorts hat zu lange gedauert. Bitte versuche es erneut.'
     );
 
-    service.locate();
+    void service.locate();
     geolocation.rejectWithPositionUnavailable();
     expect(service.errorMessage()).toBe(
       'Dein Standort konnte nicht ermittelt werden. Bitte versuche es erneut.'
@@ -57,7 +57,7 @@ describe('GeolocationService', () => {
   it('reports a browser without geolocation support', () => {
     const service = createService(null);
 
-    service.locate();
+    void service.locate();
 
     expect(service.errorMessage()).toBe('Dein Browser unterstützt keine Standortermittlung.');
   });
@@ -65,10 +65,10 @@ describe('GeolocationService', () => {
   it('keeps the last position while relocating', () => {
     const geolocation = new FakeGeolocation();
     const service = createService(geolocation);
-    service.locate();
+    void service.locate();
     geolocation.resolvePosition(51.3127, 9.4797);
 
-    service.locate();
+    void service.locate();
 
     expect(service.isLocating()).toBe(true);
     expect(service.position()).toEqual({ latitude: 51.3127, longitude: 9.4797 });
@@ -82,5 +82,26 @@ describe('GeolocationService', () => {
     service.locateOnce();
 
     expect(geolocation.pendingRequestCount).toBe(1);
+  });
+
+  it('settles the returned promise once the browser answered, also on failure', async () => {
+    const geolocation = new FakeGeolocation();
+    const service = createService(geolocation);
+    const settledPositions: unknown[] = [];
+
+    const located = service.locate().then(() => settledPositions.push(service.position()));
+    await Promise.resolve();
+    expect(settledPositions).toEqual([]);
+    geolocation.resolvePosition(51.3127, 9.4797);
+    await located;
+
+    const relocated = service.locate();
+    geolocation.rejectWithTimeout();
+    await relocated;
+
+    expect(settledPositions).toEqual([{ latitude: 51.3127, longitude: 9.4797 }]);
+    expect(service.errorMessage()).toBe(
+      'Die Ermittlung deines Standorts hat zu lange gedauert. Bitte versuche es erneut.'
+    );
   });
 });

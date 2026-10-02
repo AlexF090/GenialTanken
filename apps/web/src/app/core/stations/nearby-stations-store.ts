@@ -1,4 +1,5 @@
 import { computed, inject, Injectable } from '@angular/core';
+import { isSamePosition } from '../geolocation/coordinates';
 import { GeolocationService } from '../geolocation/geolocation-service';
 import { SettingsStore } from '../settings/settings-store';
 import { describeStationsError } from './stations-error-message';
@@ -44,9 +45,15 @@ export class NearbyStationsStore {
     this.geolocation.locateOnce();
   }
 
-  /** Relocates the user and fetches fresh prices. */
-  refresh(): void {
-    this.geolocation.locate();
-    this.stationsResource.reload();
+  /**
+   * Relocates the user and fetches fresh prices with exactly one request: a new position
+   * refetches by itself, so only an unchanged position (or a failed relocation) needs a reload.
+   */
+  async refresh(): Promise<void> {
+    const previousPosition = this.geolocation.position();
+    await this.geolocation.locate();
+    if (isSamePosition(previousPosition, this.geolocation.position())) {
+      this.stationsResource.reload();
+    }
   }
 }

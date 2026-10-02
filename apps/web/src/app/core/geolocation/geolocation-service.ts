@@ -1,9 +1,6 @@
 import { computed, inject, Injectable, InjectionToken, signal } from '@angular/core';
-
-export interface Coordinates {
-  latitude: number;
-  longitude: number;
-}
+import { isSamePosition } from './coordinates';
+import type { Coordinates } from './coordinates';
 
 export type GeolocationFailure = 'permission-denied' | 'unavailable' | 'timeout' | 'unsupported';
 
@@ -36,9 +33,6 @@ const toFailure = (error: GeolocationPositionError): GeolocationFailure => {
   return 'unavailable';
 };
 
-const isSamePosition = (first: Coordinates | undefined, second: Coordinates | undefined): boolean =>
-  first?.latitude === second?.latitude && first?.longitude === second?.longitude;
-
 /** Current position of the user. The last known position is kept while relocating. */
 @Injectable({ providedIn: 'root' })
 export class GeolocationService {
@@ -62,34 +56,43 @@ export class GeolocationService {
     if (this.hasRequestedPosition) {
       return;
     }
-    this.locate();
+    void this.locate();
   }
 
-  locate(): void {
+  /**
+   * Requests the current position. The returned promise never rejects; it settles once the
+   * browser answered, after `position` or `errorMessage` were updated.
+   */
+  locate(): Promise<void> {
     this.hasRequestedPosition = true;
-    if (this.geolocation === null) {
+    const geolocation = this.geolocation;
+    if (geolocation === null) {
       this.failure.set('unsupported');
-      return;
+      return Promise.resolve();
     }
     this.locating.set(true);
-    this.geolocation.getCurrentPosition(
-      position => {
-        this.currentPosition.set({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-        this.failure.set(undefined);
-        this.locating.set(false);
-      },
-      error => {
-        this.failure.set(toFailure(error));
-        this.locating.set(false);
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: POSITION_TIMEOUT_IN_MILLISECONDS,
-        maximumAge: MAXIMUM_POSITION_AGE_IN_MILLISECONDS,
-      }
-    );
+    return new Promise(resolve => {
+      geolocation.getCurrentPosition(
+        position => {
+          this.currentPosition.set({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          this.failure.set(undefined);
+          this.locating.set(false);
+          resolve();
+        },
+        error => {
+          this.failure.set(toFailure(error));
+          this.locating.set(false);
+          resolve();
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: POSITION_TIMEOUT_IN_MILLISECONDS,
+          maximumAge: MAXIMUM_POSITION_AGE_IN_MILLISECONDS,
+        }
+      );
+    });
   }
 }
