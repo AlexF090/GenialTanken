@@ -59,22 +59,23 @@ describe('StationDetailPage', () => {
     expect(element.querySelector('.leaflet-container')).not.toBeNull();
   });
 
-  it('does not crash on missing prices and names them instead', async () => {
+  it('leads the price board with the stored fuel and names missing prices', async () => {
+    context.storage.setItem('genialtanken.settings', '{"fuelType":"lpg","radiusInKilometers":5}');
     const { element } = await renderStation(totalStation.id);
 
     context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
     await context.settle();
 
-    const priceTexts = [...element.querySelectorAll('.station-detail__price')].map(price =>
+    const priceTexts = [...element.querySelectorAll('.price-board li')].map(price =>
       accessibleTextOf(price)
     );
     expect(priceTexts).toEqual([
-      '1,859 € Super E5',
-      '1,799 € Super E10',
-      '1,929 € Super Plus',
-      '1,689 € Diesel',
-      'Kein Preis für E85 vorhanden',
-      'Kein Preis für LPG vorhanden',
+      'LPG Dein Kraftstoff kein Preis',
+      'Super E5 1,859 €',
+      'Super E10 1,799 €',
+      'Super Plus 1,929 €',
+      'Diesel 1,689 €',
+      'E85 kein Preis',
     ]);
   });
 

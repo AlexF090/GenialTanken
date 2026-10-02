@@ -1,30 +1,64 @@
 <app-page-header title="Einstellungen" />
-<main class="page-content">
-  <form class="settings" novalidate>
+<main class="page-content settings">
+  <form class="settings__form" novalidate>
     <fieldset class="settings__group">
-      <legend class="settings__legend">Kraftstoff</legend>
-      @for (option of fuelTypeOptions; track option.value) {
-        <label class="settings__option">
-          {{ option.label }}
-          <input type="radio" [value]="option.value" [formField]="settingsForm.fuelType" />
-        </label>
-      }
+      <legend class="settings__title">Kraftstoff</legend>
+      <div class="settings__options">
+        @for (option of fuelTypeOptions; track option.value) {
+          <label class="settings__option">
+            {{ option.label }}
+            <input type="radio" [value]="option.value" [formField]="searchSettingsForm.fuelType" />
+          </label>
+        }
+      </div>
     </fieldset>
 
     <div class="settings__group">
-      <label class="settings__legend" for="radius">
-        Radius: {{ settingsModel().radiusInKilometers }} km
+      <label class="settings__title" for="radius">
+        Radius: {{ searchSettingsModel().radiusInKilometers }} km
       </label>
       <input
         id="radius"
         class="settings__slider"
         type="range"
         step="1"
-        [formField]="settingsForm.radiusInKilometers" />
+        [formField]="searchSettingsForm.radiusInKilometers" />
       <div class="settings__range-limits" aria-hidden="true">
         <span>{{ minimumRadiusInKilometers }} km</span>
         <span>{{ maximumRadiusInKilometers }} km</span>
       </div>
     </div>
+
+    <fieldset class="settings__group">
+      <legend class="settings__title">Darstellung</legend>
+      <div class="settings__options">
+        @for (option of colorSchemeOptions; track option.value) {
+          <label class="settings__option">
+            {{ option.label }}
+            <input
+              type="radio"
+              name="color-scheme"
+              [value]="option.value"
+              [checked]="colorScheme() === option.value"
+              (change)="selectColorScheme(option.value)" />
+          </label>
+        }
+      </div>
+    </fieldset>
   </form>
+
+  <section class="settings__group" aria-labelledby="data-source-heading">
+    <h2 id="data-source-heading" class="settings__title">Datenquelle</h2>
+    <p class="settings__text">
+      Die Preise für Frankreich stammen aus den offenen Daten der französischen Regierung unter der
+      Licence Ouverte 2.0:
+      <a
+        class="settings__link"
+        href="https://www.prix-carburants.gouv.fr/rubrique/opendata/"
+        target="_blank"
+        rel="noopener noreferrer"
+        >prix-carburants.gouv.fr<span class="visually-hidden"> (öffnet in neuem Tab)</span></a
+      >. Alle Angaben ohne Gewähr.
+    </p>
+  </section>
 </main>

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
+import { SettingsStore } from '../../core/settings/settings-store';
 import { describeStationsError } from '../../core/stations/stations-error-message';
 import { StationsApi } from '../../core/stations/stations-api';
 import { LoadingState } from '../../ui/loading-state/loading-state';
@@ -22,6 +23,7 @@ export class StationDetailPage {
   protected readonly station = computed(() =>
     this.stationResource.hasValue() ? this.stationResource.value() : undefined
   );
+  protected readonly fuelType = inject(SettingsStore).fuelType;
   protected readonly isLoading = this.stationResource.isLoading;
   protected readonly errorMessage = computed(() => {
     const error = this.stationResource.error();

@@ -32,14 +32,11 @@ describe('SettingsPage', () => {
     const { element } = await renderComponent(SettingsPage);
 
     expect(textOf(element.querySelector('legend'))).toBe('Kraftstoff');
-    expect([...element.querySelectorAll('fieldset label')].map(label => textOf(label))).toEqual([
-      'E5',
-      'E10',
-      'Super Plus',
-      'Diesel',
-      'E85',
-      'LPG',
-    ]);
+    expect(
+      [...(element.querySelector('fieldset')?.querySelectorAll('label') ?? [])].map(label =>
+        textOf(label)
+      )
+    ).toEqual(['E5', 'E10', 'Super Plus', 'Diesel', 'E85', 'LPG']);
     expect(radioNamed(element, 'E5').checked).toBe(true);
     expect(radioNamed(element, 'E10').checked).toBe(false);
     expect(textOf(element.querySelector('label[for="radius"]'))).toBe('Radius: 5 km');
@@ -75,6 +72,79 @@ describe('SettingsPage', () => {
     expect(context.storage.getItem('genialtanken.settings')).toBe(
       '{"fuelType":"e5","radiusInKilometers":15,"colorScheme":"system"}'
     );
+  });
+
+  it('orders the sections fuel, radius, appearance and data source without any button', async () => {
+    context = configurePageTest();
+    const { element } = await renderComponent(SettingsPage);
+    const main = element.querySelector('main');
+
+    expect(
+      [...(main?.querySelectorAll('legend, label[for="radius"], h2') ?? [])].map(title =>
+        textOf(title)
+      )
+    ).toEqual(['Kraftstoff', 'Radius: 5 km', 'Darstellung', 'Datenquelle']);
+    expect(main?.querySelectorAll('button')).toHaveLength(0);
+  });
+
+  it('offers system, light and dark appearance with system selected', async () => {
+    context = configurePageTest();
+    const { element } = await renderComponent(SettingsPage);
+    const appearance = [...element.querySelectorAll('fieldset')].find(
+      fieldset => textOf(fieldset.querySelector('legend')) === 'Darstellung'
+    );
+
+    expect([...(appearance?.querySelectorAll('label') ?? [])].map(label => textOf(label))).toEqual([
+      'System',
+      'Hell',
+      'Dunkel',
+    ]);
+    expect(radioNamed(element, 'System').checked).toBe(true);
+  });
+
+  it('applies and persists a new appearance immediately', async () => {
+    context = configurePageTest();
+    const { element } = await renderComponent(SettingsPage);
+
+    radioNamed(element, 'Dunkel').click();
+    await context.settle();
+
+    expect(TestBed.inject(SettingsStore).colorScheme()).toBe('dark');
+    expect(radioNamed(element, 'Dunkel').checked).toBe(true);
+    expect(context.storage.getItem('genialtanken.settings')).toBe(
+      '{"fuelType":"e5","radiusInKilometers":5,"colorScheme":"dark"}'
+    );
+  });
+
+  it('keeps an appearance changed elsewhere when the fuel type changes', async () => {
+    context = configurePageTest();
+    const { element } = await renderComponent(SettingsPage);
+    const settingsStore = TestBed.inject(SettingsStore);
+
+    settingsStore.update({ colorScheme: 'light' });
+    await context.settle();
+    radioNamed(element, 'Diesel').click();
+    await context.settle();
+
+    expect(settingsStore.settings()).toEqual({
+      fuelType: 'diesel',
+      radiusInKilometers: 5,
+      colorScheme: 'light',
+    });
+    expect(radioNamed(element, 'Hell').checked).toBe(true);
+  });
+
+  it('credits the data source with a link that opens in a new tab', async () => {
+    context = configurePageTest();
+    const { element } = await renderComponent(SettingsPage);
+
+    const link = element.querySelector('main section a');
+    expect(textOf(link)).toBe('prix-carburants.gouv.fr (öffnet in neuem Tab)');
+    expect(link?.getAttribute('href')).toBe(
+      'https://www.prix-carburants.gouv.fr/rubrique/opendata/'
+    );
+    expect(link?.getAttribute('target')).toBe('_blank');
+    expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
   it('restores the persisted settings', async () => {

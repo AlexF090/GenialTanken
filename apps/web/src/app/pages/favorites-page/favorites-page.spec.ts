@@ -29,6 +29,10 @@ describe('FavoritesPage', () => {
 
     expect(textOf(element.querySelector('header h1'))).toBe('Favoriten');
     expect(textOf(element.querySelector('main h2'))).toBe('Keine Favoriten gespeichert');
+    const exploreLink = [...element.querySelectorAll('main a')].find(
+      link => textOf(link) === 'Tankstellen erkunden'
+    );
+    expect(exploreLink?.getAttribute('href')).toBe('/');
   });
 
   const renderWithTwoFavorites = async () => {
@@ -49,6 +53,13 @@ describe('FavoritesPage', () => {
 
     expect(stationTitles(element)).toEqual(['TotalEnergies', 'Carrefour Market']);
     expect(textOf(element.querySelector('main'))).not.toContain('km');
+  });
+
+  it('neither highlights a cheapest favorite nor offers the map action', async () => {
+    const { element } = await renderWithTwoFavorites();
+
+    expect(textOf(element.querySelector('main'))).not.toContain('Günstigster Preis');
+    expect(() => getButton(element, 'Auf Karte zeigen: TotalEnergies')).toThrow();
   });
 
   it('removes an unstarred station from the list immediately', async () => {

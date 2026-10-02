@@ -1,38 +1,48 @@
+// Quiet station facts around one loud element: the price board led by the user's fuel.
 .station-detail {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
-  padding: var(--space-lg);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-raised);
+  gap: var(--space-xl);
 }
 
 .station-detail__heading {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-md);
+  margin-top: calc(-1 * var(--space-sm));
+}
+
+.station-detail__identity {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--space-3xs);
+  min-width: 0;
 }
 
 .station-detail__title {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
-.station-detail__subtitle {
-  color: var(--color-text-muted);
+.station-detail__subtitle,
+.station-detail__address {
+  color: var(--color-text-secondary);
 }
 
 .station-detail__address {
   display: flex;
   flex-direction: column;
-  font-size: var(--font-size-sm);
   font-style: normal;
 }
 
 .station-detail__section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-sm);
 }
 
 .station-detail__section-title {
@@ -40,22 +50,50 @@
 }
 
 .station-detail__open-status {
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-medium);
 }
 
-.station-detail__prices {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
+// Price board: hairline rows on the surface, label left and price right like on a price pylon
+.price-board {
+  border-top: var(--border-width-hairline) solid var(--color-hairline);
+  background-color: var(--color-surface);
   list-style: none;
 }
 
-.station-detail__price {
-  padding: var(--space-xs) var(--space-md);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-card);
+.price-board__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: var(--border-width-hairline) solid var(--color-hairline);
+
+  &--selected {
+    padding-block: var(--space-lg);
+  }
 }
 
-.station-detail__price-value {
-  font-weight: var(--font-weight-bold);
+.price-board__fuel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.price-board__label {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+
+  .price-board__row--selected & {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+  }
+}
+
+.price-board__marker {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.price-board__price {
+  flex-shrink: 0;
 }

@@ -1,48 +1,89 @@
+// Quiet form: hairline option rows like the price board, controls on the right.
 .settings {
+  gap: var(--space-xl);
+}
+
+.settings__form {
   display: flex;
   flex-direction: column;
   gap: var(--space-xl);
-  padding: var(--space-lg);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-raised);
 }
 
 .settings__group {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+  min-width: 0;
+  padding: 0;
   border: none;
 }
 
-.settings__legend {
-  margin-bottom: var(--space-xs);
-  font-size: var(--font-size-xl);
+.settings__title {
+  // A legend only takes part in the flex layout when it does not float
+  float: none;
+  padding: 0;
+  margin-bottom: var(--space-2xs);
+  font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.settings__options {
+  border-top: var(--border-width-hairline) solid var(--color-hairline);
+  background-color: var(--color-surface);
 }
 
 .settings__option {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--space-xs) 0;
-  border-bottom: var(--border-width-thin) solid var(--color-divider);
+  gap: var(--space-md);
+  min-height: var(--layout-touch-target);
+  padding: var(--space-2xs) var(--space-md);
+  border-bottom: var(--border-width-hairline) solid var(--color-hairline);
   cursor: pointer;
+  touch-action: manipulation;
+
+  &:has(:checked) {
+    font-weight: var(--font-weight-bold);
+  }
 
   input {
+    flex-shrink: 0;
     width: var(--icon-size-sm);
     height: var(--icon-size-sm);
-    accent-color: var(--color-primary);
+    margin: 0;
+    accent-color: var(--color-action);
+    cursor: pointer;
   }
 }
 
 .settings__slider {
   width: 100%;
-  accent-color: var(--color-primary);
+  min-height: var(--layout-touch-target);
+  margin: 0;
+  accent-color: var(--color-action);
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 .settings__range-limits {
   display: flex;
   justify-content: space-between;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+}
+
+.settings__text {
+  color: var(--color-text-secondary);
+}
+
+.settings__link {
+  color: var(--color-action-text);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--color-action-text-hover);
+  }
 }

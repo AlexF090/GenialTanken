@@ -18,8 +18,10 @@ interface FuelPrice {
   fuelType: FuelType;
   label: string;
   priceInEuro: number | null;
+  isSelected: boolean;
 }
 
+/** Details of one station with all its prices; the user's fuel leads the price board. */
 @Component({
   selector: 'app-station-detail',
   imports: [FavoriteButton, OpeningTimes, Price, StationLocationMap],
@@ -29,6 +31,8 @@ interface FuelPrice {
 })
 export class StationDetail {
   readonly station = input.required<Station>();
+  /** The user's fuel type, shown first and largest. */
+  readonly fuelType = input.required<FuelType>();
   readonly isFavorite = input.required<boolean>();
   readonly favoriteToggled = output();
 
@@ -36,11 +40,17 @@ export class StationDetail {
   protected readonly subtitle = computed(() => stationSubtitle(this.station()));
   protected readonly streetLine = computed(() => formatStreetLine(this.station()));
   protected readonly cityLine = computed(() => formatCityLine(this.station()));
-  protected readonly fuelPrices = computed<FuelPrice[]>(() =>
-    FUEL_TYPES.map(fuelType => ({
+  protected readonly fuelPrices = computed<FuelPrice[]>(() => {
+    const selectedFuelType = this.fuelType();
+    const fuelPrices = FUEL_TYPES.map(fuelType => ({
       fuelType,
       label: FUEL_TYPE_LABELS[fuelType].long,
       priceInEuro: priceInEuro(this.station(), fuelType),
-    }))
-  );
+      isSelected: fuelType === selectedFuelType,
+    }));
+    return [
+      ...fuelPrices.filter(fuelPrice => fuelPrice.isSelected),
+      ...fuelPrices.filter(fuelPrice => !fuelPrice.isSelected),
+    ];
+  });
 }

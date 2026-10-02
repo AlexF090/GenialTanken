@@ -7,6 +7,7 @@
   @if (station(); as station) {
     <app-station-detail
       [station]="station"
+      [fuelType]="fuelType()"
       [isFavorite]="isFavorite()"
       (favoriteToggled)="toggleFavorite()" />
   }

@@ -9,8 +9,8 @@ import {
   resource,
   viewChild,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
-import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { describeStationsError } from '../../core/stations/stations-error-message';
 import { StationsApi } from '../../core/stations/stations-api';
@@ -20,7 +20,7 @@ import { StationList } from '../../ui/station-list/station-list';
 
 @Component({
   selector: 'app-favorites-page',
-  imports: [PageHeader, StationList, LoadingState],
+  imports: [PageHeader, StationList, LoadingState, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './favorites-page.html',
   styleUrl: './favorites-page.scss',
@@ -33,7 +33,6 @@ export class FavoritesPage {
   private readonly contentHeading = viewChild<ElementRef<HTMLElement>>('contentHeading');
 
   protected readonly fuelType = inject(SettingsStore).fuelType;
-  protected readonly fuelLabel = computed(() => FUEL_TYPE_LABELS[this.fuelType()].short);
   protected readonly favoriteStationIds = this.favorites.favoriteStationIdSet;
   protected readonly hasFavorites = computed(() => this.favoriteStationIds().size > 0);
 
