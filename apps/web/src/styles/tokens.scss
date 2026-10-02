@@ -72,6 +72,11 @@
   --color-shadow: light-dark(rgb(14 59 74 / 18%), rgb(0 0 0 / 55%));
   --color-scrim: light-dark(rgb(14 59 74 / 32%), rgb(0 0 0 / 56%));
 
+  // Materials: translucent, blurred layers floating above the map and the content
+  --material-menu: light-dark(rgb(255 255 255 / 85%), rgb(16 48 59 / 85%));
+  --material-blur: blur(20px) saturate(180%);
+  --color-menu-highlight: light-dark(rgb(14 59 74 / 8%), rgb(232 238 236 / 12%));
+
   // Spacing
   --space-3xs: 0.125rem;
   --space-2xs: 0.25rem;
@@ -86,6 +91,7 @@
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
   --radius-lg: 1rem;
+  --radius-menu: 0.875rem;
   --radius-pill: 999rem;
   --radius-round: 50%;
 
@@ -122,6 +128,8 @@
 
   // The only shadow: sheets, the search field and map markers float above the map
   --shadow-floating: 0 1px 2px var(--color-shadow), 0 6px 20px var(--color-shadow);
+  --shadow-menu:
+    0 0 0 var(--border-width-hairline) var(--color-hairline), 0 10px 40px var(--color-shadow);
 
   // Icons
   --icon-size-sm: 1.25rem;
