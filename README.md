@@ -31,24 +31,44 @@ Only current prices are served; there is no price history. French data is publis
 - **Tooling:** pnpm 12 workspaces, ESLint (typescript-eslint strict, angular-eslint incl. template accessibility), Prettier, Playwright, devcontainer
 - **Delivery:** GitHub Actions, Cloudflare Pages (web), Render free web service from Docker (API), Dependabot
 
-## Getting started
+## Running locally
 
-The recommended setup is the devcontainer (Node 24, pnpm 12, Playwright Chromium preinstalled): open the repository in VS Code and choose **Reopen in Container**, or run `devcontainer up --workspace-folder .`.
+The French data source needs no API key, so the app works out of the box.
 
-Without the devcontainer you need Node 24 (`.nvmrc`) and pnpm 12.8.1 (pinned via `devEngines` in `package.json`):
+### Option A: VS Code devcontainer (recommended)
+
+1. Start Docker (Docker Desktop or OrbStack).
+2. Open the repository in VS Code and choose **Reopen in Container**. The first build installs Node 24, pnpm and all dependencies.
+3. In the VS Code terminal run `pnpm dev`.
+4. Open http://localhost:4200.
+
+### Option B: devcontainer from the command line
+
+```bash
+devcontainer up --workspace-folder .
+devcontainer exec --workspace-folder . pnpm dev:container
+```
+
+`dev:container` binds the Angular dev server to all interfaces inside the container; the ports 4200 and 3000 are published to your machine. Open http://localhost:4200.
+
+### Option C: without a container
+
+Requires Node 24 (`.nvmrc`) and pnpm 12.8.1 (pinned via `devEngines` in `package.json`):
 
 ```bash
 pnpm install
-pnpm dev        # web on http://localhost:4200, API on http://localhost:3000
+pnpm dev
 ```
 
-The French provider needs no configuration, so the app works out of the box. The Angular dev server proxies `/api` to the API.
+### Local URLs
 
-| URL                            | Purpose           |
-| ------------------------------ | ----------------- |
-| http://localhost:4200          | Web app           |
-| http://localhost:3000/api/docs | OpenAPI (Swagger) |
-| http://localhost:3000/health   | Health check      |
+| URL                            | Purpose                             |
+| ------------------------------ | ----------------------------------- |
+| http://localhost:4200          | Web app (proxies `/api` to the API) |
+| http://localhost:3000/api/docs | OpenAPI (Swagger)                   |
+| http://localhost:3000/health   | Health check                        |
+
+The browser asks for your location. Outside France the list stays empty unless the German provider is enabled (`TANKENTANKEN_API_KEY`); to try it anyway, allow location access and use the browser's developer tools to override the location (e.g. Paris 48.8566, 2.3522).
 
 ## Scripts
 
@@ -100,8 +120,9 @@ All services run on free tiers:
 - **Web:** Cloudflare Pages, deployed by GitHub Actions after CI passed (preview per pull request, production on `main`). A Pages Function forwards `/api/*` to the API.
 - **API:** Render free web service built from `apps/api/Dockerfile` ([render.yaml](render.yaml)); deploys after the GitHub checks of the commit passed. The free tier sleeps after 15 minutes without traffic; the first request can take about a minute, which the web app announces.
 
-Required settings:
+Step-by-step setup, including the release of a new version: [docs/deployment.md](docs/deployment.md).
 
-- **GitHub:** secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, variable `MAPBOX_ACCESS_TOKEN`, environments `preview` and `production`.
-- **Cloudflare Pages:** variables `API_ORIGIN` (URL of the Render service) and `API_PROXY_SECRET` (random string, at least 32 characters).
-- **Render:** `PROXY_SHARED_SECRET` with the same value as `API_PROXY_SECRET`; optionally `TANKENTANKEN_API_KEY`.
+## Versions
+
+- **1.0.0** – original React capstone (tag `v1.0.0`)
+- **2.0.0** – Angular + NestJS rebuild (this version; tagged after merge to `main`)
