@@ -43,6 +43,7 @@ export default defineConfig({
       // No TANKENTANKEN_API_KEY: only the (mocked) French provider is active.
       env: {
         FRANCE_FUEL_PRICES_BASE_URL: `http://localhost:${String(MOCK_UPSTREAM_PORT)}`,
+        PHOTON_BASE_URL: `http://localhost:${String(MOCK_UPSTREAM_PORT)}`,
         PORT: String(API_PORT),
         WEB_ORIGIN: baseURL,
         RATE_LIMIT_REQUESTS_PER_MINUTE: '10000',

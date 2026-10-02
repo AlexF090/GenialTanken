@@ -10,6 +10,9 @@ import { MOCK_UPSTREAM_PORT as PORT, UNEXPECTED_REQUESTS_PATH } from './mock-ups
  * captured around Paris from `data/france-stations.json`, honouring the fuel filter
  * (`<fuel>_prix is not null`), the search radius (`within_distance`) and lookups by `id`.
  *
+ * Also stands in for the Photon place search (`GET /api?q=…`), answering with real responses
+ * recorded per normalized query in `data/photon-places.json`.
+ *
  * Requests the mock does not know are answered with 500 and recorded; the test fixture reads
  * them from `UNEXPECTED_REQUESTS_PATH` after every test and fails the test.
  */
@@ -44,6 +47,21 @@ const DATASET_PATH =
 const fixture = franceResponseSchema.parse(
   JSON.parse(readFileSync(new URL('./data/france-stations.json', import.meta.url), 'utf8'))
 );
+
+const PHOTON_SEARCH_PATH = '/api';
+
+const photonResponseSchema = z.looseObject({
+  type: z.literal('FeatureCollection'),
+  features: z.array(z.unknown()),
+});
+
+const photonResponsesByQuery = z
+  .record(z.string(), photonResponseSchema)
+  .parse(JSON.parse(readFileSync(new URL('./data/photon-places.json', import.meta.url), 'utf8')));
+
+/** Same normalization as the API, so recorded queries match whatever casing the test types. */
+const normalizePlaceQuery = (query: string): string =>
+  query.trim().replace(/\s+/g, ' ').toLowerCase();
 
 const unexpectedRequests: string[] = [];
 
@@ -122,14 +140,22 @@ const handleRequest = (request: IncomingMessage, response: ServerResponse) => {
     sendJson(response, 200, unexpectedRequests.splice(0));
     return;
   }
-  if (request.method !== 'GET' || url.pathname !== DATASET_PATH) {
-    const description = `${request.method ?? ''} ${url.href}`;
-    console.error(`Mock upstream: unexpected request ${description}`);
-    unexpectedRequests.push(description);
-    sendJson(response, 500, { error_code: 'NotMocked', message: `Not mocked: ${description}` });
+  if (request.method === 'GET' && url.pathname === DATASET_PATH) {
+    sendJson(response, 200, answerRecordsQuery(url.searchParams.get('where') ?? ''));
     return;
   }
-  sendJson(response, 200, answerRecordsQuery(url.searchParams.get('where') ?? ''));
+  const photonResponse =
+    request.method === 'GET' && url.pathname === PHOTON_SEARCH_PATH
+      ? photonResponsesByQuery[normalizePlaceQuery(url.searchParams.get('q') ?? '')]
+      : undefined;
+  if (photonResponse !== undefined) {
+    sendJson(response, 200, photonResponse);
+    return;
+  }
+  const description = `${request.method ?? ''} ${url.href}`;
+  console.error(`Mock upstream: unexpected request ${description}`);
+  unexpectedRequests.push(description);
+  sendJson(response, 500, { error_code: 'NotMocked', message: `Not mocked: ${description}` });
 };
 
 createServer(handleRequest).listen(PORT, () => {

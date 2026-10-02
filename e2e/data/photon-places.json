@@ -1,0 +1,830 @@
+{
+  "bastille": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 5226630382,
+          "osm_key": "railway",
+          "osm_value": "station",
+          "type": "house",
+          "name": "Bastille",
+          "street": "Place de la Bastille",
+          "locality": "Quartier de l'Arsenal",
+          "district": "Paris",
+          "city": "Paris",
+          "state": "Île-de-France",
+          "country": "Frankreich",
+          "postcode": "75004",
+          "countrycode": "FR"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [2.3688579, 48.852987]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 2141212990,
+          "osm_key": "place",
+          "osm_value": "suburb",
+          "type": "locality",
+          "name": "Bastille",
+          "district": "Paris",
+          "city": "Paris",
+          "state": "Île-de-France",
+          "country": "Frankreich",
+          "postcode": "75011",
+          "countrycode": "FR"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [2.3699734, 48.8535713]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 129039250,
+          "osm_key": "highway",
+          "osm_value": "residential",
+          "type": "street",
+          "name": "Bastille",
+          "locality": "Bolwerk",
+          "city": "Berkel en Rodenrijs",
+          "state": "Südholland",
+          "country": "Niederlande",
+          "postcode": "2652 HW",
+          "countrycode": "NL",
+          "extent": [4.4604475, 51.9856555, 4.4626735, 51.9849086]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [4.4615617, 51.9853178]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 898142282,
+          "osm_key": "highway",
+          "osm_value": "residential",
+          "type": "street",
+          "name": "Bastille",
+          "locality": "Bolwerk",
+          "city": "Berkel en Rodenrijs",
+          "state": "Südholland",
+          "country": "Niederlande",
+          "postcode": "2651 XB",
+          "countrycode": "NL",
+          "extent": [4.4626735, 51.9856255, 4.4649836, 51.9845641]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [4.4638346, 51.9851061]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 967125213,
+          "osm_key": "highway",
+          "osm_value": "bus_stop",
+          "type": "house",
+          "name": "Bastille",
+          "street": "Rue de Lyon",
+          "locality": "Quinze-Vingts",
+          "district": "Paris",
+          "city": "Paris",
+          "state": "Île-de-France",
+          "country": "Frankreich",
+          "postcode": "75012",
+          "countrycode": "FR"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [2.3696447, 48.8523087]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 1584432760,
+          "osm_key": "railway",
+          "osm_value": "stop",
+          "type": "house",
+          "name": "Bastille",
+          "street": "Place de la Bastille",
+          "locality": "Quartier de la Roquette",
+          "district": "Paris",
+          "city": "Paris",
+          "state": "Île-de-France",
+          "country": "Frankreich",
+          "postcode": "75011",
+          "countrycode": "FR"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [2.3691871, 48.8536788]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 8948784652,
+          "osm_key": "highway",
+          "osm_value": "bus_stop",
+          "type": "house",
+          "name": "Bastille",
+          "street": "Avenue de la Bastille",
+          "city": "Brive-la-Gaillarde",
+          "county": "Corrèze",
+          "state": "Neu-Aquitanien",
+          "country": "Frankreich",
+          "postcode": "19100",
+          "countrycode": "FR"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [1.5390797, 45.1518544]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 5833046232,
+          "osm_key": "highway",
+          "osm_value": "bus_stop",
+          "type": "house",
+          "name": "Bastille",
+          "street": "Rue de la Bastille",
+          "city": "La Ferté-Bernard",
+          "county": "Sarthe",
+          "state": "Pays de la Loire",
+          "country": "Frankreich",
+          "postcode": "72400",
+          "countrycode": "FR"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [0.6627233, 48.1860896]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 342018458,
+          "osm_key": "aerialway",
+          "osm_value": "cable_car",
+          "type": "house",
+          "name": "Bastille",
+          "street": "Rue Maurice Gignoux",
+          "locality": "Notre-Dame",
+          "district": "Secteur 2",
+          "city": "Grenoble",
+          "county": "Isère",
+          "state": "Auvergne-Rhone-Alpen",
+          "country": "Frankreich",
+          "postcode": "38000",
+          "countrycode": "FR",
+          "extent": [5.7246642, 45.1985514, 5.7261004, 45.1929661]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [5.7253929, 45.1957615]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 6702954637,
+          "osm_key": "highway",
+          "osm_value": "bus_stop",
+          "type": "house",
+          "name": "Bastille",
+          "street": "Rue du Banc Vert",
+          "locality": "La Concorde",
+          "district": "Petite-Synthe",
+          "city": "Dünkirchen",
+          "county": "Nord",
+          "state": "Nordfrankreich",
+          "country": "Frankreich",
+          "postcode": "59640",
+          "countrycode": "FR"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [2.3500672, 51.0202678]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 9943497356,
+          "osm_key": "information",
+          "osm_value": "guidepost",
+          "type": "house",
+          "name": "Bastille",
+          "street": "Rue Louis Sibué",
+          "locality": "Saint-Pierre",
+          "city": "Saint-Jean-de-Maurienne",
+          "county": "Savoyen",
+          "state": "Auvergne-Rhone-Alpen",
+          "country": "Frankreich",
+          "postcode": "73300",
+          "countrycode": "FR"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [6.349258, 45.2798739]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 721341404,
+          "osm_key": "highway",
+          "osm_value": "bus_stop",
+          "type": "house",
+          "name": "Bastille",
+          "street": "Rue Christophe Colomb",
+          "district": "Les Basses Landes",
+          "city": "Bouguenais",
+          "county": "Loire-Atlantique",
+          "state": "Pays de la Loire",
+          "country": "Frankreich",
+          "postcode": "44340",
+          "countrycode": "FR"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-1.5970386, 47.1790879]
+        }
+      }
+    ]
+  },
+  "place de la bastille": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "R",
+          "osm_id": 10950251,
+          "osm_key": "highway",
+          "osm_value": "pedestrian",
+          "type": "street",
+          "name": "Place de la Bastille",
+          "locality": "Quartier de l'Arsenal",
+          "district": "Paris",
+          "city": "Paris",
+          "state": "Île-de-France",
+          "country": "Frankreich",
+          "postcode": "75004",
+          "countrycode": "FR",
+          "extent": [2.367941, 48.8534379, 2.3695344, 48.8519529]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [2.3688193, 48.8526733]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 775804100,
+          "osm_key": "leisure",
+          "osm_value": "park",
+          "type": "other",
+          "name": "Place de la Bastille",
+          "locality": "Cité",
+          "city": "Saargemünd",
+          "county": "Moselle",
+          "state": "Grand Est",
+          "country": "Frankreich",
+          "postcode": "57200",
+          "countrycode": "FR",
+          "extent": [7.0774276, 49.1130228, 7.0787645, 49.1122833]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [7.0780952, 49.1126583]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 826206288,
+          "osm_key": "place",
+          "osm_value": "square",
+          "type": "locality",
+          "name": "Place de la Bastille",
+          "district": "Rame",
+          "city": "Saint-Martin-la-Méanne",
+          "county": "Corrèze",
+          "state": "Neu-Aquitanien",
+          "country": "Frankreich",
+          "postcode": "19320",
+          "countrycode": "FR",
+          "extent": [1.9883309, 45.1692977, 1.9890691, 45.1689715]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [1.988742, 45.1691391]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 57119839,
+          "osm_key": "leisure",
+          "osm_value": "common",
+          "type": "other",
+          "name": "Place de la Bastille",
+          "city": "Jarnac",
+          "county": "Charente",
+          "state": "Neu-Aquitanien",
+          "country": "Frankreich",
+          "postcode": "16200",
+          "countrycode": "FR",
+          "extent": [-0.181374, 45.6829849, -0.1811099, 45.6825981]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-0.1812123, 45.6827725]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 506007807,
+          "osm_key": "highway",
+          "osm_value": "secondary",
+          "type": "street",
+          "name": "Place de la Bastille",
+          "locality": "Quartier de l'Arsenal",
+          "district": "Paris",
+          "city": "Paris",
+          "state": "Île-de-France",
+          "country": "Frankreich",
+          "postcode": "75004",
+          "countrycode": "FR",
+          "extent": [2.3681512, 48.8528621, 2.3683564, 48.8526403]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [2.3682572, 48.8527481]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 697939001,
+          "osm_key": "highway",
+          "osm_value": "secondary",
+          "type": "street",
+          "name": "Place de la Bastille",
+          "locality": "Quinze-Vingts",
+          "district": "Paris",
+          "city": "Paris",
+          "state": "Île-de-France",
+          "country": "Frankreich",
+          "postcode": "75012",
+          "countrycode": "FR",
+          "extent": [2.3694181, 48.8532974, 2.3697204, 48.8524184]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [2.3695525, 48.85286]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 51340450,
+          "osm_key": "highway",
+          "osm_value": "residential",
+          "type": "street",
+          "name": "Place de la Bastille",
+          "locality": "Cité",
+          "city": "Saargemünd",
+          "county": "Moselle",
+          "state": "Grand Est",
+          "country": "Frankreich",
+          "postcode": "57200",
+          "countrycode": "FR",
+          "extent": [7.0776338, 49.1128271, 7.0788426, 49.1122687]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [7.0782382, 49.1125479]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 24211378,
+          "osm_key": "highway",
+          "osm_value": "residential",
+          "type": "street",
+          "name": "Place de la Bastille",
+          "locality": "Le Petit Paradis",
+          "district": "Kerfichant",
+          "city": "Lorient",
+          "county": "Morbihan",
+          "state": "Bretagne",
+          "country": "Frankreich",
+          "postcode": "56100",
+          "countrycode": "FR",
+          "extent": [-3.3948216, 47.7555079, -3.3946487, 47.7553918]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-3.3947351, 47.7554536]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 697946274,
+          "osm_key": "highway",
+          "osm_value": "primary",
+          "type": "street",
+          "name": "Place de la Bastille",
+          "locality": "Quartier de l'Arsenal",
+          "district": "Le Marais",
+          "city": "Paris",
+          "state": "Île-de-France",
+          "country": "Frankreich",
+          "postcode": "75004",
+          "countrycode": "FR",
+          "extent": [2.3683564, 48.8532534, 2.3685961, 48.8528621]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [2.3685002, 48.8530432]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 472229140,
+          "osm_key": "highway",
+          "osm_value": "residential",
+          "type": "street",
+          "name": "Place de la Bastille",
+          "locality": "Tu-ès-Roc",
+          "city": "Erquy",
+          "county": "Côtes-d'Armor",
+          "state": "Bretagne",
+          "country": "Frankreich",
+          "postcode": "22430",
+          "countrycode": "FR",
+          "extent": [-2.4620734, 48.6305316, -2.4619466, 48.6304499]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-2.4620082, 48.6304937]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 83554449,
+          "osm_key": "highway",
+          "osm_value": "primary",
+          "type": "street",
+          "name": "Place de la Bastille",
+          "locality": "Quartier de la Roquette",
+          "district": "Paris",
+          "city": "Paris",
+          "state": "Île-de-France",
+          "country": "Frankreich",
+          "postcode": "75011",
+          "countrycode": "FR",
+          "extent": [2.3695555, 48.8534721, 2.3697178, 48.8532974]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [2.3696501, 48.8533968]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 93326339,
+          "osm_key": "highway",
+          "osm_value": "residential",
+          "type": "street",
+          "name": "Place de la Bastille",
+          "city": "Poussan",
+          "county": "Hérault",
+          "state": "Okzitanien",
+          "country": "Frankreich",
+          "postcode": "34560",
+          "countrycode": "FR",
+          "extent": [3.6682932, 43.4955939, 3.668723, 43.4953238]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [3.6684963, 43.4954391]
+        }
+      }
+    ]
+  },
+  "kassel": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "R",
+          "osm_id": 62598,
+          "osm_key": "place",
+          "osm_value": "city",
+          "type": "city",
+          "name": "Kassel",
+          "state": "Hessen",
+          "country": "Deutschland",
+          "countrycode": "DE",
+          "extra": {
+            "admin_level": "6"
+          },
+          "extent": [9.3510229, 51.369403, 9.5700842, 51.2603806]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [9.4978479, 51.3157833]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "R",
+          "osm_id": 3334871,
+          "osm_key": "place",
+          "osm_value": "village",
+          "type": "city",
+          "name": "Kassel",
+          "county": "Main-Kinzig-Kreis",
+          "state": "Hessen",
+          "country": "Deutschland",
+          "countrycode": "DE",
+          "extra": {
+            "admin_level": "10"
+          },
+          "extent": [9.2425432, 50.2204519, 9.3693093, 50.1727362]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [9.2791463, 50.2072683]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "R",
+          "osm_id": 3146211,
+          "osm_key": "boundary",
+          "osm_value": "political",
+          "type": "other",
+          "name": "Kassel",
+          "county": "Landkreis Kassel",
+          "state": "Hessen",
+          "country": "Deutschland",
+          "countrycode": "DE",
+          "extent": [9.3510229, 51.4154626, 9.761612, 51.1712794]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [9.506805, 51.2934378]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 9142407879,
+          "osm_key": "information",
+          "osm_value": "guidepost",
+          "type": "house",
+          "name": "Kassel",
+          "street": "Waldweg",
+          "city": "Eidengesäß",
+          "county": "Main-Kinzig-Kreis",
+          "state": "Hessen",
+          "country": "Deutschland",
+          "postcode": "63589",
+          "countrycode": "DE"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [9.2419807, 50.1908067]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 260716557,
+          "osm_key": "railway",
+          "osm_value": "station",
+          "type": "house",
+          "name": "Kassel-Wilhelmshöhe",
+          "street": "Bertha-von-Suttner-Straße",
+          "district": "Bad Wilhelmshöhe",
+          "city": "Kassel",
+          "state": "Hessen",
+          "country": "Deutschland",
+          "postcode": "34131",
+          "countrycode": "DE"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [9.4477049, 51.3113881]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 206670863,
+          "osm_key": "railway",
+          "osm_value": "station",
+          "type": "house",
+          "housenumber": "1",
+          "name": "Kassel Hauptbahnhof",
+          "street": "Rainer-Dierichs-Platz",
+          "district": "Mitte",
+          "city": "Kassel",
+          "state": "Hessen",
+          "country": "Deutschland",
+          "postcode": "34117",
+          "countrycode": "DE"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [9.4896007, 51.3183386]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 12856494738,
+          "osm_key": "place",
+          "osm_value": "farm",
+          "type": "locality",
+          "name": "Kassele",
+          "district": "Pieterstein",
+          "city": "Mühlwald",
+          "county": "Bozen",
+          "state": "Trentino-Südtirol",
+          "country": "Italien",
+          "postcode": "39030",
+          "countrycode": "IT"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [11.9044536, 46.9016391]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 847717133,
+          "osm_key": "landuse",
+          "osm_value": "meadow",
+          "type": "other",
+          "name": "Kassels",
+          "district": "Hosingen",
+          "city": "Park Hosingen",
+          "county": "Kanton Clerf",
+          "country": "Luxemburg",
+          "countrycode": "LU",
+          "extent": [6.0578004, 50.0238014, 6.0675147, 50.0197388]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [6.0632191, 50.0216693]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 1122408112,
+          "osm_key": "highway",
+          "osm_value": "residential",
+          "type": "street",
+          "name": "Kassels",
+          "district": "Hosingen",
+          "city": "Park Hosingen",
+          "county": "Kanton Clerf",
+          "country": "Luxemburg",
+          "postcode": "9837",
+          "countrycode": "LU",
+          "extent": [6.0637426, 50.0264449, 6.0648833, 50.0257529]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [6.06401, 50.0263943]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 13184301534,
+          "osm_key": "natural",
+          "osm_value": "peak",
+          "type": "other",
+          "name": "Kasseler Kuppe",
+          "city": "Frankershausen",
+          "county": "Werra-Meißner-Kreis",
+          "state": "Hessen",
+          "country": "Deutschland",
+          "postcode": "37297",
+          "countrycode": "DE"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [9.8596471, 51.2254727]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "W",
+          "osm_id": 216961123,
+          "osm_key": "historic",
+          "osm_value": "castle",
+          "type": "house",
+          "housenumber": "4",
+          "name": "Kasselburg",
+          "street": "Kasselburg",
+          "locality": "Kasselburg",
+          "city": "Pelm",
+          "county": "Landkreis Vulkaneifel",
+          "state": "Rheinland-Pfalz",
+          "country": "Deutschland",
+          "postcode": "54570",
+          "countrycode": "DE",
+          "extent": [6.684831, 50.2396549, 6.6858601, 50.2389434]
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [6.6852826, 50.2393]
+        }
+      },
+      {
+        "type": "Feature",
+        "properties": {
+          "osm_type": "N",
+          "osm_id": 803390631,
+          "osm_key": "amenity",
+          "osm_value": "restaurant",
+          "type": "house",
+          "name": "Kasseler Hütte",
+          "street": "Kasseler-Hütte-Weg - Sentiero Rifugio Roma",
+          "city": "Sand in Taufers",
+          "county": "Bozen",
+          "state": "Trentino-Südtirol",
+          "country": "Italien",
+          "postcode": "39032",
+          "countrycode": "IT"
+        },
+        "geometry": {
+          "type": "Point",
+          "coordinates": [12.1031196, 46.9291053]
+        }
+      }
+    ]
+  }
+}
