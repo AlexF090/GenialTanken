@@ -216,9 +216,13 @@ export class ExplorePage {
     });
   }
 
+  /** On phones the sheet steps aside while typing, so the suggestions stay visible. */
   protected searchPlaces(query: string): void {
     this.placeQuery.set(query);
     this.isTypingPlaceQuery.set(true);
+    if (this.isCompactViewport()) {
+      this.snapPosition.set('peek');
+    }
   }
 
   protected choosePlace(place: Place): void {

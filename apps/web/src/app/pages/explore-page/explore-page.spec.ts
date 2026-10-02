@@ -584,6 +584,17 @@ describe('ExplorePage on a phone', () => {
     expect(sheet.snapPosition()).toBe('peek');
     expect(childComponent(fixture, StationsMap).selectedStationId()).toBe(carrefourStation.id);
   });
+
+  it('moves the sheet aside while a place is typed', async () => {
+    const { fixture, element } = await renderWithStations();
+    const input = placeSearchInput(element);
+
+    input.value = 'Bas';
+    input.dispatchEvent(new Event('input'));
+    await context.settle();
+
+    expect(childComponent(fixture, BottomSheet).snapPosition()).toBe('peek');
+  });
 });
 
 describe('ExplorePage with stored settings', () => {
