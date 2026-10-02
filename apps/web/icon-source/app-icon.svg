@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Preismast: a price pylon whose top field shows a segment display "9" with the raised tenth "9". -->
+  <defs>
+    <g id="segment-nine">
+      <rect x="0" y="0" width="58" height="15" rx="3" />
+      <rect x="0" y="19" width="15" height="27" rx="3" />
+      <rect x="43" y="19" width="15" height="27" rx="3" />
+      <rect x="0" y="50" width="58" height="15" rx="3" />
+      <rect x="43" y="69" width="15" height="27" rx="3" />
+      <rect x="0" y="100" width="58" height="15" rx="3" />
+    </g>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#0E3B4A" />
+  <rect x="236" y="380" width="40" height="68" fill="#1F7A8C" />
+  <rect x="156" y="64" width="200" height="332" rx="18" fill="#F3F5F4" />
+  <rect x="176" y="84" width="160" height="148" rx="8" fill="#F2B705" />
+  <g fill="#0E3B4A" transform="skewX(-6) translate(18 0)">
+    <use xlink:href="#segment-nine" transform="translate(209 100)" />
+    <use xlink:href="#segment-nine" transform="translate(281 100) scale(0.44)" />
+  </g>
+  <rect x="176" y="252" width="160" height="50" rx="8" fill="#1F7A8C" />
+  <rect x="262" y="270" width="56" height="14" rx="3" fill="#F3F5F4" />
+  <rect x="176" y="318" width="160" height="50" rx="8" fill="#1F7A8C" />
+  <rect x="262" y="336" width="56" height="14" rx="3" fill="#F3F5F4" />
+</svg>
