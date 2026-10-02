@@ -41,9 +41,16 @@
       </button>
     }
     @if (locationErrorMessage(); as message) {
-      <p class="message message--error explore-page__search-message" role="alert">
-        {{ message }}
-      </p>
+      <div class="message message--error toast">
+        <p role="alert">{{ message }}</p>
+        <button
+          type="button"
+          class="icon-button toast__dismiss"
+          aria-label="Hinweis schließen"
+          (click)="dismissLocationError()">
+          <app-icon name="close" />
+        </button>
+      </div>
     }
   </div>
 

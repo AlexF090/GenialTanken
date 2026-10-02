@@ -199,6 +199,29 @@ select {
   touch-action: manipulation;
 }
 
+// Toast: tapping anywhere on it closes it. The close button stretches over the whole toast, so
+// the keyboard and assistive technology reach the same action. Combine with `.message`.
+.toast {
+  position: relative;
+  display: flex;
+  gap: var(--space-xs);
+  align-items: flex-start;
+  padding-inline-end: 0;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-floating);
+}
+
+.toast__dismiss {
+  margin-block: calc(-1 * var(--space-sm));
+  color: inherit;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+}
+
 .message {
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);

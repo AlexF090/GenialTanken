@@ -55,6 +55,11 @@ export class SearchCenterStore {
     });
   }
 
+  /** The user closed the location error; it shows again only after the next failed attempt. */
+  dismissLocationError(): void {
+    this.isLocationErrorRelevant.set(false);
+  }
+
   usePlace(place: Place): void {
     this.changeCenter();
     this.state.set({

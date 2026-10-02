@@ -391,6 +391,11 @@ describe('ExplorePage', () => {
       'Der Zugriff auf deinen Standort wurde verweigert.'
     );
     expect(stationTitles(element)).toHaveLength(3);
+
+    getButton(element, 'Hinweis schließen').click();
+    await context.settle();
+
+    expect(element.querySelector('main [role="alert"]')).toBeNull();
   });
 
   it('stars a station and persists it', async () => {

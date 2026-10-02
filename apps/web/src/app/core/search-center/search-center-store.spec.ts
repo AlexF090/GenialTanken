@@ -95,6 +95,20 @@ describe('SearchCenterStore', () => {
     expect(store.locationErrorMessage()).toBeUndefined();
   });
 
+  it('hides a dismissed location error until locating fails again', async () => {
+    const located = store.useOwnPosition();
+    geolocation.rejectWithPermissionDenied();
+    await located;
+
+    store.dismissLocationError();
+    expect(store.locationErrorMessage()).toBeUndefined();
+
+    const locatedAgain = store.useOwnPosition();
+    geolocation.rejectWithPermissionDenied();
+    await locatedAgain;
+    expect(store.locationErrorMessage()).toBe(PERMISSION_DENIED_MESSAGE);
+  });
+
   it('lets a place chosen while locating win over the late position', async () => {
     const located = store.useOwnPosition();
     store.usePlace(bastillePlace);

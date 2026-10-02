@@ -249,6 +249,10 @@ export class ExplorePage {
     }
   }
 
+  protected dismissLocationError(): void {
+    this.searchCenter.dismissLocationError();
+  }
+
   protected chooseRadius(radiusInKilometers: number): void {
     this.settings.update({ radiusInKilometers });
   }
