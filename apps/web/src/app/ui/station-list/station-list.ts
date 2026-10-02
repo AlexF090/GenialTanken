@@ -12,8 +12,7 @@ import { RouterLink } from '@angular/router';
 import type { FuelType, Station } from '@genialtanken/contracts';
 import { formatDistance } from '../../core/formatting/number-format';
 import {
-  formatCityLine,
-  formatStreetLine,
+  addressLinesBelowTitle,
   navigationDestinationOf,
   priceInEuro,
   stationSubtitle,
@@ -69,9 +68,7 @@ export class StationList {
       destination: navigationDestinationOf(station),
       title: stationTitle(station),
       subtitle: stationSubtitle(station),
-      addressLine: [formatStreetLine(station), formatCityLine(station)]
-        .filter(line => line !== '')
-        .join(', '),
+      addressLine: addressLinesBelowTitle(station).join(', '),
       priceInEuro: priceInEuro(station, this.fuelType()),
       distance:
         station.distanceInMeters === null ? undefined : formatDistance(station.distanceInMeters),

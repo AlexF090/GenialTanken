@@ -11,8 +11,10 @@
         <p class="station-detail__subtitle">{{ subtitle }}</p>
       }
       <address class="station-detail__address">
-        <span>{{ streetLine() }}</span
-        >&ngsp;<span>{{ cityLine() }}</span>
+        @for (line of addressLines(); track line) {
+          <span>{{ line }}</span
+          >&ngsp;
+        }
       </address>
     </div>
     <app-favorite-button

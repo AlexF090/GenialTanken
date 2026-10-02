@@ -92,6 +92,11 @@
   font-size: var(--font-size-sm);
 }
 
+// Below the name, smaller like a footnote: the title already says which station it is.
+.station-row__address {
+  font-size: var(--font-size-footnote);
+}
+
 .station-row__distance {
   color: var(--color-text);
   font-weight: var(--font-weight-medium);

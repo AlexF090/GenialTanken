@@ -29,6 +29,17 @@ export const stationSubtitle = (station: Station): string | undefined => {
   return hasText(station.name) && station.name !== title ? station.name : undefined;
 };
 
+/**
+ * Address lines shown below the title: street and city, without the street when it already is
+ * the title (stations without brand and name).
+ */
+export const addressLinesBelowTitle = (station: Station): string[] => {
+  const title = stationTitle(station);
+  return [formatStreetLine(station), formatCityLine(station)].filter(
+    line => line !== '' && line !== title
+  );
+};
+
 /** Price of one fuel type in euros, `null` when the station reports none. */
 export const priceInEuro = (station: Station, fuelType: FuelType): number | null =>
   station.pricesInEuro[fuelType];

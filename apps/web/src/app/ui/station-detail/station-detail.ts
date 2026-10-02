@@ -3,8 +3,7 @@ import { FUEL_TYPES } from '@genialtanken/contracts';
 import type { FuelType, Station } from '@genialtanken/contracts';
 import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
 import {
-  formatCityLine,
-  formatStreetLine,
+  addressLinesBelowTitle,
   navigationDestinationOf,
   priceInEuro,
   stationSubtitle,
@@ -41,8 +40,7 @@ export class StationDetail {
   protected readonly title = computed(() => stationTitle(this.station()));
   protected readonly destination = computed(() => navigationDestinationOf(this.station()));
   protected readonly subtitle = computed(() => stationSubtitle(this.station()));
-  protected readonly streetLine = computed(() => formatStreetLine(this.station()));
-  protected readonly cityLine = computed(() => formatCityLine(this.station()));
+  protected readonly addressLines = computed(() => addressLinesBelowTitle(this.station()));
   protected readonly fuelPrices = computed<FuelPrice[]>(() => {
     const selectedFuelType = this.fuelType();
     const fuelPrices = FUEL_TYPES.map(fuelType => ({

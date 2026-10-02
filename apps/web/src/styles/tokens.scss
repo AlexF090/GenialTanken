@@ -116,8 +116,9 @@
   // like Apple Maps and Wallet. Sizes follow the iOS text styles at the default Dynamic Type size.
   --font-family-ui: -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
   --font-family-numerals: ui-rounded, 'SF Pro Rounded', var(--font-family-ui);
-  // Caption 1, subheadline, body, title 3, title 2, large title
+  // Caption 1, footnote, subheadline, body, title 3, title 2, large title
   --font-size-xs: 0.75rem;
+  --font-size-footnote: 0.8125rem;
   --font-size-sm: 0.9375rem;
   --font-size-md: 1.0625rem;
   --font-size-lg: 1.25rem;
