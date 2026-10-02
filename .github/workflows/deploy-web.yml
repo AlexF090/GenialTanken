@@ -72,6 +72,27 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
 
+      # The artifact comes from a CI run of the pull request. Wrangler runs with the Cloudflare token
+      # in this directory, so only the static build and the Pages Function may be present; any
+      # configuration file wrangler or npm would read (wrangler.*, package.json, .npmrc) fails the job.
+      - name: Verify artifact contents
+        working-directory: web-dist
+        run: |
+          unexpected_top_level="$(find . -mindepth 1 -maxdepth 1 ! -name dist ! -name functions)"
+          if [ -n "${unexpected_top_level}" ]; then
+            echo "::error::Unexpected entries in web-dist: ${unexpected_top_level}"
+            exit 1
+          fi
+          unexpected_files="$(find functions -type f ! -name '*.ts')"
+          if [ -n "${unexpected_files}" ]; then
+            echo "::error::Only TypeScript sources are allowed in functions/: ${unexpected_files}"
+            exit 1
+          fi
+          if [ ! -f dist/web/browser/index.html ]; then
+            echo '::error::dist/web/browser/index.html is missing.'
+            exit 1
+          fi
+
       - name: Deploy to Cloudflare Pages
         id: deploy
         uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
