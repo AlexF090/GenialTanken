@@ -2,19 +2,24 @@
   "name": "GenialTanken",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:24-trixie",
   "postCreateCommand": "bash .devcontainer/post-create.sh",
-  "forwardPorts": [3000, 5000, 6006, 9323],
+  "forwardPorts": [4200, 3000, 9323],
   "portsAttributes": {
-    "3000": { "label": "Client (dev server)" },
-    "5000": { "label": "Express server" },
-    "6006": { "label": "Storybook" },
-    "9323": { "label": "Playwright report" }
+    "4200": {
+      "label": "Web (Angular dev server)"
+    },
+    "3000": {
+      "label": "API (NestJS)"
+    },
+    "9323": {
+      "label": "Playwright report"
+    }
   },
   "customizations": {
     "vscode": {
       "extensions": [
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
-        "styled-components.vscode-styled-components",
+        "angular.ng-template",
         "vitest.explorer",
         "ms-playwright.playwright"
       ],
