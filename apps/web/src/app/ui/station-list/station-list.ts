@@ -15,7 +15,6 @@ import {
   addressLinesBelowTitle,
   navigationDestinationOf,
   priceInEuro,
-  stationSubtitle,
   stationTitle,
 } from '../../core/stations/station-display';
 import type { NavigationDestination } from '../../core/navigation-apps/navigation-apps';
@@ -28,7 +27,6 @@ interface StationListItem {
   id: string;
   destination: NavigationDestination;
   title: string;
-  subtitle: string | undefined;
   addressLine: string;
   priceInEuro: number | null;
   distance: string | undefined;
@@ -67,7 +65,6 @@ export class StationList {
       id: station.id,
       destination: navigationDestinationOf(station),
       title: stationTitle(station),
-      subtitle: stationSubtitle(station),
       addressLine: addressLinesBelowTitle(station).join(', '),
       priceInEuro: priceInEuro(station, this.fuelType()),
       distance:

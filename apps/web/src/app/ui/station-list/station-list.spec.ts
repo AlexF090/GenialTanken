@@ -84,11 +84,11 @@ describe('StationList', () => {
     expect(textOf(linkOf(items[0]))).toBe('40 Avenue de Flandre');
   });
 
-  it('shows the name below the brand when both exist', async () => {
+  it('shows only the brand above the address, not the station name too', async () => {
     const { items } = await render({ stations: [aralStation] });
 
     expect(textOf(linkOf(items[0]))).toBe('Aral');
-    expect(accessibleTextOf(items[0])).toContain('Aral Tankstelle Kassel');
+    expect(accessibleTextOf(items[0])).not.toContain('Aral Tankstelle Kassel');
     expect(accessibleTextOf(items[0])).toContain('Wilhelmshöher Allee 100');
   });
 

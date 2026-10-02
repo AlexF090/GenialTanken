@@ -92,11 +92,6 @@
   font-size: var(--font-size-sm);
 }
 
-// The station's own name below its brand reads as primary text; only the address is secondary.
-.station-row__name {
-  color: var(--color-text);
-}
-
 // Below the name, smaller like a footnote: the title already says which station it is.
 .station-row__address {
   font-size: var(--font-size-footnote);
