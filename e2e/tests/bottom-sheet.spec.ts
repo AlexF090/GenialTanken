@@ -4,7 +4,7 @@ import {
   expect,
   resultSummary,
   rueBailleulStation,
-  showOnMapButton,
+  stationRowButton,
   stationCard,
   stationList,
   stationsMap,
@@ -124,17 +124,20 @@ test.describe('bottom sheet on a phone', () => {
       .click();
 
     await expect(sheetHandle(page)).toHaveAttribute('aria-expanded', 'true');
-    const listButton = showOnMapButton(stationCard(page, rueBailleulStation), rueBailleulStation);
+    const listButton = stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation);
     await expect(listButton).toHaveAttribute('aria-pressed', 'true');
     await expectShownOnScreen(page, listButton);
   });
 
-  test('"Auf Karte zeigen" moves the sheet aside to show the map', async ({ page }) => {
+  test('choosing a row of the full sheet lowers it to half to show the map', async ({ page }) => {
+    await sheetHandle(page).focus();
+    await page.keyboard.press('End');
+    await expectSheetAt(page, 'full', 'Liste verkleinern');
+
+    await stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation).click();
+
+    // Set from outside, the sheet keeps its last direction: the handle still offers "up".
     await expectSheetAt(page, 'half', 'Liste vergrößern');
-
-    await showOnMapButton(stationCard(page, rueBailleulStation), rueBailleulStation).click();
-
-    await expectSheetAt(page, 'peek', 'Liste vergrößern');
     await expect(
       stationsMap(page).getByRole('button', {
         name: `${rueBailleulStation.title}, 2,540 €, günstigster Preis`,

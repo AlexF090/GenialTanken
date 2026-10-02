@@ -45,7 +45,16 @@
 }
 
 .station-row__title {
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
   overflow: hidden;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
   color: var(--color-text);
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
@@ -61,7 +70,8 @@
     inset: 0;
   }
 
-  &:hover {
+  // Only a link title is underlined; a selecting row is highlighted as a whole instead.
+  &:is(a):hover {
     text-decoration: underline;
   }
 
@@ -125,6 +135,7 @@
 
 .station-row__action {
   display: inline-flex;
+  text-decoration: none;
   align-items: center;
   justify-content: center;
   width: var(--layout-touch-target);
@@ -140,10 +151,5 @@
 
   &:hover {
     color: var(--color-action-text-hover);
-  }
-
-  &[aria-pressed='true'] {
-    background-color: var(--color-action);
-    color: var(--color-on-action);
   }
 }

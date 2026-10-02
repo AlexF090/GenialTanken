@@ -6,9 +6,20 @@
       [class.station-row--cheapest]="item.isCheapest"
       [attr.data-station-id]="item.id">
       <div class="station-row__details">
-        <a class="station-row__title" translate="no" [routerLink]="['/stations', item.id]">{{
-          item.title
-        }}</a>
+        @if (selectsOnMap()) {
+          <button
+            type="button"
+            class="station-row__title"
+            translate="no"
+            [attr.aria-pressed]="item.isSelected"
+            (click)="stationSelected.emit(item.id)">
+            {{ item.title }}
+          </button>
+        } @else {
+          <a class="station-row__title" translate="no" [routerLink]="['/stations', item.id]">{{
+            item.title
+          }}</a>
+        }
         @if (item.subtitle) {
           <span class="station-row__line">{{ item.subtitle }}</span>
         }
@@ -24,15 +35,13 @@
         <app-price size="list" [priceInEuro]="item.priceInEuro" />
       </div>
       <div class="station-row__actions">
-        @if (showOnMapAction()) {
-          <button
-            type="button"
+        @if (selectsOnMap()) {
+          <a
             class="station-row__action"
-            [attr.aria-label]="'Auf Karte zeigen: ' + item.title"
-            [attr.aria-pressed]="item.isSelected"
-            (click)="stationSelected.emit(item.id)">
-            <app-icon name="place" />
-          </button>
+            [routerLink]="['/stations', item.id]"
+            [attr.aria-label]="'Details: ' + item.title">
+            <app-icon name="info" />
+          </a>
         }
         <app-favorite-button
           [stationName]="item.title"

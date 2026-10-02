@@ -51,7 +51,11 @@ export class StationList {
   readonly selectedStationId = input<string>();
   readonly cheapestStationIds = input<ReadonlySet<string>>(NO_STATION_IDS);
   /** Renders the "Auf Karte zeigen" toggle per row; bind `stationSelected` along with it. */
-  readonly showOnMapAction = input(false);
+  /**
+   * On the explore page a row selects its station on the map, and a details button opens the
+   * detail page. Otherwise the title links to the detail page.
+   */
+  readonly selectsOnMap = input(false);
   readonly favoriteToggled = output<string>();
   readonly stationSelected = output<string>();
 

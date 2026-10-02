@@ -17,7 +17,7 @@ interface RenderOptions {
   favoriteStationIds?: ReadonlySet<string>;
   cheapestStationIds?: ReadonlySet<string>;
   selectedStationId?: string;
-  showOnMapAction?: boolean;
+  selectsOnMap?: boolean;
 }
 
 const render = async ({
@@ -143,27 +143,31 @@ describe('StationList', () => {
     expect(toggledStationIds).toEqual(['fr-75001001']);
   });
 
-  it('offers no map action unless asked to', async () => {
-    const { element } = await render({ stations: [totalStation] });
+  it('links titles to the details and offers no map selection unless asked to', async () => {
+    const { element, items } = await render({ stations: [totalStation] });
 
-    expect(() => getButton(element, 'Auf Karte zeigen: TotalEnergies')).toThrow();
+    expect(linkOf(items[0])?.getAttribute('href')).toBe('/stations/fr-75001001');
+    expect(element.querySelector('a[aria-label^="Details:"]')).toBeNull();
   });
 
-  it('reports which station to show on the map and marks the selected one', async () => {
+  it('selects a station with its row and opens the details with a separate link', async () => {
     const { fixture, element } = await render({
       stations: [totalStation, carrefourStation],
-      showOnMapAction: true,
+      selectsOnMap: true,
       selectedStationId: carrefourStation.id,
     });
     const selectedStationIds: string[] = [];
     fixture.componentInstance.stationSelected.subscribe(stationId =>
       selectedStationIds.push(stationId)
     );
-    const totalButton = getButton(element, 'Auf Karte zeigen: TotalEnergies');
-    const carrefourButton = getButton(element, 'Auf Karte zeigen: Carrefour Market');
+    const totalButton = getButton(element, 'TotalEnergies');
+    const carrefourButton = getButton(element, 'Carrefour Market');
 
     expect(totalButton.getAttribute('aria-pressed')).toBe('false');
     expect(carrefourButton.getAttribute('aria-pressed')).toBe('true');
+    expect(
+      element.querySelector('a[aria-label="Details: TotalEnergies"]')?.getAttribute('href')
+    ).toBe('/stations/fr-75001001');
 
     totalButton.click();
 

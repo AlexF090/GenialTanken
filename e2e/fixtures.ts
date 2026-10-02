@@ -133,8 +133,9 @@ export const stationCard = (page: Page, station: FixtureStation): Locator =>
 export const favoriteButton = (container: Locator, station: FixtureStation): Locator =>
   container.getByRole('button', { name: `Favorit: ${station.title}`, exact: true });
 
-export const showOnMapButton = (container: Locator, station: FixtureStation): Locator =>
-  container.getByRole('button', { name: `Auf Karte zeigen: ${station.title}`, exact: true });
+/** On the explore page the title of a row is a toggle button that shows the station on the map. */
+export const stationRowButton = (container: Locator, station: FixtureStation): Locator =>
+  container.getByRole('button', { name: station.title, exact: true });
 
 export const stationsMap = (page: Page): Locator =>
   page.getByRole('region', { name: 'Karte der Tankstellen', exact: true });

@@ -11,7 +11,7 @@ import {
   quaiDeLaRapeeStation,
   resultSummary,
   rueBailleulStation,
-  showOnMapButton,
+  stationRowButton,
   stationCard,
   stationCards,
   stationsMap,
@@ -229,7 +229,7 @@ test.describe('explore page', () => {
       name: `${rueBailleulStation.title}, 2,540 €, günstigster Preis`,
       exact: true,
     });
-    const listButton = showOnMapButton(stationCard(page, rueBailleulStation), rueBailleulStation);
+    const listButton = stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation);
     await expect(listButton).toHaveAttribute('aria-pressed', 'false');
 
     await marker.click();
@@ -238,7 +238,7 @@ test.describe('explore page', () => {
     await expect(marker).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('"Auf Karte zeigen" opens the cluster of a station and toggles the selection', async ({
+  test('choosing a row opens the cluster of its station and keeps it selected', async ({
     page,
   }) => {
     await page.goto('/');
@@ -257,7 +257,7 @@ test.describe('explore page', () => {
     });
     await expect(marker).toHaveCount(0);
 
-    const listButton = showOnMapButton(
+    const listButton = stationRowButton(
       stationCard(page, boulevardDeLHopitalStation),
       boulevardDeLHopitalStation
     );
@@ -267,12 +267,13 @@ test.describe('explore page', () => {
     await expect(marker).toBeVisible();
     await expect(marker).toHaveAttribute('aria-pressed', 'true');
     await expect(
-      showOnMapButton(stationCard(page, rueBailleulStation), rueBailleulStation)
+      stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation)
     ).toHaveAttribute('aria-pressed', 'false');
 
     await listButton.click();
 
-    await expect(listButton).toHaveAttribute('aria-pressed', 'false');
+    await expect(listButton).toHaveAttribute('aria-pressed', 'true');
+    await expect(marker).toHaveAttribute('aria-pressed', 'true');
     await expect(marker).toHaveAttribute('aria-pressed', 'false');
   });
 
@@ -296,7 +297,7 @@ test.describe('explore page', () => {
     await openSettings(page);
     // Selecting a station animates the map towards its price tag.
     await openExplore(page);
-    await showOnMapButton(stationCard(page, rueBailleulStation), rueBailleulStation).click();
+    await stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation).click();
     await openSettings(page);
     await expect(page.getByText('Radius: 5 km')).toBeVisible();
 

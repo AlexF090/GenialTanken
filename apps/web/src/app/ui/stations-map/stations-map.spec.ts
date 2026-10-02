@@ -223,6 +223,16 @@ describe('StationsMap', () => {
       expect(panTo).toHaveBeenCalledOnce();
     });
 
+    it('centers the selected station again on request', async () => {
+      const panTo = vi.spyOn(L.Map.prototype, 'panTo');
+      const { fixture } = await render([totalStation], { selectedStationId: totalStation.id });
+      panTo.mockClear();
+
+      fixture.componentInstance.revealSelectedStation();
+
+      expect(panTo).toHaveBeenCalledOnce();
+    });
+
     it('keeps the selected station centered when the overlays move', async () => {
       const panTo = vi.spyOn(L.Map.prototype, 'panTo');
       const { fixture } = await render([totalStation], { selectedStationId: totalStation.id });

@@ -95,6 +95,7 @@ export class ExplorePage {
   private readonly settings = inject(SettingsStore);
   private readonly favorites = inject(FavoritesStore);
   private readonly isCompactViewport = inject(Viewport).isCompactViewport;
+  private readonly stationsMap = viewChild.required(StationsMap);
   private readonly searchOverlay = viewChild.required<ElementRef<HTMLElement>>('searchOverlay');
 
   protected readonly fuelType = this.settings.fuelType;
@@ -284,15 +285,17 @@ export class ExplorePage {
     }
   }
 
-  /** "Auf Karte zeigen" toggles the selection; the sheet steps aside so the map is visible. */
+  /**
+   * A row of the list was chosen: its pin is centered on the map, again when it was already
+   * selected. A fully opened sheet steps down to half, so pin and row are both visible.
+   */
   protected showOnMap(stationId: string): void {
     if (this.selectedStationId() === stationId) {
-      this.selectedStationId.set(undefined);
-      return;
+      this.stationsMap().revealSelectedStation();
     }
     this.selectedStationId.set(stationId);
-    if (this.isCompactViewport()) {
-      this.snapPosition.set('peek');
+    if (this.isCompactViewport() && this.snapPosition() === 'full') {
+      this.snapPosition.set('half');
     }
   }
 

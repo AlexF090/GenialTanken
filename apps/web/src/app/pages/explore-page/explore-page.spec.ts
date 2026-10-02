@@ -28,12 +28,12 @@ const EIFFEL_TOWER_E5_URL =
   '/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=5&fuel=e5';
 
 const stationTitles = (element: HTMLElement): string[] =>
-  [...element.querySelectorAll('main li a')].map(title => textOf(title));
+  [...element.querySelectorAll('main li .station-row__title')].map(title => textOf(title));
 
 const selectedStationTitles = (element: HTMLElement): string[] =>
-  [...element.querySelectorAll('main li[data-station-id]')]
-    .filter(row => row.querySelector('button[aria-pressed="true"]') !== null)
-    .map(row => textOf(row.querySelector('a')));
+  [...element.querySelectorAll('main li .station-row__title[aria-pressed="true"]')].map(title =>
+    textOf(title)
+  );
 
 const waitForTypingPause = (): Promise<void> =>
   new Promise(resolve => setTimeout(resolve, PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS + 20));
@@ -315,7 +315,7 @@ describe('ExplorePage', () => {
     const cheapestItems = [...element.querySelectorAll('main li')].filter(item =>
       textOf(item).includes('Günstigster Preis')
     );
-    expect(cheapestItems.map(item => textOf(item.querySelector('a')))).toEqual([
+    expect(cheapestItems.map(item => textOf(item.querySelector('.station-row__title')))).toEqual([
       '40 Avenue de Flandre',
     ]);
   });
@@ -449,18 +449,28 @@ describe('ExplorePage', () => {
     expect(map.selectedStationId()).toBe(carrefourStation.id);
   });
 
-  it('shows a station from the list on the map and toggles it off again', async () => {
+  it('shows the station of a chosen row on the map and centers it again on a second tap', async () => {
     const { element, fixture } = await renderWithStations();
     const map = childComponent(fixture, StationsMap);
+    const revealSelectedStation = vi.spyOn(map, 'revealSelectedStation');
 
-    getButton(element, 'Auf Karte zeigen: TotalEnergies').click();
+    getButton(element, 'TotalEnergies').click();
     await context.settle();
     expect(map.selectedStationId()).toBe(totalStation.id);
     expect(selectedStationTitles(element)).toEqual(['TotalEnergies']);
+    expect(revealSelectedStation).not.toHaveBeenCalled();
 
-    getButton(element, 'Auf Karte zeigen: TotalEnergies').click();
+    getButton(element, 'TotalEnergies').click();
     await context.settle();
-    expect(map.selectedStationId()).toBeUndefined();
+    expect(map.selectedStationId()).toBe(totalStation.id);
+    expect(revealSelectedStation).toHaveBeenCalledOnce();
+  });
+
+  it('links each row to the station details', async () => {
+    const { element } = await renderWithStations();
+
+    const detailsLink = element.querySelector('main a[aria-label="Details: TotalEnergies"]');
+    expect(detailsLink?.getAttribute('href')).toBe(`/stations/${totalStation.id}`);
   });
 
   it('clears the selection when the station is gone after a refresh', async () => {
@@ -577,17 +587,29 @@ describe('ExplorePage on a phone', () => {
     }
   );
 
-  it('lowers the sheet to peek so the map shows the station from the list', async () => {
+  it('lowers a fully opened sheet to half so pin and row of a chosen station are visible', async () => {
     const { element, fixture } = await renderWithStations();
     const sheet = childComponent(fixture, BottomSheet);
     sheet.snapPosition.set('full');
     await context.settle();
 
-    getButton(element, 'Auf Karte zeigen: Carrefour Market').click();
+    getButton(element, 'Carrefour Market').click();
+    await context.settle();
+
+    expect(sheet.snapPosition()).toBe('half');
+    expect(childComponent(fixture, StationsMap).selectedStationId()).toBe(carrefourStation.id);
+  });
+
+  it('keeps a peeking sheet down when a station is chosen in the list', async () => {
+    const { element, fixture } = await renderWithStations();
+    const sheet = childComponent(fixture, BottomSheet);
+    sheet.snapPosition.set('peek');
+    await context.settle();
+
+    getButton(element, 'Carrefour Market').click();
     await context.settle();
 
     expect(sheet.snapPosition()).toBe('peek');
-    expect(childComponent(fixture, StationsMap).selectedStationId()).toBe(carrefourStation.id);
   });
 
   it('moves the sheet aside while a place is typed', async () => {

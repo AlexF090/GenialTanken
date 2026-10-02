@@ -362,6 +362,19 @@ export class StationsMap {
     return marker;
   }
 
+  /** Centers the selected station again, e.g. when its row in the list is chosen once more. */
+  revealSelectedStation(): void {
+    const map = this.map();
+    const selectedStationId = this.selectedStationId();
+    const marker =
+      selectedStationId === undefined
+        ? undefined
+        : this.markersByStationId().get(selectedStationId);
+    if (map !== undefined && marker !== undefined) {
+      this.reveal(map, marker);
+    }
+  }
+
   /**
    * Opens the marker's cluster if needed, then centers the marker in the visible part of the map,
    * like a tapped pin in Apple Maps.
