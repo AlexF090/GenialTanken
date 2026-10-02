@@ -1,4 +1,4 @@
-import { expect, quaiDeLaRapeeStation, rueBailleulStation, test } from '../fixtures.js';
+import { chooseFuel, expect, quaiDeLaRapeeStation, rueBailleulStation, test } from '../fixtures.js';
 
 test.describe('detail page', () => {
   test('shows address, opening times and every fuel price of a station', async ({ page }) => {
@@ -37,17 +37,49 @@ test.describe('detail page', () => {
       'Feiertag: keine Angabe',
     ]);
 
+    // Today is marked for screen readers; the public holiday row never is.
+    await expect(openingTimes.locator('[aria-current="date"]')).toHaveCount(1);
+    await expect(openingTimes.getByRole('listitem').last()).not.toHaveAttribute('aria-current');
+
+    // The fuel of the settings (E5 by default) leads the price board, even without a price.
     const prices = details.getByRole('region', { name: 'Preise' }).getByRole('listitem');
     await expect(prices).toHaveCount(6);
-    await expect(prices.nth(0)).toHaveText('Kein Preis für Super E5 vorhanden');
+    await expect(prices.nth(0)).toContainText('Super E5');
+    await expect(prices.nth(0)).toContainText('Dein Kraftstoff');
+    await expect(prices.nth(0)).toContainText('kein Preis');
     await expect(prices.nth(1)).toContainText('2,152 €');
     await expect(prices.nth(1)).toContainText('Super E10');
     await expect(prices.nth(2)).toContainText('2,286 €');
     await expect(prices.nth(2)).toContainText('Super Plus');
     await expect(prices.nth(3)).toContainText('2,391 €');
     await expect(prices.nth(3)).toContainText('Diesel');
-    await expect(prices.nth(4)).toHaveText('Kein Preis für E85 vorhanden');
-    await expect(prices.nth(5)).toHaveText('Kein Preis für LPG vorhanden');
+    await expect(prices.nth(4)).toContainText('E85');
+    await expect(prices.nth(4)).toContainText('kein Preis');
+    await expect(prices.nth(5)).toContainText('LPG');
+    await expect(prices.nth(5)).toContainText('kein Preis');
+    await expect(prices.filter({ hasText: 'Dein Kraftstoff' })).toHaveCount(1);
+  });
+
+  test('leads with the fuel chosen in the settings', async ({ page }) => {
+    await page.goto('/');
+    await chooseFuel(page, 'Diesel');
+    await page.goto(`/stations/${quaiDeLaRapeeStation.id}`);
+
+    const prices = page.getByRole('region', { name: 'Preise' }).getByRole('listitem');
+    await expect(prices.nth(0)).toContainText('Diesel');
+    await expect(prices.nth(0)).toContainText('Dein Kraftstoff');
+    await expect(prices.nth(0)).toContainText('2,391 €');
+    await expect(prices.nth(1)).toContainText('Super E5');
+    await expect(prices.nth(1)).toContainText('kein Preis');
+  });
+
+  test('the back link returns to the explore page', async ({ page }) => {
+    await page.goto(`/stations/${quaiDeLaRapeeStation.id}`);
+
+    await page.getByRole('link', { name: 'Zurück', exact: true }).click();
+
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('heading', { level: 1, name: 'GenialTanken' })).toBeVisible();
   });
 
   test('loads a station opened directly by its URL-encoded id', async ({ page }) => {

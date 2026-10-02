@@ -1,24 +1,36 @@
+import type { Page } from '@playwright/test';
 import {
   chooseFuel,
   expect,
   favoriteButton,
-  openStationList,
+  mainNavigation,
+  openExplore,
   quaiDeLaRapeeStation,
   rueBailleulStation,
   stationCard,
   stationCards,
   storedFavoriteIds,
   test,
+  useOwnPosition,
 } from '../fixtures.js';
 
+const openFavorites = (page: Page): Promise<void> =>
+  mainNavigation(page).getByRole('link', { name: 'Favoriten', exact: true }).click();
+
 test.describe('favorites', () => {
-  test('shows an empty state without favorites', async ({ page }) => {
+  test('shows an empty state that leads to the explore page', async ({ page }) => {
     await page.goto('/favorites');
 
     await expect(page.getByRole('heading', { level: 1, name: 'Favoriten' })).toBeVisible();
     await expect(
       page.getByRole('heading', { level: 2, name: 'Keine Favoriten gespeichert' })
     ).toBeVisible();
+    await expect(stationCards(page)).toHaveCount(0);
+
+    await page.getByRole('link', { name: 'Tankstellen erkunden', exact: true }).click();
+
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('heading', { level: 1, name: 'GenialTanken' })).toBeVisible();
   });
 
   test('a station starred in the list is listed on /favorites, survives a reload and can be removed', async ({
@@ -30,7 +42,7 @@ test.describe('favorites', () => {
     await expect(listStar).toHaveAttribute('aria-pressed', 'true');
     await expect.poll(() => storedFavoriteIds(page)).toEqual([rueBailleulStation.id]);
 
-    await page.getByRole('link', { name: 'Favoriten' }).click();
+    await openFavorites(page);
     await expect(stationCards(page)).toHaveCount(1);
     const favoriteCard = stationCard(page, rueBailleulStation);
     await expect(favoriteCard).toContainText('2,540 €');
@@ -54,14 +66,16 @@ test.describe('favorites', () => {
   }) => {
     await page.goto('/');
     await chooseFuel(page, 'Diesel');
-    await openStationList(page);
+    await openExplore(page);
+    // Only Rue Bailleul is in range of the Eiffel Tower, where the explore page starts.
+    await useOwnPosition(page);
     await favoriteButton(stationCard(page, rueBailleulStation), rueBailleulStation).click();
     await favoriteButton(stationCard(page, quaiDeLaRapeeStation), quaiDeLaRapeeStation).click();
     await expect
       .poll(() => storedFavoriteIds(page))
       .toEqual([rueBailleulStation.id, quaiDeLaRapeeStation.id]);
 
-    await page.getByRole('link', { name: 'Favoriten' }).click();
+    await openFavorites(page);
     await expect(stationCards(page)).toHaveCount(2);
 
     await favoriteButton(stationCard(page, rueBailleulStation), rueBailleulStation).click();
@@ -81,7 +95,7 @@ test.describe('favorites', () => {
     await expect(detailStar).toHaveAttribute('aria-pressed', 'true');
     await expect.poll(() => storedFavoriteIds(page)).toEqual([quaiDeLaRapeeStation.id]);
 
-    await page.getByRole('link', { name: 'Favoriten' }).click();
+    await openFavorites(page);
     await expect(stationCards(page)).toHaveCount(1);
     await expect(stationCard(page, quaiDeLaRapeeStation)).toBeVisible();
   });

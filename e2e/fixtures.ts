@@ -5,9 +5,13 @@ import { MOCK_UPSTREAM_PORT, UNEXPECTED_REQUESTS_PATH } from './mock-upstream-en
 
 /**
  * Stations of `data/france-stations.json` as the app shows them for a user at the centre of
- * Paris. French open data has neither brand nor name, so the street is the station title.
- * Distances are computed by the API from the user's position; prices are the plain
- * (screen reader) text of the Price component.
+ * Paris (`parisCenter`, the emulated own position). French open data has neither brand nor name,
+ * so the street is the station title. Distances are computed by the API from the search center;
+ * prices are the plain (screen reader) text of the Price component.
+ *
+ * The explore page starts at the Eiffel Tower, 3.4–6 km away from the fixture stations, so with
+ * the default 5 km radius only Rue Bailleul is in range there. Tests that need every station call
+ * `useOwnPosition` first.
  */
 export interface FixtureStation {
   id: string;
@@ -45,6 +49,11 @@ export const boulevardVincentAuriolStation: FixtureStation = {
 };
 
 export const parisCenter = { latitude: 48.8566, longitude: 2.3522 };
+
+/** Start center of every visit; the app never asks for the position on its own. */
+export const eiffelTower = { latitude: 48.8584, longitude: 2.2945, label: 'Eiffelturm, Paris' };
+
+export const OWN_POSITION_LABEL = 'Dein Standort';
 
 export const FUEL_OPTION_LABELS = ['E5', 'E10', 'Super Plus', 'Diesel', 'E85', 'LPG'] as const;
 
@@ -109,8 +118,14 @@ export const test = base.extend({
 
 export { expect };
 
-/** Station cards of the list inside the page's main landmark. */
-export const stationCards = (page: Page): Locator => page.getByRole('main').getByRole('listitem');
+export const mainNavigation = (page: Page): Locator =>
+  page.getByRole('navigation', { name: 'Hauptnavigation' });
+
+/** The station list of the explore and favorites pages. */
+export const stationList = (page: Page): Locator =>
+  page.getByRole('main').getByRole('list', { name: 'Tankstellen', exact: true });
+
+export const stationCards = (page: Page): Locator => stationList(page).getByRole('listitem');
 
 export const stationCard = (page: Page, station: FixtureStation): Locator =>
   stationCards(page).filter({ has: page.getByText(station.title, { exact: true }) });
@@ -118,31 +133,54 @@ export const stationCard = (page: Page, station: FixtureStation): Locator =>
 export const favoriteButton = (container: Locator, station: FixtureStation): Locator =>
   container.getByRole('button', { name: `Favorit: ${station.title}`, exact: true });
 
+export const showOnMapButton = (container: Locator, station: FixtureStation): Locator =>
+  container.getByRole('button', { name: `Auf Karte zeigen: ${station.title}`, exact: true });
+
+export const stationsMap = (page: Page): Locator =>
+  page.getByRole('region', { name: 'Karte der Tankstellen', exact: true });
+
 /**
- * Opens the settings through the header link. The router attaches the page before its first
+ * "N Tankstellen im Umkreis von R km um <label>" on the explore page. It is only filled once the
+ * stations of the current search center have loaded, so its label proves the list is current.
+ */
+export const resultSummary = (page: Page): Locator =>
+  page.getByRole('status').filter({ hasText: 'im Umkreis von' });
+
+/** Opens the explore page through the navigation, keeping the app state of the current visit. */
+export const openExplore = async (page: Page): Promise<void> => {
+  await mainNavigation(page).getByRole('link', { name: 'Erkunden', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'GenialTanken' })).toBeVisible();
+};
+
+/**
+ * Centers the explore page on the emulated own position (`parisCenter`), where every fixture
+ * station is in range, and waits until the stations around it have loaded.
+ */
+export const useOwnPosition = async (page: Page): Promise<void> => {
+  await page.getByRole('button', { name: 'Meinen Standort verwenden' }).click();
+  await expect(resultSummary(page)).toContainText(`um ${OWN_POSITION_LABEL}`);
+};
+
+/**
+ * Opens the settings through the navigation. The router attaches the page before its first
  * change detection binds the form, so the test waits for the bound radius label (its first
  * binding) before interacting; otherwise the input is ignored (Angular error NG0950).
  */
 export const openSettings = async (page: Page): Promise<void> => {
-  await page.getByRole('link', { name: 'Einstellungen' }).click();
+  await mainNavigation(page).getByRole('link', { name: 'Einstellungen', exact: true }).click();
   await expect(page.getByRole('slider', { name: /^Radius: \d+ km$/ })).toBeVisible();
 };
+
+export const fuelOptions = (page: Page): Locator =>
+  page.getByRole('group', { name: 'Kraftstoff', exact: true });
+
+export const colorSchemeOptions = (page: Page): Locator =>
+  page.getByRole('group', { name: 'Darstellung', exact: true });
 
 /** Selects a fuel type on the settings page, which applies it immediately. */
 export const chooseFuel = async (page: Page, fuel: FuelOptionLabel): Promise<void> => {
   await openSettings(page);
-  await page
-    .getByRole('group', { name: 'Kraftstoff' })
-    .getByRole('radio', { name: fuel, exact: true })
-    .check();
-};
-
-/** Opens the list through the navigation, keeping the app state of the current visit. */
-export const openStationList = async (page: Page): Promise<void> => {
-  await page
-    .getByRole('navigation', { name: 'Hauptnavigation' })
-    .getByRole('link', { name: 'Start' })
-    .click();
+  await fuelOptions(page).getByRole('radio', { name: fuel, exact: true }).check();
 };
 
 export const storedFavoriteIds = (page: Page): Promise<unknown> =>

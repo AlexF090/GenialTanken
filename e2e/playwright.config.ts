@@ -8,6 +8,8 @@ const WEB_PORT = 4200;
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${String(WEB_PORT)}`;
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url));
 const isContinuousIntegration = Boolean(process.env.CI);
+/** Run on a phone only; the desktop project covers every other spec. */
+const MOBILE_ONLY_TESTS = '**/bottom-sheet.spec.ts';
 
 /** `ng serve` and `nest start` compile on a cold start, which can take a while. */
 const SERVER_START_TIMEOUT_IN_MILLISECONDS = 240_000;
@@ -24,7 +26,15 @@ export default defineConfig({
     baseURL,
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      // The bottom sheet only exists in compact viewports.
+      testIgnore: MOBILE_ONLY_TESTS,
+    },
+    { name: 'mobile', use: { ...devices['Pixel 7'] }, testMatch: MOBILE_ONLY_TESTS },
+  ],
   webServer: [
     {
       name: 'Mock upstream (French fuel price API)',

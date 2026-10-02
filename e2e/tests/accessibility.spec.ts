@@ -1,42 +1,111 @@
 import { AxeBuilder } from '@axe-core/playwright';
-import { expect, quaiDeLaRapeeStation, test } from '../fixtures.js';
+import type { Page } from '@playwright/test';
+import {
+  eiffelTower,
+  expect,
+  quaiDeLaRapeeStation,
+  resultSummary,
+  rueBailleulStation,
+  stationCard,
+  test,
+} from '../fixtures.js';
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 interface PageUnderTest {
   name: string;
   path: string;
-  readyText: string | RegExp;
+  /** Runs before the page loads, e.g. to seed the browser storage. */
+  prepare?: (page: Page) => Promise<void>;
+  /** Resolves once the page shows its loaded content. */
+  isReady: (page: Page) => Promise<void>;
 }
 
 const PAGES: PageUnderTest[] = [
-  { name: 'station list', path: '/', readyText: 'Sortiert nach: km' },
-  { name: 'map', path: '/map', readyText: 'Du bist hier!' },
-  { name: 'favorites', path: '/favorites', readyText: 'Keine Favoriten gespeichert' },
-  { name: 'settings', path: '/settings', readyText: 'Radius: 5 km' },
+  {
+    name: 'explore',
+    path: '/',
+    isReady: page => expect(resultSummary(page)).toContainText(eiffelTower.label),
+  },
+  {
+    name: 'empty favorites',
+    path: '/favorites',
+    isReady: page =>
+      expect(
+        page.getByRole('heading', { level: 2, name: 'Keine Favoriten gespeichert' })
+      ).toBeVisible(),
+  },
+  {
+    name: 'favorites',
+    path: '/favorites',
+    prepare: async page => {
+      await page.addInitScript(
+        identifiers => {
+          localStorage.setItem('favoriteIDs', JSON.stringify(identifiers));
+        },
+        [rueBailleulStation.id, quaiDeLaRapeeStation.id]
+      );
+    },
+    isReady: async page => {
+      await expect(stationCard(page, rueBailleulStation)).toContainText('2,540 €');
+      await expect(stationCard(page, quaiDeLaRapeeStation)).toContainText('kein Preis');
+    },
+  },
+  {
+    name: 'settings',
+    path: '/settings',
+    isReady: page => expect(page.getByRole('slider', { name: 'Radius: 5 km' })).toBeVisible(),
+  },
   {
     name: 'station detail',
     path: `/stations/${quaiDeLaRapeeStation.id}`,
-    readyText: 'Öffnungszeiten',
+    isReady: page => expect(page.getByRole('region', { name: 'Preise' })).toContainText('2,391 €'),
   },
-  { name: 'not found', path: '/does-not-exist', readyText: 'ERROR 404' },
+  {
+    name: 'not found',
+    path: '/does-not-exist',
+    isReady: page =>
+      expect(page.getByRole('heading', { level: 2, name: 'ERROR 404' })).toBeVisible(),
+  },
 ];
 
-test.describe('accessibility', () => {
+const expectNoViolations = async (page: Page): Promise<void> => {
+  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+
+  expect(
+    results.violations.map(violation => ({
+      rule: violation.id,
+      impact: violation.impact,
+      targets: violation.nodes.map(node => node.target.join(' ')),
+    }))
+  ).toEqual([]);
+};
+
+const checkEveryPage = (): void => {
   for (const pageUnderTest of PAGES) {
     test(`${pageUnderTest.name} page has no WCAG 2.2 AA violations`, async ({ page }) => {
+      await pageUnderTest.prepare?.(page);
       await page.goto(pageUnderTest.path);
-      await expect(page.getByText(pageUnderTest.readyText).first()).toBeVisible();
+      await pageUnderTest.isReady(page);
 
-      const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
-
-      expect(
-        results.violations.map(violation => ({
-          rule: violation.id,
-          impact: violation.impact,
-          targets: violation.nodes.map(node => node.target.join(' ')),
-        }))
-      ).toEqual([]);
+      await expectNoViolations(page);
     });
   }
+};
+
+test.describe('accessibility', () => {
+  checkEveryPage();
+});
+
+test.describe('accessibility in dark mode', () => {
+  // The default "System" preference follows the emulated operating system.
+  test.use({ colorScheme: 'dark' });
+
+  test('the system preference resolves to the dark color scheme', async ({ page }) => {
+    await page.goto('/');
+
+    await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'dark');
+  });
+
+  checkEveryPage();
 });
