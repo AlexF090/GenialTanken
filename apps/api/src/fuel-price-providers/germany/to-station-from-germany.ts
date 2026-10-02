@@ -3,7 +3,7 @@ import { toStationIdentifier } from '../station-identifier.js';
 import type { TankenTankenStation } from './tankentanken-station.schema.js';
 
 export const toStationFromGermany = (station: TankenTankenStation): Station => {
-  const { id, name, brand, address, fuelPrices, isOpen, openingTimes, distance } = station;
+  const { id, name, brand, address, fuelPrices, isOpen, openingTimes } = station;
 
   return {
     id: toStationIdentifier('DE', id),
@@ -21,6 +21,6 @@ export const toStationFromGermany = (station: TankenTankenStation): Station => {
     },
     isOpen,
     openingTimes,
-    distanceInMeters: distance === undefined ? null : Math.round(distance),
+    distanceInMeters: null,
   };
 };

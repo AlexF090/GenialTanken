@@ -38,6 +38,5 @@ export const toStationFromFrance = (record: FrenchRecord): Station => ({
   },
   isOpen: null,
   openingTimes: parseFrenchOpeningHours(record.horaires),
-  distanceInMeters:
-    record.distance_in_meters === undefined ? null : Math.round(record.distance_in_meters),
+  distanceInMeters: null,
 });

@@ -3,7 +3,10 @@ import type { CountryCode, Station, StationsQuery } from '@genialtanken/contract
 /** A source of fuel prices for one country. */
 export interface FuelPriceProvider {
   readonly country: CountryCode;
-  /** Stations around the position with `distanceInMeters` set. */
+  /**
+   * Stations in about the requested area. `distanceInMeters` is left `null`: the caller computes
+   * it from the exact position, the same way for every provider.
+   */
   findStationsAround(query: StationsQuery): Promise<Station[]>;
   /** `null` when the provider does not know the station. */
   findStationById(localIdentifier: string): Promise<Station | null>;

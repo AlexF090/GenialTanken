@@ -14,7 +14,6 @@ const frenchRecord: FrenchRecord = {
   sp98_prix: 1.869,
   e85_prix: 0.899,
   gplc_prix: 0.999,
-  distance_in_meters: 1499.5,
 };
 
 describe('toStationFromFrance', () => {
@@ -51,19 +50,13 @@ describe('toStationFromFrance', () => {
         sunday: [],
         publicHoliday: [],
       },
-      distanceInMeters: 1500,
+      distanceInMeters: null,
     });
   });
 
-  it('reports an unknown distance and missing prices as null', () => {
-    const station = toStationFromFrance({
-      ...frenchRecord,
-      distance_in_meters: undefined,
-      e85_prix: undefined,
-      gplc_prix: 0,
-    });
+  it('reports missing prices as null', () => {
+    const station = toStationFromFrance({ ...frenchRecord, e85_prix: undefined, gplc_prix: 0 });
 
-    expect(station.distanceInMeters).toBeNull();
     expect(station.pricesInEuro.e85).toBeNull();
     expect(station.pricesInEuro.lpg).toBeNull();
   });

@@ -33,7 +33,6 @@ const tankenTankenStation: TankenTankenStation = {
   },
   isOpen: true,
   openingTimes: OPENING_TIMES,
-  distance: 2475.4,
 };
 
 describe('toStationFromGermany', () => {
@@ -54,17 +53,7 @@ describe('toStationFromGermany', () => {
       pricesInEuro: { e5: 1.899, e10: 1.839, superPlus: null, diesel: null, e85: null, lpg: null },
       isOpen: true,
       openingTimes: OPENING_TIMES,
-      distanceInMeters: 2475,
+      distanceInMeters: null,
     });
-  });
-
-  it('reports an unknown distance as null', () => {
-    const { distance: _distance, ...detailStation } = tankenTankenStation;
-
-    expect(toStationFromGermany(detailStation).distanceInMeters).toBeNull();
-  });
-
-  it('keeps a distance of zero meters', () => {
-    expect(toStationFromGermany({ ...tankenTankenStation, distance: 0 }).distanceInMeters).toBe(0);
   });
 });

@@ -1,6 +1,7 @@
 import type { Station, StationsQuery } from '@genialtanken/contracts';
 import { BadGatewayException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ERROR_MESSAGES } from '../common/error-messages.js';
+import { distanceInMeters } from '../fuel-price-providers/distance-in-meters.js';
 import {
   FUEL_PRICE_PROVIDERS,
   FuelPriceProviderError,
@@ -13,9 +14,12 @@ import {
 
 export const MAXIMUM_STATIONS_PER_RESPONSE = 100;
 
-const byDistance = (first: Station, second: Station): number =>
-  (first.distanceInMeters ?? Number.POSITIVE_INFINITY) -
-  (second.distanceInMeters ?? Number.POSITIVE_INFINITY);
+const METERS_PER_KILOMETER = 1000;
+
+interface StationAtDistance {
+  station: Station;
+  exactDistanceInMeters: number;
+}
 
 /** Combines the enabled fuel price providers into one country-independent station list. */
 @Injectable()
@@ -26,7 +30,10 @@ export class StationsService {
     @Inject(FUEL_PRICE_PROVIDERS) private readonly providers: readonly FuelPriceProvider[]
   ) {}
 
-  /** Nearest stations with a price for the requested fuel; partial when some providers fail. */
+  /**
+   * Nearest stations within the radius around the exact position with a price for the requested
+   * fuel; partial when some providers fail.
+   */
   async findStationsAround(query: StationsQuery): Promise<Station[]> {
     const results = await Promise.allSettled(
       this.providers.map(provider => provider.findStationsAround(query))
@@ -46,10 +53,21 @@ export class StationsService {
       throw new BadGatewayException(ERROR_MESSAGES.upstreamUnavailable);
     }
 
+    const position = { latitude: query.latitude, longitude: query.longitude };
+    const radiusInMeters = query.radiusInKilometers * METERS_PER_KILOMETER;
     return stations
       .filter(station => station.pricesInEuro[query.fuel] !== null)
-      .sort(byDistance)
-      .slice(0, MAXIMUM_STATIONS_PER_RESPONSE);
+      .map((station): StationAtDistance => ({
+        station,
+        exactDistanceInMeters: distanceInMeters(position, station.address),
+      }))
+      .filter(({ exactDistanceInMeters }) => exactDistanceInMeters <= radiusInMeters)
+      .sort((first, second) => first.exactDistanceInMeters - second.exactDistanceInMeters)
+      .slice(0, MAXIMUM_STATIONS_PER_RESPONSE)
+      .map(({ station, exactDistanceInMeters }) => ({
+        ...station,
+        distanceInMeters: Math.round(exactDistanceInMeters),
+      }));
   }
 
   /** Expects an identifier matching `STATION_IDENTIFIER_PATTERN`. */

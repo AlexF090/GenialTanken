@@ -57,7 +57,6 @@ const rapeeRecord = {
   horaires_automate_24_24: 'Non',
   departement: 'Paris',
   region: 'Île-de-France',
-  distance_in_meters: 2225.2944934935335,
 };
 
 const automateRecord = {
@@ -75,7 +74,6 @@ const automateRecord = {
   sp98_prix: null,
   sp95_prix: 2.149,
   horaires_automate_24_24: 'Oui',
-  distance_in_meters: 4100.5,
 };
 
 const withoutE10Record = {
@@ -83,20 +81,28 @@ const withoutE10Record = {
   id: WITHOUT_E10_RECORD_ID,
   cp: '75011',
   adresse: '1 Boulevard Voltaire',
+  geom: { lon: 2.38, lat: 48.86 },
   horaires: null,
   e10_prix: null,
-  distance_in_meters: 4300,
 };
 
-/** Records as returned by the French open data API, nearest first. */
-export const frenchRecords = [rapeeRecord, automateRecord, withoutE10Record];
+export const OUTSIDE_RADIUS_RECORD_ID = 75018003;
+
+/** About 5004 m north of the test position, just outside a 5 km radius. */
+const outsideRadiusRecord = {
+  ...rapeeRecord,
+  id: OUTSIDE_RADIUS_RECORD_ID,
+  cp: '75018',
+  adresse: '2 Rue Ordener',
+  geom: { lon: 2.3522, lat: 48.9016 },
+};
+
+/** Records as returned by the French open data API. */
+export const frenchRecords = [rapeeRecord, automateRecord, withoutE10Record, outsideRadiusRecord];
 
 export const frenchResponse = (records: unknown[]) => ({
   total_count: records.length,
   results: records,
 });
 
-const { distance_in_meters: _distanceInMeters, ...rapeeRecordWithoutDistance } = rapeeRecord;
-
-/** Detail responses carry no distance. */
-export const rapeeDetailRecord = rapeeRecordWithoutDistance;
+export const rapeeDetailRecord = rapeeRecord;

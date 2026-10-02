@@ -20,8 +20,6 @@ export const frenchRecordSchema = z.object({
   sp98_prix: priceSchema,
   e85_prix: priceSchema,
   gplc_prix: priceSchema,
-  /** Present when the request selects `distance(...) as distance_in_meters`. */
-  distance_in_meters: z.number().nonnegative().optional(),
 });
 
 export type FrenchRecord = z.infer<typeof frenchRecordSchema>;

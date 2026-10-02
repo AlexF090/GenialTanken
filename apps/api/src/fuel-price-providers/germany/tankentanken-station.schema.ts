@@ -44,8 +44,6 @@ export const tankenTankenStationSchema = z.object({
     sunday: z.array(openingIntervalSchema),
     publicHoliday: z.array(openingIntervalSchema),
   }),
-  /** Distance in meters; only present in list responses. */
-  distance: z.number().nonnegative().optional(),
 });
 
 export const tankenTankenStationsSchema = z.array(tankenTankenStationSchema);

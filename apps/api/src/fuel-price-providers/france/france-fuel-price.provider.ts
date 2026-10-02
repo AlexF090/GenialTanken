@@ -11,7 +11,10 @@ import { FRENCH_PRICE_FIELDS, toStationFromFrance } from './to-station-from-fran
 const RECORDS_PATH =
   '/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records';
 const MAXIMUM_RECORDS_PER_REQUEST = 100;
-/** About 100 m; rounding lets nearby users share cached responses (quota: 50,000 per day). */
+/**
+ * About 100 m; rounding lets nearby users share cached responses (quota: 50,000 per day).
+ * Exact distances are computed afterwards from the unrounded position.
+ */
 const COORDINATE_DECIMALS = 3;
 const NUMERIC_IDENTIFIER_PATTERN = /^\d+$/;
 
@@ -40,7 +43,6 @@ export class FranceFuelPriceProvider implements FuelPriceProvider {
     const records = await this.findRecords({
       where: `within_distance(geom, ${point}, ${String(radiusInKilometers)}km) and ${FRENCH_PRICE_FIELDS[fuel]} is not null`,
       order_by: `distance(geom, ${point})`,
-      select: `*, distance(geom, ${point}) as distance_in_meters`,
       limit: String(MAXIMUM_RECORDS_PER_REQUEST),
     });
     return records.map(toStationFromFrance);

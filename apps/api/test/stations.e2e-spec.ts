@@ -9,6 +9,7 @@ import {
   AUTOMATE_RECORD_ID,
   FRENCH_RECORDS_PATH,
   frenchRecords,
+  OUTSIDE_RADIUS_RECORD_ID,
   frenchResponse,
   RAPEE_RECORD_ID,
   rapeeDetailRecord,
@@ -26,6 +27,7 @@ const UNAVAILABLE_BODY = { statusCode: 502, message: 'The fuel price service is 
 const NOT_FOUND_BODY = { statusCode: 404, message: 'The station was not found.' };
 
 const PARIS = { latitude: '48.8566', longitude: '2.3522' };
+const KASSEL = { latitude: '51.3127', longitude: '9.4797' };
 
 const REGULAR_DAY = [{ opening: '05:00', closing: '23:00' }];
 const ALL_DAY = [{ opening: '00:00', closing: '24:00' }];
@@ -88,8 +90,15 @@ const EXPECTED_ARAL_STATION = {
     sunday: [],
     publicHoliday: [],
   },
-  distanceInMeters: 850,
+  distanceInMeters: 721,
 };
+
+/** The Shell station moved to about 930 m from the Paris test position. */
+const germanStationsNearParis = germanStations.map(station =>
+  station.id === SHELL_STATION_ID
+    ? { ...station, address: { ...station.address, latitude: 48.85, longitude: 2.36 } }
+    : station
+);
 
 const searchParametersOf = (recordedRequest: RecordedRequest | undefined): URLSearchParams =>
   new URL(recordedRequest?.url ?? '/', 'http://fake-upstream').searchParams;
@@ -162,8 +171,26 @@ describe('GET /api/stations with French open data only', () => {
           sunday: ALL_DAY,
           publicHoliday: [],
         },
-        distanceInMeters: 4101,
+        distanceInMeters: 4242,
       },
+    ]);
+  });
+
+  it('includes stations up to the exact requested radius', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, { status: 200, body: frenchResponse(frenchRecords) });
+    const api = await startApplication();
+
+    const response = await api
+      .get('/api/stations')
+      .query({ ...PARIS, radiusInKilometers: '5.01', fuel: 'e10' })
+      .expect(200);
+
+    expect(
+      stationsSchema.parse(response.body).map(({ id, distanceInMeters }) => [id, distanceInMeters])
+    ).toEqual([
+      ['fr-75012010', 2225],
+      ['fr-75015001', 4242],
+      [`fr-${String(OUTSIDE_RADIUS_RECORD_ID)}`, 5004],
     ]);
   });
 
@@ -182,9 +209,6 @@ describe('GET /api/stations with French open data only', () => {
       "within_distance(geom, geom'POINT(2.352 48.857)', 7.5km) and sp98_prix is not null"
     );
     expect(parameters.get('order_by')).toBe("distance(geom, geom'POINT(2.352 48.857)')");
-    expect(parameters.get('select')).toBe(
-      "*, distance(geom, geom'POINT(2.352 48.857)') as distance_in_meters"
-    );
     expect(parameters.get('limit')).toBe('100');
   });
 
@@ -288,7 +312,7 @@ describe('GET /api/stations with French open data only', () => {
 describe('GET /api/stations with French and German data', () => {
   it('merges both providers sorted by distance', async () => {
     france.respondTo(FRENCH_RECORDS_PATH, { status: 200, body: frenchResponse(frenchRecords) });
-    germany.respondTo(GERMAN_STATIONS_PATH, { status: 200, body: germanStations });
+    germany.respondTo(GERMAN_STATIONS_PATH, { status: 200, body: germanStationsNearParis });
     const api = await startWithGermany();
 
     const response = await api
@@ -296,7 +320,13 @@ describe('GET /api/stations with French and German data', () => {
       .query({ ...PARIS, fuel: 'e10' })
       .expect(200);
 
-    expect(idsOf(response.body)).toEqual(['fr-75012010', `de-${SHELL_STATION_ID}`, 'fr-75015001']);
+    expect(
+      stationsSchema.parse(response.body).map(({ id, distanceInMeters }) => [id, distanceInMeters])
+    ).toEqual([
+      [`de-${SHELL_STATION_ID}`, 930],
+      ['fr-75012010', 2225],
+      ['fr-75015001', 4242],
+    ]);
   });
 
   it('maps German stations', async () => {
@@ -306,7 +336,7 @@ describe('GET /api/stations with French and German data', () => {
 
     const response = await api
       .get('/api/stations')
-      .query({ ...PARIS, fuel: 'e5' })
+      .query({ ...KASSEL, fuel: 'e5' })
       .expect(200);
 
     expect(stationsSchema.parse(response.body)[0]).toEqual(EXPECTED_ARAL_STATION);
@@ -339,7 +369,7 @@ describe('GET /api/stations with French and German data', () => {
       .expect(200);
 
     expect(germany.requests).toHaveLength(0);
-    expect(idsOf(response.body)).toEqual(['fr-75012010', 'fr-75011002']);
+    expect(idsOf(response.body)).toEqual(['fr-75011002', 'fr-75012010']);
   });
 
   it('returns the French stations when the German API fails', async () => {
@@ -357,7 +387,7 @@ describe('GET /api/stations with French and German data', () => {
 
   it('returns the German stations when the French API fails', async () => {
     france.respondTo(FRENCH_RECORDS_PATH, { status: 500 });
-    germany.respondTo(GERMAN_STATIONS_PATH, { status: 200, body: germanStations });
+    germany.respondTo(GERMAN_STATIONS_PATH, { status: 200, body: germanStationsNearParis });
     const api = await startWithGermany();
 
     const response = await api
@@ -379,15 +409,21 @@ describe('GET /api/stations with French and German data', () => {
   });
 
   it('caps the response at 100 stations', async () => {
+    // Stations line up due north, alternating German (even) and French (odd) steps of 0.001°
+    const latitudeAt = (step: number) => 48.8566 + step * 0.001;
     const manyFrenchRecords = Array.from({ length: 60 }, (_, index) => ({
       ...frenchRecords[0],
       id: 1000 + index,
-      distance_in_meters: 1001 + index * 2,
+      geom: { lon: 2.3522, lat: latitudeAt(index * 2 + 1) },
     }));
+    const [germanTemplate] = germanStations;
+    if (germanTemplate === undefined) {
+      throw new Error('The German station fixture is empty.');
+    }
     const manyGermanStations = Array.from({ length: 60 }, (_, index) => ({
-      ...germanStations[0],
+      ...germanTemplate,
       id: `00000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
-      distance: 505 + index * 10,
+      address: { ...germanTemplate.address, latitude: latitudeAt(index * 2), longitude: 2.3522 },
     }));
     france.respondTo(FRENCH_RECORDS_PATH, {
       status: 200,
@@ -398,13 +434,13 @@ describe('GET /api/stations with French and German data', () => {
 
     const response = await api
       .get('/api/stations')
-      .query({ ...PARIS, fuel: 'diesel' })
+      .query({ ...PARIS, radiusInKilometers: '25', fuel: 'diesel' })
       .expect(200);
 
     const ids = idsOf(response.body);
     expect(ids).toHaveLength(100);
     expect(ids[0]).toBe('de-00000000-0000-4000-8000-000000000000');
-    expect(ids.at(-1)).toBe('fr-1041');
+    expect(ids.at(-1)).toBe('fr-1049');
   });
 
   it('caches both providers', async () => {

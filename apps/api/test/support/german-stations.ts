@@ -17,7 +17,10 @@ export const SHELL_STATION_ID = '33333333-3333-4333-8333-333333333333';
 
 export const GERMAN_STATIONS_PATH = '/gas-stations';
 
-/** tankentanken list response in upstream order (by distance), with fields the API drops. */
+/**
+ * tankentanken list response around Kassel (51.3127, 9.4797). The upstream `distance` values are
+ * deliberately off: the API computes distances itself from the exact position.
+ */
 export const germanStations = [
   {
     id: ARAL_STATION_ID,

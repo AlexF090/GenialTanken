@@ -12,8 +12,6 @@ COPY packages/contracts/package.json packages/contracts/
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY e2e/package.json e2e/
-COPY client/package.json client/
-COPY server/package.json server/
 # Scripts are skipped: the contracts `prepare` build needs sources that are copied later
 RUN pnpm install --frozen-lockfile --filter api... --ignore-scripts
 
