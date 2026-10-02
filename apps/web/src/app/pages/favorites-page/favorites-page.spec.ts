@@ -67,23 +67,90 @@ describe('FavoritesPage', () => {
     expect(context.storage.getItem('favoriteIDs')).toBe('[]');
   });
 
-  it('drops favorites the API no longer knows and says so', async () => {
+  it('keeps favorites the API does not know right now and says so', async () => {
     context = configurePageTest({
-      storage: new FakeStorage({ favoriteIDs: '["fr-75001001","fr-gone"]' }),
+      storage: new FakeStorage({ favoriteIDs: '["fr-75001001","de-unavailable"]' }),
     });
     const { element } = await renderComponent(FavoritesPage);
 
     context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
     context.httpTesting
-      .expectOne('/api/stations/fr-gone')
+      .expectOne('/api/stations/de-unavailable')
       .flush({ statusCode: 404, message: 'Station not found' }, NOT_FOUND);
     await context.settle();
 
     expect(stationTitles(element)).toEqual(['TotalEnergies']);
-    expect(textOf(element.querySelector('[role="status"].message'))).toBe(
-      'Eine gespeicherte Tankstelle existiert nicht mehr und wurde aus den Favoriten entfernt.'
+    expect(textOf(element.querySelector('main p[role="status"]'))).toBe(
+      'Ein Favorit ist gerade nicht verfügbar.'
     );
+    expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75001001","de-unavailable"]');
+  });
+
+  it('removes unavailable favorites only when the user asks for it', async () => {
+    context = configurePageTest({
+      storage: new FakeStorage({ favoriteIDs: '["de-first","fr-75001001","de-second"]' }),
+    });
+    const { element } = await renderComponent(FavoritesPage);
+
+    context.httpTesting
+      .expectOne('/api/stations/de-first')
+      .flush({ statusCode: 404, message: 'Station not found' }, NOT_FOUND);
+    context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
+    context.httpTesting
+      .expectOne('/api/stations/de-second')
+      .flush({ statusCode: 404, message: 'Station not found' }, NOT_FOUND);
+    await context.settle();
+
+    expect(textOf(element.querySelector('main p[role="status"]'))).toBe(
+      '2 Favoriten sind gerade nicht verfügbar.'
+    );
+
+    getButton(element, 'Nicht verfügbare Favoriten entfernen').click();
+    await context.settle();
+
     expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75001001"]');
+    expect(element.querySelector('main p[role="status"]')).toBeNull();
+    expect(stationTitles(element)).toEqual(['TotalEnergies']);
+    expect(textOf(document.activeElement)).toBe('Gespeicherte Tankstellen');
+  });
+
+  it('moves the focus to the empty state when the last favorites are removed', async () => {
+    context = configurePageTest({
+      storage: new FakeStorage({ favoriteIDs: '["de-first"]' }),
+    });
+    const { element } = await renderComponent(FavoritesPage);
+
+    context.httpTesting
+      .expectOne('/api/stations/de-first')
+      .flush({ statusCode: 404, message: 'Station not found' }, NOT_FOUND);
+    await context.settle();
+
+    getButton(element, 'Nicht verfügbare Favoriten entfernen').click();
+    await context.settle();
+
+    expect(textOf(document.activeElement)).toBe('Keine Favoriten gespeichert');
+  });
+
+  it('lists the loaded favorites and reports the ones that failed to load', async () => {
+    context = configurePageTest({
+      storage: new FakeStorage({ favoriteIDs: '["fr-75001001","fr-75005002"]' }),
+    });
+    const { element } = await renderComponent(FavoritesPage);
+
+    context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
+    context.httpTesting
+      .expectOne('/api/stations/fr-75005002')
+      .flush(
+        { statusCode: 502, message: 'Upstream unavailable' },
+        { status: 502, statusText: 'Bad Gateway' }
+      );
+    await context.settle();
+
+    expect(stationTitles(element)).toEqual(['TotalEnergies']);
+    expect(textOf(element.querySelector('[role="alert"]'))).toBe(
+      'Ein Favorit konnte nicht geladen werden. Bitte versuche es später erneut.'
+    );
+    expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75001001","fr-75005002"]');
   });
 
   it('reports an unavailable API', async () => {
@@ -101,5 +168,6 @@ describe('FavoritesPage', () => {
     expect(textOf(element.querySelector('[role="alert"]'))).toBe(
       'Die Preisdaten sind gerade nicht erreichbar. Bitte versuche es später erneut.'
     );
+    expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75001001"]');
   });
 });

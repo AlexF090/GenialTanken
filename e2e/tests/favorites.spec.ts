@@ -86,7 +86,7 @@ test.describe('favorites', () => {
     await expect(stationCard(page, quaiDeLaRapeeStation)).toBeVisible();
   });
 
-  test('favorites the API no longer knows are removed with a notice', async ({ page }) => {
+  test('keeps favorites the API does not know until the user removes them', async ({ page }) => {
     await page.goto('/settings');
     await page.evaluate(() => {
       localStorage.setItem('favoriteIDs', JSON.stringify(['fr-99999999']));
@@ -94,12 +94,21 @@ test.describe('favorites', () => {
 
     await page.goto('/favorites');
 
-    await expect(page.getByRole('status').filter({ hasText: 'existiert nicht mehr' })).toHaveText(
-      'Eine gespeicherte Tankstelle existiert nicht mehr und wurde aus den Favoriten entfernt.'
+    await expect(page.getByRole('status').filter({ hasText: 'nicht verfügbar' })).toHaveText(
+      'Ein Favorit ist gerade nicht verfügbar.'
     );
     await expect(
       page.getByRole('heading', { level: 2, name: 'Keine Favoriten gespeichert' })
-    ).toBeVisible();
+    ).toBeHidden();
+    expect(await storedFavoriteIds(page)).toEqual(['fr-99999999']);
+
+    await page.getByRole('button', { name: 'Nicht verfügbare Favoriten entfernen' }).click();
+
+    const emptyStateHeading = page.getByRole('heading', {
+      level: 2,
+      name: 'Keine Favoriten gespeichert',
+    });
+    await expect(emptyStateHeading).toBeFocused();
     await expect.poll(() => storedFavoriteIds(page)).toEqual([]);
   });
 });
