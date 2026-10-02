@@ -66,10 +66,11 @@ Cross-cutting API pieces:
 
 - `src/app/core/` — framework-light state and services: signal stores (`NearbyStationsStore`, `SettingsStore`, `FavoritesStore`), `StationsApi` (validates every response with the contracts schemas and throws `UnexpectedResponseError` on contract violations), geolocation, browser storage.
 - `src/app/pages/` — routed container components that inject stores.
-- `src/app/ui/` — presentational components (inputs/outputs only).
+- `src/app/ui/` — presentational components (inputs/outputs only). Reusable controls: `SelectMenu` (iOS-style pull-down menu for single-choice options; top layer via Popover API where available, its own dismissal logic so it behaves the same in jsdom) and `PlaceSearchField` (ARIA 1.2 combobox with a `placeSearchAccessory` slot).
+- Explore page UX follows Apple Maps: a floating search field (place search through `PlacesApi`, debounced with Angular's `debounced()`, radius menu inside it), a round locate button, the fuel menu in the sheet header, and "In diesem Bereich suchen" once the user drags the map away from the search center (`StationsMap.visibleCenterChanged` → `shouldOfferAreaSearch` → `SearchCenterStore.useMapArea`, source `map-area`). A chosen price tag is always centered in the part of the map not covered by overlays (`centerForVisibleArea`), also while the sheet moves.
 - Favorites persist through the abstract `FavoritesRepository` (localStorage implementation today; ROADMAP phase 2 swaps in an API-backed one).
 - The app always calls same-origin `/api` (dev: `proxy.conf.json`; production: Pages Function), so no API URL is baked into the build.
-- Styling uses design tokens in `src/styles/tokens.scss`.
+- Styling uses design tokens in `src/styles/tokens.scss`, modeled on Apple's Human Interface Guidelines (system font, iOS system colors with recorded contrast ratios, translucent materials). Keep the `theme-color` metas in `index.html` and the manifest colors in sync with `--color-chrome`/`--color-canvas`.
 - Component selectors use the `app` prefix; templates are linted with angular-eslint accessibility rules. Shared test helpers (fake geolocation/storage, station fixtures, `render-page.ts`) are in `src/testing/`.
 - `NG_APP_MAPBOX_ACCESS_TOKEN` is injected at build time via `--define`; without it the map falls back to OpenStreetMap tiles (which e2e relies on).
 
