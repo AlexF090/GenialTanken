@@ -55,6 +55,12 @@ const toPaddingOptions = (
   ],
 });
 
+const isSameViewportPadding = (first: ViewportPadding, second: ViewportPadding): boolean =>
+  first.top === second.top &&
+  first.right === second.right &&
+  first.bottom === second.bottom &&
+  first.left === second.left;
+
 const searchAreaBounds = (center: SearchCenter, radiusInKilometers: number): L.LatLngBounds =>
   L.latLng(center.latitude, center.longitude).toBounds(
     2 * radiusInKilometers * METERS_PER_KILOMETER
@@ -113,6 +119,8 @@ export class StationsMap {
   });
   private revealedStationId: string | undefined;
   private markerReveal: MarkerReveal | undefined;
+  /** Set once the user drags the map; overlay changes then no longer move the view. */
+  private hasUserMovedMap = false;
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -131,8 +139,38 @@ export class StationsMap {
         .zoom({ position: 'topright', zoomInTitle: 'Hineinzoomen', zoomOutTitle: 'Herauszoomen' })
         .addTo(map);
       this.markerClusterGroup.addTo(map);
+      map.on('dragstart', () => {
+        this.hasUserMovedMap = true;
+      });
       this.observeHostSize(map, destroyRef);
       this.map.set(map);
+    });
+
+    // The first fit happens before overlays such as the bottom sheet report their size.
+    let previousViewportPadding: ViewportPadding | undefined;
+    effect(() => {
+      const map = this.map();
+      const viewportPadding = this.viewportPadding();
+      if (map === undefined) {
+        return;
+      }
+      const hasPaddingChanged =
+        previousViewportPadding !== undefined &&
+        !isSameViewportPadding(previousViewportPadding, viewportPadding);
+      previousViewportPadding = viewportPadding;
+      if (
+        !hasPaddingChanged ||
+        this.hasUserMovedMap ||
+        untracked(() => this.selectedStationId()) !== undefined
+      ) {
+        return;
+      }
+      untracked(() => {
+        map.fitBounds(searchAreaBounds(this.center(), this.radiusInKilometers()), {
+          ...toPaddingOptions(viewportPadding),
+          animate: !this.prefersReducedMotion(),
+        });
+      });
     });
 
     effect(onCleanup => {
@@ -153,6 +191,8 @@ export class StationsMap {
       const radiusInKilometers = this.radiusInKilometers();
       const circle = createRadiusCircle(center, radiusInKilometers).addTo(map);
       const centerMarker = createCenterMarker(center).addTo(map);
+      // A new search area is a fresh start, even after the user moved the map.
+      this.hasUserMovedMap = false;
       untracked(() => {
         map.fitBounds(searchAreaBounds(center, radiusInKilometers), {
           ...toPaddingOptions(this.viewportPadding()),

@@ -8,6 +8,7 @@ import {
   unbrandedStation,
 } from '../../../testing/station-fixtures';
 import { accessibleTextOf, textOf } from '../../../testing/render-page';
+import { L } from '../map/leaflet-layers';
 import { StationsMap } from './stations-map';
 
 interface RenderOptions {
@@ -161,5 +162,45 @@ describe('StationsMap', () => {
     await fixture.whenStable();
 
     expect(textOf(element.querySelector('.leaflet-tooltip'))).toBe('Du bist hier!');
+  });
+
+  describe('when the overlays covering the map change', () => {
+    const coveredByBottomSheet = { top: 0, right: 0, bottom: 400, left: 0 };
+
+    it('fits the search area into the part of the map that stays visible', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture } = await render([]);
+      fitBounds.mockClear();
+
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+
+      expect(fitBounds).toHaveBeenCalledOnce();
+      expect(fitBounds.mock.calls[0]?.[1]).toMatchObject({ paddingBottomRight: [24, 424] });
+    });
+
+    it('keeps the view the user moved the map to', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture } = await render([]);
+      const map = fitBounds.mock.contexts[0] as L.Map;
+      fitBounds.mockClear();
+
+      map.fire('dragstart');
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+
+      expect(fitBounds).not.toHaveBeenCalled();
+    });
+
+    it('keeps the view on the selected station', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture } = await render([totalStation], { selectedStationId: totalStation.id });
+      fitBounds.mockClear();
+
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+
+      expect(fitBounds).not.toHaveBeenCalled();
+    });
   });
 });
