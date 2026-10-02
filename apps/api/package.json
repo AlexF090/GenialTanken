@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "0.0.1",
+  "version": "2.0.0",
   "description": "Backend-for-frontend for GenialTanken in front of the tankentanken API",
   "private": true,
   "license": "UNLICENSED",

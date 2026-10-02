@@ -1,6 +1,6 @@
 {
   "name": "@genialtanken/contracts",
-  "version": "0.0.0",
+  "version": "2.0.0",
   "private": true,
   "description": "Shared zod schemas and types for the GenialTanken web app and API",
   "type": "module",
