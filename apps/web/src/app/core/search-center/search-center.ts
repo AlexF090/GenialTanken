@@ -2,7 +2,7 @@ import { isSamePosition } from '../geolocation/coordinates';
 import type { Coordinates } from '../geolocation/coordinates';
 
 /** Where the current search center came from. */
-export type SearchCenterSource = 'default' | 'place' | 'own-position';
+export type SearchCenterSource = 'default' | 'place' | 'own-position' | 'map-area';
 
 /** Point the nearby stations are searched around, with a label to show to the user. */
 export interface SearchCenter extends Coordinates {

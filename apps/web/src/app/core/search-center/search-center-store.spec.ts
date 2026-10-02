@@ -105,6 +105,27 @@ describe('SearchCenterStore', () => {
     expect(store.center().label).toBe('Place de la Bastille');
   });
 
+  it('moves to the area the map was moved to', () => {
+    store.useMapArea({ latitude: 48.87, longitude: 2.33 });
+
+    expect(store.center()).toEqual({
+      latitude: 48.87,
+      longitude: 2.33,
+      label: 'Kartenmitte',
+      source: 'map-area',
+    });
+  });
+
+  it('lets a map area chosen while locating win over the late position', async () => {
+    const located = store.useOwnPosition();
+    store.useMapArea({ latitude: 48.87, longitude: 2.33 });
+
+    geolocation.resolvePosition(51.3127, 9.4797);
+    await located;
+
+    expect(store.center().source).toBe('map-area');
+  });
+
   it('returns to the Eiffel Tower on reset', () => {
     store.usePlace(kasselPlace);
 

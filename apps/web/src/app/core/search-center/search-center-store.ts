@@ -1,10 +1,12 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import type { Place } from '@genialtanken/contracts';
+import type { Coordinates } from '../geolocation/coordinates';
 import { GeolocationService } from '../geolocation/geolocation-service';
 import { DEFAULT_SEARCH_CENTER, isSameSearchCenter } from './search-center';
 import type { SearchCenter } from './search-center';
 
 const OWN_POSITION_LABEL = 'Dein Standort';
+const MAP_AREA_LABEL = 'Kartenmitte';
 
 /**
  * Center of the station search. Every visit starts at {@link DEFAULT_SEARCH_CENTER}; the user's
@@ -60,6 +62,17 @@ export class SearchCenterStore {
       longitude: place.longitude,
       label: place.name,
       source: 'place',
+    });
+  }
+
+  /** Searches around a point the user moved the map to ("In diesem Bereich suchen"). */
+  useMapArea(coordinates: Coordinates): void {
+    this.changeCenter();
+    this.state.set({
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
+      label: MAP_AREA_LABEL,
+      source: 'map-area',
     });
   }
 
