@@ -206,6 +206,17 @@ describe('createCenterMarker', () => {
       })
     ).toBe('Du bist hier!');
   });
+
+  it('leaves the center of a moved map area unlabeled', () => {
+    expect(
+      tooltipText({
+        latitude: 48.86,
+        longitude: 2.34,
+        label: 'Kartenmitte',
+        source: 'map-area',
+      })
+    ).toBe('');
+  });
 });
 
 describe('createTileLayer', () => {

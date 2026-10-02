@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import type { Station } from '@genialtanken/contracts';
 import { DEFAULT_SEARCH_CENTER } from '../../core/search-center/search-center';
+import type { Coordinates } from '../../core/geolocation/coordinates';
 import type { SearchCenter } from '../../core/search-center/search-center';
 import {
   carrefourStation,
@@ -185,7 +186,11 @@ describe('StationsMap', () => {
       await fixture.whenStable();
 
       const map = panTo.mock.contexts.at(-1) as L.Map;
-      const target = L.latLng(panTo.mock.calls.at(-1)?.[0] as L.LatLngExpression);
+      const panTarget = panTo.mock.calls.at(-1)?.[0];
+      if (panTarget === undefined) {
+        throw new Error('The map did not pan');
+      }
+      const target = L.latLng(panTarget);
       // Visible area: 800 × 200 px above the sheet, so the tag sits 200 px above the center.
       expect(offsetFromPanTarget(map, target, totalPosition)).toEqual(L.point(0, -200));
     });
@@ -242,6 +247,46 @@ describe('StationsMap', () => {
 
       expect(offsetFromPanTarget(map, noOverlay, point)).toEqual(L.point(0, 0));
       expect(offsetFromPanTarget(map, withOverlays, point)).toEqual(L.point(50, -180));
+    });
+  });
+
+  describe('after the user moved the map', () => {
+    it('reports the center of the visible map once the user moved it', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture } = await render([]);
+      const map = fitBounds.mock.contexts[0] as L.Map;
+      const visibleCenters: Coordinates[] = [];
+      fixture.componentInstance.visibleCenterChanged.subscribe(center =>
+        visibleCenters.push(center)
+      );
+
+      map.fire('moveend');
+      expect(visibleCenters).toEqual([]);
+
+      map.fire('dragstart');
+      map.setView([48.87, 2.33], map.getZoom(), { animate: false });
+
+      expect(visibleCenters.at(-1)?.latitude).toBeCloseTo(48.87, 3);
+      expect(visibleCenters.at(-1)?.longitude).toBeCloseTo(2.33, 3);
+    });
+
+    it('stays where it is when the search moves to the visible area', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture } = await render([]);
+      fitBounds.mockClear();
+
+      fixture.componentRef.setInput('center', {
+        latitude: 48.87,
+        longitude: 2.33,
+        label: 'Kartenmitte',
+        source: 'map-area',
+      });
+      await fixture.whenStable();
+      expect(fitBounds).not.toHaveBeenCalled();
+
+      fixture.componentRef.setInput('radiusInKilometers', 10);
+      await fixture.whenStable();
+      expect(fitBounds).toHaveBeenCalledOnce();
     });
   });
 

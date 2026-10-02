@@ -14,6 +14,7 @@ import {
 } from '@angular/core';
 import type { FuelType, Station } from '@genialtanken/contracts';
 import { injectMediaQueryMatches } from '../../core/layout/media-query';
+import type { Coordinates } from '../../core/geolocation/coordinates';
 import type { SearchCenter } from '../../core/search-center/search-center';
 import { priceInEuro, stationTitle } from '../../core/stations/station-display';
 import type { ResolvedColorScheme } from '../../core/theme/color-scheme-controller';
@@ -55,6 +56,10 @@ const toPaddingOptions = (
   ],
 });
 
+/** Offset of the visible area's center from the map container's center, in pixels. */
+const visibleAreaOffset = (padding: ViewportPadding): L.Point =>
+  L.point((padding.left - padding.right) / 2, (padding.top - padding.bottom) / 2);
+
 /**
  * Map center that puts the given point in the middle of the visible part of the map, i.e. the
  * part not covered by overlays such as the bottom sheet or the search field.
@@ -65,11 +70,17 @@ export const centerForVisibleArea = (
   padding: ViewportPadding
 ): L.LatLng => {
   const zoom = map.getZoom();
-  const visibleAreaOffset = L.point(
-    (padding.left - padding.right) / 2,
-    (padding.top - padding.bottom) / 2
+  return map.unproject(map.project(point, zoom).subtract(visibleAreaOffset(padding)), zoom);
+};
+
+/** Center of the part of the map not covered by overlays; the inverse of the function above. */
+const visibleAreaCenter = (map: L.Map, padding: ViewportPadding): Coordinates => {
+  const zoom = map.getZoom();
+  const center = map.unproject(
+    map.project(map.getCenter(), zoom).add(visibleAreaOffset(padding)),
+    zoom
   );
-  return map.unproject(map.project(point, zoom).subtract(visibleAreaOffset), zoom);
+  return { latitude: center.lat, longitude: center.lng };
 };
 
 const isSameViewportPadding = (first: ViewportPadding, second: ViewportPadding): boolean =>
@@ -120,6 +131,8 @@ export class StationsMap {
   readonly viewportPadding = input<ViewportPadding>(NO_VIEWPORT_PADDING);
   /** Emitted with the station id when a price tag is clicked or activated with the keyboard. */
   readonly stationSelected = output<string>();
+  /** Center of the visible map after the user moved it, e.g. to offer a search there. */
+  readonly visibleCenterChanged = output<Coordinates>();
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly container = viewChild.required<ElementRef<HTMLElement>>('map');
@@ -161,6 +174,11 @@ export class StationsMap {
       map.on('dragstart', () => {
         this.hasUserMovedMap = true;
         this.hasUserMovedMapSinceReveal = true;
+      });
+      map.on('moveend', () => {
+        if (this.hasUserMovedMap) {
+          this.visibleCenterChanged.emit(visibleAreaCenter(map, this.viewportPadding()));
+        }
       });
       this.observeHostSize(map, destroyRef);
       this.map.set(map);
@@ -212,6 +230,7 @@ export class StationsMap {
       onCleanup(() => tileLayer.remove());
     });
 
+    let previousRadiusInKilometers: number | undefined;
     effect(onCleanup => {
       const map = this.map();
       if (map === undefined) {
@@ -221,17 +240,23 @@ export class StationsMap {
       const radiusInKilometers = this.radiusInKilometers();
       const circle = createRadiusCircle(center, radiusInKilometers).addTo(map);
       const centerMarker = createCenterMarker(center).addTo(map);
+      onCleanup(() => {
+        circle.remove();
+        centerMarker.remove();
+      });
       // A new search area is a fresh start, even after the user moved the map.
       this.hasUserMovedMap = false;
+      const hasRadiusChanged = radiusInKilometers !== previousRadiusInKilometers;
+      previousRadiusInKilometers = radiusInKilometers;
+      // The user is already looking at an area they moved the map to; fitting would jump.
+      if (center.source === 'map-area' && !hasRadiusChanged) {
+        return;
+      }
       untracked(() => {
         map.fitBounds(searchAreaBounds(center, radiusInKilometers), {
           ...toPaddingOptions(this.viewportPadding()),
           animate: !this.prefersReducedMotion(),
         });
-      });
-      onCleanup(() => {
-        circle.remove();
-        centerMarker.remove();
       });
     });
 
@@ -288,6 +313,8 @@ export class StationsMap {
       this.markerReveal?.cancel();
       const map = this.map();
       if (map !== undefined) {
+        // Stopping a running animation fires `moveend`; the output is already gone then.
+        map.off('moveend');
         destroyMap(map);
       }
     });

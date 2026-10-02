@@ -268,19 +268,26 @@ export const createLocationPin = (coordinates: Coordinates): L.Marker =>
     keyboard: false,
   });
 
-/** Search center with its label; the user's own position is a dot greeting them instead. */
+/**
+ * Search center with its label; the user's own position is a dot greeting them instead. A center
+ * the user moved the map to needs no label: it is where they are looking.
+ */
 export const createCenterMarker = (center: SearchCenter): L.Marker => {
   const isOwnPosition = center.source === 'own-position';
+  const marker = L.marker([center.latitude, center.longitude], {
+    icon: isOwnPosition ? createOwnPositionIcon() : createPinIcon(),
+    interactive: false,
+    keyboard: false,
+  });
+  if (center.source === 'map-area') {
+    return marker;
+  }
   const label = createElement(
     'span',
     'center-tooltip__label',
     isOwnPosition ? OWN_POSITION_LABEL : center.label
   );
-  return L.marker([center.latitude, center.longitude], {
-    icon: isOwnPosition ? createOwnPositionIcon() : createPinIcon(),
-    interactive: false,
-    keyboard: false,
-  }).bindTooltip(label, {
+  return marker.bindTooltip(label, {
     permanent: true,
     direction: 'top',
     // `map.scss` lifts the label above the dot or pin, sized like them in rem.
