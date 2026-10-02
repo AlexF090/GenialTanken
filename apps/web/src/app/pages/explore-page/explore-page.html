@@ -20,9 +20,15 @@
           <app-icon name="my-location" />
           Meinen Standort verwenden
         </button>
-        <a class="explore-page__fuel" routerLink="/settings"
-          ><span class="visually-hidden">Kraftstoff: </span>{{ fuelLabel() }}</a
-        >
+        <app-select-menu
+          class="explore-page__fuel"
+          label="Kraftstoff"
+          [options]="fuelTypeOptions"
+          [value]="fuelType()"
+          (valueChange)="chooseFuelType($event)">
+          <span class="visually-hidden">Kraftstoff: </span>{{ fuelLabel() }}
+          <app-icon name="chevron-down" class="explore-page__fuel-chevron" />
+        </app-select-menu>
       </div>
 
       @if (locationErrorMessage(); as message) {

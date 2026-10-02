@@ -123,22 +123,26 @@ test.describe('explore page', () => {
     ).toBeVisible();
   });
 
-  test('the fuel chip leads to the settings and follows the chosen fuel', async ({ page }) => {
+  test('the fuel menu switches the fuel in place and remembers it', async ({ page }) => {
     await page.goto('/');
 
-    const fuelChip = page.getByRole('link', { name: 'Kraftstoff: E5', exact: true });
-    await expect(fuelChip).toHaveAttribute('href', '/settings');
-    await fuelChip.click();
-    await expect(page).toHaveURL('/settings');
-    await expect(page.getByRole('slider', { name: 'Radius: 5 km' })).toBeVisible();
+    await page.getByRole('button', { name: 'Kraftstoff: E5', exact: true }).click();
+    const fuelMenu = page.getByRole('menu', { name: 'Kraftstoff' });
+    await expect(fuelMenu.getByRole('menuitemradio', { name: 'Super E5' })).toHaveAttribute(
+      'aria-checked',
+      'true'
+    );
+    await fuelMenu.getByRole('menuitemradio', { name: 'LPG' }).click();
 
-    await chooseFuel(page, 'LPG');
-    await openExplore(page);
-
-    await expect(page.getByRole('link', { name: 'Kraftstoff: LPG', exact: true })).toBeVisible();
+    await expect(fuelMenu).toBeHidden();
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('button', { name: 'Kraftstoff: LPG', exact: true })).toBeVisible();
     await useOwnPosition(page);
     await expect(stationCards(page)).toHaveCount(1);
     await expect(stationCard(page, boulevardVincentAuriolStation)).toContainText('0,984 €');
+
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Kraftstoff: LPG', exact: true })).toBeVisible();
   });
 
   test('sorts by distance by default and by price on request', async ({ page }) => {

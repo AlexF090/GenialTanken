@@ -6,8 +6,8 @@ import {
   linkedSignal,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import type { Station } from '@genialtanken/contracts';
+import { FUEL_TYPES } from '@genialtanken/contracts';
+import type { FuelType, Station } from '@genialtanken/contracts';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
 import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
 import { Viewport } from '../../core/layout/viewport';
@@ -23,6 +23,8 @@ import type { SnapPosition } from '../../ui/bottom-sheet/bottom-sheet-snap';
 import { DataSourceCredit } from '../../ui/data-source-credit/data-source-credit';
 import { Icon } from '../../ui/icon/icon';
 import { LoadingState } from '../../ui/loading-state/loading-state';
+import { SelectMenu } from '../../ui/select-menu/select-menu';
+import type { SelectMenuOption } from '../../ui/select-menu/select-menu';
 import { SortOrderControl } from '../../ui/sort-order-control/sort-order-control';
 import { StationList } from '../../ui/station-list/station-list';
 import { StationsMap } from '../../ui/stations-map/stations-map';
@@ -32,6 +34,11 @@ interface SelectionSource {
   stations: readonly Station[];
   center: SearchCenter;
 }
+
+const FUEL_TYPE_OPTIONS: readonly SelectMenuOption<FuelType>[] = FUEL_TYPES.map(fuelType => ({
+  value: fuelType,
+  label: FUEL_TYPE_LABELS[fuelType].long,
+}));
 
 const describeStationCount = (count: number): string =>
   count === 1 ? '1 Tankstelle' : `${String(count)} Tankstellen`;
@@ -48,7 +55,7 @@ const describeStationCount = (count: number): string =>
     DataSourceCredit,
     Icon,
     LoadingState,
-    RouterLink,
+    SelectMenu,
     SortOrderControl,
     StationList,
     StationsMap,
@@ -66,6 +73,7 @@ export class ExplorePage {
 
   protected readonly fuelType = this.settings.fuelType;
   protected readonly fuelLabel = computed(() => FUEL_TYPE_LABELS[this.fuelType()].short);
+  protected readonly fuelTypeOptions = FUEL_TYPE_OPTIONS;
   protected readonly radiusInKilometers = this.settings.radiusInKilometers;
   protected readonly center = this.searchCenter.center;
   protected readonly isLocating = this.searchCenter.isLocating;
@@ -117,6 +125,10 @@ export class ExplorePage {
       return;
     }
     void this.searchCenter.useOwnPosition();
+  }
+
+  protected chooseFuelType(fuelType: FuelType): void {
+    this.settings.update({ fuelType });
   }
 
   protected refresh(): void {

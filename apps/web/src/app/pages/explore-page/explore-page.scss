@@ -87,15 +87,10 @@
 }
 
 // Like the fuel badge on a pump: a plate in the text color (petrol in light, pale in dark mode,
-// where the chrome color would vanish on the surface), condensed numerals, links to settings.
+// where the chrome color would vanish on the surface), condensed numerals. Opens the fuel menu.
 .explore-page__fuel {
-  display: inline-flex;
   flex: none;
-  align-items: center;
-  justify-content: center;
-  min-width: var(--layout-touch-target);
-  min-height: var(--layout-touch-target);
-  padding-inline: var(--space-sm);
+  padding-inline: var(--space-sm) var(--space-xs);
   border-radius: var(--radius-sm);
   background-color: var(--color-text);
   color: var(--color-canvas);
@@ -103,13 +98,10 @@
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-price);
   line-height: var(--line-height-numerals);
-  text-decoration: none;
-  touch-action: manipulation;
+}
 
-  &:hover {
-    color: var(--color-canvas);
-    text-decoration: underline;
-  }
+.explore-page__fuel-chevron {
+  font-size: var(--icon-size-sm);
 }
 
 .explore-page__summary {

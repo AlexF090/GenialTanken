@@ -74,7 +74,7 @@ test.describe('settings', () => {
     await expect(page.getByRole('slider', { name: 'Radius: 12 km' })).toHaveValue('12');
 
     await openExplore(page);
-    await expect(page.getByRole('link', { name: 'Kraftstoff: E10', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Kraftstoff: E10', exact: true })).toBeVisible();
     await expect(resultSummary(page)).toContainText('im Umkreis von 12 km');
   });
 

@@ -108,12 +108,38 @@ describe('ExplorePage', () => {
     );
   });
 
-  it('links the fuel type to the settings', async () => {
+  it('names the fuel type on a menu button', async () => {
     const { element } = await renderWithStations();
 
-    const fuelLink = element.querySelector('main a[href="/settings"]');
-    expect(textOf(fuelLink)).toBe('Kraftstoff: E5');
-    expect(textOf(fuelLink?.querySelector('.visually-hidden'))).toBe('Kraftstoff:');
+    const fuelButton = getButton(element, 'Kraftstoff: E5');
+    expect(fuelButton.getAttribute('aria-haspopup')).toBe('menu');
+    expect(textOf(fuelButton.querySelector('.visually-hidden'))).toBe('Kraftstoff:');
+  });
+
+  it('fetches with the fuel type chosen in the fuel menu and remembers it', async () => {
+    const { element } = await renderWithStations();
+
+    getButton(element, 'Kraftstoff: E5').click();
+    await context.settle();
+    const menu = element.querySelector('[role="menu"][aria-label="Kraftstoff"]');
+    const items = [...(menu?.querySelectorAll('[role="menuitemradio"]') ?? [])];
+    expect(items.map(item => textOf(item))).toEqual([
+      'Super E5',
+      'Super E10',
+      'Super Plus',
+      'Diesel',
+      'E85',
+      'LPG',
+    ]);
+    getButton(element, 'Diesel').click();
+    await context.settle();
+
+    context.httpTesting
+      .expectOne('/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=5&fuel=diesel')
+      .flush([carrefourStation]);
+    await context.settle();
+    expect(getButton(element, 'Kraftstoff: Diesel')).toBeDefined();
+    expect(TestBed.inject(SettingsStore).fuelType()).toBe('diesel');
   });
 
   it('credits the price data source in a new tab', async () => {
@@ -181,7 +207,7 @@ describe('ExplorePage', () => {
     await context.settle();
     expect(stationTitles(element)).toEqual(['Carrefour Market']);
     expect(textOf(element.querySelector('main li'))).toContain('1,669 €');
-    expect(textOf(element.querySelector('main a[href="/settings"]'))).toBe('Kraftstoff: Diesel');
+    expect(getButton(element, 'Kraftstoff: Diesel')).toBeDefined();
   });
 
   it('requests fresh prices once on "Aktualisieren"', async () => {
