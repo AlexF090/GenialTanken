@@ -1,19 +1,32 @@
 import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { readFileSync } from 'node:fs';
+import { z } from 'zod';
+import { MOCK_UPSTREAM_PORT as PORT, UNEXPECTED_REQUESTS_PATH } from './mock-upstream-endpoints.ts';
 
 /**
  * Stand-in for the French government fuel price API (data.economie.gouv.fr, Opendatasoft
  * Explore API v2.1) so the browser suite runs without network access. Serves real records
  * captured around Paris from `data/france-stations.json`, honouring the fuel filter
  * (`<fuel>_prix is not null`), the search radius (`within_distance`) and lookups by `id`.
+ *
+ * Requests the mock does not know are answered with 500 and recorded; the test fixture reads
+ * them from `UNEXPECTED_REQUESTS_PATH` after every test and fails the test.
  */
 
-interface FranceRecord {
-  id: number;
-  geom: { lat: number; lon: number };
-  [field: string]: unknown;
-}
+const franceRecordSchema = z.looseObject({
+  id: z.number(),
+  geom: z.object({ lat: z.number(), lon: z.number() }),
+});
+
+const franceResponseSchema = z.object({
+  total_count: z.number(),
+  results: z.array(franceRecordSchema),
+});
+
+type FranceRecord = z.infer<typeof franceRecordSchema>;
+
+type FranceResponse = z.infer<typeof franceResponseSchema>;
 
 interface Point {
   latitude: number;
@@ -25,19 +38,14 @@ interface DistanceFilter {
   radiusInMeters: number;
 }
 
-interface FranceResponse {
-  total_count: number;
-  results: FranceRecord[];
-}
-
 const DATASET_PATH =
   '/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records';
 
-const PORT = Number(process.env.E2E_MOCK_UPSTREAM_PORT ?? 4010);
+const fixture = franceResponseSchema.parse(
+  JSON.parse(readFileSync(new URL('./data/france-stations.json', import.meta.url), 'utf8'))
+);
 
-const fixture = JSON.parse(
-  readFileSync(new URL('./data/france-stations.json', import.meta.url), 'utf8')
-) as FranceResponse;
+const unexpectedRequests: string[] = [];
 
 const sendJson = (response: ServerResponse, statusCode: number, body: unknown) => {
   response.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -110,9 +118,15 @@ const answerRecordsQuery = (whereClause: string): FranceResponse => {
 
 const handleRequest = (request: IncomingMessage, response: ServerResponse) => {
   const url = new URL(request.url ?? '/', `http://localhost:${String(PORT)}`);
+  if (request.method === 'GET' && url.pathname === UNEXPECTED_REQUESTS_PATH) {
+    sendJson(response, 200, unexpectedRequests.splice(0));
+    return;
+  }
   if (request.method !== 'GET' || url.pathname !== DATASET_PATH) {
-    console.error(`Mock upstream: unexpected request ${request.method ?? ''} ${url.href}`);
-    sendJson(response, 404, { error_code: 'NotFound', message: 'Not mocked' });
+    const description = `${request.method ?? ''} ${url.href}`;
+    console.error(`Mock upstream: unexpected request ${description}`);
+    unexpectedRequests.push(description);
+    sendJson(response, 500, { error_code: 'NotMocked', message: `Not mocked: ${description}` });
     return;
   }
   sendJson(response, 200, answerRecordsQuery(url.searchParams.get('where') ?? ''));

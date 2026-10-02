@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
+import { MOCK_UPSTREAM_PORT } from './mock-upstream-endpoints.js';
 import { defineConfig, devices } from '@playwright/test';
 
-const MOCK_UPSTREAM_PORT = 4010;
 const API_PORT = 3000;
 const WEB_PORT = 4200;
 
