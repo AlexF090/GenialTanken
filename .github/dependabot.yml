@@ -1,0 +1,78 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    # pnpm workspace root; Dependabot discovers all workspace packages via pnpm-workspace.yaml.
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Must be at least the 1 day of `minimumReleaseAge` in pnpm-workspace.yaml,
+    # otherwise `pnpm install` rejects freshly published versions.
+    cooldown:
+      default-days: 3
+      semver-major-days: 14
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
+    ignore:
+      # Angular 22 and typescript-eslint support TypeScript < 6.1 only.
+      # Remove once both declare support for TypeScript 6.1.
+      - dependency-name: typescript
+        versions: ['>= 6.1.0']
+    groups:
+      angular:
+        patterns:
+          - '@angular/*'
+          - '@angular-devkit/*'
+          - '@schematics/*'
+      nestjs:
+        patterns:
+          - '@nestjs/*'
+      testing:
+        patterns:
+          - vitest
+          - '@vitest/*'
+          - '@playwright/test'
+          - jsdom
+          - supertest
+          - '@types/supertest'
+      lint-format:
+        patterns:
+          - eslint
+          - '@eslint/*'
+          - typescript-eslint
+          - angular-eslint
+          - prettier
+          - globals
+      development-minor-patch:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    # Covers .github/workflows and the composite action in .github/actions.
+    directories:
+      - /
+      - /.github/actions/*
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+
+  - package-ecosystem: docker
+    directory: /apps/api
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: chore
+      include: scope

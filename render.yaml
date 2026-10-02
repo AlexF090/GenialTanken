@@ -1,0 +1,30 @@
+# Render Blueprint, see https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: genialtanken-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    # Deploy only after all GitHub checks of the commit passed (aggregate check "CI success").
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/contracts/**
+        - pnpm-lock.yaml
+        - pnpm-workspace.yaml
+        - package.json
+        - .dockerignore
+        - render.yaml
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Optional: enables the German provider (tankentanken). France works without a key.
+      - key: TANKENTANKEN_API_KEY
+        sync: false
+      - key: WEB_ORIGIN
+        value: https://genialtanken.pages.dev

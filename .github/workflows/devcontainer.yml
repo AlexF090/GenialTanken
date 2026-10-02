@@ -1,0 +1,45 @@
+name: Dev container
+
+on:
+  schedule:
+    # Mondays 05:17 UTC; catches upstream image or tooling drift.
+    - cron: '17 5 * * 1'
+  push:
+    branches: [main]
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/devcontainer.yml'
+  pull_request:
+    paths:
+      - '.devcontainer/**'
+      - '.github/workflows/devcontainer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: devcontainer-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: Build dev container and run checks
+    runs-on: ubuntu-latest
+    # postCreateCommand installs Playwright Chromium with system dependencies, which is slow.
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Dev Container CLI
+        run: npm install --global @devcontainers/cli@0.89.0
+
+      - name: Build and start dev container
+        run: devcontainer up --workspace-folder .
+
+      - name: Install, typecheck and test inside the container
+        run: >-
+          devcontainer exec --workspace-folder .
+          bash -c 'pnpm install --frozen-lockfile && pnpm typecheck && pnpm test'

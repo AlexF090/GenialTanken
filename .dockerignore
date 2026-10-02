@@ -1,0 +1,36 @@
+# Build context is the repository root (docker build -f apps/api/Dockerfile .).
+# Keep it small and free of secrets and host-specific artifacts.
+
+# Version control, CI and editor metadata
+.git
+.github
+.devcontainer
+.vscode
+.idea
+**/.DS_Store
+
+# Dependencies and package manager store (installed inside the image)
+**/node_modules
+.pnpm-store
+
+# Build output and caches
+**/dist
+**/*.tsbuildinfo
+**/.angular
+**/coverage
+
+# Local environment files
+**/.env
+**/.env.*
+!**/.env.example
+
+# Not needed for the API image. Package manifests stay in the context because the
+# pnpm workspace lockfile references every workspace project.
+apps/web/*
+!apps/web/package.json
+e2e/*
+!e2e/package.json
+
+# Docker files themselves
+**/Dockerfile*
+.dockerignore
