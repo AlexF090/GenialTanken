@@ -11,10 +11,17 @@ import {
 } from '@angular/core';
 import type { ElementRef } from '@angular/core';
 import type { Station } from '@genialtanken/contracts';
-import { createStationMarker, createTileLayer, destroyMap, L } from '../map/leaflet-layers';
+import type { ResolvedColorScheme } from '../../core/theme/color-scheme-controller';
+import {
+  createLocationPin,
+  createTileLayer,
+  destroyMap,
+  L,
+  MAXIMUM_ZOOM,
+} from '../map/leaflet-layers';
 import { MAPBOX_ACCESS_TOKEN, STATION_LOCATION_ZOOM } from '../map/map-configuration';
 
-/** Small static map showing where a single station is. */
+/** Small static map with a pin where a single station is. */
 @Component({
   selector: 'app-station-location-map',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,8 +33,8 @@ import { MAPBOX_ACCESS_TOKEN, STATION_LOCATION_ZOOM } from '../map/map-configura
   styles: `
     .station-location-map {
       height: var(--layout-detail-map-height);
+      border: var(--border-width-hairline) solid var(--color-hairline);
       border-radius: var(--radius-md);
-      box-shadow: var(--shadow-map);
       overflow: hidden;
     }
   `,
@@ -35,6 +42,7 @@ import { MAPBOX_ACCESS_TOKEN, STATION_LOCATION_ZOOM } from '../map/map-configura
 export class StationLocationMap {
   readonly station = input.required<Station>();
   readonly stationTitle = input.required<string>();
+  readonly colorScheme = input<ResolvedColorScheme>('light');
 
   private readonly container = viewChild.required<ElementRef<HTMLElement>>('map');
   private readonly mapboxAccessToken = inject(MAPBOX_ACCESS_TOKEN);
@@ -50,9 +58,18 @@ export class StationLocationMap {
         boxZoom: false,
         keyboard: false,
         zoomControl: false,
+        maxZoom: MAXIMUM_ZOOM,
       });
-      createTileLayer(this.mapboxAccessToken).addTo(map);
       this.map.set(map);
+    });
+
+    effect(onCleanup => {
+      const map = this.map();
+      if (map === undefined) {
+        return;
+      }
+      const tileLayer = createTileLayer(this.mapboxAccessToken, this.colorScheme()).addTo(map);
+      onCleanup(() => tileLayer.remove());
     });
 
     effect(onCleanup => {
@@ -62,10 +79,8 @@ export class StationLocationMap {
       }
       const { latitude, longitude } = this.station().address;
       map.setView([latitude, longitude], STATION_LOCATION_ZOOM, { animate: false });
-      const marker = createStationMarker({ latitude, longitude }, this.stationTitle(), {
-        interactive: false,
-      }).addTo(map);
-      onCleanup(() => marker.remove());
+      const pin = createLocationPin({ latitude, longitude }).addTo(map);
+      onCleanup(() => pin.remove());
     });
 
     inject(DestroyRef).onDestroy(() => {

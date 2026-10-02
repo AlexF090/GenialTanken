@@ -2,7 +2,7 @@
 <main class="map-page">
   <div class="map-page__status">
     <a routerLink="/">Tankstellen als Liste anzeigen</a>
-    @if (geolocationErrorMessage(); as message) {
+    @if (locationErrorMessage(); as message) {
       <p class="message message--error" role="alert">{{ message }}</p>
     }
     @if (stationsErrorMessage(); as message) {
@@ -14,6 +14,9 @@
     class="map-page__map"
     [stations]="stations()"
     [fuelType]="fuelType()"
-    [ownPosition]="ownPosition()"
+    [center]="center()"
+    [radiusInKilometers]="radiusInKilometers()"
+    [cheapestStationIds]="cheapestStationIds()"
+    [colorScheme]="colorScheme()"
     (stationSelected)="showStation($event)" />
 </main>

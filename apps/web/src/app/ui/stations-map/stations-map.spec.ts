@@ -1,30 +1,58 @@
 import { TestBed } from '@angular/core/testing';
 import type { Station } from '@genialtanken/contracts';
+import { DEFAULT_SEARCH_CENTER } from '../../core/search-center/search-center';
+import type { SearchCenter } from '../../core/search-center/search-center';
 import {
   carrefourStation,
-  PARIS,
   totalStation,
   unbrandedStation,
 } from '../../../testing/station-fixtures';
-import { accessibleTextOf } from '../../../testing/render-page';
+import { accessibleTextOf, textOf } from '../../../testing/render-page';
 import { StationsMap } from './stations-map';
 
-const render = async (stations: readonly Station[]) => {
+interface RenderOptions {
+  center?: SearchCenter;
+  selectedStationId?: string;
+  cheapestStationIds?: ReadonlySet<string>;
+}
+
+const render = async (stations: readonly Station[], options: RenderOptions = {}) => {
   // jsdom has no layout; Leaflet needs a map size to decide which markers are visible.
   vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(800);
   vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(600);
   const fixture = TestBed.createComponent(StationsMap);
   fixture.componentRef.setInput('stations', stations);
   fixture.componentRef.setInput('fuelType', 'e5');
-  fixture.componentRef.setInput('ownPosition', PARIS);
+  fixture.componentRef.setInput('center', options.center ?? DEFAULT_SEARCH_CENTER);
+  fixture.componentRef.setInput('radiusInKilometers', 5);
+  fixture.componentRef.setInput('selectedStationId', options.selectedStationId);
+  if (options.cheapestStationIds !== undefined) {
+    fixture.componentRef.setInput('cheapestStationIds', options.cheapestStationIds);
+  }
   await fixture.whenStable();
-  return { fixture, element: fixture.nativeElement as HTMLElement };
+  const element = fixture.nativeElement as HTMLElement;
+  const stationSelections: string[] = [];
+  fixture.componentInstance.stationSelected.subscribe(stationId =>
+    stationSelections.push(stationId)
+  );
+  return { fixture, element, stationSelections };
 };
 
-const markerNames = (element: HTMLElement): (string | null)[] =>
-  [...element.querySelectorAll('img.leaflet-marker-icon')].map(marker =>
-    marker.getAttribute('alt')
-  );
+/** Station price tags are toggle buttons; zoom controls and clusters are plain buttons. */
+const markerButtons = (element: HTMLElement): HTMLElement[] => [
+  ...element.querySelectorAll<HTMLElement>('[role="button"][aria-pressed]'),
+];
+
+const markerNames = (element: HTMLElement): string[] =>
+  markerButtons(element).map(button => accessibleTextOf(button));
+
+const markerButton = (element: HTMLElement, name: string): HTMLElement => {
+  const button = markerButtons(element).find(candidate => accessibleTextOf(candidate) === name);
+  if (button === undefined) {
+    throw new Error(`No marker named ${name}; found ${markerNames(element).join(' | ')}`);
+  }
+  return button;
+};
 
 describe('StationsMap', () => {
   afterEach(() => {
@@ -35,30 +63,23 @@ describe('StationsMap', () => {
     const { element } = await render([]);
 
     expect(element.querySelector('[role="region"]')?.getAttribute('aria-label')).toBe(
-      'Karte der Tankstellen in deiner Nähe'
+      'Karte der Tankstellen'
     );
   });
 
-  it('renders a named marker with the selected fuel price for every station', async () => {
-    const { element } = await render([totalStation, carrefourStation, unbrandedStation]);
+  it('shows a price tag for every station and points out the cheapest', async () => {
+    const { element } = await render([totalStation, carrefourStation, unbrandedStation], {
+      cheapestStationIds: new Set([unbrandedStation.id]),
+    });
 
     expect(markerNames(element).sort()).toEqual([
-      '40 Avenue de Flandre, 1,799 €',
+      '40 Avenue de Flandre, 1,799 €, günstigster Preis',
       'Carrefour Market, 1,839 €',
       'TotalEnergies, 1,859 €',
     ]);
   });
 
-  it('marks the own position', async () => {
-    const { element } = await render([]);
-
-    expect(element.querySelector('.own-position-marker')?.getAttribute('title')).toBe(
-      'Dein Standort'
-    );
-    expect(element.querySelector('.leaflet-tooltip')?.textContent).toBe('Du bist hier!');
-  });
-
-  it('replaces the markers when the stations change', async () => {
+  it('replaces the price tags when the stations change', async () => {
     const { fixture, element } = await render([totalStation, carrefourStation]);
 
     fixture.componentRef.setInput('stations', [unbrandedStation]);
@@ -67,38 +88,54 @@ describe('StationsMap', () => {
     expect(markerNames(element)).toEqual(['40 Avenue de Flandre, 1,799 €']);
   });
 
-  it('opens a popup with the price and reports the station chosen via "Mehr Anzeigen"', async () => {
-    const { fixture, element } = await render([totalStation]);
-    const selectedStationIds: string[] = [];
-    fixture.componentInstance.stationSelected.subscribe(stationId =>
-      selectedStationIds.push(stationId)
-    );
+  it('reports the station whose price tag is clicked', async () => {
+    const { element, stationSelections } = await render([totalStation, carrefourStation]);
 
-    element.querySelector<HTMLElement>('img.leaflet-marker-icon')?.click();
-    const popup = element.querySelector('.leaflet-popup');
-    const link = popup?.querySelector('a.station-marker-popup__link');
-    expect(popup?.textContent).toContain('1,859 €');
-    expect(link?.getAttribute('href')).toBe('/stations/fr-75001001');
+    markerButton(element, 'Carrefour Market, 1,839 €').click();
 
-    link?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
-
-    expect(selectedStationIds).toEqual(['fr-75001001']);
+    expect(stationSelections).toEqual([carrefourStation.id]);
   });
 
-  it('shows the popup price like everywhere else, readable for screen readers', async () => {
-    const { element } = await render([
-      totalStation,
-      { ...carrefourStation, pricesInEuro: { ...carrefourStation.pricesInEuro, e5: null } },
-    ]);
-    const openPopupPrice = (markerName: string): Element | null => {
-      element.querySelector<HTMLElement>(`img.leaflet-marker-icon[alt="${markerName}"]`)?.click();
-      return element.querySelector('.leaflet-popup .station-marker-popup__price');
-    };
+  it('reports the station whose price tag is activated with the keyboard', async () => {
+    const { element, stationSelections } = await render([totalStation]);
 
-    const price = openPopupPrice('TotalEnergies, 1,859 €');
-    expect(accessibleTextOf(price)).toBe('1,859 €');
-    expect(price?.querySelector('[aria-hidden="true"] sup')?.textContent).toBe('9');
+    markerButton(element, 'TotalEnergies, 1,859 €').dispatchEvent(
+      new KeyboardEvent('keydown', { key: ' ', bubbles: true })
+    );
 
-    expect(accessibleTextOf(openPopupPrice('Carrefour Market'))).toBe('Kein Preis');
+    expect(stationSelections).toEqual([totalStation.id]);
+  });
+
+  it('marks the selected station and follows selection changes from outside', async () => {
+    const { fixture, element } = await render([totalStation, carrefourStation], {
+      selectedStationId: totalStation.id,
+    });
+    const pressedNames = (): string[] =>
+      markerButtons(element)
+        .filter(button => button.getAttribute('aria-pressed') === 'true')
+        .map(button => accessibleTextOf(button));
+
+    expect(pressedNames()).toEqual(['TotalEnergies, 1,859 €']);
+
+    fixture.componentRef.setInput('selectedStationId', carrefourStation.id);
+    await fixture.whenStable();
+
+    expect(pressedNames()).toEqual(['Carrefour Market, 1,839 €']);
+  });
+
+  it('labels the search center', async () => {
+    const { fixture, element } = await render([]);
+
+    expect(textOf(element.querySelector('.leaflet-tooltip'))).toBe('Eiffelturm, Paris');
+
+    fixture.componentRef.setInput('center', {
+      latitude: 48.86,
+      longitude: 2.34,
+      label: 'Dein Standort',
+      source: 'own-position',
+    });
+    await fixture.whenStable();
+
+    expect(textOf(element.querySelector('.leaflet-tooltip'))).toBe('Du bist hier!');
   });
 });

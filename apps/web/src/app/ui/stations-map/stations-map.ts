@@ -2,10 +2,9 @@ import {
   afterNextRender,
   ChangeDetectionStrategy,
   Component,
-  createComponent,
   DestroyRef,
   effect,
-  EnvironmentInjector,
+  ElementRef,
   inject,
   input,
   output,
@@ -13,35 +12,57 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import type { ElementRef } from '@angular/core';
 import type { FuelType, Station } from '@genialtanken/contracts';
-import { formatPrice } from '../../core/formatting/number-format';
-import type { Coordinates } from '../../core/geolocation/coordinates';
+import { injectMediaQueryMatches } from '../../core/layout/media-query';
+import type { SearchCenter } from '../../core/search-center/search-center';
 import { priceInEuro, stationTitle } from '../../core/stations/station-display';
+import type { ResolvedColorScheme } from '../../core/theme/color-scheme-controller';
 import {
-  createOwnPositionMarker,
-  createStationMarker,
+  createCenterMarker,
+  createClusterIcon,
+  createRadiusCircle,
   createTileLayer,
   destroyMap,
   L,
+  MAXIMUM_ZOOM,
+  StationMarker,
 } from '../map/leaflet-layers';
-import {
-  FALLBACK_MAP_CENTER,
-  FALLBACK_MAP_ZOOM,
-  MAPBOX_ACCESS_TOKEN,
-  OWN_POSITION_ZOOM,
-} from '../map/map-configuration';
-import { Price } from '../price/price';
+import { MAPBOX_ACCESS_TOKEN } from '../map/map-configuration';
 
-interface PopupPrice {
-  element: HTMLElement;
-  destroy: () => void;
+/** Space in pixels covered by overlays (list panel, bottom sheet) on each side of the map. */
+export interface ViewportPadding {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
 }
 
-const isPlainLeftClick = (event: MouseEvent): boolean =>
-  event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey;
+const NO_VIEWPORT_PADDING: ViewportPadding = { top: 0, right: 0, bottom: 0, left: 0 };
+/** Keeps the radius circle and revealed markers off the very edge of the visible map. */
+const EDGE_SPACING_IN_PIXELS = 24;
+const METERS_PER_KILOMETER = 1000;
+const CLUSTER_RADIUS_IN_PIXELS = 56;
 
-/** Interactive map with clustered station markers and the user's own position. */
+const toPaddingOptions = (
+  padding: ViewportPadding
+): Pick<L.FitBoundsOptions, 'paddingTopLeft' | 'paddingBottomRight'> => ({
+  paddingTopLeft: [padding.left + EDGE_SPACING_IN_PIXELS, padding.top + EDGE_SPACING_IN_PIXELS],
+  paddingBottomRight: [
+    padding.right + EDGE_SPACING_IN_PIXELS,
+    padding.bottom + EDGE_SPACING_IN_PIXELS,
+  ],
+});
+
+const searchAreaBounds = (center: SearchCenter, radiusInKilometers: number): L.LatLngBounds =>
+  L.latLng(center.latitude, center.longitude).toBounds(
+    2 * radiusInKilometers * METERS_PER_KILOMETER
+  );
+
+/**
+ * Interactive map of the search area: a price tag per station (clustered when close), the search
+ * center and the search radius. Selecting a tag reports the station; a selection from outside
+ * brings its tag into view.
+ */
 @Component({
   selector: 'app-stations-map',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -49,14 +70,14 @@ const isPlainLeftClick = (event: MouseEvent): boolean =>
     #map
     class="stations-map"
     role="region"
-    aria-label="Karte der Tankstellen in deiner Nähe"></div>`,
+    aria-label="Karte der Tankstellen"></div>`,
   styles: `
     :host {
       position: relative;
       display: block;
     }
 
-    /* Absolute positioning gives Leaflet the size the flex layout assigned to the host. */
+    /* Absolute positioning gives Leaflet the size the layout assigned to the host. */
     .stations-map {
       position: absolute;
       inset: 0;
@@ -66,28 +87,79 @@ const isPlainLeftClick = (event: MouseEvent): boolean =>
 export class StationsMap {
   readonly stations = input.required<readonly Station[]>();
   readonly fuelType = input.required<FuelType>();
-  readonly ownPosition = input<Coordinates>();
-  /** Emitted with the station id when "Mehr Anzeigen" in a marker popup is clicked. */
+  readonly center = input.required<SearchCenter>();
+  readonly radiusInKilometers = input.required<number>();
+  readonly selectedStationId = input<string>();
+  readonly cheapestStationIds = input<ReadonlySet<string>>(new Set());
+  readonly colorScheme = input<ResolvedColorScheme>('light');
+  readonly viewportPadding = input<ViewportPadding>(NO_VIEWPORT_PADDING);
+  /** Emitted with the station id when a price tag is clicked or activated with the keyboard. */
   readonly stationSelected = output<string>();
 
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly container = viewChild.required<ElementRef<HTMLElement>>('map');
   private readonly mapboxAccessToken = inject(MAPBOX_ACCESS_TOKEN);
-  private readonly environmentInjector = inject(EnvironmentInjector);
+  private readonly prefersReducedMotion = injectMediaQueryMatches(
+    '(prefers-reduced-motion: reduce)'
+  );
   private readonly map = signal<L.Map | undefined>(undefined);
-  private readonly markerClusterGroup = L.markerClusterGroup();
+  private readonly markersByStationId = signal<ReadonlyMap<string, StationMarker>>(new Map());
+  private readonly markerClusterGroup = L.markerClusterGroup({
+    iconCreateFunction: createClusterIcon,
+    showCoverageOnHover: false,
+    maxClusterRadius: CLUSTER_RADIUS_IN_PIXELS,
+  });
+  private revealedStationId: string | undefined;
 
   constructor() {
+    const destroyRef = inject(DestroyRef);
+
     afterNextRender(() => {
-      const map = L.map(this.container().nativeElement, { zoomControl: false }).setView(
-        [FALLBACK_MAP_CENTER.latitude, FALLBACK_MAP_CENTER.longitude],
-        FALLBACK_MAP_ZOOM
-      );
+      // The cluster group needs a maximum zoom before the first tile layer is added.
+      const map = L.map(this.container().nativeElement, {
+        zoomControl: false,
+        maxZoom: MAXIMUM_ZOOM,
+      });
+      map.fitBounds(searchAreaBounds(this.center(), this.radiusInKilometers()), {
+        ...toPaddingOptions(this.viewportPadding()),
+        animate: false,
+      });
       L.control
         .zoom({ position: 'topright', zoomInTitle: 'Hineinzoomen', zoomOutTitle: 'Herauszoomen' })
         .addTo(map);
-      createTileLayer(this.mapboxAccessToken).addTo(map);
       this.markerClusterGroup.addTo(map);
+      this.observeHostSize(map, destroyRef);
       this.map.set(map);
+    });
+
+    effect(onCleanup => {
+      const map = this.map();
+      if (map === undefined) {
+        return;
+      }
+      const tileLayer = createTileLayer(this.mapboxAccessToken, this.colorScheme()).addTo(map);
+      onCleanup(() => tileLayer.remove());
+    });
+
+    effect(onCleanup => {
+      const map = this.map();
+      if (map === undefined) {
+        return;
+      }
+      const center = this.center();
+      const radiusInKilometers = this.radiusInKilometers();
+      const circle = createRadiusCircle(center, radiusInKilometers).addTo(map);
+      const centerMarker = createCenterMarker(center).addTo(map);
+      untracked(() => {
+        map.fitBounds(searchAreaBounds(center, radiusInKilometers), {
+          ...toPaddingOptions(this.viewportPadding()),
+          animate: !this.prefersReducedMotion(),
+        });
+      });
+      onCleanup(() => {
+        circle.remove();
+        centerMarker.remove();
+      });
     });
 
     effect(() => {
@@ -95,27 +167,45 @@ export class StationsMap {
         return;
       }
       const fuelType = this.fuelType();
-      const markers = this.stations().map(station => this.createMarker(station, fuelType));
+      const cheapestStationIds = this.cheapestStationIds();
+      const selectedStationId = untracked(() => this.selectedStationId());
+      const markers = new Map(
+        this.stations().map(station => [
+          station.id,
+          this.createMarker(station, fuelType, cheapestStationIds, selectedStationId),
+        ])
+      );
       this.markerClusterGroup.clearLayers();
-      this.markerClusterGroup.addLayers(markers);
+      this.markerClusterGroup.addLayers([...markers.values()]);
+      this.markersByStationId.set(markers);
     });
 
-    effect(onCleanup => {
+    effect(() => {
       const map = this.map();
-      const ownPosition = this.ownPosition();
-      if (map === undefined || ownPosition === undefined) {
+      const selectedStationId = this.selectedStationId();
+      const markers = this.markersByStationId();
+      if (map === undefined) {
         return;
       }
+      for (const [stationId, marker] of markers) {
+        marker.setSelected(stationId === selectedStationId);
+      }
+      if (selectedStationId === undefined) {
+        this.revealedStationId = undefined;
+        return;
+      }
+      // Revealed once per selection, not again whenever the markers are rebuilt.
+      const selectedMarker = markers.get(selectedStationId);
+      if (selectedMarker === undefined || selectedStationId === this.revealedStationId) {
+        return;
+      }
+      this.revealedStationId = selectedStationId;
       untracked(() => {
-        map.setView([ownPosition.latitude, ownPosition.longitude], OWN_POSITION_ZOOM, {
-          animate: false,
-        });
+        this.reveal(map, selectedMarker);
       });
-      const marker = createOwnPositionMarker(ownPosition).addTo(map);
-      onCleanup(() => marker.remove());
     });
 
-    inject(DestroyRef).onDestroy(() => {
+    destroyRef.onDestroy(() => {
       const map = this.map();
       if (map !== undefined) {
         destroyMap(map);
@@ -123,73 +213,48 @@ export class StationsMap {
     });
   }
 
-  private createMarker(station: Station, fuelType: FuelType): L.Marker {
-    const title = stationTitle(station);
-    const price = priceInEuro(station, fuelType);
-    const accessibleName = price === null ? title : `${title}, ${formatPrice(price)}`;
-    const marker = createStationMarker(station.address, accessibleName, { interactive: true });
-    // Leaflet builds the content on every opening, so each opening gets its own price component.
-    let destroyPrice = (): void => undefined;
-    marker.on('popupclose', () => {
-      destroyPrice();
+  private createMarker(
+    station: Station,
+    fuelType: FuelType,
+    cheapestStationIds: ReadonlySet<string>,
+    selectedStationId: string | undefined
+  ): StationMarker {
+    const marker = new StationMarker({
+      stationId: station.id,
+      coordinates: station.address,
+      title: stationTitle(station),
+      priceInEuro: priceInEuro(station, fuelType),
+      isCheapest: cheapestStationIds.has(station.id),
+      isSelected: station.id === selectedStationId,
     });
-    return marker.bindPopup(
-      () => {
-        const priceParagraph = this.createPopupPrice(price);
-        destroyPrice = priceParagraph.destroy;
-        return this.createPopupContent(station.id, title, priceParagraph.element);
-      },
-      { className: 'station-marker-popup' }
-    );
+    marker.on('click', () => {
+      this.stationSelected.emit(station.id);
+    });
+    return marker;
   }
 
-  /** Renders the shared `app-price` so the popup cannot drift from the list's price format. */
-  private createPopupPrice(price: number | null): PopupPrice {
-    const priceParagraph = document.createElement('p');
-    priceParagraph.className = 'station-marker-popup__price';
-    if (price === null) {
-      priceParagraph.textContent = 'Kein Preis';
-      return { element: priceParagraph, destroy: () => undefined };
+  /** Opens the marker's cluster if needed, then pans it out from under the overlays. */
+  private reveal(map: L.Map, marker: StationMarker): void {
+    const padding = toPaddingOptions(this.viewportPadding());
+    this.markerClusterGroup.zoomToShowLayer(marker, () => {
+      map.panInside(marker.getLatLng(), {
+        ...padding,
+        animate: !this.prefersReducedMotion(),
+      });
+    });
+  }
+
+  private observeHostSize(map: L.Map, destroyRef: DestroyRef): void {
+    // jsdom (unit tests) has no ResizeObserver; the map keeps its initial size there.
+    if (typeof ResizeObserver === 'undefined') {
+      return;
     }
-    const priceHost = document.createElement('app-price');
-    const priceComponent = createComponent(Price, {
-      environmentInjector: this.environmentInjector,
-      hostElement: priceHost,
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
     });
-    priceComponent.setInput('priceInEuro', price);
-    priceComponent.changeDetectorRef.detectChanges();
-    priceParagraph.append(priceHost);
-    return {
-      element: priceParagraph,
-      destroy: () => {
-        priceComponent.destroy();
-      },
-    };
-  }
-
-  private createPopupContent(
-    stationId: string,
-    title: string,
-    priceParagraph: HTMLElement
-  ): HTMLElement {
-    const content = document.createElement('div');
-
-    const heading = document.createElement('strong');
-    heading.textContent = title;
-
-    const link = document.createElement('a');
-    link.className = 'station-marker-popup__link';
-    link.href = `/stations/${encodeURIComponent(stationId)}`;
-    link.textContent = 'Mehr Anzeigen';
-    link.addEventListener('click', event => {
-      if (!isPlainLeftClick(event)) {
-        return;
-      }
-      event.preventDefault();
-      this.stationSelected.emit(stationId);
+    observer.observe(this.host.nativeElement);
+    destroyRef.onDestroy(() => {
+      observer.disconnect();
     });
-
-    content.append(heading, priceParagraph, link);
-    return content;
   }
 }

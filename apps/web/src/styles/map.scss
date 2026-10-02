@@ -1,37 +1,288 @@
-// Leaflet renders its markers and popups outside of Angular's view encapsulation,
-// so their styles live here instead of in the map components.
+// Leaflet renders markers, tooltips and controls outside of Angular's view encapsulation, so
+// their styles live here instead of in the map components.
+@use 'typography';
 
 .leaflet-container {
+  background-color: var(--color-canvas);
   font: inherit;
 }
 
-.station-marker-popup {
-  .leaflet-popup-content {
-    margin: var(--space-xs);
-    text-align: center;
-  }
+// OpenStreetMap has no dark style; the tiles are inverted instead. Only the tile layer is
+// filtered, markers keep their colors.
+[data-color-scheme='dark'] .leaflet-tile-pane .open-street-map-tiles {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.55);
+}
 
-  .station-marker-popup__price {
-    margin: 0 0 var(--space-2xs);
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-bold);
-  }
+// Station price tags: a small price board on a pointer, like the pylon at the roadside.
 
-  .station-marker-popup__link {
-    color: var(--color-primary);
+// Interactive markers keep their content size; `translate` (composed with the `transform` Leaflet
+// positions them with) puts the pointer tip or the cluster center onto the map point.
+.price-tag-marker,
+.price-cluster-marker {
+  --price-tag-pointer-size: var(--space-xs);
+
+  width: max-content;
+  cursor: pointer;
+
+  // The ring is drawn by the board inside, so it follows the selection scale.
+  &:focus-visible {
+    outline: none;
   }
 }
 
-.own-position-marker {
+.price-tag-marker {
+  translate: -50% calc(-100% - var(--price-tag-pointer-size) / 2);
+}
+
+.price-cluster-marker {
+  translate: -50% -50%;
+}
+
+.price-tag {
+  --price-tag-background: var(--color-surface);
+  --price-tag-foreground: var(--color-text);
+  --price-tag-edge: var(--color-surface);
+
+  position: relative;
+  // Keeps the pointer below the digits without sliding under the map.
+  isolation: isolate;
+  padding: var(--space-2xs) var(--space-xs);
+  border: var(--border-width-hairline) solid var(--price-tag-edge);
+  border-radius: var(--radius-sm);
+  background-color: var(--price-tag-background);
+  color: var(--price-tag-foreground);
+  box-shadow: var(--shadow-floating);
+  white-space: nowrap;
+  transform-origin: 50% calc(100% + var(--price-tag-pointer-size) / 2);
+  transition:
+    transform var(--duration-short) var(--easing-standard),
+    background-color var(--duration-short) var(--easing-standard);
+
+  // Pointer: a rotated square sharing the board's fill and edge.
+  &::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    bottom: calc(var(--price-tag-pointer-size) / -2 - var(--border-width-hairline));
+    left: 50%;
+    width: var(--price-tag-pointer-size);
+    height: var(--price-tag-pointer-size);
+    border-right: var(--border-width-hairline) solid var(--price-tag-edge);
+    border-bottom: var(--border-width-hairline) solid var(--price-tag-edge);
+    background-color: var(--price-tag-background);
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  &--without-price {
+    --price-tag-background: var(--color-canvas);
+    --price-tag-foreground: var(--color-text-secondary);
+    --price-tag-edge: var(--color-hairline);
+  }
+
+  &--cheapest {
+    --price-tag-background: var(--color-highlight);
+    --price-tag-foreground: var(--color-on-highlight);
+    --price-tag-edge: var(--color-highlight-edge);
+  }
+
+  // The light edge keeps the petrol board apart from dark map tiles.
+  &--selected {
+    --price-tag-background: var(--color-chrome);
+    --price-tag-foreground: var(--color-on-chrome);
+    --price-tag-edge: var(--color-on-chrome);
+
+    transform: scale(1.15);
+  }
+
+  // A selected cheapest station keeps the yellow as its edge.
+  &--selected.price-tag--cheapest {
+    --price-tag-edge: var(--color-highlight);
+  }
+
+  .price-tag-marker:hover > & {
+    --price-tag-edge: var(--color-border-control);
+  }
+
+  .price-tag-marker:hover > &--cheapest {
+    --price-tag-edge: var(--color-highlight-edge);
+  }
+
+  .price-tag-marker:hover > &--selected {
+    --price-tag-edge: var(--color-on-chrome);
+  }
+
+  .price-tag-marker:focus-visible > & {
+    outline: var(--border-width-focus) solid var(--color-focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+}
+
+.price-tag__price {
+  display: block;
+
+  @include typography.price-numerals(var(--font-size-price-tag));
+}
+
+// Clusters: how many stations, and the lowest price among them.
+
+.price-cluster {
+  display: flex;
+  align-items: stretch;
+  border: var(--border-width-hairline) solid var(--color-chrome);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-floating);
+  white-space: nowrap;
+  overflow: hidden;
+
+  .price-cluster-marker:focus-visible > & {
+    outline: var(--border-width-focus) solid var(--color-focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+}
+
+.price-cluster__count {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2xs) var(--space-xs);
+  background-color: var(--color-chrome);
+  color: var(--color-on-chrome);
+  font-family: var(--font-family-numerals);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-price);
+  font-variant-numeric: tabular-nums;
+}
+
+.price-cluster__lowest-price {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3xs);
+  padding: var(--space-2xs) var(--space-xs);
+
+  .price-cluster--cheapest & {
+    background-color: var(--color-highlight);
+    color: var(--color-on-highlight);
+  }
+}
+
+.price-cluster__from {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.price-cluster__price {
+  @include typography.price-numerals(var(--font-size-price-tag));
+}
+
+// Search center: a petrol pin for places, a red dot for the user's own position. Both are drawn
+// around a zero-sized, non-interactive icon.
+
+.location-pin {
+  --location-pin-size: var(--icon-size-md);
+
+  position: absolute;
+  // The pin's tip sits on the map point: half the head plus half its diagonal above it.
+  top: calc(var(--location-pin-size) * -1.207);
+  left: calc(var(--location-pin-size) / -2);
+  pointer-events: none;
+}
+
+.location-pin__head {
+  display: block;
+  width: var(--location-pin-size);
+  height: var(--location-pin-size);
+  border: var(--border-width-focus) solid var(--color-surface);
+  border-radius: var(--radius-round) var(--radius-round) var(--radius-round) 0;
+  background-color: var(--color-action);
+  box-shadow: var(--shadow-floating);
+  transform: rotate(-45deg);
+}
+
+.own-position-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: var(--icon-size-sm);
   height: var(--icon-size-sm);
   border: var(--border-width-focus) solid var(--color-surface);
   border-radius: var(--radius-round);
   background-color: var(--color-own-position);
-  box-shadow: var(--shadow-card);
+  box-shadow:
+    0 0 0 var(--space-xs) color-mix(in srgb, var(--color-own-position) 18%, transparent),
+    var(--shadow-floating);
+  transform: translate(-50%, -50%);
 }
 
-.leaflet-marker-icon:focus-visible {
-  outline: var(--border-width-focus) solid var(--color-focus-ring);
-  outline-offset: var(--focus-offset);
+.leaflet-tooltip.center-tooltip {
+  padding: var(--space-3xs) var(--space-xs);
+  border: none;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  box-shadow: var(--shadow-floating);
+
+  &.leaflet-tooltip-top::before {
+    border-top-color: var(--color-surface);
+  }
+}
+
+// Search radius: a hairline, the area inside only faintly tinted.
+.search-radius {
+  stroke: var(--color-text);
+  stroke-opacity: 0.7;
+  fill: var(--color-text);
+  fill-opacity: 0.05;
+}
+
+// Controls
+
+.leaflet-container .leaflet-bar {
+  border: none;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-floating);
+
+  a {
+    width: var(--layout-touch-target);
+    height: var(--layout-touch-target);
+    border-bottom-color: var(--color-hairline);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-size: var(--font-size-xl);
+    line-height: var(--layout-touch-target);
+
+    &:hover {
+      background-color: var(--color-canvas);
+      color: var(--color-text);
+    }
+
+    &:focus-visible {
+      position: relative;
+      z-index: 1;
+    }
+
+    &:first-child {
+      border-top-left-radius: var(--radius-sm);
+      border-top-right-radius: var(--radius-sm);
+    }
+
+    &:last-child {
+      border-bottom-left-radius: var(--radius-sm);
+      border-bottom-right-radius: var(--radius-sm);
+    }
+  }
+}
+
+// OpenStreetMap requires a visible attribution; it stays legible on every tile color.
+.leaflet-container .leaflet-control-attribution {
+  padding: 0 var(--space-2xs);
+  background-color: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+
+  a {
+    color: var(--color-action-text);
+  }
 }
