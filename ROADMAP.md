@@ -4,11 +4,14 @@ Ziel: GenialTanken als Fullstack-Showcase neu aufbauen (Angular + NestJS im Mono
 
 ## Entscheidungen
 
-- **Monorepo:** Nx mit pnpm als Paketmanager
+- **Monorepo:** pnpm Workspaces mit den offiziellen CLIs (Angular CLI, Nest CLI), ohne Nx. Grund: `@nx/nest` unterstützte NestJS 12 nicht, die Plugin-Schicht blockiert Framework-Updates. Bei zwei Apps bringen Build-Cache und `affected` kaum Nutzen.
   - `apps/web` – Angular
   - `apps/api` – NestJS
   - `packages/contracts` – geteilte DTO-Typen und zod-Schemas
 - **Rolle von NestJS:** Backend-for-Frontend (BFF) vor der tankentanken-API
+- **Module:** ESM durchgehend (Nest-12-Default)
+- **Tests:** Vitest überall (Angular- und Nest-12-Default), Supertest für API-E2E, Playwright für Browser-E2E
+- **Lint:** ESLint Flat Config im Root (typescript-eslint strict, angular-eslint inkl. Template-Accessibility)
 
 ## Phase 1 – BFF-Proxy (aktuell)
 
@@ -16,12 +19,12 @@ Ziel: GenialTanken als Fullstack-Showcase neu aufbauen (Angular + NestJS im Mono
 - [ ] NestJS-API aufsetzen (TypeScript strict, `@nestjs/config`)
 - [ ] Zugriff auf tankentanken-API in eigenem Client/Service kapseln
 - [ ] Feature-Module, z. B. `stations`, `prices`
-- [ ] Validierung mit zod + `nestjs-zod`, Schemas aus `packages/contracts`
+- [ ] Validierung mit zod über Nests eingebaute `StandardSchemaValidationPipe` (zod 4 implementiert Standard Schema; `nestjs-zod` unterstützt Nest 12 noch nicht), Schemas aus `packages/contracts`
 - [ ] Caching mit `@nestjs/cache-manager` (In-Memory, später austauschbar)
 - [ ] Rate-Limit mit `@nestjs/throttler`
 - [ ] OpenAPI-Doku mit `@nestjs/swagger`
 - [ ] Health-Endpoint mit `@nestjs/terminus`
-- [ ] Tests: Jest (Unit) und Supertest (E2E)
+- [ ] Tests: Vitest (Unit) und Supertest (E2E)
 - [ ] Angular ruft nur noch den BFF auf
 - [ ] Favoriten bleiben vorerst im localStorage, aber hinter einem Service abstrahiert
 
@@ -42,12 +45,12 @@ Ziel: GenialTanken als Fullstack-Showcase neu aufbauen (Angular + NestJS im Mono
 
 Vorgabe: Alles muss dauerhaft kostenlos laufen. Keine kostenpflichtigen Dienste einführen; falls etwas nur kostenpflichtig geht, vorher nachfragen.
 
-| Teil | Dienst | Hinweise |
-| ---- | ------ | -------- |
-| Frontend (`apps/web`) | Cloudflare Pages (Free) | Statischer Angular-Build |
-| Backend (`apps/api`) | Render Free Web Service | Build direkt aus Dockerfile im Repo |
-| Datenbank (Phase 2) | Neon Free (Postgres) | |
-| CI | GitHub Actions | Öffentliches Repo, unbegrenzte Minuten |
+| Teil                  | Dienst                  | Hinweise                               |
+| --------------------- | ----------------------- | -------------------------------------- |
+| Frontend (`apps/web`) | Cloudflare Pages (Free) | Statischer Angular-Build               |
+| Backend (`apps/api`)  | Render Free Web Service | Build direkt aus Dockerfile im Repo    |
+| Datenbank (Phase 2)   | Neon Free (Postgres)    |                                        |
+| CI                    | GitHub Actions          | Öffentliches Repo, unbegrenzte Minuten |
 
 Umsetzung:
 
@@ -60,4 +63,4 @@ Umsetzung:
 
 ## Warum dieser Stack
 
-Fullstack-Stellen fragen vor allem nach Datenbank-Erfahrung (PostgreSQL, ORM wie Prisma), Auth sowie sauberem API-Design. Nx ist im Angular-Enterprise-Umfeld verbreitet.
+Fullstack-Stellen fragen vor allem nach Datenbank-Erfahrung (PostgreSQL, ORM wie Prisma), Auth sowie sauberem API-Design. Bewusst schlankes Monorepo-Setup ohne Nx: weniger Kopplung, Framework-Updates ohne Wartezeit auf Plugins.
