@@ -1,7 +1,8 @@
 @use 'breakpoints';
 
-// Slim, quiet header on the canvas: the title is aligned with the page content column. It
-// absorbs the top safe area, so pages below it do not have to.
+// iOS navigation bar with a large title on the canvas: the back button sits above the title,
+// which is aligned with the page content column. It absorbs the top safe area, so pages below it
+// do not have to.
 
 :host {
   position: sticky;
@@ -12,14 +13,15 @@
 
 .page-header {
   padding-top: var(--safe-area-top);
-  border-bottom: var(--border-width-hairline) solid var(--color-hairline);
-  background-color: var(--color-canvas);
+  background-color: var(--material-bar);
+  backdrop-filter: var(--material-blur);
 }
 
 .page-header__inner {
   display: flex;
-  align-items: center;
-  gap: var(--space-xs);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3xs);
   max-width: var(--layout-content-max-width);
   min-height: calc(var(--layout-touch-target) + var(--space-sm));
   margin: 0 auto;
@@ -41,7 +43,7 @@
   margin-left: calc(-1 * var(--space-xs));
   padding: 0 var(--space-xs);
   border-radius: var(--radius-sm);
-  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-md);
   text-decoration: none;
   touch-action: manipulation;
 
@@ -51,15 +53,13 @@
 }
 
 .page-header__back-icon {
-  font-size: var(--icon-size-sm);
+  font-size: var(--icon-size-md);
 }
 
 .page-header__title {
   min-width: 0;
   overflow-wrap: anywhere;
-  font-size: var(--font-size-xl);
-
-  @include breakpoints.medium-and-up {
-    font-size: var(--font-size-2xl);
-  }
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
 }

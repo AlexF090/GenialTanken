@@ -41,6 +41,10 @@
   border-radius: var(--radius-menu);
   background: var(--material-menu);
   color: var(--color-text);
+  // Not inherited from the button's look
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-tight);
   box-shadow: var(--shadow-menu);
   backdrop-filter: var(--material-blur);
   transform-origin: top left;

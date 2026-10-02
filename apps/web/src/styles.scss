@@ -1,10 +1,3 @@
-// TODO(fonts): import the latin subsets once @fontsource/barlow and
-// @fontsource/barlow-semi-condensed are installed (blocked by the minimum release age for now):
-//   @use '@fontsource/barlow/latin-400.css';
-//   @use '@fontsource/barlow/latin-500.css';
-//   @use '@fontsource/barlow/latin-600.css';
-//   @use '@fontsource/barlow-semi-condensed/latin-600.css';
-//   @use '@fontsource/barlow-semi-condensed/latin-700.css';
 @use 'styles/breakpoints';
 @use 'styles/tokens';
 @use 'styles/map';
@@ -185,6 +178,25 @@ select {
       color: var(--color-action-text-hover);
     }
   }
+}
+
+// Round button with only an icon; the accessible name comes from `aria-label`.
+.icon-button {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--layout-touch-target);
+  height: var(--layout-touch-target);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-round);
+  background: none;
+  color: var(--color-action-text);
+  font-size: var(--icon-size-sm);
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 .message {

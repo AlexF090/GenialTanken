@@ -1,4 +1,5 @@
-// A price board, not cards: hairline-separated rows with the price column aligned on the right.
+// An iOS list: rows separated by a hairline inset from the leading edge, prices aligned on the
+// right.
 .station-list {
   list-style: none;
 }
@@ -13,16 +14,17 @@
   column-gap: var(--space-md);
   row-gap: var(--space-2xs);
   padding: var(--space-sm) var(--space-md);
-  border-bottom: var(--border-width-hairline) solid var(--color-hairline);
+  background: linear-gradient(var(--color-hairline), var(--color-hairline)) no-repeat right bottom /
+    calc(100% - var(--space-md)) var(--border-width-hairline);
   transition: background-color var(--duration-short) var(--easing-standard);
 
   &:hover {
-    background-color: var(--color-canvas);
+    background-color: var(--color-menu-highlight);
   }
 
   // Marker bar of the station shown on the map
   &--selected {
-    background-color: var(--color-canvas);
+    background-color: color-mix(in srgb, var(--color-action) 10%, transparent);
 
     &::before {
       content: '';
@@ -44,8 +46,8 @@
 
 .station-row__title {
   overflow: hidden;
-  color: var(--color-action-text);
-  font-size: var(--font-size-lg);
+  color: var(--color-text);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   text-decoration: none;
@@ -96,7 +98,7 @@
   color: var(--color-text);
 }
 
-// The yellow is reserved for the cheapest price and always comes with its label
+// The green is reserved for the cheapest price and always comes with its label
 .station-row--cheapest .station-row__price {
   border-color: var(--color-highlight-edge);
   background-color: var(--color-highlight);

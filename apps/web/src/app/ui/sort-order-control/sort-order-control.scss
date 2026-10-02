@@ -5,32 +5,32 @@
 .sort-order-control {
   display: inline-flex;
   padding: var(--space-3xs);
-  border: var(--border-width-thin) solid var(--color-border-control);
+  border: 0;
   border-radius: var(--radius-sm);
-  background-color: var(--color-surface);
+  background-color: var(--color-segmented-track);
 }
 
+// iOS segmented control: the chosen segment is a raised plate on a grey track.
 .sort-order-control__option {
   position: relative;
   display: inline-flex;
   align-items: center;
   min-height: calc(var(--layout-touch-target) - 2 * var(--space-3xs));
   padding-inline: var(--space-sm);
-  border-radius: var(--radius-sm);
-  color: var(--color-action-text);
+  border-radius: calc(var(--radius-sm) - var(--space-3xs));
+  color: var(--color-text);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
   touch-action: manipulation;
-  transition: background-color var(--duration-short) var(--easing-standard);
-
-  &:hover {
-    color: var(--color-action-text-hover);
-  }
+  transition:
+    background-color var(--duration-short) var(--easing-standard),
+    box-shadow var(--duration-short) var(--easing-standard);
 
   &:has(:checked) {
-    background-color: var(--color-action);
-    color: var(--color-on-action);
+    background-color: var(--color-segmented-thumb);
+    font-weight: var(--font-weight-bold);
+    box-shadow: 0 1px 3px var(--color-shadow);
   }
 
   &:has(:focus-visible) {

@@ -57,20 +57,7 @@
 }
 
 .place-search-field__clear {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: var(--layout-touch-target);
-  height: var(--layout-touch-target);
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-round);
-  background: none;
   color: var(--color-text-secondary);
-  font-size: var(--icon-size-sm);
-  cursor: pointer;
 }
 
 .place-search-field__results {

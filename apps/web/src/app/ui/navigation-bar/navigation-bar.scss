@@ -1,8 +1,8 @@
 @use 'breakpoints';
 
-// Compact: bottom bar with the items side by side. Medium and up: navigation rail with the
-// items stacked from the top. The active item carries a bar on the edge facing the content
-// (top on the bottom bar, left on the rail) and a heavier label, not only a brighter color.
+// Compact: iOS tab bar with the items side by side. Medium and up: sidebar rail with the items
+// stacked from the top. Both are a translucent material over the content. The active item is
+// tinted and carries a heavier label, so it is not told by color alone.
 
 :host {
   display: block;
@@ -11,14 +11,18 @@
 .navigation-bar {
   height: calc(var(--layout-navigation-height) + var(--safe-area-bottom));
   padding: 0 var(--safe-area-right) var(--safe-area-bottom) var(--safe-area-left);
+  border-top: var(--border-width-hairline) solid var(--color-hairline);
   background-color: var(--color-chrome);
   color: var(--color-on-chrome-secondary);
+  backdrop-filter: var(--material-blur);
 
   @include breakpoints.medium-and-up {
     width: calc(var(--layout-rail-width) + var(--safe-area-left));
     height: 100%;
     padding: calc(var(--safe-area-top) + var(--space-md)) 0 var(--safe-area-bottom)
       var(--safe-area-left);
+    border-top: 0;
+    border-right: var(--border-width-hairline) solid var(--color-hairline);
   }
 }
 
@@ -55,6 +59,7 @@
   min-height: var(--layout-touch-target);
   padding: var(--space-xs) var(--space-2xs);
   color: inherit;
+  // Tab bar labels: 10 points like iOS would be too small for many; caption size instead
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-tight);
@@ -71,30 +76,6 @@
     padding: var(--space-sm) var(--space-3xs);
   }
 
-  // Indicator bar, shown on the active link only
-  &::before {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    width: var(--space-xl);
-    height: var(--space-2xs);
-    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-    background-color: currentcolor;
-    content: '';
-    opacity: 0;
-    transform: translateX(-50%);
-    transition: opacity var(--duration-short) var(--easing-standard);
-
-    @include breakpoints.medium-and-up {
-      top: 50%;
-      left: 0;
-      width: var(--space-2xs);
-      height: var(--space-xl);
-      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-      transform: translateY(-50%);
-    }
-  }
-
   &:hover {
     color: var(--color-on-chrome);
   }
@@ -107,10 +88,6 @@
   &--active {
     color: var(--color-on-chrome);
     font-weight: var(--font-weight-bold);
-
-    &::before {
-      opacity: 1;
-    }
   }
 }
 

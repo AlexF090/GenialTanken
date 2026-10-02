@@ -42,9 +42,10 @@
   }
 }
 
+// The iOS grabber: 36 × 5 points
 .bottom-sheet__grip {
-  width: var(--icon-size-lg);
-  height: var(--space-2xs);
+  width: 2.25rem;
+  height: 0.3125rem;
   border-radius: var(--radius-pill);
   background-color: var(--color-border-control);
 }
@@ -61,7 +62,9 @@
     z-index: calc(var(--layer-chrome) - 1);
     padding-inline: var(--safe-area-left) var(--safe-area-right);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background-color: var(--material-sheet);
     box-shadow: var(--shadow-floating);
+    backdrop-filter: var(--material-blur);
     transform: translateY(var(--bottom-sheet-offset, 0));
 
     &--animated {

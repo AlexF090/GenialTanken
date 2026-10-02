@@ -1,5 +1,6 @@
 // Leaflet renders markers, tooltips and controls outside of Angular's view encapsulation, so
 // their styles live here instead of in the map components.
+@use 'breakpoints';
 @use 'typography';
 
 .leaflet-container {
@@ -89,16 +90,16 @@
     --price-tag-edge: var(--color-highlight-edge);
   }
 
-  // The light edge keeps the petrol board apart from dark map tiles.
+  // Tinted like a selected pin in Apple Maps; the surface edge keeps it apart from dark tiles.
   &--selected {
-    --price-tag-background: var(--color-chrome);
-    --price-tag-foreground: var(--color-on-chrome);
-    --price-tag-edge: var(--color-on-chrome);
+    --price-tag-background: var(--color-action);
+    --price-tag-foreground: var(--color-on-action);
+    --price-tag-edge: var(--color-surface);
 
     transform: scale(1.15);
   }
 
-  // A selected cheapest station keeps the yellow as its edge.
+  // A selected cheapest station keeps the green as its edge.
   &--selected.price-tag--cheapest {
     --price-tag-edge: var(--color-highlight);
   }
@@ -112,7 +113,7 @@
   }
 
   .price-tag-marker:hover > &--selected {
-    --price-tag-edge: var(--color-on-chrome);
+    --price-tag-edge: var(--color-surface);
   }
 
   .price-tag-marker:focus-visible > & {
@@ -127,7 +128,7 @@
   @include typography.price-numerals(var(--font-size-price-tag));
 }
 
-// Names the cheapest price in words, so it is not told by the yellow alone.
+// Names the cheapest price in words, so it is not told by the green alone.
 .price-tag__caption,
 .price-cluster__caption {
   display: block;
@@ -146,7 +147,7 @@
 .price-cluster {
   display: flex;
   align-items: stretch;
-  border: var(--border-width-hairline) solid var(--color-chrome);
+  border: var(--border-width-hairline) solid var(--color-hairline);
   border-radius: var(--radius-sm);
   background-color: var(--color-surface);
   color: var(--color-text);
@@ -164,8 +165,8 @@
   display: flex;
   align-items: center;
   padding: var(--space-2xs) var(--space-xs);
-  background-color: var(--color-chrome);
-  color: var(--color-on-chrome);
+  background-color: var(--color-action);
+  color: var(--color-on-action);
   font-family: var(--font-family-numerals);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-price);
@@ -200,7 +201,7 @@
   grid-column: 1 / -1;
 }
 
-// Search center: a petrol pin for places, a red dot for the user's own position. Both are drawn
+// Search center: a tinted pin for places, a blue dot for the user's own position. Both are drawn
 // around a zero-sized, non-interactive icon.
 
 .location-pin {
@@ -272,6 +273,13 @@
 }
 
 // Controls
+
+// Phones zoom with two fingers, like Apple Maps; the buttons would crowd the search field.
+app-stations-map .leaflet-control-zoom {
+  @include breakpoints.compact {
+    display: none;
+  }
+}
 
 .leaflet-container .leaflet-bar {
   border: none;

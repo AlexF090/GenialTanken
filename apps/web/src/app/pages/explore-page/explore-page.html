@@ -26,7 +26,7 @@
       </app-place-search-field>
       <button
         type="button"
-        class="explore-page__locate"
+        class="icon-button explore-page__locate"
         aria-label="Meinen Standort verwenden"
         [class.explore-page__locate--active]="isAtOwnPosition()"
         [attr.aria-disabled]="isLocating()"
@@ -68,7 +68,7 @@
         <app-sort-order-control [(sortOrder)]="sortOrder" />
         <button
           type="button"
-          class="explore-page__refresh"
+          class="icon-button explore-page__refresh"
           aria-label="Aktualisieren"
           (click)="refresh()">
           <app-icon name="refresh" />

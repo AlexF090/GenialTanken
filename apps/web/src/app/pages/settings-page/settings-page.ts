@@ -10,6 +10,7 @@ import type { ColorSchemePreference } from '@genialtanken/contracts';
 import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
 import { SettingsStore } from '../../core/settings/settings-store';
 import type { Settings } from '../../core/settings/settings-store';
+import { Icon } from '../../ui/icon/icon';
 import { PageHeader } from '../../ui/page-header/page-header';
 
 type SearchSettings = Pick<Settings, 'fuelType' | 'radiusInKilometers'>;
@@ -23,7 +24,7 @@ const COLOR_SCHEME_LABELS: Record<ColorSchemePreference, string> = {
 /** Changes apply immediately and persist; there is nothing to submit. */
 @Component({
   selector: 'app-settings-page',
-  imports: [PageHeader, FormField],
+  imports: [PageHeader, FormField, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',

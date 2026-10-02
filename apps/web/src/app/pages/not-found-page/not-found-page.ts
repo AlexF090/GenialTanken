@@ -31,8 +31,9 @@ import { PageHeader } from '../../ui/page-header/page-header';
       display: inline-flex;
       padding: var(--space-md) var(--space-lg);
       border-radius: var(--radius-sm);
-      background-color: var(--color-chrome);
-      color: var(--color-on-chrome);
+      background-color: var(--color-surface);
+      color: var(--color-text);
+      box-shadow: var(--shadow-floating);
     }
 
     .not-found__code {

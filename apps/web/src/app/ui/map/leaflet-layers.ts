@@ -71,7 +71,7 @@ const createPriceDigits = (className: string, priceInEuro: number | null): HTMLE
   return digits;
 };
 
-/** Visible word for the cheapest price, so it is not told by the yellow alone (WCAG 1.4.1). */
+/** Visible word for the cheapest price, so it is not told by the green alone (WCAG 1.4.1). */
 const CHEAPEST_CAPTION = 'günstigst';
 
 /** Screen readers hear "günstigster Preis" in the accessible name instead. */
