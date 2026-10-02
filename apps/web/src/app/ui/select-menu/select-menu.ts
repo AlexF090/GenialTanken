@@ -1,8 +1,8 @@
+import type { ElementRef } from '@angular/core';
 import {
   afterRenderEffect,
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
   input,
   model,
   signal,
