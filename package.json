@@ -1,23 +1,28 @@
 {
-  "name": "express-react-app",
+  "name": "genialtanken",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
-  "description": "",
-  "scripts": {
-    "server": "cd server && npm start",
-    "client": "cd client && npm start",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "cd client && npm run build",
-    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
-    "install:frontend": "cd client && npm install",
-    "prettier:check": "npx prettier --check .",
-    "prettier:write": "npx prettier --write ."
+  "description": "Gas station price app: list and map of daily fuel prices by location and radius.",
+  "engines": {
+    "node": ">=24"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "concurrently": "^7.1.0",
-    "react-icons": "^4.3.1"
-  }
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.8.1",
+      "onFail": "download"
+    }
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --recursive run dev",
+    "client": "pnpm --filter client start",
+    "server": "pnpm --filter server start",
+    "build": "pnpm --filter client build",
+    "test": "pnpm --filter client test",
+    "storybook": "pnpm --filter client storybook",
+    "prettier:check": "prettier --check .",
+    "prettier:write": "prettier --write ."
+  },
+  "license": "ISC"
 }
