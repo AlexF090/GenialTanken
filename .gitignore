@@ -33,3 +33,6 @@ coverage
 # Wrangler local state and secrets
 .dev.vars
 .wrangler
+
+# Machine-specific Claude Code settings (environment description)
+.claude/settings.local.json
