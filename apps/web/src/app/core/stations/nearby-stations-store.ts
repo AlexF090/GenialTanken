@@ -2,7 +2,7 @@ import { computed, inject, Injectable } from '@angular/core';
 import { isSamePosition } from '../geolocation/coordinates';
 import { SearchCenterStore } from '../search-center/search-center-store';
 import { SettingsStore } from '../settings/settings-store';
-import { cheapestStationIds } from './cheapest-station-ids';
+import { cheapestStationIdentifiers } from './cheapest-station-identifiers';
 import { describeStationsError } from './stations-error-message';
 import { StationsApi } from './stations-api';
 import type { StationsSearch } from './stations-api';
@@ -49,8 +49,8 @@ export class NearbyStationsStore {
     const error = this.stationsResource.error();
     return error === undefined ? undefined : describeStationsError(error);
   });
-  readonly cheapestStationIds = computed(() =>
-    cheapestStationIds(this.stations(), this.settings.fuelType())
+  readonly cheapestStationIdentifiers = computed(() =>
+    cheapestStationIdentifiers(this.stations(), this.settings.fuelType())
   );
 
   /** Fetches fresh prices for the current search. */

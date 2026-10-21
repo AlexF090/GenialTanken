@@ -46,8 +46,8 @@ export interface ViewportPadding {
 interface MarkerContext {
   fuelType: FuelType;
   priceRange: PriceRange | undefined;
-  cheapestStationIds: ReadonlySet<string>;
-  selectedStationId: string | undefined;
+  cheapestStationIdentifiers: ReadonlySet<string>;
+  selectedStationIdentifier: string | undefined;
 }
 
 const NO_VIEWPORT_PADDING: ViewportPadding = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -137,8 +137,8 @@ export class StationsMap {
   readonly fuelType = input.required<FuelType>();
   readonly center = input.required<SearchCenter>();
   readonly radiusInKilometers = input.required<number>();
-  readonly selectedStationId = input<string>();
-  readonly cheapestStationIds = input<ReadonlySet<string>>(new Set());
+  readonly selectedStationIdentifier = input<string>();
+  readonly cheapestStationIdentifiers = input<ReadonlySet<string>>(new Set());
   readonly colorScheme = input<ResolvedColorScheme>('light');
   readonly viewportPadding = input<ViewportPadding>(NO_VIEWPORT_PADDING);
   /** Emitted with the station id when a price tag is clicked or activated with the keyboard. */
@@ -153,7 +153,9 @@ export class StationsMap {
     '(prefers-reduced-motion: reduce)'
   );
   private readonly map = signal<L.Map | undefined>(undefined);
-  private readonly markersByStationId = signal<ReadonlyMap<string, StationMarker>>(new Map());
+  private readonly markersByStationIdentifier = signal<ReadonlyMap<string, StationMarker>>(
+    new Map()
+  );
   private readonly markerClusterGroup = L.markerClusterGroup({
     iconCreateFunction: createClusterIcon,
     showCoverageOnHover: false,
@@ -163,7 +165,7 @@ export class StationsMap {
     zoomToBoundsOnClick: false,
     spiderfyOnMaxZoom: false,
   });
-  private revealedStationId: string | undefined;
+  private revealedStationIdentifier: string | undefined;
   private markerReveal: MarkerReveal | undefined;
   /** Set once the user drags the map; overlay changes then no longer move the view. */
   private hasUserMovedMap = false;
@@ -221,10 +223,12 @@ export class StationsMap {
       if (!hasPaddingChanged) {
         return;
       }
-      const selectedStationId = untracked(() => this.selectedStationId());
-      if (selectedStationId !== undefined) {
+      const selectedStationIdentifier = untracked(() => this.selectedStationIdentifier());
+      if (selectedStationIdentifier !== undefined) {
         // E.g. the sheet moved after a price tag was chosen: keep that station in the middle.
-        const selectedMarker = untracked(() => this.markersByStationId()).get(selectedStationId);
+        const selectedMarker = untracked(() => this.markersByStationIdentifier()).get(
+          selectedStationIdentifier
+        );
         if (selectedMarker !== undefined && !this.hasUserMovedMapSinceReveal) {
           untracked(() => {
             this.reveal(map, selectedMarker);
@@ -287,8 +291,8 @@ export class StationsMap {
         return;
       }
       const fuelType = this.fuelType();
-      const cheapestStationIds = this.cheapestStationIds();
-      const selectedStationId = untracked(() => this.selectedStationId());
+      const cheapestStationIdentifiers = this.cheapestStationIdentifiers();
+      const selectedStationIdentifier = untracked(() => this.selectedStationIdentifier());
       const stations = this.stations();
       const priceRange = priceRangeOf(stations.map(station => priceInEuro(station, fuelType)));
       const markers = new Map(
@@ -297,42 +301,45 @@ export class StationsMap {
           this.createMarker(station, {
             fuelType,
             priceRange,
-            cheapestStationIds,
-            selectedStationId,
+            cheapestStationIdentifiers,
+            selectedStationIdentifier,
           }),
         ])
       );
       // A reveal still in progress targets a replaced marker; reveal the new one instead.
       if (this.markerReveal?.isPending === true) {
         this.markerReveal.cancel();
-        this.revealedStationId = undefined;
+        this.revealedStationIdentifier = undefined;
       }
       this.markerClusterGroup.clearLayers();
       this.markerClusterGroup.addLayers([...markers.values()]);
-      this.markersByStationId.set(markers);
+      this.markersByStationIdentifier.set(markers);
     });
 
     effect(() => {
       const map = this.map();
-      const selectedStationId = this.selectedStationId();
-      const markers = this.markersByStationId();
+      const selectedStationIdentifier = this.selectedStationIdentifier();
+      const markers = this.markersByStationIdentifier();
       if (map === undefined) {
         return;
       }
-      for (const [stationId, marker] of markers) {
-        marker.setSelected(stationId === selectedStationId);
+      for (const [stationIdentifier, marker] of markers) {
+        marker.setSelected(stationIdentifier === selectedStationIdentifier);
       }
-      if (selectedStationId === undefined) {
+      if (selectedStationIdentifier === undefined) {
         this.markerReveal?.cancel();
-        this.revealedStationId = undefined;
+        this.revealedStationIdentifier = undefined;
         return;
       }
       // Revealed once per selection, not again whenever the markers are rebuilt.
-      const selectedMarker = markers.get(selectedStationId);
-      if (selectedMarker === undefined || selectedStationId === this.revealedStationId) {
+      const selectedMarker = markers.get(selectedStationIdentifier);
+      if (
+        selectedMarker === undefined ||
+        selectedStationIdentifier === this.revealedStationIdentifier
+      ) {
         return;
       }
-      this.revealedStationId = selectedStationId;
+      this.revealedStationIdentifier = selectedStationIdentifier;
       untracked(() => {
         this.reveal(map, selectedMarker);
       });
@@ -352,7 +359,7 @@ export class StationsMap {
   private createMarker(station: Station, context: MarkerContext): StationMarker {
     const price = priceInEuro(station, context.fuelType);
     const marker = new StationMarker({
-      stationId: station.id,
+      stationIdentifier: station.id,
       coordinates: station.address,
       title: stationTitle(station),
       priceInEuro: price,
@@ -360,13 +367,13 @@ export class StationsMap {
         price === null || context.priceRange === undefined
           ? undefined
           : priceLevelOf(price, context.priceRange),
-      isCheapest: context.cheapestStationIds.has(station.id),
-      isSelected: station.id === context.selectedStationId,
+      isCheapest: context.cheapestStationIdentifiers.has(station.id),
+      isSelected: station.id === context.selectedStationIdentifier,
     });
     marker.on('click', () => {
       // A selection does not change when its price tag is clicked again, so center it here.
       const map = this.map();
-      if (map !== undefined && this.selectedStationId() === station.id) {
+      if (map !== undefined && this.selectedStationIdentifier() === station.id) {
         this.reveal(map, marker);
       }
       this.stationSelected.emit(station.id);
@@ -403,11 +410,11 @@ export class StationsMap {
   /** Centers the selected station again, e.g. when its row in the list is chosen once more. */
   revealSelectedStation(): void {
     const map = this.map();
-    const selectedStationId = this.selectedStationId();
+    const selectedStationIdentifier = this.selectedStationIdentifier();
     const marker =
-      selectedStationId === undefined
+      selectedStationIdentifier === undefined
         ? undefined
-        : this.markersByStationId().get(selectedStationId);
+        : this.markersByStationIdentifier().get(selectedStationIdentifier);
     if (map !== undefined && marker !== undefined) {
       this.reveal(map, marker);
     }

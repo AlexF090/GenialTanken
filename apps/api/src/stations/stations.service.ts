@@ -69,7 +69,7 @@ export class StationsService {
   }
 
   /** Expects an identifier matching `STATION_IDENTIFIER_PATTERN`. */
-  async findStationById(identifier: string): Promise<Station> {
+  async findStationByIdentifier(identifier: string): Promise<Station> {
     const { countryPrefix, localIdentifier } = splitStationIdentifier(identifier);
     const provider = this.providers.find(
       candidate => toCountryPrefix(candidate.country) === countryPrefix
@@ -80,7 +80,7 @@ export class StationsService {
 
     let station: Station | null;
     try {
-      station = await provider.findStationById(localIdentifier);
+      station = await provider.findStationByIdentifier(localIdentifier);
     } catch (error) {
       this.logProviderFailure(provider, error);
       throw new BadGatewayException(ERROR_MESSAGES.upstreamUnavailable);

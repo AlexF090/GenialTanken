@@ -52,7 +52,7 @@ export class FranceFuelPriceProvider implements FuelPriceProvider {
     );
   }
 
-  async findStationById(localIdentifier: string): Promise<Station | null> {
+  async findStationByIdentifier(localIdentifier: string): Promise<Station | null> {
     if (!NUMERIC_IDENTIFIER_PATTERN.test(localIdentifier)) {
       return null;
     }

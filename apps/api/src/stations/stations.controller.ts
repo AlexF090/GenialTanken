@@ -53,8 +53,8 @@ export class StationsController {
     standardSchema: documentedApiErrorSchema,
   })
   async findOne(
-    @Param('id', { schema: stationIdentifierSchema }) stationId: string
+    @Param('id', { schema: stationIdentifierSchema }) stationIdentifier: string
   ): Promise<Station> {
-    return this.stationsService.findStationById(stationId);
+    return this.stationsService.findStationByIdentifier(stationIdentifier);
   }
 }

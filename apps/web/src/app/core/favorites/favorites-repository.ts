@@ -4,5 +4,5 @@
  */
 export abstract class FavoritesRepository {
   abstract load(): readonly string[];
-  abstract save(stationIds: readonly string[]): void;
+  abstract save(stationIdentifiers: readonly string[]): void;
 }

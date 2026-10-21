@@ -102,9 +102,9 @@
       <app-station-list
         [stations]="stations()"
         [fuelType]="fuelType()"
-        [favoriteStationIds]="favoriteStationIds()"
-        [cheapestStationIds]="cheapestStationIds()"
-        [selectedStationId]="selectedStationId()"
+        [favoriteStationIdentifiers]="favoriteStationIdentifiers()"
+        [cheapestStationIdentifiers]="cheapestStationIdentifiers()"
+        [selectedStationIdentifier]="selectedStationIdentifier()"
         [selectsOnMap]="true"
         (stationSelected)="showOnMap($event)"
         (favoriteToggled)="toggleFavorite($event)" />
@@ -118,8 +118,8 @@
     [fuelType]="fuelType()"
     [center]="center()"
     [radiusInKilometers]="radiusInKilometers()"
-    [selectedStationId]="selectedStationId()"
-    [cheapestStationIds]="cheapestStationIds()"
+    [selectedStationIdentifier]="selectedStationIdentifier()"
+    [cheapestStationIdentifiers]="cheapestStationIdentifiers()"
     [colorScheme]="colorScheme()"
     [viewportPadding]="mapViewportPadding()"
     (stationSelected)="selectFromMap($event)"

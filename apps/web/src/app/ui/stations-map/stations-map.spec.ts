@@ -16,8 +16,8 @@ import { centerForVisibleArea, StationsMap } from './stations-map';
 interface RenderOptions {
   center?: SearchCenter;
   hasSize?: boolean;
-  selectedStationId?: string;
-  cheapestStationIds?: ReadonlySet<string>;
+  selectedStationIdentifier?: string;
+  cheapestStationIdentifiers?: ReadonlySet<string>;
 }
 
 /** Pixel offset of a point from the map center the map pans to, at the current zoom. */
@@ -35,15 +35,15 @@ const render = async (stations: readonly Station[], options: RenderOptions = {})
   fixture.componentRef.setInput('fuelType', 'e5');
   fixture.componentRef.setInput('center', options.center ?? DEFAULT_SEARCH_CENTER);
   fixture.componentRef.setInput('radiusInKilometers', 5);
-  fixture.componentRef.setInput('selectedStationId', options.selectedStationId);
-  if (options.cheapestStationIds !== undefined) {
-    fixture.componentRef.setInput('cheapestStationIds', options.cheapestStationIds);
+  fixture.componentRef.setInput('selectedStationIdentifier', options.selectedStationIdentifier);
+  if (options.cheapestStationIdentifiers !== undefined) {
+    fixture.componentRef.setInput('cheapestStationIdentifiers', options.cheapestStationIdentifiers);
   }
   await fixture.whenStable();
   const element = fixture.nativeElement as HTMLElement;
   const stationSelections: string[] = [];
-  fixture.componentInstance.stationSelected.subscribe(stationId =>
-    stationSelections.push(stationId)
+  fixture.componentInstance.stationSelected.subscribe(stationIdentifier =>
+    stationSelections.push(stationIdentifier)
   );
   return { fixture, element, stationSelections };
 };
@@ -79,7 +79,7 @@ describe('StationsMap', () => {
 
   it('shows a price tag for every station and points out the cheapest', async () => {
     const { element } = await render([totalStation, carrefourStation, unbrandedStation], {
-      cheapestStationIds: new Set([unbrandedStation.id]),
+      cheapestStationIdentifiers: new Set([unbrandedStation.id]),
     });
 
     expect(markerNames(element).sort()).toEqual([
@@ -135,7 +135,7 @@ describe('StationsMap', () => {
 
   it('marks the selected station and follows selection changes from outside', async () => {
     const { fixture, element } = await render([totalStation, carrefourStation], {
-      selectedStationId: totalStation.id,
+      selectedStationIdentifier: totalStation.id,
     });
     const pressedNames = (): string[] =>
       markerButtons(element)
@@ -144,7 +144,7 @@ describe('StationsMap', () => {
 
     expect(pressedNames()).toEqual(['TotalEnergies, 1,859 €']);
 
-    fixture.componentRef.setInput('selectedStationId', carrefourStation.id);
+    fixture.componentRef.setInput('selectedStationIdentifier', carrefourStation.id);
     await fixture.whenStable();
 
     expect(pressedNames()).toEqual(['Carrefour Market, 1,839 €']);
@@ -156,7 +156,7 @@ describe('StationsMap', () => {
       hasSize: false,
     });
 
-    fixture.componentRef.setInput('selectedStationId', carrefourStation.id);
+    fixture.componentRef.setInput('selectedStationIdentifier', carrefourStation.id);
     await fixture.whenStable();
     fixture.componentRef.setInput('stations', [unbrandedStation]);
     await fixture.whenStable();
@@ -200,7 +200,7 @@ describe('StationsMap', () => {
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
 
-      fixture.componentRef.setInput('selectedStationId', totalStation.id);
+      fixture.componentRef.setInput('selectedStationIdentifier', totalStation.id);
       await fixture.whenStable();
 
       const map = panTo.mock.contexts.at(-1) as L.Map;
@@ -215,7 +215,9 @@ describe('StationsMap', () => {
 
     it('centers the selected station again when its price tag is clicked again', async () => {
       const panTo = vi.spyOn(L.Map.prototype, 'panTo');
-      const { element } = await render([totalStation], { selectedStationId: totalStation.id });
+      const { element } = await render([totalStation], {
+        selectedStationIdentifier: totalStation.id,
+      });
       panTo.mockClear();
 
       markerButton(element, 'TotalEnergies, 1,859 €').click();
@@ -225,7 +227,9 @@ describe('StationsMap', () => {
 
     it('centers the selected station again on request', async () => {
       const panTo = vi.spyOn(L.Map.prototype, 'panTo');
-      const { fixture } = await render([totalStation], { selectedStationId: totalStation.id });
+      const { fixture } = await render([totalStation], {
+        selectedStationIdentifier: totalStation.id,
+      });
       panTo.mockClear();
 
       fixture.componentInstance.revealSelectedStation();
@@ -235,7 +239,9 @@ describe('StationsMap', () => {
 
     it('keeps the selected station centered when the overlays move', async () => {
       const panTo = vi.spyOn(L.Map.prototype, 'panTo');
-      const { fixture } = await render([totalStation], { selectedStationId: totalStation.id });
+      const { fixture } = await render([totalStation], {
+        selectedStationIdentifier: totalStation.id,
+      });
       panTo.mockClear();
 
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
@@ -246,7 +252,9 @@ describe('StationsMap', () => {
 
     it('leaves the view alone when the overlays move after the user moved the map', async () => {
       const panTo = vi.spyOn(L.Map.prototype, 'panTo');
-      const { fixture } = await render([totalStation], { selectedStationId: totalStation.id });
+      const { fixture } = await render([totalStation], {
+        selectedStationIdentifier: totalStation.id,
+      });
       const map = panTo.mock.contexts.at(-1) as L.Map;
       panTo.mockClear();
 
@@ -315,7 +323,7 @@ describe('StationsMap', () => {
   describe('centerForVisibleArea', () => {
     it('is the point itself without overlays and shifts by half of each overlay', async () => {
       const panTo = vi.spyOn(L.Map.prototype, 'panTo');
-      await render([totalStation], { selectedStationId: totalStation.id });
+      await render([totalStation], { selectedStationIdentifier: totalStation.id });
       const map = panTo.mock.contexts.at(-1) as L.Map;
       const point = L.latLng(48.86, 2.34);
 
@@ -402,7 +410,9 @@ describe('StationsMap', () => {
 
     it('keeps the view on the selected station', async () => {
       const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
-      const { fixture } = await render([totalStation], { selectedStationId: totalStation.id });
+      const { fixture } = await render([totalStation], {
+        selectedStationIdentifier: totalStation.id,
+      });
       fitBounds.mockClear();
 
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);

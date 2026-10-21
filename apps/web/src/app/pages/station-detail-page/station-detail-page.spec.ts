@@ -18,10 +18,10 @@ class EmptyPage {}
 describe('StationDetailPage', () => {
   let context: PageTestContext;
 
-  const renderStation = async (stationId: string) => {
+  const renderStation = async (stationIdentifier: string) => {
     const fixture = TestBed.createComponent(StationDetailPage);
     document.body.append(fixture.nativeElement as HTMLElement);
-    fixture.componentRef.setInput('id', stationId);
+    fixture.componentRef.setInput('id', stationIdentifier);
     await context.settle();
     return { fixture, element: fixture.nativeElement as HTMLElement };
   };

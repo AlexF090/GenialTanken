@@ -14,23 +14,23 @@ import { StationList } from './station-list';
 interface RenderOptions {
   stations: readonly Station[];
   fuelType?: FuelType;
-  favoriteStationIds?: ReadonlySet<string>;
-  cheapestStationIds?: ReadonlySet<string>;
-  selectedStationId?: string;
+  favoriteStationIdentifiers?: ReadonlySet<string>;
+  cheapestStationIdentifiers?: ReadonlySet<string>;
+  selectedStationIdentifier?: string;
   selectsOnMap?: boolean;
 }
 
 const render = async ({
   stations,
   fuelType = 'e5',
-  favoriteStationIds = new Set<string>(),
+  favoriteStationIdentifiers = new Set<string>(),
   ...optionalInputs
 }: RenderOptions) => {
   TestBed.configureTestingModule({ providers: [provideRouter([])] });
   const fixture = TestBed.createComponent(StationList);
   fixture.componentRef.setInput('stations', stations);
   fixture.componentRef.setInput('fuelType', fuelType);
-  fixture.componentRef.setInput('favoriteStationIds', favoriteStationIds);
+  fixture.componentRef.setInput('favoriteStationIdentifiers', favoriteStationIdentifiers);
   for (const [name, value] of Object.entries(optionalInputs)) {
     fixture.componentRef.setInput(name, value);
   }
@@ -118,7 +118,7 @@ describe('StationList', () => {
   it('labels the cheapest stations in words', async () => {
     const { items } = await render({
       stations: [totalStation, unbrandedStation],
-      cheapestStationIds: new Set([unbrandedStation.id]),
+      cheapestStationIdentifiers: new Set([unbrandedStation.id]),
     });
 
     expect(accessibleTextOf(items[0])).not.toContain('Günstigster Preis');
@@ -128,11 +128,11 @@ describe('StationList', () => {
   it('marks favorites and reports star toggles with the station id', async () => {
     const { fixture, items } = await render({
       stations: [totalStation, carrefourStation],
-      favoriteStationIds: new Set([carrefourStation.id]),
+      favoriteStationIdentifiers: new Set([carrefourStation.id]),
     });
-    const toggledStationIds: string[] = [];
-    fixture.componentInstance.favoriteToggled.subscribe(stationId =>
-      toggledStationIds.push(stationId)
+    const toggledStationIdentifiers: string[] = [];
+    fixture.componentInstance.favoriteToggled.subscribe(stationIdentifier =>
+      toggledStationIdentifiers.push(stationIdentifier)
     );
     const [totalItem, carrefourItem] = items;
     if (totalItem === undefined || carrefourItem === undefined) {
@@ -148,7 +148,7 @@ describe('StationList', () => {
 
     getButton(totalItem, 'Favorit: TotalEnergies').click();
 
-    expect(toggledStationIds).toEqual(['fr-75001001']);
+    expect(toggledStationIdentifiers).toEqual(['fr-75001001']);
   });
 
   it('links titles to the details and offers no map selection unless asked to', async () => {
@@ -162,11 +162,11 @@ describe('StationList', () => {
     const { fixture, element } = await render({
       stations: [totalStation, carrefourStation],
       selectsOnMap: true,
-      selectedStationId: carrefourStation.id,
+      selectedStationIdentifier: carrefourStation.id,
     });
-    const selectedStationIds: string[] = [];
-    fixture.componentInstance.stationSelected.subscribe(stationId =>
-      selectedStationIds.push(stationId)
+    const selectedStationIdentifiers: string[] = [];
+    fixture.componentInstance.stationSelected.subscribe(stationIdentifier =>
+      selectedStationIdentifiers.push(stationIdentifier)
     );
     const totalButton = getButton(element, 'TotalEnergies');
     const carrefourButton = getButton(element, 'Carrefour Market');
@@ -179,7 +179,7 @@ describe('StationList', () => {
 
     totalButton.click();
 
-    expect(selectedStationIds).toEqual(['fr-75001001']);
+    expect(selectedStationIdentifiers).toEqual(['fr-75001001']);
   });
 
   it('scrolls the selected station into view', async () => {
@@ -189,7 +189,7 @@ describe('StationList', () => {
       item.scrollIntoView = scrollIntoView;
     }
 
-    fixture.componentRef.setInput('selectedStationId', carrefourStation.id);
+    fixture.componentRef.setInput('selectedStationIdentifier', carrefourStation.id);
     await fixture.whenStable();
 
     expect(scrollIntoView).toHaveBeenCalledExactlyOnceWith({ block: 'nearest' });

@@ -40,7 +40,7 @@ export class StationDetailPage {
 
   private readonly router = inject(Router);
   private readonly favorites = inject(FavoritesStore);
-  private readonly stationResource = inject(StationsApi).stationById(() => this.id());
+  private readonly stationResource = inject(StationsApi).stationByIdentifier(() => this.id());
 
   protected readonly station = computed(() =>
     this.stationResource.hasValue() ? this.stationResource.value() : undefined
@@ -67,13 +67,13 @@ export class StationDetailPage {
 
     const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
     // Screen readers and keyboards start at the station's name once it is shown.
-    let focusedStationId: string | undefined;
+    let focusedStationIdentifier: string | undefined;
     afterRenderEffect(() => {
       const station = this.station();
-      if (station === undefined || station.id === focusedStationId) {
+      if (station === undefined || station.id === focusedStationIdentifier) {
         return;
       }
-      focusedStationId = station.id;
+      focusedStationIdentifier = station.id;
       host.querySelector<HTMLElement>('.station-detail__title')?.focus({ preventScroll: true });
     });
   }

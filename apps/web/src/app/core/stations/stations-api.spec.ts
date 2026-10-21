@@ -97,10 +97,10 @@ describe('StationsApi', () => {
     });
   });
 
-  describe('stationById', () => {
+  describe('stationByIdentifier', () => {
     it('requests a single station by its URL-encoded id', async () => {
       const station = runInInjectionContext(injector, () =>
-        stationsApi.stationById(() => 'fr/75 001')
+        stationsApi.stationByIdentifier(() => 'fr/75 001')
       );
       TestBed.tick();
 
@@ -112,7 +112,7 @@ describe('StationsApi', () => {
 
     it('exposes the 404 of an unknown station as error', async () => {
       const station = runInInjectionContext(injector, () =>
-        stationsApi.stationById(() => 'unknown-station')
+        stationsApi.stationByIdentifier(() => 'unknown-station')
       );
       TestBed.tick();
 
@@ -125,9 +125,9 @@ describe('StationsApi', () => {
     });
   });
 
-  describe('loadStationsByIds', () => {
+  describe('loadStationsByIdentifiers', () => {
     it('loads every station and reports unavailable ids separately', async () => {
-      const result = stationsApi.loadStationsByIds([
+      const result = stationsApi.loadStationsByIdentifiers([
         'fr-75001001',
         'de-unavailable',
         'fr-75005002',
@@ -139,13 +139,17 @@ describe('StationsApi', () => {
 
       await expect(result).resolves.toEqual({
         stations: [withoutDistance(totalStation), withoutDistance(carrefourStation)],
-        unavailableStationIds: ['de-unavailable'],
+        unavailableStationIdentifiers: ['de-unavailable'],
         failures: [],
       });
     });
 
     it('keeps the loaded stations when other requests fail', async () => {
-      const result = stationsApi.loadStationsByIds(['fr-75001001', 'fr-75005002', 'fr-broken']);
+      const result = stationsApi.loadStationsByIdentifiers([
+        'fr-75001001',
+        'fr-75005002',
+        'fr-broken',
+      ]);
 
       httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
       httpTesting
@@ -156,10 +160,13 @@ describe('StationsApi', () => {
         );
       httpTesting.expectOne('/api/stations/fr-broken').flush({ id: 'fr-broken' });
 
-      const { stations, unavailableStationIds, failures } = await result;
+      const { stations, unavailableStationIdentifiers, failures } = await result;
       expect(stations).toEqual([withoutDistance(totalStation)]);
-      expect(unavailableStationIds).toEqual([]);
-      expect(failures.map(failure => failure.stationId)).toEqual(['fr-75005002', 'fr-broken']);
+      expect(unavailableStationIdentifiers).toEqual([]);
+      expect(failures.map(failure => failure.stationIdentifier)).toEqual([
+        'fr-75005002',
+        'fr-broken',
+      ]);
       expect(failures[0]?.error).toBeInstanceOf(HttpErrorResponse);
       expect(failures[1]?.error).toBeInstanceOf(UnexpectedResponseError);
     });

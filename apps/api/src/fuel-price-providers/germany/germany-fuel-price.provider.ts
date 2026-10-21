@@ -51,7 +51,7 @@ export class GermanyFuelPriceProvider implements FuelPriceProvider {
     return stations.map(toStationFromGermany);
   }
 
-  async findStationById(localIdentifier: string): Promise<Station | null> {
+  async findStationByIdentifier(localIdentifier: string): Promise<Station | null> {
     if (!stationIdentifierSchema.safeParse(localIdentifier).success) {
       return null;
     }

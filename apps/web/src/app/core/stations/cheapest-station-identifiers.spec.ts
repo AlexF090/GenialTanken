@@ -4,16 +4,16 @@ import {
   totalStation,
   unbrandedStation,
 } from '../../../testing/station-fixtures';
-import { cheapestStationIds } from './cheapest-station-ids';
+import { cheapestStationIdentifiers } from './cheapest-station-identifiers';
 
 const withE5Price = (station: Station, e5: number | null): Station => ({
   ...station,
   pricesInEuro: { ...station.pricesInEuro, e5 },
 });
 
-describe('cheapestStationIds', () => {
+describe('cheapestStationIdentifiers', () => {
   it('contains the station with the lowest price for the fuel type', () => {
-    const identifiers = cheapestStationIds(
+    const identifiers = cheapestStationIdentifiers(
       [totalStation, carrefourStation, unbrandedStation],
       'e5'
     );
@@ -22,7 +22,7 @@ describe('cheapestStationIds', () => {
   });
 
   it('contains every station tied at the lowest price', () => {
-    const identifiers = cheapestStationIds(
+    const identifiers = cheapestStationIdentifiers(
       [withE5Price(totalStation, 1.799), carrefourStation, unbrandedStation],
       'e5'
     );
@@ -31,13 +31,13 @@ describe('cheapestStationIds', () => {
   });
 
   it('ignores stations without a price for the fuel type', () => {
-    const identifiers = cheapestStationIds([unbrandedStation, carrefourStation], 'e10');
+    const identifiers = cheapestStationIdentifiers([unbrandedStation, carrefourStation], 'e10');
 
     expect([...identifiers]).toEqual([carrefourStation.id]);
   });
 
   it('is empty when no station has a price or there are no stations', () => {
-    expect(cheapestStationIds([unbrandedStation], 'e10').size).toBe(0);
-    expect(cheapestStationIds([], 'e5').size).toBe(0);
+    expect(cheapestStationIdentifiers([unbrandedStation], 'e10').size).toBe(0);
+    expect(cheapestStationIdentifiers([], 'e5').size).toBe(0);
   });
 });

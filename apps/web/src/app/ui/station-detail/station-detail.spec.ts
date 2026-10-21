@@ -23,8 +23,8 @@ const render = async ({ station, fuelType = 'e5', isFavorite = false }: RenderOp
 const regionNamed = (element: HTMLElement, name: string): HTMLElement => {
   const region = [...element.querySelectorAll<HTMLElement>('section[aria-labelledby]')].find(
     section => {
-      const headingId = section.getAttribute('aria-labelledby') ?? '';
-      return textOf(element.querySelector(`#${headingId}`)) === name;
+      const headingIdentifier = section.getAttribute('aria-labelledby') ?? '';
+      return textOf(element.querySelector(`#${headingIdentifier}`)) === name;
     }
   );
   if (region === undefined) {

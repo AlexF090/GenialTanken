@@ -451,7 +451,7 @@ describe('ExplorePage', () => {
     await context.settle();
 
     expect(selectedStationTitles(element)).toEqual(['Carrefour Market']);
-    expect(map.selectedStationId()).toBe(carrefourStation.id);
+    expect(map.selectedStationIdentifier()).toBe(carrefourStation.id);
   });
 
   it('shows the station of a chosen row on the map and centers it again on a second tap', async () => {
@@ -461,13 +461,13 @@ describe('ExplorePage', () => {
 
     getButton(element, 'TotalEnergies').click();
     await context.settle();
-    expect(map.selectedStationId()).toBe(totalStation.id);
+    expect(map.selectedStationIdentifier()).toBe(totalStation.id);
     expect(selectedStationTitles(element)).toEqual(['TotalEnergies']);
     expect(revealSelectedStation).not.toHaveBeenCalled();
 
     getButton(element, 'TotalEnergies').click();
     await context.settle();
-    expect(map.selectedStationId()).toBe(totalStation.id);
+    expect(map.selectedStationIdentifier()).toBe(totalStation.id);
     expect(revealSelectedStation).toHaveBeenCalledOnce();
   });
 
@@ -488,7 +488,7 @@ describe('ExplorePage', () => {
     context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
     await context.settle();
 
-    expect(childComponent(fixture, StationsMap).selectedStationId()).toBeUndefined();
+    expect(childComponent(fixture, StationsMap).selectedStationIdentifier()).toBeUndefined();
   });
 
   it('clears the selection when another place is chosen', async () => {
@@ -500,12 +500,12 @@ describe('ExplorePage', () => {
     TestBed.inject(SearchCenterStore).usePlace(bastillePlace);
     await context.settle();
 
-    expect(map.selectedStationId()).toBeUndefined();
+    expect(map.selectedStationIdentifier()).toBeUndefined();
     context.httpTesting
       .expectOne('/api/stations?latitude=48.8532&longitude=2.3692&radiusInKilometers=5&fuel=e5')
       .flush([totalStation]);
     await context.settle();
-    expect(map.selectedStationId()).toBeUndefined();
+    expect(map.selectedStationIdentifier()).toBeUndefined();
   });
 
   it('reports an unavailable upstream API', async () => {
@@ -602,7 +602,9 @@ describe('ExplorePage on a phone', () => {
     await context.settle();
 
     expect(sheet.snapPosition()).toBe('half');
-    expect(childComponent(fixture, StationsMap).selectedStationId()).toBe(carrefourStation.id);
+    expect(childComponent(fixture, StationsMap).selectedStationIdentifier()).toBe(
+      carrefourStation.id
+    );
   });
 
   it('keeps a peeking sheet down when a station is chosen in the list', async () => {
@@ -672,7 +674,9 @@ describe('ExplorePage with a station card', () => {
 
     expect(listContainer(element)?.hidden).toBe(true);
     expect(textOf(element.querySelector('app-station-detail-page h2'))).toBe('TotalEnergies');
-    expect(childComponent(harness.fixture, StationsMap).selectedStationId()).toBe(totalStation.id);
+    expect(childComponent(harness.fixture, StationsMap).selectedStationIdentifier()).toBe(
+      totalStation.id
+    );
   });
 
   it('returns to the list with the station still selected when the card closes', async () => {

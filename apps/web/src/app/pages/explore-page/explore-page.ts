@@ -71,7 +71,7 @@ const waitForTypingPause = (query: string | undefined): Promise<void> | undefine
     : new Promise(resolve => setTimeout(resolve, PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS));
 
 /** `/stations/<id>` opens the card of a station. */
-const stationIdIn = (url: UrlTree | undefined): string | undefined => {
+const stationIdentifierIn = (url: UrlTree | undefined): string | undefined => {
   const segments = url?.root.children[PRIMARY_OUTLET]?.segments ?? [];
   return segments.length === 2 && segments[0]?.path === 'stations' ? segments[1]?.path : undefined;
 };
@@ -173,8 +173,8 @@ export class ExplorePage {
   protected readonly isLoading = this.nearbyStations.isLoading;
   protected readonly hasLoaded = this.nearbyStations.hasLoaded;
   protected readonly mapStations = this.nearbyStations.stations;
-  protected readonly cheapestStationIds = this.nearbyStations.cheapestStationIds;
-  protected readonly favoriteStationIds = this.favorites.favoriteStationIdSet;
+  protected readonly cheapestStationIdentifiers = this.nearbyStations.cheapestStationIdentifiers;
+  protected readonly favoriteStationIdentifiers = this.favorites.favoriteStationIdentifierSet;
   protected readonly colorScheme = inject(ColorSchemeController).resolvedScheme;
 
   protected readonly sortOrder = signal<SortOrder>('distance');
@@ -194,37 +194,42 @@ export class ExplorePage {
   private readonly injector = inject(Injector);
 
   /** Station whose card is open in the sheet: the child route `stations/:id`. */
-  protected readonly openedStationId = toSignal(
+  protected readonly openedStationIdentifier = toSignal(
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd),
       map(event => this.router.parseUrl(event.urlAfterRedirects)),
       // The page is created during the navigation to it, before its `NavigationEnd`.
       startWith(this.router.currentNavigation()?.finalUrl ?? this.router.parseUrl(this.router.url)),
-      map(stationIdIn)
+      map(stationIdentifierIn)
     ),
     { initialValue: undefined }
   );
-  protected readonly isStationCardOpen = computed(() => this.openedStationId() !== undefined);
+  protected readonly isStationCardOpen = computed(
+    () => this.openedStationIdentifier() !== undefined
+  );
 
   /**
    * Chosen in the list or on the map. Cleared when the search center changes or the station is
    * no longer in the results.
    */
-  private readonly listSelectedStationId = linkedSignal<SelectionSource, string | undefined>({
+  private readonly listSelectedStationIdentifier = linkedSignal<
+    SelectionSource,
+    string | undefined
+  >({
     source: () => ({ stations: this.nearbyStations.stations(), center: this.center() }),
     computation: (source, previous) => {
-      const previousStationId = previous?.value;
-      if (previousStationId === undefined || previous?.source.center !== source.center) {
+      const previousStationIdentifier = previous?.value;
+      if (previousStationIdentifier === undefined || previous?.source.center !== source.center) {
         return undefined;
       }
-      return source.stations.some(station => station.id === previousStationId)
-        ? previousStationId
+      return source.stations.some(station => station.id === previousStationIdentifier)
+        ? previousStationIdentifier
         : undefined;
     },
   });
   /** An open card wins: its station is the one shown on the map. */
-  protected readonly selectedStationId = computed(
-    () => this.openedStationId() ?? this.listSelectedStationId()
+  protected readonly selectedStationIdentifier = computed(
+    () => this.openedStationIdentifier() ?? this.listSelectedStationIdentifier()
   );
 
   protected readonly snapPosition = signal<SnapPosition>('half');
@@ -266,19 +271,19 @@ export class ExplorePage {
    * where it was, with the station still selected and focused.
    */
   private followStationCard(): void {
-    let previousStationId: string | undefined;
+    let previousStationIdentifier: string | undefined;
     let listScrollTop = 0;
     effect(() => {
-      const stationId = this.openedStationId();
-      const closedStationId = previousStationId;
-      previousStationId = stationId;
-      if (stationId === closedStationId) {
+      const stationIdentifier = this.openedStationIdentifier();
+      const closedStationIdentifier = previousStationIdentifier;
+      previousStationIdentifier = stationIdentifier;
+      if (stationIdentifier === closedStationIdentifier) {
         return;
       }
       untracked(() => {
         const scroller = this.host.querySelector<HTMLElement>('.bottom-sheet__content');
-        if (stationId !== undefined) {
-          if (closedStationId === undefined) {
+        if (stationIdentifier !== undefined) {
+          if (closedStationIdentifier === undefined) {
             listScrollTop = scroller?.scrollTop ?? 0;
           }
           if (scroller !== null) {
@@ -289,10 +294,10 @@ export class ExplorePage {
           }
           return;
         }
-        if (closedStationId === undefined) {
+        if (closedStationIdentifier === undefined) {
           return;
         }
-        this.listSelectedStationId.set(closedStationId);
+        this.listSelectedStationIdentifier.set(closedStationIdentifier);
         afterNextRender(
           () => {
             if (scroller !== null) {
@@ -300,7 +305,7 @@ export class ExplorePage {
             }
             this.host
               .querySelector<HTMLElement>(
-                `[data-station-id="${CSS.escape(closedStationId)}"] .station-row__title`
+                `[data-station-identifier="${CSS.escape(closedStationIdentifier)}"] .station-row__title`
               )
               ?.focus({ preventScroll: true });
           },
@@ -316,21 +321,21 @@ export class ExplorePage {
    * chosen fuel does not move the search again and again.
    */
   private showOpenedStationOnMap(): void {
-    let movedForStationId: string | undefined;
+    let movedForStationIdentifier: string | undefined;
     effect(() => {
       const station = this.openedStation();
       if (
         station === undefined ||
-        station.id !== this.openedStationId() ||
+        station.id !== this.openedStationIdentifier() ||
         !this.hasLoaded() ||
-        station.id === movedForStationId
+        station.id === movedForStationIdentifier
       ) {
         return;
       }
       if (this.nearbyStations.stations().some(nearby => nearby.id === station.id)) {
         return;
       }
-      movedForStationId = station.id;
+      movedForStationIdentifier = station.id;
       untracked(() => {
         this.searchCenter.useStation({
           latitude: station.address.latitude,
@@ -397,18 +402,18 @@ export class ExplorePage {
     this.nearbyStations.refresh();
   }
 
-  protected toggleFavorite(stationId: string): void {
-    this.favorites.toggle(stationId);
+  protected toggleFavorite(stationIdentifier: string): void {
+    this.favorites.toggle(stationIdentifier);
   }
 
   /** A price tag on the map was chosen: the sheet shows its row and leaves the map visible. */
-  protected selectFromMap(stationId: string): void {
+  protected selectFromMap(stationIdentifier: string): void {
     // With a card open, the chosen price tag opens its own card instead, like in Apple Maps.
     if (this.isStationCardOpen()) {
-      void this.router.navigate(['/stations', stationId]);
+      void this.router.navigate(['/stations', stationIdentifier]);
       return;
     }
-    this.listSelectedStationId.set(stationId);
+    this.listSelectedStationIdentifier.set(stationIdentifier);
     if (this.isCompactViewport()) {
       this.snapPosition.set('half');
     }
@@ -418,11 +423,11 @@ export class ExplorePage {
    * A row of the list was chosen: its pin is centered on the map, again when it was already
    * selected. A fully opened sheet steps down to half, so pin and row are both visible.
    */
-  protected showOnMap(stationId: string): void {
-    if (this.selectedStationId() === stationId) {
+  protected showOnMap(stationIdentifier: string): void {
+    if (this.selectedStationIdentifier() === stationIdentifier) {
       this.stationsMap().revealSelectedStation();
     }
-    this.listSelectedStationId.set(stationId);
+    this.listSelectedStationIdentifier.set(stationIdentifier);
     if (this.isCompactViewport() && this.snapPosition() === 'full') {
       this.snapPosition.set('half');
     }

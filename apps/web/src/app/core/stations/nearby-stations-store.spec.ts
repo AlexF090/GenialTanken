@@ -141,7 +141,7 @@ describe('NearbyStationsStore', () => {
   });
 
   it('marks every station tied at the lowest price of the selected fuel type', async () => {
-    expect(store.cheapestStationIds().size).toBe(0);
+    expect(store.cheapestStationIdentifiers().size).toBe(0);
 
     await loadAtEiffelTower([
       totalStation,
@@ -149,7 +149,10 @@ describe('NearbyStationsStore', () => {
       unbrandedStation,
     ]);
 
-    expect([...store.cheapestStationIds()]).toEqual([carrefourStation.id, unbrandedStation.id]);
+    expect([...store.cheapestStationIdentifiers()]).toEqual([
+      carrefourStation.id,
+      unbrandedStation.id,
+    ]);
   });
 
   it('describes a failed request', async () => {

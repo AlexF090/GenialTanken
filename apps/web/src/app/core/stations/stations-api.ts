@@ -14,17 +14,17 @@ export interface StationsSearch extends Coordinates {
 }
 
 export interface StationLoadFailure {
-  stationId: string;
+  stationIdentifier: string;
   error: unknown;
 }
 
-export interface StationsByIds {
+export interface StationsByIdentifiers {
   stations: Station[];
   /**
-   * Ids the API answers with 404, e.g. a German station while the optional German provider is
+   * Identifiers the API answers with 404, e.g. a German station while the optional German provider is
    * disabled. They may come back, so callers must not treat them as deleted.
    */
-  unavailableStationIds: string[];
+  unavailableStationIdentifiers: string[];
   /** Stations whose request failed for any other reason (network, 5xx, contract violation). */
   failures: StationLoadFailure[];
 }
@@ -79,14 +79,16 @@ export class StationsApi {
     );
   }
 
-  /** A single station; idle while `stationId` returns `undefined`. */
-  stationById(stationId: () => string | undefined): HttpResourceRef<Station | undefined> {
+  /** A single station; idle while `stationIdentifier` returns `undefined`. */
+  stationByIdentifier(
+    stationIdentifier: () => string | undefined
+  ): HttpResourceRef<Station | undefined> {
     return httpResource(
       () => {
-        const currentStationId = stationId();
-        return currentStationId === undefined
+        const currentStationIdentifier = stationIdentifier();
+        return currentStationIdentifier === undefined
           ? undefined
-          : `${STATIONS_URL}/${encodeURIComponent(currentStationId)}`;
+          : `${STATIONS_URL}/${encodeURIComponent(currentStationIdentifier)}`;
       },
       { parse: parseStation }
     );
@@ -96,33 +98,39 @@ export class StationsApi {
    * Loads several stations in parallel. Never rejects: every id ends up either as a station, as
    * unavailable (404) or as a failure, so one broken request does not hide the other stations.
    */
-  async loadStationsByIds(stationIds: readonly string[]): Promise<StationsByIds> {
+  async loadStationsByIdentifiers(
+    stationIdentifiers: readonly string[]
+  ): Promise<StationsByIdentifiers> {
     const results = await Promise.allSettled(
-      stationIds.map(stationId => this.loadStation(stationId))
+      stationIdentifiers.map(stationIdentifier => this.loadStation(stationIdentifier))
     );
-    const stationsByIds: StationsByIds = { stations: [], unavailableStationIds: [], failures: [] };
+    const stationsByIdentifiers: StationsByIdentifiers = {
+      stations: [],
+      unavailableStationIdentifiers: [],
+      failures: [],
+    };
     // `allSettled` keeps the order of its input, so each result belongs to the id at its index.
-    stationIds.forEach((stationId, index) => {
+    stationIdentifiers.forEach((stationIdentifier, index) => {
       const result = results[index];
       if (result === undefined) {
         return;
       }
       if (result.status === 'fulfilled') {
-        stationsByIds.stations.push(result.value);
+        stationsByIdentifiers.stations.push(result.value);
         return;
       }
       if (isNotFoundError(result.reason)) {
-        stationsByIds.unavailableStationIds.push(stationId);
+        stationsByIdentifiers.unavailableStationIdentifiers.push(stationIdentifier);
         return;
       }
-      stationsByIds.failures.push({ stationId, error: result.reason });
+      stationsByIdentifiers.failures.push({ stationIdentifier, error: result.reason });
     });
-    return stationsByIds;
+    return stationsByIdentifiers;
   }
 
-  private async loadStation(stationId: string): Promise<Station> {
+  private async loadStation(stationIdentifier: string): Promise<Station> {
     const body = await firstValueFrom(
-      this.httpClient.get<unknown>(`${STATIONS_URL}/${encodeURIComponent(stationId)}`)
+      this.httpClient.get<unknown>(`${STATIONS_URL}/${encodeURIComponent(stationIdentifier)}`)
     );
     return parseStation(body);
   }

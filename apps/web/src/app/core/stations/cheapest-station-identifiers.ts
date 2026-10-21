@@ -5,7 +5,7 @@ import { priceInEuro } from './station-display';
  * Identifiers of all stations tied at the lowest price for the fuel type; empty when no station
  * reports a price for it.
  */
-export const cheapestStationIds = (
+export const cheapestStationIdentifiers = (
   stations: readonly Station[],
   fuelType: FuelType
 ): ReadonlySet<string> => {

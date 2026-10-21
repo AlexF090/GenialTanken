@@ -38,7 +38,7 @@ const cheapestCaptionOf = (element: HTMLElement): string | undefined => {
 
 const stationMarker = (options: Partial<StationMarkerOptions>): StationMarker =>
   new StationMarker({
-    stationId: 'fr-1',
+    stationIdentifier: 'fr-1',
     coordinates: { latitude: 48.86, longitude: 2.34 },
     title: 'TotalEnergies',
     priceInEuro: 1.859,

@@ -35,7 +35,7 @@ interface StationListItem {
   isSelected: boolean;
 }
 
-const NO_STATION_IDS: ReadonlySet<string> = new Set();
+const NO_STATION_IDENTIFIERS: ReadonlySet<string> = new Set();
 
 /** Price board of stations: one hairline-separated row per station, the price loudest. */
 @Component({
@@ -48,9 +48,9 @@ const NO_STATION_IDS: ReadonlySet<string> = new Set();
 export class StationList {
   readonly stations = input.required<readonly Station[]>();
   readonly fuelType = input.required<FuelType>();
-  readonly favoriteStationIds = input.required<ReadonlySet<string>>();
-  readonly selectedStationId = input<string>();
-  readonly cheapestStationIds = input<ReadonlySet<string>>(NO_STATION_IDS);
+  readonly favoriteStationIdentifiers = input.required<ReadonlySet<string>>();
+  readonly selectedStationIdentifier = input<string>();
+  readonly cheapestStationIdentifiers = input<ReadonlySet<string>>(NO_STATION_IDENTIFIERS);
   /** Renders the "Auf Karte zeigen" toggle per row; bind `stationSelected` along with it. */
   /**
    * On the explore page a row selects its station on the map, and a details button opens the
@@ -69,22 +69,22 @@ export class StationList {
       priceInEuro: priceInEuro(station, this.fuelType()),
       distance:
         station.distanceInMeters === null ? undefined : formatDistance(station.distanceInMeters),
-      isFavorite: this.favoriteStationIds().has(station.id),
-      isCheapest: this.cheapestStationIds().has(station.id),
-      isSelected: station.id === this.selectedStationId(),
+      isFavorite: this.favoriteStationIdentifiers().has(station.id),
+      isCheapest: this.cheapestStationIdentifiers().has(station.id),
+      isSelected: station.id === this.selectedStationIdentifier(),
     }))
   );
 
   constructor() {
     const host = inject<ElementRef<HTMLElement>>(ElementRef);
     afterRenderEffect(() => {
-      const selectedStationId = this.selectedStationId();
-      if (selectedStationId === undefined) {
+      const selectedStationIdentifier = this.selectedStationIdentifier();
+      if (selectedStationIdentifier === undefined) {
         return;
       }
-      const row = [...host.nativeElement.querySelectorAll<HTMLElement>('[data-station-id]')].find(
-        candidate => candidate.dataset['stationId'] === selectedStationId
-      );
+      const row = [
+        ...host.nativeElement.querySelectorAll<HTMLElement>('[data-station-identifier]'),
+      ].find(candidate => candidate.dataset['stationIdentifier'] === selectedStationIdentifier);
       // jsdom does not implement scrolling
       if (row !== undefined && typeof row.scrollIntoView === 'function') {
         row.scrollIntoView({ block: 'nearest' });

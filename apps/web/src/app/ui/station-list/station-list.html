@@ -4,7 +4,7 @@
       class="station-row"
       [class.station-row--selected]="item.isSelected"
       [class.station-row--cheapest]="item.isCheapest"
-      [attr.data-station-id]="item.id">
+      [attr.data-station-identifier]="item.id">
       <div class="station-row__details">
         @if (selectsOnMap()) {
           <button

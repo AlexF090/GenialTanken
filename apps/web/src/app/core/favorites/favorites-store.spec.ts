@@ -15,14 +15,14 @@ describe('FavoritesStore', () => {
   it('has no favorites when nothing is stored', () => {
     const store = createStore(new FakeStorage());
 
-    expect(store.favoriteStationIds()).toEqual([]);
+    expect(store.favoriteStationIdentifiers()).toEqual([]);
     expect(store.isFavorite('station-1')).toBe(false);
   });
 
   it('restores favorites stored by the legacy app', () => {
     const store = createStore(new FakeStorage({ favoriteIDs: '["station-1","station-2"]' }));
 
-    expect(store.favoriteStationIds()).toEqual(['station-1', 'station-2']);
+    expect(store.favoriteStationIdentifiers()).toEqual(['station-1', 'station-2']);
     expect(store.isFavorite('station-2')).toBe(true);
   });
 
@@ -32,11 +32,11 @@ describe('FavoritesStore', () => {
 
     store.toggle('station-1');
     store.toggle('station-2');
-    expect(store.favoriteStationIds()).toEqual(['station-1', 'station-2']);
+    expect(store.favoriteStationIdentifiers()).toEqual(['station-1', 'station-2']);
     expect(storage.getItem('favoriteIDs')).toBe('["station-1","station-2"]');
 
     store.toggle('station-1');
-    expect(store.favoriteStationIds()).toEqual(['station-2']);
+    expect(store.favoriteStationIdentifiers()).toEqual(['station-2']);
     expect(storage.getItem('favoriteIDs')).toBe('["station-2"]');
   });
 
@@ -46,13 +46,13 @@ describe('FavoritesStore', () => {
 
     store.remove(['station-1', 'station-3']);
 
-    expect(store.favoriteStationIds()).toEqual(['station-2']);
+    expect(store.favoriteStationIdentifiers()).toEqual(['station-2']);
     expect(storage.getItem('favoriteIDs')).toBe('["station-2"]');
   });
 
   it('ignores stored favorites that are not a list of ids', () => {
     const store = createStore(new FakeStorage({ favoriteIDs: '{"id":1}' }));
 
-    expect(store.favoriteStationIds()).toEqual([]);
+    expect(store.favoriteStationIdentifiers()).toEqual([]);
   });
 });

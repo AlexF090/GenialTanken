@@ -10,7 +10,7 @@ export interface FuelPriceProvider {
    */
   findStationsAround(query: StationsQuery): Promise<Station[]>;
   /** `null` when the provider does not know the station. */
-  findStationById(localIdentifier: string): Promise<Station | null>;
+  findStationByIdentifier(localIdentifier: string): Promise<Station | null>;
 }
 
 /** Injection token for the list of enabled `FuelPriceProvider`s. */

@@ -135,7 +135,7 @@ const SELECTED_Z_INDEX_OFFSET = 2000;
 const CHEAPEST_Z_INDEX_OFFSET = 1000;
 
 export interface StationMarkerOptions {
-  stationId: string;
+  stationIdentifier: string;
   coordinates: Coordinates;
   title: string;
   priceInEuro: number | null;
@@ -149,7 +149,7 @@ export interface StationMarkerOptions {
  * stop; Enter triggers `click` through Leaflet, Space is added here like on native buttons.
  */
 export class StationMarker extends L.Marker {
-  readonly stationId: string;
+  readonly stationIdentifier: string;
   readonly stationPriceInEuro: number | null;
   readonly stationPriceLevel: PriceLevel | undefined;
   readonly isCheapestStation: boolean;
@@ -161,7 +161,7 @@ export class StationMarker extends L.Marker {
       keyboard: true,
       riseOnHover: true,
     });
-    this.stationId = options.stationId;
+    this.stationIdentifier = options.stationIdentifier;
     this.stationTitle = options.title;
     this.stationPriceInEuro = options.priceInEuro;
     this.stationPriceLevel = options.priceLevel;

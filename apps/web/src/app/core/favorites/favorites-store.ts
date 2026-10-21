@@ -1,37 +1,39 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { FavoritesRepository } from './favorites-repository';
 
-/** Ids of the stations the user starred, in the order they were added. */
+/** Identifiers of the stations the user starred, in the order they were added. */
 @Injectable({ providedIn: 'root' })
 export class FavoritesStore {
   private readonly repository = inject(FavoritesRepository);
-  private readonly stationIds = signal<readonly string[]>(this.repository.load());
+  private readonly stationIdentifiers = signal<readonly string[]>(this.repository.load());
 
-  readonly favoriteStationIds = this.stationIds.asReadonly();
-  readonly favoriteStationIdSet = computed<ReadonlySet<string>>(() => new Set(this.stationIds()));
+  readonly favoriteStationIdentifiers = this.stationIdentifiers.asReadonly();
+  readonly favoriteStationIdentifierSet = computed<ReadonlySet<string>>(
+    () => new Set(this.stationIdentifiers())
+  );
 
-  isFavorite(stationId: string): boolean {
-    return this.favoriteStationIdSet().has(stationId);
+  isFavorite(stationIdentifier: string): boolean {
+    return this.favoriteStationIdentifierSet().has(stationIdentifier);
   }
 
-  toggle(stationId: string): void {
-    const currentIds = this.stationIds();
+  toggle(stationIdentifier: string): void {
+    const currentIdentifiers = this.stationIdentifiers();
     this.persist(
-      currentIds.includes(stationId)
-        ? currentIds.filter(id => id !== stationId)
-        : [...currentIds, stationId]
+      currentIdentifiers.includes(stationIdentifier)
+        ? currentIdentifiers.filter(id => id !== stationIdentifier)
+        : [...currentIdentifiers, stationIdentifier]
     );
   }
 
-  remove(stationIdsToRemove: readonly string[]): void {
-    if (stationIdsToRemove.length === 0) {
+  remove(stationIdentifiersToRemove: readonly string[]): void {
+    if (stationIdentifiersToRemove.length === 0) {
       return;
     }
-    this.persist(this.stationIds().filter(id => !stationIdsToRemove.includes(id)));
+    this.persist(this.stationIdentifiers().filter(id => !stationIdentifiersToRemove.includes(id)));
   }
 
-  private persist(stationIds: readonly string[]): void {
-    this.stationIds.set(stationIds);
-    this.repository.save(stationIds);
+  private persist(stationIdentifiers: readonly string[]): void {
+    this.stationIdentifiers.set(stationIdentifiers);
+    this.repository.save(stationIdentifiers);
   }
 }

@@ -34,8 +34,8 @@ export class FavoritesPage {
   private readonly contentHeading = viewChild<ElementRef<HTMLElement>>('contentHeading');
 
   protected readonly fuelType = inject(SettingsStore).fuelType;
-  protected readonly favoriteStationIds = this.favorites.favoriteStationIdSet;
-  protected readonly hasFavorites = computed(() => this.favoriteStationIds().size > 0);
+  protected readonly favoriteStationIdentifiers = this.favorites.favoriteStationIdentifierSet;
+  protected readonly hasFavorites = computed(() => this.favoriteStationIdentifiers().size > 0);
 
   /**
    * Loaded once per visit for the favorites present on arrival. Unstarring only hides a
@@ -44,33 +44,36 @@ export class FavoritesPage {
    * while the German provider is disabled.
    */
   private readonly favoriteStationsResource = resource({
-    loader: () => this.stationsApi.loadStationsByIds(this.favorites.favoriteStationIds()),
+    loader: () =>
+      this.stationsApi.loadStationsByIdentifiers(this.favorites.favoriteStationIdentifiers()),
   });
 
   protected readonly stations = computed(() => {
     if (!this.favoriteStationsResource.hasValue()) {
       return [];
     }
-    const favoriteStationIds = this.favoriteStationIds();
+    const favoriteStationIdentifiers = this.favoriteStationIdentifiers();
     return this.favoriteStationsResource
       .value()
-      .stations.filter(station => favoriteStationIds.has(station.id));
+      .stations.filter(station => favoriteStationIdentifiers.has(station.id));
   });
   /** The Licence Ouverte requires the credit wherever French prices show. */
   protected readonly showsFrenchPrices = computed(() =>
     this.stations().some(station => station.country === 'FR')
   );
-  private readonly unavailableStationIds = computed(() => {
+  private readonly unavailableStationIdentifiers = computed(() => {
     if (!this.favoriteStationsResource.hasValue()) {
       return [];
     }
-    const favoriteStationIds = this.favoriteStationIds();
+    const favoriteStationIdentifiers = this.favoriteStationIdentifiers();
     return this.favoriteStationsResource
       .value()
-      .unavailableStationIds.filter(stationId => favoriteStationIds.has(stationId));
+      .unavailableStationIdentifiers.filter(stationIdentifier =>
+        favoriteStationIdentifiers.has(stationIdentifier)
+      );
   });
   protected readonly unavailableMessage = computed(() => {
-    const count = this.unavailableStationIds().length;
+    const count = this.unavailableStationIdentifiers().length;
     if (count === 0) {
       return undefined;
     }
@@ -87,12 +90,13 @@ export class FavoritesPage {
     if (!this.favoriteStationsResource.hasValue()) {
       return undefined;
     }
-    const { stations, unavailableStationIds, failures } = this.favoriteStationsResource.value();
+    const { stations, unavailableStationIdentifiers, failures } =
+      this.favoriteStationsResource.value();
     const [firstFailure] = failures;
     if (firstFailure === undefined) {
       return undefined;
     }
-    if (stations.length === 0 && unavailableStationIds.length === 0) {
+    if (stations.length === 0 && unavailableStationIdentifiers.length === 0) {
       return describeStationsError(firstFailure.error);
     }
     return failures.length === 1
@@ -100,12 +104,12 @@ export class FavoritesPage {
       : `${String(failures.length)} Favoriten konnten nicht geladen werden. Bitte versuche es später erneut.`;
   });
 
-  protected toggleFavorite(stationId: string): void {
-    this.favorites.toggle(stationId);
+  protected toggleFavorite(stationIdentifier: string): void {
+    this.favorites.toggle(stationIdentifier);
   }
 
   protected removeUnavailableFavorites(): void {
-    this.favorites.remove(this.unavailableStationIds());
+    this.favorites.remove(this.unavailableStationIdentifiers());
     // The button disappears with the notice; keep keyboard and screen reader users oriented
     afterNextRender(() => this.contentHeading()?.nativeElement.focus(), {
       injector: this.injector,
