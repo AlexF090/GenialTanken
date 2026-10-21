@@ -27,8 +27,5 @@ services:
       # pass the client address on for per-client rate limiting (at least 32 characters)
       - key: PROXY_SHARED_SECRET
         sync: false
-      # Optional: enables the German provider (tankentanken). France works without a key.
-      - key: TANKENTANKEN_API_KEY
-        sync: false
       - key: WEB_ORIGIN
         value: https://genialtanken.pages.dev

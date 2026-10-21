@@ -5,7 +5,6 @@ Ziel: GenialTanken als Fullstack-Showcase neu aufbauen (Angular + NestJS im Mono
 Datenquellen: aktuelle Preise, keine Historie.
 
 - **Frankreich (primär):** staatliche Open Data von prix-carburants.gouv.fr über das Portal des Wirtschaftsministeriums (`data.economie.gouv.fr`, Datensatz `prix-des-carburants-en-france-flux-instantane-v2`). Kein Key nötig, Geo-Suche serverseitig, 50.000 Anfragen pro Tag.
-- **Deutschland (optional):** tankentanken-API, aktiv sobald ein API-Key gesetzt ist.
 
 ## Entscheidungen
 
@@ -18,13 +17,14 @@ Datenquellen: aktuelle Preise, keine Historie.
 - **Tests:** Vitest überall (Angular- und Nest-12-Default), Supertest für API-E2E, Playwright für Browser-E2E
 - **Lint:** ESLint Flat Config im Root (typescript-eslint strict, angular-eslint inkl. Template-Accessibility)
 - **Git-Hooks und Draft-CI:** lefthook prüft vor jedem Commit Formatierung und Lint der gestagten Dateien, vor jedem Push Typecheck und Unit-Tests. Fehler fallen so lokal auf statt erst in der CI. Die CI überspringt Draft-PRs; PRs werden als Draft eröffnet und erst im fertigen Zustand auf „Ready for review“ gestellt. Zwischenstände lösen so weder CI-Läufe noch Preview-Deploys aus.
-- **Suchradius:** 1 bis 30 km. Die tankentanken-API dokumentiert keine Grenze, ihre Website bietet 1 bis 25 km an; deshalb fragt der BFF Deutschland mit höchstens 25 km ab.
+- **Suchradius:** 1 bis 30 km.
+- **Vorerst nur Frankreich:** Der deutsche Provider (tankentanken-API) ist entfernt, ebenso die Ortssuche in Deutschland. Grund: Die deutsche Quelle steht nicht zur Verfügung. Die Architektur bleibt mehrländerfähig (`FUEL_PRICE_PROVIDERS`, Länderpräfix in Stations-IDs, Routing der Sammelabfrage nach Präfix); ein weiteres Land kommt als neuer Provider dazu, der alte Code liegt in der Git-Historie. Gespeicherte Favoriten mit `de-…` meldet die API als nicht verfügbar.
 
 ## Phase 1 – BFF-Proxy (umgesetzt)
 
 - [x] API-Key aus dem Frontend-Bundle entfernen, nur noch als Env-Variable im Backend
 - [x] NestJS-API aufsetzen (TypeScript strict, `@nestjs/config`)
-- [x] Provider-Modul: Frankreich (data.economie.gouv.fr) und Deutschland (tankentanken, optional) hinter gemeinsamer Schnittstelle
+- [x] Provider-Modul: Frankreich (data.economie.gouv.fr) hinter gemeinsamer Schnittstelle (Deutschland war angebunden und ist wieder entfernt, siehe Entscheidungen)
 - [x] Feature-Modul `stations` (ein eigenes `prices`-Modul war nicht nötig: Preise kommen immer mit der Station)
 - [x] Validierung mit zod über Nests eingebaute `StandardSchemaValidationPipe` (zod 4 implementiert Standard Schema; `nestjs-zod` unterstützt Nest 12 noch nicht), Schemas aus `packages/contracts`
 - [x] Caching mit `@nestjs/cache-manager` (In-Memory, später austauschbar)
@@ -69,7 +69,7 @@ Umsetzung:
 
 - Dockerfile für `apps/api`: Multi-Stage-Build, schlankes Node-Image
 - GitHub Actions: Lint, Tests, Build; Deploy über Render-Auto-Deploy bzw. Deploy-Hook
-- Secrets (optionaler tankentanken-API-Key) als Render-Env-Variablen
+- Secrets (geteiltes Proxy-Secret) als Render-Env-Variablen
 - `/api/*` läuft über eine Cloudflare Pages Function zum BFF (gleiche Origin): keine API-URL im Build, PR-Previews funktionieren ohne CORS-Pflege. Die Function reicht die Client-IP mit einem geteilten Secret weiter, damit das Rate-Limit pro Nutzer greift und nicht fälschbar ist.
 - CORS im BFF zusätzlich auf die Cloudflare-Pages-Domain beschränkt (zweite Verteidigungslinie für direkte Aufrufe)
 - Health-Endpoint als Render-Healthcheck

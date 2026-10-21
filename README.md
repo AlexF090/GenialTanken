@@ -16,14 +16,15 @@ e2e                 Playwright browser tests against web + API + mocked upstream
 
 The browser only talks to the BFF. The BFF queries all enabled **fuel price providers** in parallel, merges their stations into one format, sorts them by exact distance and caches the upstream responses in a size-limited in-memory cache (least recently used entries are evicted):
 
-| Provider | Source                                                                                                                                      | Key needed                             |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| France   | French government open data ([prix-carburants.gouv.fr](https://www.prix-carburants.gouv.fr/rubrique/opendata/)) via `data.economie.gouv.fr` | no, always enabled                     |
-| Germany  | [tankentanken.de](https://www.tankentanken.de/) API                                                                                         | yes, enabled by `TANKENTANKEN_API_KEY` |
+| Provider | Source                                                                                                                                      | Key needed         |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| France   | French government open data ([prix-carburants.gouv.fr](https://www.prix-carburants.gouv.fr/rubrique/opendata/)) via `data.economie.gouv.fr` | no, always enabled |
+
+France is currently the only country. The provider architecture stays multi-country: station identifiers carry a country prefix (`fr-…`), so another country can be added as a new provider.
 
 Favorites are loaded in one request (`GET /api/stations/by-identifiers?identifiers=…`, up to 50 identifiers); it answers with the found stations plus the unknown and the failed identifiers.
 
-Place suggestions for the search field (`GET /api/places`) come from the public [Photon](https://photon.komoot.io/) geocoder (OpenStreetMap data), limited to France and Germany and cached for a day.
+Place suggestions for the search field (`GET /api/places`) come from the public [Photon](https://photon.komoot.io/) geocoder (OpenStreetMap data), limited to France and cached for a day.
 
 Only current prices are served; there is no price history. French data is published under the Licence Ouverte / Open Licence 2.0 (Etalab); the app credits the source.
 
@@ -80,7 +81,7 @@ In the devcontainer the hooks are installed for the Linux binary. Committing fro
 | http://localhost:3000/api/docs | OpenAPI (Swagger)                   |
 | http://localhost:3000/health   | Health check                        |
 
-The browser asks for your location. Outside France the list stays empty unless the German provider is enabled (`TANKENTANKEN_API_KEY`); to try it anyway, allow location access and use the browser's developer tools to override the location (e.g. Paris 48.8566, 2.3522).
+The browser asks for your location. Outside France the list stays empty; to try it anyway, allow location access and use the browser's developer tools to override the location (e.g. Paris 48.8566, 2.3522).
 
 ## Scripts
 
@@ -107,8 +108,6 @@ The browser asks for your location. Outside France the list stays empty unless t
 | `FRANCE_STATION_DETAILS_BASE_URL`                      | `https://www.prix-carburants.gouv.fr` | Website of the French price service; station names and brands come from its station pages                                                  |
 | `FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS` | `604800`                              | How long French station names stay cached (default one week)                                                                               |
 | `FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS`   | `3000`                                | Total time one station search waits for French station pages; stations whose page has not arrived by then are served without name          |
-| `TANKENTANKEN_API_KEY`                                 | _(unset)_                             | Enables the German provider                                                                                                                |
-| `TANKENTANKEN_BASE_URL`                                | `https://api.tankentanken.de`         | German API                                                                                                                                 |
 | `PHOTON_BASE_URL`                                      | `https://photon.komoot.io`            | Photon (komoot) geocoder behind the place search (`GET /api/places`)                                                                       |
 | `PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS`                 | `86400`                               | Cache lifetime of place search answers                                                                                                     |
 | `UPSTREAM_TIMEOUT_IN_MILLISECONDS`                     | `8000`                                | Timeout per upstream request                                                                                                               |
@@ -128,7 +127,7 @@ Invalid values stop the API at startup with a clear message. The API does not re
 ## Testing
 
 - **Unit (Vitest):** contracts schemas, API mappers and parsers, Angular services and components through their public interfaces.
-- **API end-to-end (Supertest):** the real Nest application against fake upstream servers for France and Germany.
+- **API end-to-end (Supertest):** the real Nest application against fake upstream servers for the French open data, the French station pages and Photon.
 - **Browser end-to-end (Playwright):** web + API + a local stand-in for the French open data API and the Photon place search serving recorded real data, on their own ports (web 4300, API 3100, mock upstream 4110), so a running dev server is never reused. Every request leaving the app fails the run unless it is mocked; a global teardown checks the mock upstream for unexpected requests. A desktop project covers all pages (including axe WCAG 2.2 AA checks in light and dark mode); a phone project (Pixel 7) covers the bottom sheet and repeats the axe checks in the phone viewport.
 
 ## Deployment

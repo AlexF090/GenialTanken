@@ -17,7 +17,6 @@ Everything runs on free tiers: web on Cloudflare Pages, API on Render, CI on Git
 - [ ] Render dashboard → **New → Blueprint** → select this repository. Render reads [`render.yaml`](../render.yaml) and creates the free web service `genialtanken-api` (Docker, region Frankfurt, health check `/health`, deploys only after the GitHub checks passed).
 - [ ] Set environment variables when asked:
   - `PROXY_SHARED_SECRET`: the value from step 2
-  - `TANKENTANKEN_API_KEY`: optional, enables German stations
 - [ ] Note the service URL, e.g. `https://genialtanken-api.onrender.com`, and check `https://…/health` returns `{"status":"ok",…}`.
 
 ## 4. Cloudflare Pages (web)
