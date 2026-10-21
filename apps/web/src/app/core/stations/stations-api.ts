@@ -39,7 +39,7 @@ export interface StationsByIdentifiers {
   failures: StationLoadFailure[];
 }
 
-/** Same origin: dev proxy locally, a Cloudflare Pages Function in production. */
+/** Same origin: dev proxy locally, the Cloudflare Worker in production. */
 const STATIONS_URL = '/api/stations';
 const STATIONS_BY_IDENTIFIERS_URL = `${STATIONS_URL}/by-identifiers`;
 

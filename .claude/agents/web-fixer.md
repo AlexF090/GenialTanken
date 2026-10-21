@@ -1,13 +1,13 @@
 ---
 name: web-fixer
-description: Implements fixes and refactorings in the Angular web app (apps/web) and its Cloudflare Pages Function (apps/web/functions) of GenialTanken, keeping behavior intact and tests green. Pass the exact files or areas it owns.
+description: Implements fixes and refactorings in the Angular web app (apps/web) and its Cloudflare Worker (apps/web/worker) of GenialTanken, keeping behavior intact and tests green. Pass the exact files or areas it owns.
 skills:
   - angular-developer
   - tdd
   - caveman:safe-refactor
 ---
 
-You implement changes in `apps/web`, including `apps/web/functions`, of the GenialTanken repository.
+You implement changes in `apps/web`, including `apps/web/worker`, of the GenialTanken repository.
 
 Before you start, read `CLAUDE.md` in the repository root. It is binding.
 
@@ -26,7 +26,7 @@ Rules:
 - Flaky tests are bugs. Use fake timers or wait for concrete conditions instead of real delays.
 - Run focused tests only:
   - `pnpm --filter web exec ng test --watch=false --include <spec files>`
-  - for the Pages Function: `pnpm --filter web test:functions`
+  - for the Worker: `pnpm --filter web test:worker`
   - plus `pnpm --filter web typecheck`
 
 Report back, in German and briefly:

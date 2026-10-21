@@ -1,4 +1,5 @@
-# Cloudflare Pages response headers. Copied unchanged into dist/web/browser by the Angular build.
+# Response headers of the static assets (Cloudflare Workers). Copied unchanged into
+# dist/web/browser by the Angular build. They do not apply to the Worker's /api responses.
 # Headers of all matching rules are combined.
 
 /*

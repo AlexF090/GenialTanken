@@ -6,16 +6,16 @@ export interface ApiRequestOptions {
 }
 
 const FORWARDED_FOR_HEADER = 'X-Forwarded-For';
-// Duplicated from @genialtanken/contracts on purpose: the deploy bundles `functions/` without
+// Duplicated from @genialtanken/contracts on purpose: Wrangler bundles `worker/` without
 // node_modules. create-api-request.spec.ts keeps both in sync (header names are case-insensitive).
 export const CLIENT_ADDRESS_HEADER = 'X-GenialTanken-Client-Address';
 export const PROXY_SECRET_HEADER = 'X-GenialTanken-Proxy-Secret';
 const CONNECTING_CLIENT_ADDRESS_HEADER = 'CF-Connecting-IP';
 
 /**
- * Builds the request the Cloudflare Pages Function forwards to the NestJS API on Render.
- * The browser only talks to the Pages origin, so no CORS setup and no build-time API URL
- * are needed, and preview deployments work without extra configuration.
+ * Builds the request the Cloudflare Worker forwards to the NestJS API on Render.
+ * The browser only talks to the Worker origin, so no CORS setup and no build-time API URL
+ * are needed, and preview URLs work without extra configuration.
  */
 export const createApiRequest = (incoming: Request, options: ApiRequestOptions): Request => {
   const incomingUrl = new URL(incoming.url);

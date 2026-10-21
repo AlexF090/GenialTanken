@@ -29,7 +29,7 @@
       "path": "./tsconfig.spec.json"
     },
     {
-      "path": "./tsconfig.functions.json"
+      "path": "./tsconfig.worker.json"
     }
   ]
 }

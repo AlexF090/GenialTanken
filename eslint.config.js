@@ -78,9 +78,9 @@ export default tseslint.config(
     },
   },
   {
-    // The deploy bundles functions/ without node_modules, so only specs may use contracts.
+    // Wrangler bundles worker/ without node_modules, so only specs may use contracts.
     // Flat config replaces rule options instead of merging them, hence the API pattern again.
-    files: ['apps/web/functions/**/*.ts'],
+    files: ['apps/web/worker/**/*.ts'],
     ignores: ['**/*.spec.ts'],
     rules: {
       'no-restricted-imports': [
@@ -90,14 +90,14 @@ export default tseslint.config(
             {
               name: '@genialtanken/contracts',
               message:
-                'Pages Functions are deployed without node_modules. Duplicate the value and keep it in sync through a spec.',
+                'The Worker is deployed without node_modules. Duplicate the value and keep it in sync through a spec.',
             },
           ],
           patterns: [
             forbiddenAppImportPattern('api'),
             {
               group: ['@genialtanken/contracts/*'],
-              message: 'Pages Functions are deployed without node_modules.',
+              message: 'The Worker is deployed without node_modules.',
             },
           ],
         },

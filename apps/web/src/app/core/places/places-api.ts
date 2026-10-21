@@ -9,7 +9,7 @@ import {
 import type { Place } from '@genialtanken/contracts';
 import { parseResponse } from '../http/parse-response';
 
-/** Same origin: dev proxy locally, a Cloudflare Pages Function in production. */
+/** Same origin: dev proxy locally, the Cloudflare Worker in production. */
 const PLACES_URL = '/api/places';
 
 const parsePlaces = (body: unknown): readonly Place[] =>

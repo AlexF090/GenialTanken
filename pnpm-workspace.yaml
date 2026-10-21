@@ -12,7 +12,7 @@ allowBuilds:
   esbuild: true
   '@parcel/watcher': true
   lmdb: true
-  # Local runtime of wrangler for `pages dev`
+  # Local runtime of wrangler for `wrangler dev`
   workerd: true
   msgpackr-extract: true
   # Telemetry from swagger-ui-dist
