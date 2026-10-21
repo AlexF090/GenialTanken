@@ -155,5 +155,7 @@ Step-by-step setup, including the release of a new version: [docs/deployment.md]
 
 ## Versions
 
+Releases are automatic: after CI passed on `main`, [semantic-release](https://semantic-release.gitbook.io/) derives the next version from the squash commit, which carries the pull request title (`fix` → patch, `feat` → minor, `!` → major). It bumps every `package.json`, updates [CHANGELOG.md](CHANGELOG.md), tags `v<version>` and publishes a [GitHub release](https://github.com/AlexF090/GenialTanken/releases). Pull request titles must therefore follow [Conventional Commits](https://www.conventionalcommits.org/); a check enforces it.
+
 - **1.0.0** – original React capstone (tag `v1.0.0`)
-- **2.0.0** – Angular + NestJS rebuild (this version; tagged after merge to `main`)
+- **2.0.0** – Angular + NestJS rebuild (tag `v2.0.0`)

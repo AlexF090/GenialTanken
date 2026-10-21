@@ -46,19 +46,16 @@ The web app is the Worker `genialtanken` with static assets ([`apps/web/wrangler
 - [ ] Settings → Secrets and variables → Actions:
   - Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
   - Variable: `MAPBOX_ACCESS_TOKEN` (the public `pk.*` token; without it the map uses OpenStreetMap tiles)
+  - Secret: `RELEASE_TOKEN` for `release.yml`. Create a fine-grained personal access token as a repository admin (GitHub → Settings → Developer settings → Fine-grained tokens): repository access only `AlexF090/GenialTanken`, repository permission **Contents: Read and write**, an expiry date you note down. The release commit is pushed to the protected `main` with it; admins are exempt from branch protection (`enforce_admins` off), `GITHUB_TOKEN` is not. Renew it before it expires, otherwise the release job fails.
+- [ ] Settings → General → Pull Requests: allow only **squash merging** with the default commit message **Pull request title** (or title and description). The squash commit then carries the pull request title, which decides the release.
 - [ ] After the repository is public: Settings → Branches → protect `main`, require the status check **CI success** and one approving review.
 
 ## 6. Merge and release
 
 - [ ] Merge the pull request into `main`. CI runs on `main`; when it is green, `deploy-web.yml` publishes the web app with `wrangler deploy` to https://genialtanken.alexf090.workers.dev and Render deploys the API. Pull request previews are uploaded as Worker versions with the alias `pr-<number>` and served at `https://pr-<number>-genialtanken.alexf090.workers.dev`; the workflow posts the URL as a pull request comment. Previews start working only once `deploy-web.yml` and `apps/web/wrangler.jsonc` exist on `main`: `workflow_run` reads the workflow from the default branch, and the deploy takes `wrangler.jsonc` only from the default branch (a configuration from a pull request could run a build command with the deploy secrets). Until then the deploy job fails with a message saying so. Previews are built only for pull requests that are ready for review: CI skips drafts, and `deploy-web.yml` deploys only when the CI run produced the `web-dist` artifact. Open pull requests as drafts and mark them ready when final.
 - [ ] Check production: web app loads, list shows stations, `https://genialtanken.alexf090.workers.dev/api/stations?latitude=48.8566&longitude=2.3522&fuel=e10` answers through the Worker.
-- [ ] Tag the release on the merge commit:
-  ```bash
-  git switch main && git pull
-  git tag -a v2.0.0 -m "GenialTanken 2.0.0: Angular and NestJS rebuild"
-  git push origin v2.0.0
-  gh release create v2.0.0 --title "2.0.0 – Angular + NestJS rebuild" --generate-notes
-  ```
+- [ ] Releases need no manual step. After CI passed for a push to `main`, `release.yml` runs semantic-release (`release.config.js`). The pull request title, which becomes the squash commit, decides the version: `fix` → patch, `feat` → minor, `!` or a `BREAKING CHANGE` footer → major; `chore`, `docs`, `ci`, `test` and `refactor` release nothing. A release bumps every `package.json` (the API reports that version), updates `CHANGELOG.md`, pushes `chore(release): <version> [skip ci]`, tags `v<version>` and creates the GitHub release. The release commit skips CI and therefore the web deploy; it changes only versions and the changelog. If `main` moved on while CI ran, the job skips and the CI run of the newer commit releases both.
+- [ ] Check a release: `pnpm exec semantic-release --dry-run` on an up-to-date `main` (with `GITHUB_TOKEN` set to a token that can read the repository) prints the next version and its notes without changing anything.
 
 ## Versions
 
@@ -66,3 +63,5 @@ The web app is the Worker `genialtanken` with static assets ([`apps/web/wrangler
 | ------- | ----------------------------------------------------------------------- |
 | 1.0.0   | Original React capstone (tag `v1.0.0`)                                  |
 | 2.0.0   | Angular 22 + NestJS 12 rebuild, French open data, Cloudflare and Render |
+
+Later versions are listed in `CHANGELOG.md` and on the GitHub releases page.
