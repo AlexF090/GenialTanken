@@ -112,4 +112,68 @@ describe('revealMarker', () => {
     expect(setup.onShown).toHaveBeenCalledOnce();
     expect(setup.map.getZoom()).toBeGreaterThan(13);
   });
+
+  it('pans only once when the marker stays out of sight after the pan', () => {
+    const setup = setUp(FAR_AWAY);
+    const { panTo } = holdPan(setup);
+    const reveal = revealMarker(setup.map, setup.group, setup.marker, setup.onShown);
+
+    // The pan ends without bringing the marker into view, as on a map without a size.
+    setup.map.fire('moveend');
+
+    expect(panTo).toHaveBeenCalledOnce();
+    expect(reveal.isPending).toBe(false);
+    expect(setup.onShown).not.toHaveBeenCalled();
+  });
+
+  describe('at maximum zoom', () => {
+    /** A neighbor so close that the two stay clustered even at maximum zoom. */
+    const setUpClusterAtMaximumZoom = (): RevealSetup & { cluster: L.MarkerCluster } => {
+      map.setView(MAP_CENTER, MAXIMUM_ZOOM, { animate: false });
+      const setup = setUp(MAP_CENTER);
+      setup.group.addLayer(L.marker([MAP_CENTER[0] + 0.000001, MAP_CENTER[1]]));
+      const cluster: unknown = setup.group.getVisibleParent(setup.marker);
+      if (!(cluster instanceof L.MarkerCluster)) {
+        throw new Error('The marker is not clustered at maximum zoom');
+      }
+      return { ...setup, cluster };
+    };
+
+    it('spiderfies the cluster and reports the marker once it is spiderfied', () => {
+      const setup = setUpClusterAtMaximumZoom();
+      const spiderfy = vi.spyOn(setup.cluster, 'spiderfy').mockImplementation(() => undefined);
+
+      const reveal = revealMarker(setup.map, setup.group, setup.marker, setup.onShown);
+
+      expect(spiderfy).toHaveBeenCalledOnce();
+      expect(setup.map.getZoom()).toBe(MAXIMUM_ZOOM);
+      expect(reveal.isPending).toBe(true);
+      expect(setup.onShown).not.toHaveBeenCalled();
+
+      setup.group.fire('spiderfied');
+
+      expect(setup.onShown).toHaveBeenCalledOnce();
+      expect(reveal.isPending).toBe(false);
+    });
+
+    it('reports the marker after a real spiderfy', () => {
+      const setup = setUpClusterAtMaximumZoom();
+
+      revealMarker(setup.map, setup.group, setup.marker, setup.onShown);
+
+      expect(setup.onShown).toHaveBeenCalledOnce();
+    });
+
+    it('stops waiting for the spiderfy when cancelled', () => {
+      const setup = setUpClusterAtMaximumZoom();
+      vi.spyOn(setup.cluster, 'spiderfy').mockImplementation(() => undefined);
+      const reveal = revealMarker(setup.map, setup.group, setup.marker, setup.onShown);
+
+      reveal.cancel();
+      setup.group.fire('spiderfied');
+
+      expect(reveal.isPending).toBe(false);
+      expect(setup.onShown).not.toHaveBeenCalled();
+    });
+  });
 });

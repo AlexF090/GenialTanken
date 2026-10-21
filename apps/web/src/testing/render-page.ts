@@ -22,6 +22,21 @@ export interface PageTestContext {
   settle: () => Promise<void>;
 }
 
+/**
+ * Taken before any test can install fake timers (`vi.useFakeTimers()`), so `settle` keeps
+ * working in tests that use them.
+ */
+const realSetTimeout = globalThis.setTimeout;
+
+/**
+ * Resolves once every microtask queued so far, and every microtask those queue in turn, has run:
+ * a macrotask only starts on an empty microtask queue. It waits for no time to pass.
+ */
+const afterQueuedMicrotasks = (): Promise<void> =>
+  new Promise(resolve => {
+    realSetTimeout(resolve, 0);
+  });
+
 /** Providers shared by page tests: real stores and API on top of fake browser seams. */
 export const configurePageTest = (
   options: { storage?: FakeStorage; routes?: Routes } = {}
@@ -44,7 +59,7 @@ export const configurePageTest = (
     httpTesting: TestBed.inject(HttpTestingController),
     settle: async () => {
       TestBed.tick();
-      await new Promise(resolve => setTimeout(resolve));
+      await afterQueuedMicrotasks();
       TestBed.tick();
     },
   };
