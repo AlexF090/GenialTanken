@@ -34,14 +34,14 @@
     "@semantic-release/changelog": "7.0.0",
     "@semantic-release/exec": "7.1.0",
     "@semantic-release/git": "11.0.1",
-    "angular-eslint": "22.5.0",
+    "angular-eslint": "22.6.0",
     "conventional-changelog-conventionalcommits": "10.4.1",
-    "eslint": "10.11.0",
+    "eslint": "10.13.0",
     "globals": "17.13.0",
     "lefthook": "2.2.2",
-    "prettier": "3.9.9",
+    "prettier": "3.9.10",
     "semantic-release": "25.0.9",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.71.0"
+    "typescript-eslint": "8.71.2"
   }
 }
