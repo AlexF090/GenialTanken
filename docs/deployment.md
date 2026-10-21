@@ -47,7 +47,7 @@ The web app is the Worker `genialtanken` with static assets ([`apps/web/wrangler
   - Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
   - Variable: `MAPBOX_ACCESS_TOKEN` (the public `pk.*` token; without it the map uses OpenStreetMap tiles)
   - Secret: `RELEASE_TOKEN` for `release.yml`. Create a fine-grained personal access token as a repository admin (GitHub → Settings → Developer settings → Fine-grained tokens): repository access only `AlexF090/GenialTanken`, repository permission **Contents: Read and write**, an expiry date you note down. The release commit is pushed to the protected `main` with it; admins are exempt from branch protection (`enforce_admins` off), `GITHUB_TOKEN` is not. Renew it before it expires, otherwise the release job fails.
-- [ ] Settings → General → Pull Requests: allow only **squash merging** with the default commit message **Pull request title** (or title and description). The squash commit then carries the pull request title, which decides the release.
+- [ ] Settings → General → Pull Requests: allow only **squash merging** with the default commit message **Pull request title** (title only, no description: a description that mentions `BREAKING CHANGE:` would otherwise release a major version). The squash commit then carries the pull request title, which decides the release.
 - [ ] After the repository is public: Settings → Branches → protect `main`, require the status check **CI success** and one approving review.
 
 ## 6. Merge and release
