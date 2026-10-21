@@ -11,7 +11,7 @@ export const configureApplication = (application: NestExpressApplication): void 
   const configuration = application.get(ApplicationConfiguration);
 
   // Only Render's own proxy is trusted; anyone can reach the Render URL directly and forge more
-  // X-Forwarded-For entries. The Pages Function names the client via `ClientAddressThrottlerGuard`.
+  // X-Forwarded-For entries. The Worker names the client via `ClientAddressThrottlerGuard`.
   application.set('trust proxy', TRUSTED_PROXY_HOPS);
   application.setGlobalPrefix(API_PREFIX, { exclude: ['health'] });
   application.enableCors({ origin: configuration.webOrigins });

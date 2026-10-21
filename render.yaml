@@ -23,9 +23,9 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Same value as PROXY_SHARED_SECRET of the Cloudflare Pages project; lets the Pages Function
-      # pass the client address on for per-client rate limiting (at least 32 characters)
+      # Same value as the secret PROXY_SHARED_SECRET of the Cloudflare Worker `genialtanken`; lets
+      # the Worker pass the client address on for per-client rate limiting (at least 32 characters)
       - key: PROXY_SHARED_SECRET
         sync: false
       - key: WEB_ORIGIN
-        value: https://genialtanken.pages.dev
+        value: https://genialtanken.alexf090.workers.dev

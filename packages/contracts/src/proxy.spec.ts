@@ -6,7 +6,7 @@ import {
 } from './index.js';
 
 describe('proxy contract', () => {
-  it('names the headers the Pages Function sends to the API in lowercase', () => {
+  it('names the headers the Worker sends to the API in lowercase', () => {
     expect(PROXY_SECRET_HEADER).toBe('x-genialtanken-proxy-secret');
     expect(CLIENT_ADDRESS_HEADER).toBe('x-genialtanken-client-address');
   });

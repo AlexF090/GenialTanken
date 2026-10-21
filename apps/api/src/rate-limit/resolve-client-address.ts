@@ -2,7 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { isIP } from 'node:net';
 import { CLIENT_ADDRESS_HEADER, PROXY_SECRET_HEADER } from '@genialtanken/contracts';
 
-// The Pages Function sets these headers; the names live in contracts so both sides agree.
+// The Worker sets these headers; the names live in contracts so both sides agree.
 export { CLIENT_ADDRESS_HEADER, PROXY_SECRET_HEADER };
 
 type HeaderValue = string | string[] | undefined;
@@ -28,8 +28,8 @@ const secretsMatch = (expected: string, provided: string): boolean => {
 };
 
 /**
- * The address to rate-limit a request by: the client address named by the Cloudflare Pages
- * Function when it proves itself with the shared secret, otherwise the connecting address.
+ * The address to rate-limit a request by: the client address named by the Cloudflare Worker
+ * when it proves itself with the shared secret, otherwise the connecting address.
  */
 export const resolveClientAddress = (
   { connectingAddress, providedSecret, forwardedClientAddress }: ClientAddressSource,

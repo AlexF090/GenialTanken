@@ -54,7 +54,7 @@ export const environmentSchema = z.object({
   CACHE_MAXIMUM_ENTRIES: positiveIntegerSchema.default(5000),
   RATE_LIMIT_REQUESTS_PER_MINUTE: positiveIntegerSchema.default(60),
   /**
-   * Shared with the Cloudflare Pages Function; only requests carrying it may name the client
+   * Shared with the Cloudflare Worker; only requests carrying it may name the client
    * address for the rate limit. Without it every request is limited by its connecting address.
    */
   PROXY_SHARED_SECRET: optionalTrimmedString().pipe(

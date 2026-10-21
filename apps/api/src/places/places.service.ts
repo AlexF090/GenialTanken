@@ -18,7 +18,7 @@ const CANDIDATES_PER_PLACE = 2;
  * Ouessant to Alsace and Corsica to Dunkirk.
  */
 const FRANCE_BOUNDING_BOX = '-5.3,41.3,9.7,51.2';
-const CONTACT_URL = 'https://genialtanken.pages.dev';
+const CONTACT_URL = 'https://genialtanken.alexf090.workers.dev';
 
 /** Place suggestions for the search field, from the public Photon (komoot) geocoder. */
 @Injectable()

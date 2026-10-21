@@ -7,7 +7,7 @@ import type { EnvironmentOverrides } from './support/create-test-application.js'
 import { FakeUpstream } from './support/fake-upstream.js';
 import { FRENCH_RECORDS_PATH, frenchResponse } from './support/french-records.js';
 
-const ALLOWED_ORIGIN = 'https://genialtanken.pages.dev';
+const ALLOWED_ORIGIN = 'https://genialtanken.alexf090.workers.dev';
 
 const requiredPropertiesSchema = z.object({ required: z.array(z.string()) });
 
@@ -173,11 +173,11 @@ describe('Rate limit', () => {
   });
 });
 
-describe('Rate limit behind the Cloudflare Pages Function', () => {
+describe('Rate limit behind the Cloudflare Worker', () => {
   const PROXY_SHARED_SECRET = 'a-proxy-shared-secret-of-at-least-32-characters';
   const query = { latitude: '51.3', longitude: '9.4' };
 
-  const startBehindPagesFunction = (overrides: EnvironmentOverrides = {}) =>
+  const startBehindWorker = (overrides: EnvironmentOverrides = {}) =>
     startApplication({ RATE_LIMIT_REQUESTS_PER_MINUTE: '1', PROXY_SHARED_SECRET, ...overrides });
 
   const requestFrom = (
@@ -192,8 +192,8 @@ describe('Rate limit behind the Cloudflare Pages Function', () => {
     return secret === undefined ? pending : pending.set('X-GenialTanken-Proxy-Secret', secret);
   };
 
-  it('limits each client separately when the Pages Function sends the shared secret', async () => {
-    const api = await startBehindPagesFunction();
+  it('limits each client separately when the Worker sends the shared secret', async () => {
+    const api = await startBehindWorker();
 
     await requestFrom(api, '198.51.100.7', PROXY_SHARED_SECRET).expect(200);
     await requestFrom(api, '2001:db8::1', PROXY_SHARED_SECRET).expect(200);
@@ -201,7 +201,7 @@ describe('Rate limit behind the Cloudflare Pages Function', () => {
   });
 
   it('ignores the client address without the shared secret', async () => {
-    const api = await startBehindPagesFunction();
+    const api = await startBehindWorker();
 
     await requestFrom(api, '198.51.100.7').expect(200);
     await requestFrom(api, '203.0.113.9').expect(429);
@@ -211,21 +211,21 @@ describe('Rate limit behind the Cloudflare Pages Function', () => {
     ['a wrong secret', 'a-wrong-secret-of-at-least-thirty-two-characters'],
     ['a prefix of the secret', PROXY_SHARED_SECRET.slice(0, 10)],
   ])('ignores the client address with %s', async (_description, secret) => {
-    const api = await startBehindPagesFunction();
+    const api = await startBehindWorker();
 
     await requestFrom(api, '198.51.100.7', secret).expect(200);
     await requestFrom(api, '203.0.113.9', secret).expect(429);
   });
 
   it('ignores the client address when no shared secret is configured', async () => {
-    const api = await startBehindPagesFunction({ PROXY_SHARED_SECRET: undefined });
+    const api = await startBehindWorker({ PROXY_SHARED_SECRET: undefined });
 
     await requestFrom(api, '198.51.100.7', PROXY_SHARED_SECRET).expect(200);
     await requestFrom(api, '203.0.113.9', PROXY_SHARED_SECRET).expect(429);
   });
 
   it('falls back to the connecting address when the client address is not an IP', async () => {
-    const api = await startBehindPagesFunction();
+    const api = await startBehindWorker();
 
     await requestFrom(api, 'not-an-address', PROXY_SHARED_SECRET).expect(200);
     await requestFrom(api, 'another-made-up-address', PROXY_SHARED_SECRET).expect(429);

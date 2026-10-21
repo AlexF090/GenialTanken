@@ -10,7 +10,7 @@ import {
   resolveClientAddress,
 } from './resolve-client-address.js';
 
-/** Rate-limits per client, also behind the Cloudflare Pages Function (see `resolveClientAddress`). */
+/** Rate-limits per client, also behind the Cloudflare Worker (see `resolveClientAddress`). */
 @Injectable()
 export class ClientAddressThrottlerGuard extends ThrottlerGuard {
   constructor(

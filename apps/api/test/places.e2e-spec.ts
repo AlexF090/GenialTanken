@@ -95,7 +95,7 @@ describe('GET /api/places', () => {
     await api.get('/api/places').query({ query: 'lyon' }).expect(200);
 
     expect(photon.requests[0]?.headers['user-agent']).toMatch(
-      /^GenialTanken\/\d+\.\d+\.\d+ \(\+https:\/\/genialtanken\.pages\.dev\)$/
+      /^GenialTanken\/\d+\.\d+\.\d+ \(\+https:\/\/genialtanken\.alexf090\.workers\.dev\)$/
     );
   });
 
