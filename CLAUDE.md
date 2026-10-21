@@ -6,7 +6,7 @@ GenialTanken shows current fuel prices of nearby gas stations as a list and on a
 
 ## Commands
 
-Node 24.15 or newer (`.nvmrc`, `engines`; the release tooling needs it), pnpm 12.8.1 (pinned via `devEngines`). Run from the repository root.
+Node 26 or newer (`.nvmrc`, `engines`), pnpm 12.8.1 (pinned via `devEngines`). Run from the repository root.
 
 ```bash
 pnpm install                 # also builds packages/contracts and installs the lefthook Git hooks (`prepare` scripts)

@@ -3,7 +3,7 @@
  * PNG icons referenced by the web app manifest and index.html, plus favicon.ico.
  *
  * Uses the Chromium that Playwright already installed for the e2e workspace, so no image library
- * is needed. Run from the repository root (Node 24 strips the types natively):
+ * is needed. Run from the repository root (Node strips the types natively):
  *
  *   node scripts/generate-app-icons.ts
  *
