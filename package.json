@@ -21,6 +21,8 @@
     "build": "pnpm --recursive --filter \"./apps/*\" --filter \"./packages/*\" run build",
     "test": "pnpm --recursive --filter \"./apps/*\" --filter \"./packages/*\" run test",
     "test:e2e": "pnpm --filter e2e test",
+    "deploy:web": "pnpm --filter web build && pnpm --filter web run deploy",
+    "preview:web": "pnpm --filter web build && pnpm --filter web run preview",
     "lint": "eslint .",
     "typecheck": "pnpm --recursive run typecheck",
     "format:check": "prettier --check .",

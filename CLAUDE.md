@@ -12,6 +12,8 @@ Node 24 (`.nvmrc`), pnpm 12.8.1 (pinned via `devEngines`). Run from the reposito
 pnpm install                 # also builds packages/contracts and installs the lefthook Git hooks (`prepare` scripts)
 pnpm dev                     # web (http://localhost:4200) + API (http://localhost:3000) in watch mode
 pnpm build                   # contracts, API, web
+pnpm preview:web             # build web, serve it with the Pages Function via wrangler (needs apps/web/.dev.vars)
+pnpm deploy:web              # build web, publish to Cloudflare Pages (manual; CI normally deploys)
 pnpm test                    # unit tests of all workspaces
 pnpm --filter api test:e2e   # API end-to-end tests (Supertest against fake upstreams)
 pnpm test:e2e                # Playwright; starts mock upstream, API and web itself

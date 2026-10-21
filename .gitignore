@@ -29,3 +29,7 @@ coverage
 
 # Git worktrees of parallel coding agents
 .claude/worktrees
+
+# Wrangler local state and secrets
+.dev.vars
+.wrangler

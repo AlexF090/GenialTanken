@@ -23,7 +23,12 @@ Everything runs on free tiers: web on Cloudflare Pages, API on Render, CI on Git
 
 - [ ] Create the project once (Direct Upload, not Git integration):
   ```bash
-  pnpm dlx wrangler pages project create genialtanken --production-branch=main
+  pnpm --filter web exec wrangler pages project create genialtanken --production-branch=main
+  ```
+- [ ] Optional manual deploy and local preview (needs `wrangler login` or `CLOUDFLARE_API_TOKEN`; the preview reads `API_ORIGIN` and `PROXY_SHARED_SECRET` from `apps/web/.dev.vars`, which is git-ignored):
+  ```bash
+  pnpm deploy:web    # build, then publish dist/web/browser to the production branch
+  pnpm preview:web   # build, then serve it with the Pages Function locally
   ```
 - [ ] Pages project → Settings → Variables and secrets, for **Production and Preview**:
   - `API_ORIGIN`: the Render URL from step 3. It must be an `https://` URL; plain `http://` is only accepted for `localhost`, `127.0.0.1` and `[::1]` (local `wrangler pages dev`).
