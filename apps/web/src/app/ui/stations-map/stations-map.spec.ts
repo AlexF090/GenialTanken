@@ -402,6 +402,14 @@ describe('StationsMap', () => {
     });
   });
 
+  it('bounds how far a fast swipe flings the map', async () => {
+    const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+    await render([]);
+    const map = fitBounds.mock.contexts[0] as L.Map;
+
+    expect(map.options.inertiaMaxSpeed).toBe(1500);
+  });
+
   describe('teardown', () => {
     afterEach(() => {
       vi.useRealTimers();

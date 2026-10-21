@@ -55,6 +55,8 @@ interface MarkerContext {
 /** A price tag stands above its map point; fitting points alone would cut off the top tags. */
 const PRICE_TAG_HEIGHT_IN_PIXELS = 40;
 const CLUSTER_RADIUS_IN_PIXELS = 56;
+/** Leaflet's default is unbounded, so a fast swipe flings the map far and for long. */
+const INERTIA_MAXIMUM_SPEED_IN_PIXELS_PER_SECOND = 1500;
 
 /**
  * Interactive map of the search area: a price tag per station (clustered when close), the search
@@ -130,6 +132,7 @@ export class StationsMap {
       const map = L.map(this.container().nativeElement, {
         zoomControl: false,
         maxZoom: MAXIMUM_ZOOM,
+        inertiaMaxSpeed: INERTIA_MAXIMUM_SPEED_IN_PIXELS_PER_SECOND,
       });
       map.fitBounds(searchAreaBounds(this.center(), this.radiusInKilometers()), {
         ...toPaddingOptions(this.viewportPadding()),
