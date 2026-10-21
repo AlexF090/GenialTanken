@@ -11,10 +11,13 @@ import { normalizePlaceQuery, selectPlaces } from './place-search.js';
 
 const SEARCH_PATH = '/api';
 const RESULT_LANGUAGE = 'de';
-/** Photon also answers places outside France and Germany; ask for more to keep enough of them. */
+/** Photon also answers places outside France; ask for more to keep enough of them. */
 const CANDIDATES_PER_PLACE = 2;
-/** `minimumLongitude,minimumLatitude,maximumLongitude,maximumLatitude` around France and Germany. */
-const FRANCE_AND_GERMANY_BOUNDING_BOX = '-5.3,41.3,15.1,55.1';
+/**
+ * `minimumLongitude,minimumLatitude,maximumLongitude,maximumLatitude` around metropolitan France,
+ * Ouessant to Alsace and Corsica to Dunkirk.
+ */
+const FRANCE_BOUNDING_BOX = '-5.3,41.3,9.7,51.2';
 const CONTACT_URL = 'https://genialtanken.pages.dev';
 
 /** Place suggestions for the search field, from the public Photon (komoot) geocoder. */
@@ -36,7 +39,7 @@ export class PlacesService {
       q: normalizePlaceQuery(query),
       lang: RESULT_LANGUAGE,
       limit: String(limit * CANDIDATES_PER_PLACE),
-      bbox: FRANCE_AND_GERMANY_BOUNDING_BOX,
+      bbox: FRANCE_BOUNDING_BOX,
     }).toString();
 
     try {

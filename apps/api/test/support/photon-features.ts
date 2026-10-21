@@ -1,6 +1,6 @@
 export const PHOTON_SEARCH_PATH = '/api';
 
-/** Photon answer for "bastille" (recorded, shortened): a duplicate and a Dutch street included. */
+/** Photon answer for "bastille" (recorded, shortened): a duplicate, a nameless French address and a Dutch street included. */
 export const bastilleFeatures = [
   {
     type: 'Feature',
@@ -54,17 +54,17 @@ export const bastilleFeatures = [
     properties: {
       osm_type: 'N',
       osm_id: 206670863,
-      osm_key: 'railway',
-      osm_value: 'station',
+      osm_key: 'place',
+      osm_value: 'house',
       type: 'house',
-      street: 'Rainer-Dierichs-Platz',
-      housenumber: '1',
-      city: 'Kassel',
-      country: 'Deutschland',
-      postcode: '34117',
-      countrycode: 'DE',
+      street: 'Rue de la Bastille',
+      housenumber: '4',
+      city: 'Nantes',
+      country: 'Frankreich',
+      postcode: '44000',
+      countrycode: 'FR',
     },
-    geometry: { type: 'Point', coordinates: [9.4896007, 51.3183386] },
+    geometry: { type: 'Point', coordinates: [-1.5626711, 47.2196414] },
   },
 ];
 

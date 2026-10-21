@@ -35,7 +35,7 @@ afterEach(async () => {
 });
 
 describe('GET /api/places', () => {
-  it('maps places in France and Germany once each, in upstream order', async () => {
+  it('maps places in France once each, in upstream order', async () => {
     photon.respondTo(PHOTON_SEARCH_PATH, { status: 200, body: photonResponse(bastilleFeatures) });
     const api = await startApplication();
 
@@ -52,16 +52,16 @@ describe('GET /api/places', () => {
       },
       {
         id: 'N206670863',
-        name: 'Rainer-Dierichs-Platz 1',
-        description: '34117 Kassel, Deutschland',
-        country: 'DE',
-        latitude: 51.3183386,
-        longitude: 9.4896007,
+        name: 'Rue de la Bastille 4',
+        description: '44000 Nantes, Frankreich',
+        country: 'FR',
+        latitude: 47.2196414,
+        longitude: -1.5626711,
       },
     ]);
   });
 
-  it('asks Photon for twice the limit in German, restricted to France and Germany', async () => {
+  it('asks Photon for twice the limit in German, restricted to France', async () => {
     photon.respondTo(PHOTON_SEARCH_PATH, { status: 200, body: photonResponse([]) });
     const api = await startApplication();
 
@@ -72,7 +72,7 @@ describe('GET /api/places', () => {
       q: 'place de la bastille',
       lang: 'de',
       limit: '6',
-      bbox: '-5.3,41.3,15.1,55.1',
+      bbox: '-5.3,41.3,9.7,51.2',
     });
   });
 
@@ -92,7 +92,7 @@ describe('GET /api/places', () => {
     photon.respondTo(PHOTON_SEARCH_PATH, { status: 200, body: photonResponse([]) });
     const api = await startApplication();
 
-    await api.get('/api/places').query({ query: 'kassel' }).expect(200);
+    await api.get('/api/places').query({ query: 'lyon' }).expect(200);
 
     expect(photon.requests[0]?.headers['user-agent']).toMatch(
       /^GenialTanken\/\d+\.\d+\.\d+ \(\+https:\/\/genialtanken\.pages\.dev\)$/
@@ -147,12 +147,12 @@ describe('GET /api/places', () => {
     const api = await startApplication({ CACHE_MAXIMUM_ENTRIES: '1' });
 
     await api.get('/api/places').query({ query: 'bastille' }).expect(200);
-    await api.get('/api/places').query({ query: 'kassel' }).expect(200);
+    await api.get('/api/places').query({ query: 'lyon' }).expect(200);
     await api.get('/api/places').query({ query: 'bastille' }).expect(200);
 
     expect(photon.requests.map(recorded => searchParametersOf(recorded).get('q'))).toEqual([
       'bastille',
-      'kassel',
+      'lyon',
       'bastille',
     ]);
   });

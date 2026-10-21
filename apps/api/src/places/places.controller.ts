@@ -31,7 +31,7 @@ export class PlacesController {
 
   @Get()
   @ApiOkResponse({
-    description: 'Places in France and Germany matching the query, best match first.',
+    description: 'Places in France matching the query, best match first.',
     standardSchema: z.array(documentedPlaceSchema),
   })
   async search(@Query({ schema: placesQuerySchema }) query: PlacesQuery): Promise<Place[]> {
