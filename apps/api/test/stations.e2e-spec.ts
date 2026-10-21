@@ -1,4 +1,9 @@
-import { apiErrorSchema, stationsSchema } from '@genialtanken/contracts';
+import {
+  apiErrorSchema,
+  MAXIMUM_STATION_IDENTIFIERS_PER_REQUEST,
+  stationLookupSchema,
+  stationsSchema,
+} from '@genialtanken/contracts';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { createTestApplication, GERMAN_TEST_API_KEY } from './support/create-test-application.js';
@@ -597,6 +602,15 @@ describe('GET /api/stations/:id', () => {
     expect(germany.requests).toHaveLength(0);
   });
 
+  it('responds with 404 for a German identifier that is not a GUID without asking the German API', async () => {
+    const api = await startWithGermany();
+
+    const response = await api.get('/api/stations/de-not-a-guid').expect(404);
+
+    expect(response.body).toEqual(NOT_FOUND_BODY);
+    expect(germany.requests).toHaveLength(0);
+  });
+
   it('responds with 404 for an unknown country prefix', async () => {
     const api = await startWithGermany();
 
@@ -616,4 +630,109 @@ describe('GET /api/stations/:id', () => {
       expect(france.requests).toHaveLength(0);
     }
   );
+});
+
+describe('GET /api/stations/by-identifiers', () => {
+  const LOOKUP_PATH = '/api/stations/by-identifiers';
+  const RAPEE_IDENTIFIER = `fr-${String(RAPEE_RECORD_ID)}`;
+  const ARAL_IDENTIFIER = `de-${ARAL_STATION_ID}`;
+  const SHELL_IDENTIFIER = `de-${SHELL_STATION_ID}`;
+
+  const respondWithAralDetail = () => {
+    const { distance: _distance, ...aralDetail } = germanStations[0] ?? {};
+    germany.respondTo(`${GERMAN_STATIONS_PATH}/${ARAL_STATION_ID}`, {
+      status: 200,
+      body: aralDetail,
+    });
+  };
+
+  it('returns the found stations in the requested order and lists the others as unavailable', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, {
+      status: 200,
+      body: frenchResponse([rapeeDetailRecord]),
+    });
+    respondWithAralDetail();
+    germany.respondTo(`${GERMAN_STATIONS_PATH}/${SHELL_STATION_ID}`, { status: 404 });
+    const api = await startWithGermany();
+
+    const response = await api
+      .get(LOOKUP_PATH)
+      .query({
+        identifiers: [ARAL_IDENTIFIER, SHELL_IDENTIFIER, RAPEE_IDENTIFIER, 'it-12345'].join(','),
+      })
+      .expect(200);
+
+    expect(response.body).toEqual({
+      stations: [
+        { ...EXPECTED_ARAL_STATION, distanceInMeters: null },
+        { ...EXPECTED_RAPEE_STATION, distanceInMeters: null },
+      ],
+      unavailableIdentifiers: [SHELL_IDENTIFIER, 'it-12345'],
+      failedIdentifiers: [],
+    });
+  });
+
+  it('lists the identifiers of a failing provider as failed and returns the others', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, { status: 500 });
+    respondWithAralDetail();
+    const api = await startWithGermany();
+
+    const response = await api
+      .get(LOOKUP_PATH)
+      .query({ identifiers: `${RAPEE_IDENTIFIER},${ARAL_IDENTIFIER}` })
+      .expect(200);
+
+    expect(stationLookupSchema.parse(response.body)).toEqual({
+      stations: [{ ...EXPECTED_ARAL_STATION, distanceInMeters: null }],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [RAPEE_IDENTIFIER],
+    });
+  });
+
+  it('responds with 502 when every lookup fails', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, { status: 500 });
+    const api = await startApplication();
+
+    const response = await api
+      .get(LOOKUP_PATH)
+      .query({ identifiers: RAPEE_IDENTIFIER })
+      .expect(502);
+
+    expect(response.body).toEqual(UNAVAILABLE_BODY);
+  });
+
+  it('answers with a lookup instead of treating by-identifiers as a station identifier', async () => {
+    const api = await startApplication();
+
+    const response = await api.get(LOOKUP_PATH).query({ identifiers: 'fr-abc' }).expect(200);
+
+    expect(response.body).toEqual({
+      stations: [],
+      unavailableIdentifiers: ['fr-abc'],
+      failedIdentifiers: [],
+    });
+  });
+
+  it.each([
+    ['a missing parameter', {}],
+    [
+      `more than ${String(MAXIMUM_STATION_IDENTIFIERS_PER_REQUEST)} identifiers`,
+      {
+        identifiers: Array.from(
+          { length: MAXIMUM_STATION_IDENTIFIERS_PER_REQUEST + 1 },
+          (_, index) => `fr-${String(index)}`
+        ).join(','),
+      },
+    ],
+    ['a malformed identifier', { identifiers: `${RAPEE_IDENTIFIER},FR-12345` }],
+  ])('rejects %s with 400', async (_description, query) => {
+    const api = await startApplication();
+
+    const response = await api.get(LOOKUP_PATH).query(query).expect(400);
+
+    const apiError = strictApiErrorSchema.parse(response.body);
+    expect(apiError.statusCode).toBe(400);
+    expect(apiError.message).toContain('identifiers');
+    expect(france.requests).toHaveLength(0);
+  });
 });

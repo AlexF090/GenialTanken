@@ -18,6 +18,7 @@ const openApiDocumentSchema = z.object({
   components: z.object({
     schemas: z.object({
       Station: requiredPropertiesSchema,
+      StationLookup: requiredPropertiesSchema,
       Place: requiredPropertiesSchema,
       ApiError: requiredPropertiesSchema,
     }),
@@ -75,12 +76,18 @@ describe('OpenAPI document', () => {
     expect(Object.keys(paths)).toEqual([
       '/health',
       '/api/stations',
+      '/api/stations/by-identifiers',
       '/api/stations/{id}',
       '/api/places',
     ]);
     expect(components.schemas.Station.required).toEqual(
       expect.arrayContaining(['id', 'pricesInEuro', 'distanceInMeters'])
     );
+    expect(components.schemas.StationLookup.required).toEqual([
+      'stations',
+      'unavailableIdentifiers',
+      'failedIdentifiers',
+    ]);
     expect(components.schemas.Place.required).toEqual(
       expect.arrayContaining(['id', 'name', 'description', 'country', 'latitude', 'longitude'])
     );
