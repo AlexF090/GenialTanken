@@ -57,7 +57,7 @@ export default defineConfig({
       command: 'pnpm --filter api start',
       cwd: repositoryRoot,
       url: `http://localhost:${String(API_PORT)}/health`,
-      // No TANKENTANKEN_API_KEY: only the (mocked) French provider is active.
+      // Only the French provider exists; it is mocked.
       env: {
         FRANCE_FUEL_PRICES_BASE_URL: `http://localhost:${String(MOCK_UPSTREAM_PORT)}`,
         FRANCE_STATION_DETAILS_BASE_URL: `http://localhost:${String(MOCK_UPSTREAM_PORT)}`,
