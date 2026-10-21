@@ -5,8 +5,9 @@ name: Pull request title
 # Conventional Commits, e.g. `feat(web): sort favorites` or `fix!: drop old favorites`.
 on:
   pull_request:
-    # No `synchronize`: pushing commits does not change the title.
-    types: [opened, edited, reopened, ready_for_review]
+    # `synchronize` too: the check is required, so it must also report on new commits, e.g. after
+    # Dependabot rebases its pull requests.
+    types: [opened, edited, synchronize, reopened, ready_for_review]
 
 permissions:
   pull-requests: read
