@@ -10,7 +10,7 @@ Everything runs on free tiers: web on Cloudflare Pages, API on Render, CI on Git
 
 ## 2. Shared proxy secret
 
-- [ ] Generate one random value with at least 32 characters, e.g. `openssl rand -base64 48`. It is used twice: as `API_PROXY_SECRET` in Cloudflare and as `PROXY_SHARED_SECRET` in Render. It lets the Pages Function pass the visitor's address to the API, so the rate limit works per visitor and cannot be spoofed.
+- [ ] Generate one random value with at least 32 characters, e.g. `openssl rand -base64 48`. It is used twice under the same name `PROXY_SHARED_SECRET`: in Cloudflare and in Render. It lets the Pages Function pass the visitor's address to the API, so the rate limit works per visitor and cannot be spoofed.
 
 ## 3. Render (API)
 
@@ -27,8 +27,9 @@ Everything runs on free tiers: web on Cloudflare Pages, API on Render, CI on Git
   pnpm dlx wrangler pages project create genialtanken --production-branch=main
   ```
 - [ ] Pages project → Settings → Variables and secrets, for **Production and Preview**:
-  - `API_ORIGIN`: the Render URL from step 3
-  - `API_PROXY_SECRET` (as secret): the value from step 2
+  - `API_ORIGIN`: the Render URL from step 3. It must be an `https://` URL; plain `http://` is only accepted for `localhost`, `127.0.0.1` and `[::1]` (local `wrangler pages dev`).
+  - `PROXY_SHARED_SECRET` (as secret): the value from step 2
+- [ ] **Existing project:** rename the secret `API_PROXY_SECRET` to `PROXY_SHARED_SECRET` (create `PROXY_SHARED_SECRET` with the same value for Production and Preview, then delete `API_PROXY_SECRET`). The Pages Function still reads the old name as a fallback for one release only.
 - [ ] Create an API token (My Profile → API Tokens → template _Edit Cloudflare Workers_ or a custom token with _Account → Cloudflare Pages → Edit_) and note the account ID.
 
 ## 5. GitHub settings
@@ -41,7 +42,7 @@ Everything runs on free tiers: web on Cloudflare Pages, API on Render, CI on Git
 
 ## 6. Merge and release
 
-- [ ] Merge the pull request into `main`. CI runs on `main`; when it is green, `deploy-web.yml` publishes the web app to Cloudflare Pages and Render deploys the API. (Pull request previews start working once `deploy-web.yml` exists on `main`, because it is triggered by `workflow_run`.)
+- [ ] Merge the pull request into `main`. CI runs on `main`; when it is green, `deploy-web.yml` publishes the web app to Cloudflare Pages and Render deploys the API. (Pull request previews start working once `deploy-web.yml` exists on `main`, because it is triggered by `workflow_run`.) Previews are built only for pull requests that are ready for review: CI skips drafts, and `deploy-web.yml` deploys only when the CI run produced the `web-dist` artifact. Open pull requests as drafts and mark them ready when final.
 - [ ] Check production: web app loads, list shows stations, `/api/stations?latitude=48.8566&longitude=2.3522&fuel=e10` answers through the Pages domain.
 - [ ] Tag the release on the merge commit:
   ```bash

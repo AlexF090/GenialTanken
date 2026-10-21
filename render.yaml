@@ -23,7 +23,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Same value as API_PROXY_SECRET of the Cloudflare Pages project; lets the Pages Function
+      # Same value as PROXY_SHARED_SECRET of the Cloudflare Pages project; lets the Pages Function
       # pass the client address on for per-client rate limiting (at least 32 characters)
       - key: PROXY_SHARED_SECRET
         sync: false

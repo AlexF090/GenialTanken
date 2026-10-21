@@ -1,6 +1,6 @@
 # GenialTanken
 
-Find the cheapest fuel nearby: current prices of the gas stations around you as a list or on a map, filtered by fuel type and radius.
+Find the cheapest fuel nearby: current prices of the gas stations around you as a list or on a map, filtered by fuel type and radius (up to 30 km).
 
 GenialTanken started as a React capstone project and is being rebuilt as a full-stack showcase with Angular and NestJS. See [ROADMAP.md](ROADMAP.md) for decisions and next steps.
 
@@ -14,12 +14,14 @@ packages/contracts  zod schemas and types shared by web and API (@genialtanken/c
 e2e                 Playwright browser tests against web + API + mocked upstream
 ```
 
-The browser only talks to the BFF. The BFF queries all enabled **fuel price providers** in parallel, merges their stations into one format, sorts them by exact distance and caches the upstream responses:
+The browser only talks to the BFF. The BFF queries all enabled **fuel price providers** in parallel, merges their stations into one format, sorts them by exact distance and caches the upstream responses in a size-limited in-memory cache (least recently used entries are evicted):
 
 | Provider | Source                                                                                                                                      | Key needed                             |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
 | France   | French government open data ([prix-carburants.gouv.fr](https://www.prix-carburants.gouv.fr/rubrique/opendata/)) via `data.economie.gouv.fr` | no, always enabled                     |
 | Germany  | [tankentanken.de](https://www.tankentanken.de/) API                                                                                         | yes, enabled by `TANKENTANKEN_API_KEY` |
+
+Favorites are loaded in one request (`GET /api/stations/by-identifiers?identifiers=…`, up to 50 identifiers); it answers with the found stations plus the unknown and the failed identifiers.
 
 Place suggestions for the search field (`GET /api/places`) come from the public [Photon](https://photon.komoot.io/) geocoder (OpenStreetMap data), limited to France and Germany and cached for a day.
 
@@ -28,9 +30,9 @@ Only current prices are served; there is no price history. French data is publis
 ## Tech stack
 
 - **Web:** Angular 22, signals and `httpResource`, Signal Forms, Leaflet + markercluster, SCSS with design tokens, Vitest
-- **API:** NestJS 12 (ESM), native Standard Schema validation with zod 4, `@nestjs/config`, cache-manager, throttler, Swagger, Terminus, Vitest + Supertest
+- **API:** NestJS 12 (ESM), native Standard Schema validation with zod 4, `@nestjs/config`, cache-manager with an LRU store (`@cacheable/memory`), throttler, Swagger, Terminus, Vitest + Supertest
 - **Shared:** TypeScript 6 strict, zod 4 contracts
-- **Tooling:** pnpm 12 workspaces, ESLint (typescript-eslint strict, angular-eslint incl. template accessibility), Prettier, Playwright, devcontainer
+- **Tooling:** pnpm 12 workspaces, ESLint (typescript-eslint strict, angular-eslint incl. template accessibility), Prettier, lefthook Git hooks, Playwright, devcontainer
 - **Delivery:** GitHub Actions, Cloudflare Pages (web), Render free web service from Docker (API), Dependabot
 
 ## Running locally
@@ -64,6 +66,12 @@ pnpm install
 pnpm dev
 ```
 
+### Git hooks
+
+`pnpm install` installs [lefthook](https://lefthook.dev/) hooks (`lefthook.yml`): before a commit, Prettier and ESLint check the staged files; before a push, `pnpm typecheck` and `pnpm test` run. Skip them once with `LEFTHOOK=0 git commit …`.
+
+In the devcontainer the hooks are installed for the Linux binary. Committing from the macOS host on the same checkout may then fail; run `pnpm install` on the host as well, or use `LEFTHOOK=0`.
+
 ### Local URLs
 
 | URL                            | Purpose                             |
@@ -91,21 +99,23 @@ The browser asks for your location. Outside France the list stays empty unless t
 
 ### API (`apps/api`)
 
-| Variable                                               | Default                               | Purpose                                                                                                                                       |
-| ------------------------------------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                                                 | `3000`                                | HTTP port                                                                                                                                     |
-| `WEB_ORIGIN`                                           | `http://localhost:4200`               | Comma-separated CORS origins                                                                                                                  |
-| `FRANCE_FUEL_PRICES_BASE_URL`                          | `https://data.economie.gouv.fr`       | French open data API                                                                                                                          |
-| `FRANCE_STATION_DETAILS_BASE_URL`                      | `https://www.prix-carburants.gouv.fr` | Website of the French price service; station names and brands come from its station pages                                                     |
-| `FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS` | `604800`                              | How long French station names stay cached (default one week)                                                                                  |
-| `TANKENTANKEN_API_KEY`                                 | _(unset)_                             | Enables the German provider                                                                                                                   |
-| `TANKENTANKEN_BASE_URL`                                | `https://api.tankentanken.de`         | German API                                                                                                                                    |
-| `PHOTON_BASE_URL`                                      | `https://photon.komoot.io`            | Photon (komoot) geocoder behind the place search (`GET /api/places`)                                                                          |
-| `PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS`                 | `86400`                               | Cache lifetime of place search answers                                                                                                        |
-| `UPSTREAM_TIMEOUT_IN_MILLISECONDS`                     | `8000`                                | Timeout per upstream request                                                                                                                  |
-| `CACHE_TIME_TO_LIVE_IN_SECONDS`                        | `300`                                 | Cache lifetime of upstream responses                                                                                                          |
-| `RATE_LIMIT_REQUESTS_PER_MINUTE`                       | `60`                                  | Requests per client and minute                                                                                                                |
-| `PROXY_SHARED_SECRET`                                  | _(unset)_                             | Shared with the Pages Function (`API_PROXY_SECRET`, at least 32 characters); only then is the forwarded client address used for rate limiting |
+| Variable                                               | Default                               | Purpose                                                                                                                                    |
+| ------------------------------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PORT`                                                 | `3000`                                | HTTP port                                                                                                                                  |
+| `WEB_ORIGIN`                                           | `http://localhost:4200`               | Comma-separated CORS origins                                                                                                               |
+| `FRANCE_FUEL_PRICES_BASE_URL`                          | `https://data.economie.gouv.fr`       | French open data API                                                                                                                       |
+| `FRANCE_STATION_DETAILS_BASE_URL`                      | `https://www.prix-carburants.gouv.fr` | Website of the French price service; station names and brands come from its station pages                                                  |
+| `FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS` | `604800`                              | How long French station names stay cached (default one week)                                                                               |
+| `FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS`   | `3000`                                | Total time one station search waits for French station pages; stations whose page has not arrived by then are served without name          |
+| `TANKENTANKEN_API_KEY`                                 | _(unset)_                             | Enables the German provider                                                                                                                |
+| `TANKENTANKEN_BASE_URL`                                | `https://api.tankentanken.de`         | German API                                                                                                                                 |
+| `PHOTON_BASE_URL`                                      | `https://photon.komoot.io`            | Photon (komoot) geocoder behind the place search (`GET /api/places`)                                                                       |
+| `PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS`                 | `86400`                               | Cache lifetime of place search answers                                                                                                     |
+| `UPSTREAM_TIMEOUT_IN_MILLISECONDS`                     | `8000`                                | Timeout per upstream request                                                                                                               |
+| `CACHE_TIME_TO_LIVE_IN_SECONDS`                        | `300`                                 | Cache lifetime of upstream responses                                                                                                       |
+| `CACHE_MAXIMUM_ENTRIES`                                | `5000`                                | Maximum number of in-memory cache entries; the least recently used are evicted beyond it                                                   |
+| `RATE_LIMIT_REQUESTS_PER_MINUTE`                       | `60`                                  | Requests per client and minute                                                                                                             |
+| `PROXY_SHARED_SECRET`                                  | _(unset)_                             | Shared with the Pages Function (same name there, at least 32 characters); only then is the forwarded client address used for rate limiting |
 
 Invalid values stop the API at startup with a clear message. The API does not read `.env` files; export variables or use `node --env-file`.
 
@@ -119,13 +129,13 @@ Invalid values stop the API at startup with a clear message. The API does not re
 
 - **Unit (Vitest):** contracts schemas, API mappers and parsers, Angular services and components through their public interfaces.
 - **API end-to-end (Supertest):** the real Nest application against fake upstream servers for France and Germany.
-- **Browser end-to-end (Playwright):** web + API + a local stand-in for the French open data API and the Photon place search serving recorded real data. Every request leaving the app fails the test unless it is mocked. A desktop project covers all pages (including axe WCAG 2.2 AA checks in light and dark mode); a phone project (Pixel 7) covers the bottom sheet and repeats the axe checks in the phone viewport.
+- **Browser end-to-end (Playwright):** web + API + a local stand-in for the French open data API and the Photon place search serving recorded real data, on their own ports (web 4300, API 3100, mock upstream 4110), so a running dev server is never reused. Every request leaving the app fails the run unless it is mocked; a global teardown checks the mock upstream for unexpected requests. A desktop project covers all pages (including axe WCAG 2.2 AA checks in light and dark mode); a phone project (Pixel 7) covers the bottom sheet and repeats the axe checks in the phone viewport.
 
 ## Deployment
 
 All services run on free tiers:
 
-- **Web:** Cloudflare Pages, deployed by GitHub Actions after CI passed (preview per pull request, production on `main`). A Pages Function forwards `/api/*` to the API.
+- **Web:** Cloudflare Pages, deployed by GitHub Actions after CI passed (preview per pull request that is ready for review, production on `main`). CI skips draft pull requests, so open them as drafts and mark them ready when final. A Pages Function forwards `/api/*` to the API.
 - **API:** Render free web service built from `apps/api/Dockerfile` ([render.yaml](render.yaml)); deploys after the GitHub checks of the commit passed. The free tier sleeps after 15 minutes without traffic; the first request can take about a minute, which the web app announces.
 
 Step-by-step setup, including the release of a new version: [docs/deployment.md](docs/deployment.md).
