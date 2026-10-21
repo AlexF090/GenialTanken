@@ -3,7 +3,7 @@
 
 # Base image pinned to an exact version and multi-arch index digest for reproducible builds;
 # Dependabot (docker ecosystem) bumps both stages together.
-FROM node:24.21.0-alpine3.24@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS build
+FROM node:26.12.0-alpine3.24@sha256:6f08a523443ddedf52941874c203475b0ad503e859ad70cb26ab8be9a517dbd5 AS build
 RUN npm install --global pnpm@12.8.1
 WORKDIR /workspace
 
@@ -23,7 +23,7 @@ RUN pnpm --filter @genialtanken/contracts build \
   && pnpm --filter api build \
   && pnpm --filter api --prod deploy --ignore-scripts /out
 
-FROM node:24.21.0-alpine3.24@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS runtime
+FROM node:26.12.0-alpine3.24@sha256:6f08a523443ddedf52941874c203475b0ad503e859ad70cb26ab8be9a517dbd5 AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build /out/package.json ./

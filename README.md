@@ -43,7 +43,7 @@ The French data source needs no API key, so the app works out of the box.
 ### Option A: VS Code devcontainer (recommended)
 
 1. Start Docker (Docker Desktop or OrbStack).
-2. Open the repository in VS Code and choose **Reopen in Container**. The first build installs Node 24, pnpm and all dependencies.
+2. Open the repository in VS Code and choose **Reopen in Container**. The first build installs Node 26, pnpm and all dependencies.
 3. In the VS Code terminal run `pnpm dev:container` (plain `pnpm dev` binds to `localhost` inside the container and is not reachable through the published port).
 4. Open http://localhost:4200.
 
@@ -60,7 +60,7 @@ devcontainer exec --workspace-folder . pnpm dev:container
 
 ### Option C: without a container
 
-Requires Node 24.15 or newer (`.nvmrc`) and pnpm 12.8.1 (pinned via `devEngines` in `package.json`):
+Requires Node 26 or newer (`.nvmrc`) and pnpm 12.8.1 (pinned via `devEngines` in `package.json`):
 
 ```bash
 pnpm install
