@@ -1,23 +1,32 @@
 import { TestBed } from '@angular/core/testing';
+import type { MockInstance } from 'vitest';
 import { FakeStorage } from '../../../testing/fake-storage';
 import { BROWSER_STORAGE } from '../browser-storage';
+import { Logger } from '../logging/logger';
 import { SettingsStore } from './settings-store';
 
-const createStore = (storage: Storage): SettingsStore => {
+interface CreatedStore {
+  store: SettingsStore;
+  warn: MockInstance<Logger['warn']>;
+}
+
+/** Spies on the warnings before the store exists, because it reads the storage on creation. */
+const createStore = (storage: Storage): CreatedStore => {
   TestBed.configureTestingModule({ providers: [{ provide: BROWSER_STORAGE, useValue: storage }] });
-  return TestBed.inject(SettingsStore);
+  const warn = vi.spyOn(TestBed.inject(Logger), 'warn').mockImplementation(() => undefined);
+  return { store: TestBed.inject(SettingsStore), warn };
 };
 
 describe('SettingsStore', () => {
   it('starts with E5 and a 5 km radius when nothing is stored', () => {
-    const store = createStore(new FakeStorage());
+    const { store } = createStore(new FakeStorage());
 
     expect(store.fuelType()).toBe('e5');
     expect(store.radiusInKilometers()).toBe(5);
   });
 
   it('restores the stored fuel type and radius', () => {
-    const store = createStore(
+    const { store } = createStore(
       new FakeStorage({
         'genialtanken.settings': '{"fuelType":"diesel","radiusInKilometers":12}',
       })
@@ -29,7 +38,7 @@ describe('SettingsStore', () => {
 
   it('persists updates so they survive a reload', () => {
     const storage = new FakeStorage();
-    const store = createStore(storage);
+    const { store } = createStore(storage);
 
     store.update({ fuelType: 'e10', radiusInKilometers: 20 });
 
@@ -41,7 +50,7 @@ describe('SettingsStore', () => {
   });
 
   it('follows the system color scheme when nothing is stored', () => {
-    const store = createStore(new FakeStorage());
+    const { store } = createStore(new FakeStorage());
 
     expect(store.colorScheme()).toBe('system');
   });
@@ -50,7 +59,7 @@ describe('SettingsStore', () => {
     const storage = new FakeStorage({
       'genialtanken.settings': '{"fuelType":"diesel","radiusInKilometers":12,"colorScheme":"dark"}',
     });
-    const store = createStore(storage);
+    const { store } = createStore(storage);
 
     expect(store.colorScheme()).toBe('dark');
 
@@ -67,9 +76,7 @@ describe('SettingsStore', () => {
   });
 
   it('keeps settings stored before the color scheme existed without a warning', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-
-    const store = createStore(
+    const { store, warn } = createStore(
       new FakeStorage({ 'genialtanken.settings': '{"fuelType":"diesel","radiusInKilometers":12}' })
     );
 
@@ -79,9 +86,7 @@ describe('SettingsStore', () => {
   });
 
   it('ignores an unknown stored color scheme and keeps the other settings', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-
-    const store = createStore(
+    const { store, warn } = createStore(
       new FakeStorage({
         'genialtanken.settings':
           '{"fuelType":"diesel","radiusInKilometers":12,"colorScheme":"sepia"}',
@@ -98,7 +103,7 @@ describe('SettingsStore', () => {
   it('does not write to the storage when nothing changes', () => {
     const storage = new FakeStorage();
     const setItem = vi.spyOn(storage, 'setItem');
-    const store = createStore(storage);
+    const { store } = createStore(storage);
 
     store.update({ fuelType: 'e5', radiusInKilometers: 5, colorScheme: 'system' });
 
@@ -106,9 +111,7 @@ describe('SettingsStore', () => {
   });
 
   it('falls back to the defaults for corrupt stored settings and says why', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-
-    const store = createStore(new FakeStorage({ 'genialtanken.settings': '{not json' }));
+    const { store, warn } = createStore(new FakeStorage({ 'genialtanken.settings': '{not json' }));
 
     expect(warn).toHaveBeenCalledExactlyOnceWith(
       'Stored settings are not valid JSON; using the default settings instead.',
@@ -119,9 +122,7 @@ describe('SettingsStore', () => {
   });
 
   it('falls back to the defaults when the stored settings are not an object', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-
-    const store = createStore(new FakeStorage({ 'genialtanken.settings': '[1,2]' }));
+    const { store, warn } = createStore(new FakeStorage({ 'genialtanken.settings': '[1,2]' }));
 
     expect(warn).toHaveBeenCalledOnce();
     expect(warn.mock.calls[0]?.[0]).toBe(
@@ -132,9 +133,7 @@ describe('SettingsStore', () => {
   });
 
   it('ignores an unknown fuel type and an out-of-range radius', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-
-    const store = createStore(
+    const { store, warn } = createStore(
       new FakeStorage({
         'genialtanken.settings': '{"fuelType":"kerosene","radiusInKilometers":80}',
       })
@@ -149,9 +148,7 @@ describe('SettingsStore', () => {
   });
 
   it('keeps the valid part of partially invalid stored settings', () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-
-    const store = createStore(
+    const { store } = createStore(
       new FakeStorage({
         'genialtanken.settings': '{"fuelType":"diesel","radiusInKilometers":"far"}',
       })
@@ -161,8 +158,25 @@ describe('SettingsStore', () => {
     expect(store.radiusInKilometers()).toBe(5);
   });
 
+  it('keeps the settings for this session and warns when the storage refuses to write', () => {
+    const storage = new FakeStorage();
+    const quotaExceeded = new DOMException('Storage is full', 'QuotaExceededError');
+    vi.spyOn(storage, 'setItem').mockImplementation(() => {
+      throw quotaExceeded;
+    });
+    const { store, warn } = createStore(storage);
+
+    store.update({ fuelType: 'diesel' });
+
+    expect(store.fuelType()).toBe('diesel');
+    expect(warn).toHaveBeenCalledExactlyOnceWith(
+      'Settings could not be saved in the browser storage; they apply to this session only.',
+      quotaExceeded
+    );
+  });
+
   it('clamps an updated radius to the supported range', () => {
-    const store = createStore(new FakeStorage());
+    const { store } = createStore(new FakeStorage());
 
     store.update({ fuelType: 'e5', radiusInKilometers: 40 });
 

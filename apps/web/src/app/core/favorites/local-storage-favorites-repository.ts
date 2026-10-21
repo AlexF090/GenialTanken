@@ -1,9 +1,13 @@
 import { inject, Injectable } from '@angular/core';
 import type { Provider } from '@angular/core';
 import { BROWSER_STORAGE } from '../browser-storage';
+import { Logger } from '../logging/logger';
 import { FavoritesRepository } from './favorites-repository';
 
-/** Same key as the legacy React app, so existing favorites survive the rewrite. */
+/**
+ * Key kept from the legacy React app. Its entries are not migrated: legacy identifiers lack the
+ * country prefix (`fr-…`), so they fail the lookup, and the app moved to another origin anyway.
+ */
 const FAVORITES_STORAGE_KEY = 'favoriteIDs';
 
 const isStringArray = (value: unknown): value is string[] =>
@@ -12,6 +16,7 @@ const isStringArray = (value: unknown): value is string[] =>
 @Injectable()
 export class LocalStorageFavoritesRepository extends FavoritesRepository {
   private readonly storage = inject(BROWSER_STORAGE);
+  private readonly logger = inject(Logger);
 
   load(): readonly string[] {
     const serializedIdentifiers = this.storage.getItem(FAVORITES_STORAGE_KEY);
@@ -22,7 +27,7 @@ export class LocalStorageFavoritesRepository extends FavoritesRepository {
       const storedValue: unknown = JSON.parse(serializedIdentifiers);
       return isStringArray(storedValue) ? storedValue : [];
     } catch (error) {
-      console.warn('Ignoring stored favorites that are not valid JSON', error);
+      this.logger.warn('Ignoring stored favorites that are not valid JSON', error);
       return [];
     }
   }
@@ -31,7 +36,7 @@ export class LocalStorageFavoritesRepository extends FavoritesRepository {
     try {
       this.storage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(stationIdentifiers));
     } catch (error) {
-      console.warn('Favorites could not be persisted; they apply to this session only', error);
+      this.logger.warn('Favorites could not be persisted; they apply to this session only', error);
     }
   }
 }
