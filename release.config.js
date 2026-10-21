@@ -1,6 +1,6 @@
 // semantic-release runs after CI passed on `main` (.github/workflows/release.yml). The squash
 // commit of a pull request carries its title, so the title decides the next version:
-// `fix` → patch, `feat` → minor, `!` or a `BREAKING CHANGE` footer → major.
+// `fix`, `perf` or `revert` → patch, `feat` → minor, `!` or a `BREAKING CHANGE` footer → major.
 // The `${…}` placeholders are filled in by semantic-release, so they stay plain strings.
 export default {
   branches: ['main'],

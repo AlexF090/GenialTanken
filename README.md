@@ -60,7 +60,7 @@ devcontainer exec --workspace-folder . pnpm dev:container
 
 ### Option C: without a container
 
-Requires Node 24 (`.nvmrc`) and pnpm 12.8.1 (pinned via `devEngines` in `package.json`):
+Requires Node 24.15 or newer (`.nvmrc`) and pnpm 12.8.1 (pinned via `devEngines` in `package.json`):
 
 ```bash
 pnpm install

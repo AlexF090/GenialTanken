@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Gas station price app: list and map of daily fuel prices by location and radius.",
   "engines": {
-    "node": ">=24"
+    "node": ">=24.15"
   },
   "devEngines": {
     "packageManager": {

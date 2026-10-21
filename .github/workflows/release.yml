@@ -1,21 +1,30 @@
 name: Release
 
 # Runs after CI passed for a push to `main` and lets semantic-release (release.config.js) decide
-# from the commit messages whether a new version is due: `fix` → patch, `feat` → minor, `!` →
-# major. It then bumps the version in every package.json, writes CHANGELOG.md, commits both with
-# [skip ci], tags `v<version>` and creates the GitHub release. Commits like `chore` or `docs`
-# release nothing.
+# from the commit messages whether a new version is due: `fix`, `perf` or `revert` → patch,
+# `feat` → minor, `!` → major. It then bumps the version in every package.json, writes
+# CHANGELOG.md, commits both with [skip ci], tags `v<version>` and creates the GitHub release.
+# Commits like `chore` or `docs` release nothing.
 #
 # Pushing to the protected `main` needs RELEASE_TOKEN, a fine-grained personal access token of a
 # repository admin (only this repository, permission "Contents: read and write"). Branch
-# protection does not apply to admins (`enforce_admins` is off); GITHUB_TOKEN would be rejected.
-# workflow_run always uses the copy of this file on the default branch and only runs for pushes
-# to `main`, so no code from a pull request ever sees the token.
+# protection does not apply to admins as long as `enforce_admins` is off and the ruleset
+# "main protect" stays disabled; GITHUB_TOKEN would be rejected. workflow_run always uses the copy
+# of this file on the default branch and only runs for pushes to `main`, so no code from a pull
+# request ever sees the token.
+#
+# The release commit has no checks ([skip ci]), and Render's `checksPass` trigger never deploys a
+# commit without checks. A release therefore deploys the API through RENDER_DEPLOY_HOOK_URL, so
+# the version it reports matches the release.
+#
+# Start it by hand (Actions → Release → Run workflow) after a failed release, e.g. an expired
+# token, once CI on `main` is green.
 on:
   workflow_run:
     workflows: [CI]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -28,11 +37,18 @@ jobs:
   release:
     name: Release
     if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_repository.full_name == github.repository
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_repository.full_name == github.repository
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      # `pnpm install` installs the lefthook Git hooks; the release commit and push must not run
+      # Prettier, ESLint, typecheck and tests again (CI has checked the commit).
+      LEFTHOOK: 0
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -41,13 +57,13 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       # Release only the commit CI has checked. When `main` has moved on, the CI run of the newer
-      # commit releases everything up to it.
+      # commit releases everything up to it. A manual run releases the current `main`.
       - name: Check that main is still at the tested commit
         id: head
         env:
           TESTED_COMMIT: ${{ github.event.workflow_run.head_sha }}
         run: |
-          if [ "$(git rev-parse HEAD)" = "${TESTED_COMMIT}" ]; then
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] || [ "$(git rev-parse HEAD)" = "${TESTED_COMMIT}" ]; then
             echo "current=true" >> "$GITHUB_OUTPUT"
           else
             echo "::notice::main moved on from ${TESTED_COMMIT}; the next CI run releases it."
@@ -60,3 +76,18 @@ jobs:
         run: pnpm exec semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      # semantic-release leaves HEAD on the tagged release commit only when it released.
+      - name: Check for a new release
+        id: release
+        if: steps.head.outputs.current == 'true'
+        run: |
+          if [ -n "$(git tag --points-at HEAD --list 'v*')" ]; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Deploy the API on Render
+        if: steps.release.outputs.published == 'true'
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl --fail --silent --show-error --output /dev/null --request POST "${RENDER_DEPLOY_HOOK_URL}"
