@@ -9,7 +9,7 @@ import {
   rueBailleulStation,
   stationCard,
   stationCards,
-  storedFavoriteIds,
+  storedFavoriteIdentifiers,
   test,
   useOwnPosition,
 } from '../fixtures.js';
@@ -40,7 +40,7 @@ test.describe('favorites', () => {
     const listStar = favoriteButton(stationCard(page, rueBailleulStation), rueBailleulStation);
     await listStar.click();
     await expect(listStar).toHaveAttribute('aria-pressed', 'true');
-    await expect.poll(() => storedFavoriteIds(page)).toEqual([rueBailleulStation.id]);
+    await expect.poll(() => storedFavoriteIdentifiers(page)).toEqual([rueBailleulStation.id]);
 
     await openFavorites(page);
     await expect(stationCards(page)).toHaveCount(1);
@@ -58,7 +58,7 @@ test.describe('favorites', () => {
     await expect(
       page.getByRole('heading', { level: 2, name: 'Keine Favoriten gespeichert' })
     ).toBeVisible();
-    await expect.poll(() => storedFavoriteIds(page)).toEqual([]);
+    await expect.poll(() => storedFavoriteIdentifiers(page)).toEqual([]);
   });
 
   test('unstarring one of several favorites removes it from the list immediately', async ({
@@ -72,7 +72,7 @@ test.describe('favorites', () => {
     await favoriteButton(stationCard(page, rueBailleulStation), rueBailleulStation).click();
     await favoriteButton(stationCard(page, quaiDeLaRapeeStation), quaiDeLaRapeeStation).click();
     await expect
-      .poll(() => storedFavoriteIds(page))
+      .poll(() => storedFavoriteIdentifiers(page))
       .toEqual([rueBailleulStation.id, quaiDeLaRapeeStation.id]);
 
     await openFavorites(page);
@@ -82,7 +82,7 @@ test.describe('favorites', () => {
 
     await expect(stationCards(page)).toHaveCount(1);
     await expect(stationCard(page, quaiDeLaRapeeStation)).toContainText('2,391 €');
-    await expect.poll(() => storedFavoriteIds(page)).toEqual([quaiDeLaRapeeStation.id]);
+    await expect.poll(() => storedFavoriteIdentifiers(page)).toEqual([quaiDeLaRapeeStation.id]);
   });
 
   test('a station can be starred on its detail page', async ({ page }) => {
@@ -93,7 +93,7 @@ test.describe('favorites', () => {
 
     await detailStar.click();
     await expect(detailStar).toHaveAttribute('aria-pressed', 'true');
-    await expect.poll(() => storedFavoriteIds(page)).toEqual([quaiDeLaRapeeStation.id]);
+    await expect.poll(() => storedFavoriteIdentifiers(page)).toEqual([quaiDeLaRapeeStation.id]);
 
     await openFavorites(page);
     await expect(stationCards(page)).toHaveCount(1);
@@ -114,7 +114,7 @@ test.describe('favorites', () => {
     await expect(
       page.getByRole('heading', { level: 2, name: 'Keine Favoriten gespeichert' })
     ).toBeHidden();
-    expect(await storedFavoriteIds(page)).toEqual(['fr-99999999']);
+    expect(await storedFavoriteIdentifiers(page)).toEqual(['fr-99999999']);
 
     await page.getByRole('button', { name: 'Nicht verfügbare Favoriten entfernen' }).click();
 
@@ -123,6 +123,6 @@ test.describe('favorites', () => {
       name: 'Keine Favoriten gespeichert',
     });
     await expect(emptyStateHeading).toBeFocused();
-    await expect.poll(() => storedFavoriteIds(page)).toEqual([]);
+    await expect.poll(() => storedFavoriteIdentifiers(page)).toEqual([]);
   });
 });

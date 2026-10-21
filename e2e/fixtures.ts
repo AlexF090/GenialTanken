@@ -184,5 +184,5 @@ export const chooseFuel = async (page: Page, fuel: FuelOptionLabel): Promise<voi
   await fuelOptions(page).getByRole('radio', { name: fuel, exact: true }).check();
 };
 
-export const storedFavoriteIds = (page: Page): Promise<unknown> =>
+export const storedFavoriteIdentifiers = (page: Page): Promise<unknown> =>
   page.evaluate((): unknown => JSON.parse(localStorage.getItem('favoriteIDs') ?? 'null'));
