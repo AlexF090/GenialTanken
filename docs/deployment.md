@@ -1,16 +1,16 @@
 # Deployment checklist
 
-Everything runs on free tiers: web on Cloudflare Pages, API on Render, CI on GitHub Actions. Work through the steps in order; each step lists where to do it.
+Everything runs on free tiers: web on Cloudflare Workers (static assets), API on Render, CI on GitHub Actions. Work through the steps in order; each step lists where to do it.
 
 ## 1. Before going live
 
 - [ ] **Disconnect the old Vercel project** from the repository (Vercel dashboard → project `genial-tanken` → Settings → Git → Disconnect, or delete the project). The legacy React app is gone, so the Vercel check fails on every push — and Render only deploys when _all_ checks of a commit pass.
-- [ ] **Rotate or restrict the Mapbox token.** A public `pk.*` token is in the git history (found by gitleaks). In the Mapbox account either rotate it or restrict it to the production domain (`genialtanken.pages.dev` and your custom domain).
+- [ ] **Rotate or restrict the Mapbox token.** A public `pk.*` token is in the git history (found by gitleaks). In the Mapbox account either rotate it or restrict it to the production URL `https://genialtanken.alexf090.workers.dev` (optionally also `http://localhost:4200` for local development). Mapbox allows no wildcards, so pull request previews cannot use the token; CI embeds it only in builds of `main`, and previews use OpenStreetMap tiles.
 - [ ] **Make the repository public** (GitHub → Settings → General → Danger Zone). Gives unlimited free Actions minutes and branch protection on the free plan. Do this only after the Mapbox step.
 
 ## 2. Shared proxy secret
 
-- [ ] Generate one random value with at least 32 characters, e.g. `openssl rand -base64 48`. It is used twice under the same name `PROXY_SHARED_SECRET`: in Cloudflare and in Render. It lets the Pages Function pass the visitor's address to the API, so the rate limit works per visitor and cannot be spoofed.
+- [ ] Generate one random value with at least 32 characters, e.g. `openssl rand -base64 48`. It is used twice under the same name `PROXY_SHARED_SECRET`: in Cloudflare and in Render. It lets the Worker pass the visitor's address to the API, so the rate limit works per visitor and cannot be spoofed.
 
 ## 3. Render (API)
 
@@ -19,22 +19,26 @@ Everything runs on free tiers: web on Cloudflare Pages, API on Render, CI on Git
   - `PROXY_SHARED_SECRET`: the value from step 2
 - [ ] Note the service URL, e.g. `https://genialtanken-api.onrender.com`, and check `https://…/health` returns `{"status":"ok",…}`.
 
-## 4. Cloudflare Pages (web)
+## 4. Cloudflare Workers (web)
 
-- [ ] Create the project once (Direct Upload, not Git integration):
-  ```bash
-  pnpm --filter web exec wrangler pages project create genialtanken --production-branch=main
-  ```
+The web app is the Worker `genialtanken` with static assets ([`apps/web/wrangler.jsonc`](../apps/web/wrangler.jsonc)): it serves the Angular build as a single-page application and runs its code first only for `/api/*`, which it proxies to Render. The Worker already exists.
+
+- [ ] **Disconnect Workers Builds** (Workers & Pages → `genialtanken` → Settings → Builds → Disconnect). GitHub Actions deploys (`deploy-web.yml`); with the Git integration connected, every push would deploy twice, and pull requests show a hanging check "Workers Builds: genialtanken".
+- [ ] Worker → Settings → Variables and secrets:
+  - `API_ORIGIN` (variable): the Render URL from step 3. It must be an `https://` URL; plain `http://` is only accepted for `localhost`, `127.0.0.1` and `[::1]` (local `wrangler dev`).
+  - `PROXY_SHARED_SECRET` (secret): the value from step 2, in the dashboard or with
+    ```bash
+    pnpm --filter web exec wrangler secret put PROXY_SHARED_SECRET
+    ```
+    Preview versions use the same variables and secrets as production. `wrangler.jsonc` defines no `vars`, and `deploy-web.yml` deploys with `--keep-vars`, so the dashboard value of `API_ORIGIN` survives every deploy.
+- [ ] Worker → Settings → Domains & Routes: keep `workers.dev` enabled and enable **Preview URLs** (pull request previews are aliased version URLs).
+- [ ] Create an API token (My Profile → API Tokens → template _Edit Cloudflare Workers_, or a custom token with _Account → Workers Scripts → Edit_) and note the account ID.
+- [ ] **Old Pages project:** if a Cloudflare Pages project `genialtanken` exists, delete it (Workers & Pages → `genialtanken` (Pages) → Settings → Delete project). The old `genialtanken.pages.dev` address stops working.
 - [ ] Optional manual deploy and local preview (needs `wrangler login` or `CLOUDFLARE_API_TOKEN`; the preview reads `API_ORIGIN` and `PROXY_SHARED_SECRET` from `apps/web/.dev.vars`, which is git-ignored):
   ```bash
-  pnpm deploy:web    # build, then publish dist/web/browser to the production branch
-  pnpm preview:web   # build, then serve it with the Pages Function locally
+  pnpm deploy:web    # build, then wrangler deploy (production)
+  pnpm preview:web   # build, then wrangler dev: static assets plus the /api proxy locally
   ```
-- [ ] Pages project → Settings → Variables and secrets, for **Production and Preview**:
-  - `API_ORIGIN`: the Render URL from step 3. It must be an `https://` URL; plain `http://` is only accepted for `localhost`, `127.0.0.1` and `[::1]` (local `wrangler pages dev`).
-  - `PROXY_SHARED_SECRET` (as secret): the value from step 2
-- [ ] **Existing project:** rename the secret `API_PROXY_SECRET` to `PROXY_SHARED_SECRET` (create `PROXY_SHARED_SECRET` with the same value for Production and Preview, then delete `API_PROXY_SECRET`). The Pages Function still reads the old name as a fallback for one release only.
-- [ ] Create an API token (My Profile → API Tokens → template _Edit Cloudflare Workers_ or a custom token with _Account → Cloudflare Pages → Edit_) and note the account ID.
 
 ## 5. GitHub settings
 
@@ -46,8 +50,8 @@ Everything runs on free tiers: web on Cloudflare Pages, API on Render, CI on Git
 
 ## 6. Merge and release
 
-- [ ] Merge the pull request into `main`. CI runs on `main`; when it is green, `deploy-web.yml` publishes the web app to Cloudflare Pages and Render deploys the API. (Pull request previews start working once `deploy-web.yml` exists on `main`, because it is triggered by `workflow_run`.) Previews are built only for pull requests that are ready for review: CI skips drafts, and `deploy-web.yml` deploys only when the CI run produced the `web-dist` artifact. Open pull requests as drafts and mark them ready when final.
-- [ ] Check production: web app loads, list shows stations, `/api/stations?latitude=48.8566&longitude=2.3522&fuel=e10` answers through the Pages domain.
+- [ ] Merge the pull request into `main`. CI runs on `main`; when it is green, `deploy-web.yml` publishes the web app with `wrangler deploy` to https://genialtanken.alexf090.workers.dev and Render deploys the API. Pull request previews are uploaded as Worker versions with the alias `pr-<number>` and served at `https://pr-<number>-genialtanken.alexf090.workers.dev`; the workflow posts the URL as a pull request comment. Previews start working only once `deploy-web.yml` and `apps/web/wrangler.jsonc` exist on `main`: `workflow_run` reads the workflow from the default branch, and the deploy takes `wrangler.jsonc` only from the default branch (a configuration from a pull request could run a build command with the deploy secrets). Until then the deploy job fails with a message saying so. Previews are built only for pull requests that are ready for review: CI skips drafts, and `deploy-web.yml` deploys only when the CI run produced the `web-dist` artifact. Open pull requests as drafts and mark them ready when final.
+- [ ] Check production: web app loads, list shows stations, `https://genialtanken.alexf090.workers.dev/api/stations?latitude=48.8566&longitude=2.3522&fuel=e10` answers through the Worker.
 - [ ] Tag the release on the merge commit:
   ```bash
   git switch main && git pull

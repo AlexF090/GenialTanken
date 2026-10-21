@@ -8,7 +8,7 @@ GenialTanken started as a React capstone project and is being rebuilt as a full-
 
 ```
 apps/web            Angular 22 single-page app (standalone, zoneless, signals)
-apps/web/functions  Cloudflare Pages Function proxying /api to the API
+apps/web/worker     Cloudflare Worker serving the app as static assets and proxying /api to the API
 apps/api            NestJS 12 backend-for-frontend (BFF)
 packages/contracts  zod schemas and types shared by web and API (@genialtanken/contracts)
 e2e                 Playwright browser tests against web + API + mocked upstream
@@ -34,7 +34,7 @@ Only current prices are served; there is no price history. French data is publis
 - **API:** NestJS 12 (ESM), native Standard Schema validation with zod 4, `@nestjs/config`, cache-manager with an LRU store (`@cacheable/memory`), throttler, Swagger, Terminus, Vitest + Supertest
 - **Shared:** TypeScript 6 strict, zod 4 contracts
 - **Tooling:** pnpm 12 workspaces, ESLint (typescript-eslint strict, angular-eslint incl. template accessibility), Prettier, lefthook Git hooks, Playwright, devcontainer
-- **Delivery:** GitHub Actions, Cloudflare Pages (web), Render free web service from Docker (API), Dependabot
+- **Delivery:** GitHub Actions, Cloudflare Workers with static assets (web), Render free web service from Docker (API), Dependabot
 
 ## Running locally
 
@@ -85,36 +85,39 @@ The browser asks for your location. Outside France the list stays empty; to try 
 
 ## Scripts
 
-| Command                      | What it does                                     |
-| ---------------------------- | ------------------------------------------------ |
-| `pnpm dev`                   | Start web and API in watch mode                  |
-| `pnpm build`                 | Build contracts, API and web                     |
-| `pnpm test`                  | Unit tests of all packages                       |
-| `pnpm --filter api test:e2e` | API end-to-end tests (Supertest, fake upstreams) |
-| `pnpm test:e2e`              | Browser end-to-end tests (Playwright)            |
-| `pnpm lint`                  | ESLint for the whole repository                  |
-| `pnpm typecheck`             | TypeScript checks of all packages                |
-| `pnpm format:check`          | Prettier check (`format:write` to fix)           |
+| Command                         | What it does                                                                        |
+| ------------------------------- | ----------------------------------------------------------------------------------- |
+| `pnpm dev`                      | Start web and API in watch mode                                                     |
+| `pnpm build`                    | Build contracts, API and web                                                        |
+| `pnpm test`                     | Unit tests of all packages                                                          |
+| `pnpm --filter api test:e2e`    | API end-to-end tests (Supertest, fake upstreams)                                    |
+| `pnpm --filter web test:worker` | Unit tests of the Cloudflare Worker (Vitest)                                        |
+| `pnpm test:e2e`                 | Browser end-to-end tests (Playwright)                                               |
+| `pnpm preview:web`              | Build web, serve it with the Worker via `wrangler dev` (needs `apps/web/.dev.vars`) |
+| `pnpm deploy:web`               | Build web and `wrangler deploy` it (manual; CI normally deploys)                    |
+| `pnpm lint`                     | ESLint for the whole repository                                                     |
+| `pnpm typecheck`                | TypeScript checks of all packages                                                   |
+| `pnpm format:check`             | Prettier check (`format:write` to fix)                                              |
 
 ## Configuration
 
 ### API (`apps/api`)
 
-| Variable                                               | Default                               | Purpose                                                                                                                                    |
-| ------------------------------------------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `PORT`                                                 | `3000`                                | HTTP port                                                                                                                                  |
-| `WEB_ORIGIN`                                           | `http://localhost:4200`               | Comma-separated CORS origins                                                                                                               |
-| `FRANCE_FUEL_PRICES_BASE_URL`                          | `https://data.economie.gouv.fr`       | French open data API                                                                                                                       |
-| `FRANCE_STATION_DETAILS_BASE_URL`                      | `https://www.prix-carburants.gouv.fr` | Website of the French price service; station names and brands come from its station pages                                                  |
-| `FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS` | `604800`                              | How long French station names stay cached (default one week)                                                                               |
-| `FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS`   | `3000`                                | Total time one station search waits for French station pages; stations whose page has not arrived by then are served without name          |
-| `PHOTON_BASE_URL`                                      | `https://photon.komoot.io`            | Photon (komoot) geocoder behind the place search (`GET /api/places`)                                                                       |
-| `PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS`                 | `86400`                               | Cache lifetime of place search answers                                                                                                     |
-| `UPSTREAM_TIMEOUT_IN_MILLISECONDS`                     | `8000`                                | Timeout per upstream request                                                                                                               |
-| `CACHE_TIME_TO_LIVE_IN_SECONDS`                        | `300`                                 | Cache lifetime of upstream responses                                                                                                       |
-| `CACHE_MAXIMUM_ENTRIES`                                | `5000`                                | Maximum number of in-memory cache entries; the least recently used are evicted beyond it                                                   |
-| `RATE_LIMIT_REQUESTS_PER_MINUTE`                       | `60`                                  | Requests per client and minute                                                                                                             |
-| `PROXY_SHARED_SECRET`                                  | _(unset)_                             | Shared with the Pages Function (same name there, at least 32 characters); only then is the forwarded client address used for rate limiting |
+| Variable                                               | Default                               | Purpose                                                                                                                                       |
+| ------------------------------------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                                                 | `3000`                                | HTTP port                                                                                                                                     |
+| `WEB_ORIGIN`                                           | `http://localhost:4200`               | Comma-separated CORS origins                                                                                                                  |
+| `FRANCE_FUEL_PRICES_BASE_URL`                          | `https://data.economie.gouv.fr`       | French open data API                                                                                                                          |
+| `FRANCE_STATION_DETAILS_BASE_URL`                      | `https://www.prix-carburants.gouv.fr` | Website of the French price service; station names and brands come from its station pages                                                     |
+| `FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS` | `604800`                              | How long French station names stay cached (default one week)                                                                                  |
+| `FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS`   | `3000`                                | Total time one station search waits for French station pages; stations whose page has not arrived by then are served without name             |
+| `PHOTON_BASE_URL`                                      | `https://photon.komoot.io`            | Photon (komoot) geocoder behind the place search (`GET /api/places`)                                                                          |
+| `PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS`                 | `86400`                               | Cache lifetime of place search answers                                                                                                        |
+| `UPSTREAM_TIMEOUT_IN_MILLISECONDS`                     | `8000`                                | Timeout per upstream request                                                                                                                  |
+| `CACHE_TIME_TO_LIVE_IN_SECONDS`                        | `300`                                 | Cache lifetime of upstream responses                                                                                                          |
+| `CACHE_MAXIMUM_ENTRIES`                                | `5000`                                | Maximum number of in-memory cache entries; the least recently used are evicted beyond it                                                      |
+| `RATE_LIMIT_REQUESTS_PER_MINUTE`                       | `60`                                  | Requests per client and minute                                                                                                                |
+| `PROXY_SHARED_SECRET`                                  | _(unset)_                             | Shared with the Cloudflare Worker (same name there, at least 32 characters); only then is the forwarded client address used for rate limiting |
 
 Invalid values stop the API at startup with a clear message. The API does not read `.env` files; export variables or use `node --env-file`.
 
@@ -123,6 +126,17 @@ Invalid values stop the API at startup with a clear message. The API does not re
 | Variable                     | Purpose                                                                                      |
 | ---------------------------- | -------------------------------------------------------------------------------------------- |
 | `NG_APP_MAPBOX_ACCESS_TOKEN` | Public Mapbox token (`pk.*`) read at build time; without it the map uses OpenStreetMap tiles |
+
+CI passes the repository variable `MAPBOX_ACCESS_TOKEN` only to builds of `main`: the token is restricted to the production URL and Mapbox allows no wildcards, so pull request previews use OpenStreetMap tiles.
+
+### Cloudflare Worker (`apps/web/worker`, set in Cloudflare)
+
+| Variable              | Kind     | Purpose                                                                                 |
+| --------------------- | -------- | --------------------------------------------------------------------------------------- |
+| `API_ORIGIN`          | variable | `https://` origin of the API on Render; plain `http://` only for localhost              |
+| `PROXY_SHARED_SECRET` | secret   | Same value as in the API; lets the Worker pass the client address for per-client limits |
+
+Locally `pnpm preview:web` reads both from `apps/web/.dev.vars` (git-ignored).
 
 ## Testing
 
@@ -134,7 +148,7 @@ Invalid values stop the API at startup with a clear message. The API does not re
 
 All services run on free tiers:
 
-- **Web:** Cloudflare Pages, deployed by GitHub Actions after CI passed (preview per pull request that is ready for review, production on `main`). CI skips draft pull requests, so open them as drafts and mark them ready when final. A Pages Function forwards `/api/*` to the API.
+- **Web:** Cloudflare Worker `genialtanken` with static assets, deployed by GitHub Actions after CI passed: production on `main` (https://genialtanken.alexf090.workers.dev), a preview version per pull request that is ready for review (`https://pr-<number>-genialtanken.alexf090.workers.dev`). CI skips draft pull requests, so open them as drafts and mark them ready when final. The Worker serves the single-page app and forwards `/api/*` to the API (`run_worker_first`).
 - **API:** Render free web service built from `apps/api/Dockerfile` ([render.yaml](render.yaml)); deploys after the GitHub checks of the commit passed. The free tier sleeps after 15 minutes without traffic; the first request can take about a minute, which the web app announces.
 
 Step-by-step setup, including the release of a new version: [docs/deployment.md](docs/deployment.md).
