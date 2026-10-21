@@ -826,5 +826,9 @@
         }
       }
     ]
+  },
+  "xyzzy nirgendwo": {
+    "type": "FeatureCollection",
+    "features": []
   }
 }

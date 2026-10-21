@@ -100,6 +100,33 @@ test.describe('favorites', () => {
     await expect(stationCard(page, quaiDeLaRapeeStation)).toBeVisible();
   });
 
+  test('loads several favorites with a single request', async ({ page }) => {
+    await page.goto('/settings');
+    await page.evaluate(
+      identifiers => {
+        localStorage.setItem('favoriteIDs', JSON.stringify(identifiers));
+      },
+      [rueBailleulStation.id, quaiDeLaRapeeStation.id]
+    );
+    const bulkLookups: URL[] = [];
+    page.on('request', request => {
+      const url = new URL(request.url());
+      if (url.pathname === '/api/stations/by-identifiers') {
+        bulkLookups.push(url);
+      }
+    });
+
+    await page.goto('/favorites');
+
+    await expect(stationCards(page)).toHaveCount(2);
+    await expect(stationCard(page, rueBailleulStation)).toBeVisible();
+    await expect(stationCard(page, quaiDeLaRapeeStation)).toBeVisible();
+    expect(bulkLookups).toHaveLength(1);
+    expect(bulkLookups[0]?.searchParams.get('identifiers')?.split(',').sort()).toEqual(
+      [rueBailleulStation.id, quaiDeLaRapeeStation.id].sort()
+    );
+  });
+
   test('keeps favorites the API does not know until the user removes them', async ({ page }) => {
     await page.goto('/settings');
     await page.evaluate(() => {
