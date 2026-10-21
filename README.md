@@ -1,8 +1,20 @@
 # GenialTanken
 
+![GenialTanken on a desktop browser and a phone in dark mode: gas stations in Paris with diesel prices as a list and as price tags on a map](docs/images/product-hero.jpg)
+
+Live: https://genialtanken.alexf090.workers.dev
+
 Find the cheapest fuel nearby: current prices of the gas stations around you as a list or on a map, filtered by fuel type and radius (up to 30 km).
 
 GenialTanken started as a React capstone project and is being rebuilt as a full-stack showcase with Angular and NestJS. See [ROADMAP.md](ROADMAP.md) for decisions and next steps.
+
+## Screenshots
+
+![GenialTanken in a desktop browser: a list of Paris gas stations with diesel prices and distances next to a map whose price tags mark each station, the two cheapest in green](docs/images/product-desktop.jpg)
+
+![GenialTanken on three phones: the map with price tags above the station list at half height, the details card of a station with its prices per fuel, and the same explore view in dark mode](docs/images/product-mobile.jpg)
+
+The images show the live app with real prices. To regenerate them, run `node e2e/product-shots/capture-product-shots.ts` (details in the script header).
 
 ## Architecture
 
@@ -47,7 +59,7 @@ The French data source needs no API key, so the app works out of the box.
 3. In the VS Code terminal run `pnpm dev:container` (plain `pnpm dev` binds to `localhost` inside the container and is not reachable through the published port).
 4. Open http://localhost:4200.
 
-The container reuses your Claude Code setup from the host: `~/.claude` (login, settings, skills) is bind-mounted, `~/.claude.json` is copied in once as a seed, and `~/Developer/dotfiles` plus `~/.agents` are mounted at their host paths so the symlinks in `~/.claude` resolve. Plugins get their own Docker volume (`genialtanken-claude-plugins`) and are installed on every start from the plugins enabled in `~/.claude/settings.json`. Mounts only change when the container is rebuilt (**Dev Containers: Rebuild Container**).
+The container reuses your Claude Code setup from the host: `~/.claude` (login, settings, skills) is bind-mounted, `~/.claude.json` is copied in once as a seed, and `~/Developer/dotfiles` plus `~/.agents` are mounted at their host paths so the symlinks in `~/.claude` resolve. Plugins get their own Docker volume (`genialtanken-claude-plugins`) and are installed on every start from the plugins enabled in `~/.claude/settings.json`. Your shell history (`~/.zsh_history`) is bind-mounted from the host. The GitHub CLI keeps its login in its own Docker volume (`genialtanken-gh-config`): run `gh auth login` once after the first start, and the login survives rebuilds (delete the volume to reset it). Mounts only change when the container is rebuilt (**Dev Containers: Rebuild Container**).
 
 ### Option B: devcontainer from the command line
 
