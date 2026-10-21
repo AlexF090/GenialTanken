@@ -69,8 +69,29 @@ const render = async () => {
   };
 };
 
+/**
+ * jsdom hides `[popover]:not(:popover-open)` in its default stylesheet, but implements neither
+ * `showPopover()` nor `:popover-open` (jsdom/jsdom#3721), and since 30.1.2 it refuses to focus
+ * elements hidden by `display: none`. Browsers either have both or neither, so this stands in for
+ * the open state the menu reaches through `showPopover()` in a browser. `!important` is needed
+ * because jsdom weighs its default stylesheet against author rules by specificity only.
+ */
+const showPopoversLikeABrowser = (): HTMLStyleElement => {
+  const style = document.createElement('style');
+  style.textContent = '[popover] { display: block !important; }';
+  document.head.append(style);
+  return style;
+};
+
 describe('SelectMenu', () => {
+  let popoverStyle: HTMLStyleElement;
+
+  beforeEach(() => {
+    popoverStyle = showPopoversLikeABrowser();
+  });
+
   afterEach(() => {
+    popoverStyle.remove();
     document.body.replaceChildren();
   });
 
