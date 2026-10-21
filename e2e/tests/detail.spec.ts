@@ -15,7 +15,9 @@ test.describe('station card', () => {
 
     await expect(page).toHaveTitle('Details – GenialTanken');
     // The card opens in the sheet of the explore page, next to the map, instead of the list.
-    await expect(page.getByRole('heading', { level: 1, name: 'GenialTanken' })).toBeAttached();
+    await expect(
+      page.getByRole('region', { name: 'Tankstellen', exact: true }).getByRole('article')
+    ).toBeVisible();
     await expect(stationsMap(page)).toBeVisible();
     // The card shows every fuel type, so the hidden list header with its fuel menu stays hidden.
     await expect(page.getByRole('button', { name: /^Kraftstoff:/ })).toBeHidden();

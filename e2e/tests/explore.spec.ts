@@ -273,7 +273,6 @@ test.describe('explore page', () => {
 
     await expect(listButton).toHaveAttribute('aria-pressed', 'true');
     await expect(marker).toHaveAttribute('aria-pressed', 'true');
-    await expect(marker).toHaveAttribute('aria-pressed', 'false');
   });
 
   test('can be left while the map is still moving without script errors', async ({ page }) => {

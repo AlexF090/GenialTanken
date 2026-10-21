@@ -30,6 +30,12 @@ const offsetBelowMap = async (page: Page, element: Locator): Promise<number> => 
   return elementBox.y - (mapBox.y + mapBox.height);
 };
 
+/**
+ * The sheet height comes from measured, fractional element heights, so at peek the list may
+ * start up to a device pixel above the navigation bar; that is not visible.
+ */
+const SUBPIXEL_TOLERANCE_IN_PIXELS = 1;
+
 const expectShownOnScreen = async (page: Page, element: Locator): Promise<void> => {
   await expect.poll(() => offsetBelowMap(page, element)).toBeLessThan(0);
 };
@@ -44,7 +50,9 @@ const expectSheetAt = async (
   await expect(handle).toHaveAttribute('aria-expanded', String(position !== 'peek'));
   // At peek only handle and header show; the list starts behind the navigation bar.
   await (position === 'peek'
-    ? expect.poll(() => offsetBelowMap(page, stationList(page))).toBeGreaterThanOrEqual(0)
+    ? expect
+        .poll(() => offsetBelowMap(page, stationList(page)))
+        .toBeGreaterThanOrEqual(-SUBPIXEL_TOLERANCE_IN_PIXELS)
     : expectShownOnScreen(page, stationList(page)));
 };
 

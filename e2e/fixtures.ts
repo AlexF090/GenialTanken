@@ -163,10 +163,19 @@ export const fuelOptions = (page: Page): Locator =>
 export const colorSchemeOptions = (page: Page): Locator =>
   page.getByRole('group', { name: 'Darstellung', exact: true });
 
+/**
+ * Chooses an option of a settings group as a pointer user does: the native radio is visually
+ * hidden (it stays for assistive technology), the whole row is its face.
+ */
+export const chooseSettingsOption = async (group: Locator, label: string): Promise<void> => {
+  await group.getByText(label, { exact: true }).click();
+  await expect(group.getByRole('radio', { name: label, exact: true })).toBeChecked();
+};
+
 /** Selects a fuel type on the settings page, which applies it immediately. */
 export const chooseFuel = async (page: Page, fuel: FuelOptionLabel): Promise<void> => {
   await openSettings(page);
-  await fuelOptions(page).getByRole('radio', { name: fuel, exact: true }).check();
+  await chooseSettingsOption(fuelOptions(page), fuel);
 };
 
 export const storedFavoriteIdentifiers = (page: Page): Promise<unknown> =>

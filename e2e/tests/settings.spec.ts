@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 import {
   chooseFuel,
+  chooseSettingsOption,
   colorSchemeOptions,
   expect,
   FUEL_OPTION_LABELS,
@@ -64,7 +65,7 @@ test.describe('settings', () => {
   test('changes apply immediately and survive a reload', async ({ page }) => {
     await page.goto('/settings');
 
-    await fuelOptions(page).getByRole('radio', { name: 'E10', exact: true }).check();
+    await chooseSettingsOption(fuelOptions(page), 'E10');
     await page.getByRole('slider').fill('12');
     await expect(page.getByRole('slider', { name: 'Radius: 12 km' })).toHaveValue('12');
 
@@ -110,7 +111,7 @@ test.describe('settings', () => {
     // Playwright emulates a light operating system unless a test asks for dark.
     await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'light');
 
-    await colorSchemeRadio(page, 'Dunkel').check();
+    await chooseSettingsOption(colorSchemeOptions(page), 'Dunkel');
     await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'dark');
     await expect.poll(() => storedColorScheme(page)).toBe('dark');
 
@@ -118,11 +119,11 @@ test.describe('settings', () => {
     await expect(colorSchemeRadio(page, 'Dunkel')).toBeChecked();
     await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'dark');
 
-    await colorSchemeRadio(page, 'Hell').check();
+    await chooseSettingsOption(colorSchemeOptions(page), 'Hell');
     await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'light');
     await expect.poll(() => storedColorScheme(page)).toBe('light');
 
-    await colorSchemeRadio(page, 'System').check();
+    await chooseSettingsOption(colorSchemeOptions(page), 'System');
     await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'light');
     await expect.poll(() => storedColorScheme(page)).toBe('system');
   });
@@ -146,7 +147,8 @@ test.describe('settings', () => {
           meta => window.matchMedia(meta.media).matches
         )?.content
     );
-    expect(appliedThemeColor).toBe('#06171d');
+    // The dark `--color-chrome` of tokens.scss, without its translucency.
+    expect(appliedThemeColor).toBe('#1d1d1d');
   });
 
   test.describe('on a dark operating system', () => {
@@ -158,7 +160,7 @@ test.describe('settings', () => {
       await expect(colorSchemeRadio(page, 'System')).toBeChecked();
       await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'dark');
 
-      await colorSchemeRadio(page, 'Hell').check();
+      await chooseSettingsOption(colorSchemeOptions(page), 'Hell');
       await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'light');
 
       await page.reload();
