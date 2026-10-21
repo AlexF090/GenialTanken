@@ -2,3 +2,6 @@ export * from './stations-query.js';
 export * from './station.js';
 export * from './place.js';
 export * from './settings.js';
+export * from './station-lookup.js';
+export * from './proxy.js';
+export * from './units.js';

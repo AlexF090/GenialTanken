@@ -1,8 +1,7 @@
-import type { CountryCode } from '@genialtanken/contracts';
+import { STATION_IDENTIFIER_PATTERN, type CountryCode } from '@genialtanken/contracts';
 import { z } from 'zod';
 
-/** `<lowercase country code>-<identifier of the provider>`, e.g. `fr-92242003`. */
-export const STATION_IDENTIFIER_PATTERN = /^[a-z]{2}-[A-Za-z0-9-]+$/;
+export { STATION_IDENTIFIER_PATTERN };
 
 export const stationIdentifierSchema = z
   .string()
