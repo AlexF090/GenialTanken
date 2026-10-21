@@ -401,4 +401,28 @@ describe('StationsMap', () => {
       expect(fitBounds).not.toHaveBeenCalled();
     });
   });
+
+  describe('teardown', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('lets no running zoom animation touch the removed map', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture } = await render([totalStation]);
+      const map = fitBounds.mock.contexts[0] as L.Map;
+      vi.useFakeTimers();
+      // jsdom lacks CSS 3D transforms, so `setZoom` never animates there. Start the animation with
+      // the step Leaflet runs one frame after an animated `setZoom`; it schedules the 250 ms
+      // fallback timeout that ends the animation.
+      if (!('_animateZoom' in map) || typeof map._animateZoom !== 'function') {
+        throw new Error('Leaflet no longer has _animateZoom');
+      }
+      Reflect.apply(map._animateZoom, map, [map.getCenter(), map.getZoom() + 1, true]);
+
+      fixture.destroy();
+
+      expect(() => vi.advanceTimersByTime(250)).not.toThrow();
+    });
+  });
 });
