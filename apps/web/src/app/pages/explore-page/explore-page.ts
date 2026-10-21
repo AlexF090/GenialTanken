@@ -3,10 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  debounced,
-  DestroyRef,
   effect,
-  ElementRef,
   inject,
   Injector,
   linkedSignal,
@@ -14,18 +11,17 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import type { ElementRef } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, PRIMARY_OUTLET, Router, RouterOutlet } from '@angular/router';
-import type { UrlTree } from '@angular/router';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 import { FUEL_TYPES } from '@genialtanken/contracts';
 import type { FuelType, Place, Station } from '@genialtanken/contracts';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
 import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
 import type { Coordinates } from '../../core/geolocation/coordinates';
+import { observeElementHeight } from '../../core/layout/observe-element-height';
 import { Viewport } from '../../core/layout/viewport';
-import { PlacesApi } from '../../core/places/places-api';
-import { describePlacesError } from '../../core/places/places-error-message';
 import { shouldOfferAreaSearch } from '../../core/search-center/area-search';
 import type { SearchCenter } from '../../core/search-center/search-center';
 import { SearchCenterStore } from '../../core/search-center/search-center-store';
@@ -42,13 +38,16 @@ import type { SnapPosition } from '../../ui/bottom-sheet/bottom-sheet-snap';
 import { DataSourceCredit } from '../../ui/data-source-credit/data-source-credit';
 import { Icon } from '../../ui/icon/icon';
 import { LoadingState } from '../../ui/loading-state/loading-state';
+import type { ViewportPadding } from '../../ui/map/map-viewport';
 import { PlaceSearchField } from '../../ui/place-search-field/place-search-field';
 import { SelectMenu } from '../../ui/select-menu/select-menu';
 import type { SelectMenuOption } from '../../ui/select-menu/select-menu';
 import { SortOrderControl } from '../../ui/sort-order-control/sort-order-control';
 import { StationList } from '../../ui/station-list/station-list';
 import { StationsMap } from '../../ui/stations-map/stations-map';
-import type { ViewportPadding } from '../../ui/stations-map/stations-map';
+import { injectPlaceSearch } from './place-search';
+import { describeResult } from './result-summary';
+import { stationIdentifierIn } from './station-card-route';
 
 interface SelectionSource {
   stations: readonly Station[];
@@ -59,28 +58,6 @@ const FUEL_TYPE_OPTIONS: readonly SelectMenuOption<FuelType>[] = FUEL_TYPES.map(
   value: fuelType,
   label: FUEL_TYPE_LABELS[fuelType].long,
 }));
-
-/** Waiting for a typing pause keeps the place search from firing on every keystroke. */
-export const PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS = 300;
-
-const NO_MATCHING_PLACES_MESSAGE = 'Keine passenden Orte gefunden.';
-
-const waitForTypingPause = (query: string | undefined): Promise<void> | undefined =>
-  query === undefined
-    ? undefined
-    : new Promise(resolve => setTimeout(resolve, PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS));
-
-/** `/stations/<id>` opens the card of a station. */
-const stationIdentifierIn = (url: UrlTree | undefined): string | undefined => {
-  const segments = url?.root.children[PRIMARY_OUTLET]?.segments ?? [];
-  return segments.length === 2 && segments[0]?.path === 'stations' ? segments[1]?.path : undefined;
-};
-
-const describeCenter = (center: SearchCenter): string =>
-  center.source === 'map-area' ? 'die Kartenmitte' : center.label;
-
-const describeStationCount = (count: number): string =>
-  count === 1 ? '1 Tankstelle' : `${String(count)} Tankstellen`;
 
 /**
  * Start page: stations around the search center as a price board and on a map. On phones the
@@ -112,6 +89,9 @@ export class ExplorePage {
   private readonly favorites = inject(FavoritesStore);
   private readonly isCompactViewport = inject(Viewport).isCompactViewport;
   private readonly stationsMap = viewChild.required(StationsMap);
+  // Optional: an effect reads them before the first render when the page opens with a card.
+  private readonly bottomSheet = viewChild(BottomSheet);
+  private readonly stationList = viewChild(StationList);
   private readonly searchOverlay = viewChild.required<ElementRef<HTMLElement>>('searchOverlay');
 
   protected readonly fuelType = this.settings.fuelType;
@@ -136,38 +116,13 @@ export class ExplorePage {
   );
   protected readonly isAtOwnPosition = computed(() => this.center().source === 'own-position');
 
-  /** Text in the search field: the chosen place, or what the user is typing. */
-  protected readonly placeQuery = linkedSignal(() => {
-    const center = this.center();
-    return center.source === 'place' ? center.label : '';
-  });
+  private readonly placeSearch = injectPlaceSearch();
+  protected readonly placeQuery = this.placeSearch.query;
   protected readonly placeSearchPlaceholder = computed(() =>
     this.isAtOwnPosition() ? this.center().label : 'Position auf Karte'
   );
-  /** Only typed text is searched, not the name of a place that was just chosen. */
-  private readonly isTypingPlaceQuery = signal(false);
-  private readonly placeQueryAfterTypingPause = debounced(
-    () => (this.isTypingPlaceQuery() ? this.placeQuery() : undefined),
-    waitForTypingPause
-  );
-  private readonly placesResource = inject(PlacesApi).placesMatching(() =>
-    this.placeQueryAfterTypingPause.hasValue() ? this.placeQueryAfterTypingPause.value() : undefined
-  );
-  protected readonly placeSuggestions = computed<readonly Place[]>(() =>
-    this.isTypingPlaceQuery() && this.placesResource.hasValue() ? this.placesResource.value() : []
-  );
-  protected readonly placeSearchStatus = computed(() => {
-    if (!this.isTypingPlaceQuery()) {
-      return undefined;
-    }
-    const error = this.placesResource.error();
-    if (error !== undefined) {
-      return describePlacesError(error);
-    }
-    const hasNoMatches =
-      this.placesResource.status() === 'resolved' && this.placesResource.value()?.length === 0;
-    return hasNoMatches ? NO_MATCHING_PLACES_MESSAGE : undefined;
-  });
+  protected readonly placeSuggestions = this.placeSearch.suggestions;
+  protected readonly placeSearchStatus = this.placeSearch.statusMessage;
   protected readonly locationErrorMessage = this.searchCenter.locationErrorMessage;
   protected readonly stationsErrorMessage = this.nearbyStations.errorMessage;
   protected readonly isLoading = this.nearbyStations.isLoading;
@@ -184,13 +139,12 @@ export class ExplorePage {
 
   protected readonly resultSummary = computed(() =>
     this.hasLoaded()
-      ? `${describeStationCount(this.mapStations().length)} im Umkreis von ${String(this.radiusInKilometers())}\u00a0km um ${describeCenter(this.center())}`
+      ? describeResult(this.mapStations().length, this.radiusInKilometers(), this.center())
       : ''
   );
 
   private readonly router = inject(Router);
   private readonly openedStation = inject(OpenedStationStore).station;
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly injector = inject(Injector);
 
   /** Station whose card is open in the sheet: the child route `stations/:id`. */
@@ -237,7 +191,9 @@ export class ExplorePage {
   protected readonly isSearchCoveredBySheet = computed(
     () => this.isCompactViewport() && this.snapPosition() === 'full'
   );
-  private readonly searchOverlayHeightInPixels = signal(0);
+  private readonly searchOverlayHeightInPixels = observeElementHeight(
+    () => this.searchOverlay().nativeElement
+  );
   protected readonly mapViewportPadding = computed<ViewportPadding>(() => ({
     top: this.searchOverlayHeightInPixels(),
     right: 0,
@@ -246,22 +202,6 @@ export class ExplorePage {
   }));
 
   constructor() {
-    const destroyRef = inject(DestroyRef);
-    afterNextRender(() => {
-      // jsdom (unit tests) has no ResizeObserver; the map then ignores the search overlay.
-      if (typeof ResizeObserver !== 'function') {
-        return;
-      }
-      const searchOverlay = this.searchOverlay().nativeElement;
-      const observer = new ResizeObserver(() => {
-        this.searchOverlayHeightInPixels.set(searchOverlay.offsetHeight);
-      });
-      observer.observe(searchOverlay);
-      destroyRef.onDestroy(() => {
-        observer.disconnect();
-      });
-    });
-
     this.followStationCard();
     this.showOpenedStationOnMap();
   }
@@ -272,7 +212,7 @@ export class ExplorePage {
    */
   private followStationCard(): void {
     let previousStationIdentifier: string | undefined;
-    let listScrollTop = 0;
+    let listScrollPosition = 0;
     effect(() => {
       const stationIdentifier = this.openedStationIdentifier();
       const closedStationIdentifier = previousStationIdentifier;
@@ -281,14 +221,12 @@ export class ExplorePage {
         return;
       }
       untracked(() => {
-        const scroller = this.host.querySelector<HTMLElement>('.bottom-sheet__content');
+        const bottomSheet = this.bottomSheet();
         if (stationIdentifier !== undefined) {
           if (closedStationIdentifier === undefined) {
-            listScrollTop = scroller?.scrollTop ?? 0;
+            listScrollPosition = bottomSheet?.scrollPosition() ?? 0;
           }
-          if (scroller !== null) {
-            scroller.scrollTop = 0;
-          }
+          bottomSheet?.restoreScrollPosition(0);
           if (this.isCompactViewport() && this.snapPosition() === 'peek') {
             this.snapPosition.set('half');
           }
@@ -300,14 +238,8 @@ export class ExplorePage {
         this.listSelectedStationIdentifier.set(closedStationIdentifier);
         afterNextRender(
           () => {
-            if (scroller !== null) {
-              scroller.scrollTop = listScrollTop;
-            }
-            this.host
-              .querySelector<HTMLElement>(
-                `[data-station-identifier="${CSS.escape(closedStationIdentifier)}"] .station-row__title`
-              )
-              ?.focus({ preventScroll: true });
+            bottomSheet?.restoreScrollPosition(listScrollPosition);
+            this.stationList()?.focusStation(closedStationIdentifier);
           },
           { injector: this.injector }
         );
@@ -348,24 +280,18 @@ export class ExplorePage {
 
   /** On phones the sheet steps aside while typing, so the suggestions stay visible. */
   protected searchPlaces(query: string): void {
-    this.placeQuery.set(query);
-    this.isTypingPlaceQuery.set(true);
+    this.placeSearch.search(query);
     if (this.isCompactViewport()) {
       this.snapPosition.set('peek');
     }
   }
 
   protected choosePlace(place: Place): void {
-    this.isTypingPlaceQuery.set(false);
-    this.searchCenter.usePlace(place);
+    this.placeSearch.choose(place);
   }
 
-  /** Clearing the search keeps the stations around the same point, just without the place name. */
   protected clearPlace(): void {
-    this.isTypingPlaceQuery.set(false);
-    if (this.center().source === 'place') {
-      this.searchCenter.useMapArea(this.center());
-    }
+    this.placeSearch.clear();
   }
 
   protected updateVisibleMapCenter(visibleMapCenter: Coordinates): void {

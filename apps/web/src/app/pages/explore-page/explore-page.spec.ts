@@ -27,7 +27,8 @@ import {
   withoutDistance,
 } from '../../../testing/station-fixtures';
 import { routes } from '../../app.routes';
-import { ExplorePage, PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS } from './explore-page';
+import { ExplorePage } from './explore-page';
+import { PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS } from './place-search';
 
 const EIFFEL_TOWER_E5_URL =
   '/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=5&fuel=e5';
@@ -40,8 +41,10 @@ const selectedStationTitles = (element: HTMLElement): string[] =>
     textOf(title)
   );
 
-const waitForTypingPause = (): Promise<void> =>
-  new Promise(resolve => setTimeout(resolve, PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS + 20));
+/** Needs fake timers: lets the debounce of the place search pass. */
+const waitForTypingPause = async (): Promise<void> => {
+  await vi.advanceTimersByTimeAsync(PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS);
+};
 
 const placeSearchInput = (element: HTMLElement): HTMLInputElement => {
   const input = element.querySelector<HTMLInputElement>('input[role="combobox"]');
@@ -74,6 +77,7 @@ describe('ExplorePage', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     context.httpTesting.verify();
     vi.restoreAllMocks();
   });
@@ -198,13 +202,15 @@ describe('ExplorePage', () => {
 
   it('searches places after a typing pause and moves to the chosen one', async () => {
     const { fixture, element } = await renderWithStations();
+    vi.useFakeTimers();
     const input = placeSearchInput(element);
 
     input.value = 'Bastille';
     input.dispatchEvent(new Event('input'));
     await context.settle();
+    await vi.advanceTimersByTimeAsync(PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS - 1);
     context.httpTesting.expectNone(() => true);
-    await waitForTypingPause();
+    await vi.advanceTimersByTimeAsync(1);
     await context.settle();
     context.httpTesting.expectOne('/api/places?query=Bastille&limit=6').flush([bastillePlace]);
     await context.settle();
@@ -230,6 +236,7 @@ describe('ExplorePage', () => {
 
   it('tells when no place matches and when the place search fails', async () => {
     const { element } = await renderWithStations();
+    vi.useFakeTimers();
     const input = placeSearchInput(element);
     const typeAndWait = async (query: string) => {
       input.value = query;
@@ -696,6 +703,29 @@ describe('ExplorePage with a station card', () => {
     expect(listContainer(element)?.hidden).toBe(false);
     expect(element.querySelector('app-station-detail-page')).toBeNull();
     expect(selectedStationTitles(element)).toEqual(['TotalEnergies']);
+    expect(textOf(document.activeElement)).toBe('TotalEnergies');
+    expect(document.activeElement?.classList).toContain('station-row__title');
+  });
+
+  it('shows an opened card from its top and returns to the list where it was', async () => {
+    const { element, navigate } = await openAt('/');
+    context.httpTesting
+      .expectOne(EIFFEL_TOWER_E5_URL)
+      .flush([totalStation, carrefourStation, unbrandedStation]);
+    await context.settle();
+    const sheetContent = element.querySelector<HTMLElement>('.bottom-sheet__content');
+    if (sheetContent === null) {
+      throw new Error('No sheet content');
+    }
+    sheetContent.scrollTop = 120;
+
+    await navigate(`/stations/${totalStation.id}`);
+    context.httpTesting.expectOne(TOTAL_DETAILS_URL).flush(withoutDistance(totalStation));
+    await context.settle();
+    expect(sheetContent.scrollTop).toBe(0);
+
+    await navigate('/');
+    expect(sheetContent.scrollTop).toBe(120);
   });
 
   it('opens the card of another price tag chosen while a card is open', async () => {

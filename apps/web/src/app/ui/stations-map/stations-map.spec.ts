@@ -11,7 +11,7 @@ import {
 } from '../../../testing/station-fixtures';
 import { accessibleTextOf, textOf } from '../../../testing/render-page';
 import { L } from '../map/leaflet-layers';
-import { centerForVisibleArea, StationsMap } from './stations-map';
+import { StationsMap } from './stations-map';
 
 interface RenderOptions {
   center?: SearchCenter;
@@ -317,26 +317,6 @@ describe('StationsMap', () => {
       expect(spiderfy).toHaveBeenCalledOnce();
       expect(panTo).toHaveBeenCalledOnce();
       expect(fitBounds).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('centerForVisibleArea', () => {
-    it('is the point itself without overlays and shifts by half of each overlay', async () => {
-      const panTo = vi.spyOn(L.Map.prototype, 'panTo');
-      await render([totalStation], { selectedStationIdentifier: totalStation.id });
-      const map = panTo.mock.contexts.at(-1) as L.Map;
-      const point = L.latLng(48.86, 2.34);
-
-      const noOverlay = centerForVisibleArea(map, point, { top: 0, right: 0, bottom: 0, left: 0 });
-      const withOverlays = centerForVisibleArea(map, point, {
-        top: 40,
-        right: 0,
-        bottom: 400,
-        left: 100,
-      });
-
-      expect(offsetFromPanTarget(map, noOverlay, point)).toEqual(L.point(0, 0));
-      expect(offsetFromPanTarget(map, withOverlays, point)).toEqual(L.point(50, -180));
     });
   });
 
