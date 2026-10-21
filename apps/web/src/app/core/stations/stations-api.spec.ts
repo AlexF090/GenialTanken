@@ -1,4 +1,5 @@
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
+import type { HttpRequest } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ApplicationRef, Injector, runInInjectionContext, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -6,6 +7,7 @@ import { carrefourStation, totalStation, withoutDistance } from '../../../testin
 import { StationsApi } from './stations-api';
 import type { StationsSearch } from './stations-api';
 import { UnexpectedResponseError } from '../http/unexpected-response-error';
+import { StationSourceUnavailableError } from './station-source-unavailable-error';
 
 const PARIS_SEARCH: StationsSearch = {
   latitude: 48.8566,
@@ -126,16 +128,39 @@ describe('StationsApi', () => {
   });
 
   describe('loadStationsByIdentifiers', () => {
-    it('loads every station and reports unavailable ids separately', async () => {
+    const BY_IDENTIFIERS_URL = '/api/stations/by-identifiers';
+    const BAD_GATEWAY = { status: 502, statusText: 'Bad Gateway' };
+    const BAD_GATEWAY_BODY = { statusCode: 502, message: 'Upstream unavailable' };
+
+    const identifiersOf = (request: HttpRequest<unknown>): string | null =>
+      request.url === BY_IDENTIFIERS_URL ? request.params.get('identifiers') : null;
+
+    const stationIdentifiers = (count: number): string[] =>
+      Array.from({ length: count }, (_, index) => `fr-${String(index + 1)}`);
+
+    it('sends no request without identifiers', async () => {
+      await expect(stationsApi.loadStationsByIdentifiers([])).resolves.toEqual({
+        stations: [],
+        unavailableStationIdentifiers: [],
+        failures: [],
+      });
+      httpTesting.expectNone(() => true);
+    });
+
+    it('loads all stations with one request and reports unavailable identifiers', async () => {
       const result = stationsApi.loadStationsByIdentifiers([
         'fr-75001001',
         'de-unavailable',
         'fr-75005002',
       ]);
 
-      httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
-      httpTesting.expectOne('/api/stations/de-unavailable').flush(NOT_FOUND_BODY, NOT_FOUND);
-      httpTesting.expectOne('/api/stations/fr-75005002').flush(withoutDistance(carrefourStation));
+      httpTesting
+        .expectOne(`${BY_IDENTIFIERS_URL}?identifiers=fr-75001001,de-unavailable,fr-75005002`)
+        .flush({
+          stations: [withoutDistance(totalStation), withoutDistance(carrefourStation)],
+          unavailableIdentifiers: ['de-unavailable'],
+          failedIdentifiers: [],
+        });
 
       await expect(result).resolves.toEqual({
         stations: [withoutDistance(totalStation), withoutDistance(carrefourStation)],
@@ -144,31 +169,89 @@ describe('StationsApi', () => {
       });
     });
 
-    it('keeps the loaded stations when other requests fail', async () => {
-      const result = stationsApi.loadStationsByIdentifiers([
-        'fr-75001001',
-        'fr-75005002',
-        'fr-broken',
-      ]);
+    it('URL-encodes the identifiers', async () => {
+      const result = stationsApi.loadStationsByIdentifiers(['fr-1&x', 'fr 2']);
 
-      httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
       httpTesting
-        .expectOne('/api/stations/fr-75005002')
-        .flush(
-          { statusCode: 502, message: 'Upstream unavailable' },
-          { status: 502, statusText: 'Bad Gateway' }
-        );
-      httpTesting.expectOne('/api/stations/fr-broken').flush({ id: 'fr-broken' });
+        .expectOne(`${BY_IDENTIFIERS_URL}?identifiers=fr-1%26x,fr%202`)
+        .flush({ stations: [], unavailableIdentifiers: ['fr-1&x', 'fr 2'], failedIdentifiers: [] });
+
+      await expect(result).resolves.toMatchObject({
+        unavailableStationIdentifiers: ['fr-1&x', 'fr 2'],
+      });
+    });
+
+    it('keeps the order of the requested identifiers', async () => {
+      const result = stationsApi.loadStationsByIdentifiers(['fr-75005002', 'fr-75001001']);
+
+      httpTesting
+        .expectOne(request => identifiersOf(request) !== null)
+        .flush({
+          stations: [withoutDistance(totalStation), withoutDistance(carrefourStation)],
+          unavailableIdentifiers: [],
+          failedIdentifiers: [],
+        });
+
+      const { stations } = await result;
+      expect(stations.map(station => station.id)).toEqual(['fr-75005002', 'fr-75001001']);
+    });
+
+    it('splits more than 50 identifiers into one request per chunk and merges the answers', async () => {
+      const identifiers = stationIdentifiers(51);
+      const result = stationsApi.loadStationsByIdentifiers(identifiers);
+
+      const requests = httpTesting.match(request => identifiersOf(request) !== null);
+      expect(requests.map(request => identifiersOf(request.request))).toEqual([
+        identifiers.slice(0, 50).join(','),
+        'fr-51',
+      ]);
+      requests[0]?.flush({
+        stations: [],
+        unavailableIdentifiers: identifiers.slice(0, 49),
+        failedIdentifiers: ['fr-50'],
+      });
+      requests[1]?.flush({
+        stations: [],
+        unavailableIdentifiers: ['fr-51'],
+        failedIdentifiers: [],
+      });
+
+      const { unavailableStationIdentifiers, failures } = await result;
+      expect(unavailableStationIdentifiers).toEqual([...identifiers.slice(0, 49), 'fr-51']);
+      expect(failures.map(failure => failure.stationIdentifier)).toEqual(['fr-50']);
+      expect(failures[0]?.error).toBeInstanceOf(StationSourceUnavailableError);
+    });
+
+    it('marks every identifier of a failed chunk as failed and keeps the other chunks', async () => {
+      const identifiers = stationIdentifiers(51);
+      const result = stationsApi.loadStationsByIdentifiers(identifiers);
+
+      const [firstChunk, secondChunk] = httpTesting.match(
+        request => identifiersOf(request) !== null
+      );
+      firstChunk?.flush(BAD_GATEWAY_BODY, BAD_GATEWAY);
+      secondChunk?.flush({
+        stations: [withoutDistance(totalStation)],
+        unavailableIdentifiers: [],
+        failedIdentifiers: [],
+      });
 
       const { stations, unavailableStationIdentifiers, failures } = await result;
       expect(stations).toEqual([withoutDistance(totalStation)]);
       expect(unavailableStationIdentifiers).toEqual([]);
-      expect(failures.map(failure => failure.stationIdentifier)).toEqual([
-        'fr-75005002',
-        'fr-broken',
-      ]);
-      expect(failures[0]?.error).toBeInstanceOf(HttpErrorResponse);
-      expect(failures[1]?.error).toBeInstanceOf(UnexpectedResponseError);
+      expect(failures.map(failure => failure.stationIdentifier)).toEqual(identifiers.slice(0, 50));
+      expect(failures.every(failure => failure.error instanceof HttpErrorResponse)).toBe(true);
+    });
+
+    it('marks the identifiers as failed with an UnexpectedResponseError on a contract violation', async () => {
+      const result = stationsApi.loadStationsByIdentifiers(['fr-75001001']);
+
+      httpTesting.expectOne(request => identifiersOf(request) !== null).flush({ stations: [] });
+
+      const { stations, failures } = await result;
+      expect(stations).toEqual([]);
+      expect(failures.map(failure => failure.stationIdentifier)).toEqual(['fr-75001001']);
+      expect(failures[0]?.error).toBeInstanceOf(UnexpectedResponseError);
     });
   });
 });

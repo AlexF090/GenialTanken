@@ -1,12 +1,17 @@
 import { HttpClient, httpResource } from '@angular/common/http';
 import type { HttpResourceRef } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { stationSchema, stationsSchema } from '@genialtanken/contracts';
-import type { FuelType, Station } from '@genialtanken/contracts';
+import {
+  MAXIMUM_STATION_IDENTIFIERS_PER_REQUEST,
+  stationLookupSchema,
+  stationSchema,
+  stationsSchema,
+} from '@genialtanken/contracts';
+import type { FuelType, Station, StationLookup } from '@genialtanken/contracts';
 import { firstValueFrom } from 'rxjs';
 import type { Coordinates } from '../geolocation/coordinates';
-import { isNotFoundError } from './stations-error-message';
-import { UnexpectedResponseError } from '../http/unexpected-response-error';
+import { parseResponse } from '../http/parse-response';
+import { StationSourceUnavailableError } from './station-source-unavailable-error';
 
 export interface StationsSearch extends Coordinates {
   radiusInKilometers: number;
@@ -21,31 +26,38 @@ export interface StationLoadFailure {
 export interface StationsByIdentifiers {
   stations: Station[];
   /**
-   * Identifiers the API answers with 404, e.g. a German station while the optional German provider is
-   * disabled. They may come back, so callers must not treat them as deleted.
+   * Identifiers the providers do not know right now, e.g. a German station while the optional
+   * German provider is disabled. They may come back, so callers must not treat them as deleted.
    */
   unavailableStationIdentifiers: string[];
-  /** Stations whose request failed for any other reason (network, 5xx, contract violation). */
+  /**
+   * Stations that could not be loaded: their price source was unreachable
+   * ({@link StationSourceUnavailableError}), or the whole request of their chunk failed (network,
+   * 4xx, 5xx, contract violation).
+   */
   failures: StationLoadFailure[];
 }
 
 /** Same origin: dev proxy locally, a Cloudflare Pages Function in production. */
 const STATIONS_URL = '/api/stations';
+const STATIONS_BY_IDENTIFIERS_URL = `${STATIONS_URL}/by-identifiers`;
 
-const parseStations = (body: unknown): Station[] => {
-  const result = stationsSchema.safeParse(body);
-  if (!result.success) {
-    throw new UnexpectedResponseError('GET /api/stations', result.error.message);
-  }
-  return result.data;
-};
+const parseStations = (body: unknown): Station[] =>
+  parseResponse(stationsSchema, body, 'GET /api/stations');
 
-const parseStation = (body: unknown): Station => {
-  const result = stationSchema.safeParse(body);
-  if (!result.success) {
-    throw new UnexpectedResponseError('GET /api/stations/:id', result.error.message);
+const parseStation = (body: unknown): Station =>
+  parseResponse(stationSchema, body, 'GET /api/stations/:id');
+
+const toChunks = (identifiers: readonly string[]): string[][] => {
+  const chunks: string[][] = [];
+  for (
+    let start = 0;
+    start < identifiers.length;
+    start += MAXIMUM_STATION_IDENTIFIERS_PER_REQUEST
+  ) {
+    chunks.push(identifiers.slice(start, start + MAXIMUM_STATION_IDENTIFIERS_PER_REQUEST));
   }
-  return result.data;
+  return chunks;
 };
 
 /**
@@ -95,43 +107,56 @@ export class StationsApi {
   }
 
   /**
-   * Loads several stations in parallel. Never rejects: every id ends up either as a station, as
-   * unavailable (404) or as a failure, so one broken request does not hide the other stations.
+   * Loads several stations, at most {@link MAXIMUM_STATION_IDENTIFIERS_PER_REQUEST} per request,
+   * with the chunks in parallel. Never rejects: every identifier ends up either as a station, as
+   * unavailable or as a failure, so one broken request does not hide the other stations. Stations
+   * keep the order of `stationIdentifiers`.
    */
   async loadStationsByIdentifiers(
     stationIdentifiers: readonly string[]
   ): Promise<StationsByIdentifiers> {
-    const results = await Promise.allSettled(
-      stationIdentifiers.map(stationIdentifier => this.loadStation(stationIdentifier))
-    );
+    const uniqueStationIdentifiers = [...new Set(stationIdentifiers)];
+    const chunks = toChunks(uniqueStationIdentifiers);
+    const results = await Promise.allSettled(chunks.map(chunk => this.lookUpStations(chunk)));
     const stationsByIdentifiers: StationsByIdentifiers = {
       stations: [],
       unavailableStationIdentifiers: [],
       failures: [],
     };
-    // `allSettled` keeps the order of its input, so each result belongs to the id at its index.
-    stationIdentifiers.forEach((stationIdentifier, index) => {
+    // `allSettled` keeps the order of its input, so each result belongs to the chunk at its index.
+    chunks.forEach((chunk, index) => {
       const result = results[index];
       if (result === undefined) {
         return;
       }
-      if (result.status === 'fulfilled') {
-        stationsByIdentifiers.stations.push(result.value);
+      if (result.status === 'rejected') {
+        const error: unknown = result.reason;
+        stationsByIdentifiers.failures.push(
+          ...chunk.map(stationIdentifier => ({ stationIdentifier, error }))
+        );
         return;
       }
-      if (isNotFoundError(result.reason)) {
-        stationsByIdentifiers.unavailableStationIdentifiers.push(stationIdentifier);
-        return;
-      }
-      stationsByIdentifiers.failures.push({ stationIdentifier, error: result.reason });
+      const { stations, unavailableIdentifiers, failedIdentifiers } = result.value;
+      stationsByIdentifiers.stations.push(...stations);
+      stationsByIdentifiers.unavailableStationIdentifiers.push(...unavailableIdentifiers);
+      stationsByIdentifiers.failures.push(
+        ...failedIdentifiers.map(stationIdentifier => ({
+          stationIdentifier,
+          error: new StationSourceUnavailableError(stationIdentifier),
+        }))
+      );
     });
+    const positionOf = (station: Station): number => uniqueStationIdentifiers.indexOf(station.id);
+    stationsByIdentifiers.stations.sort((first, second) => positionOf(first) - positionOf(second));
     return stationsByIdentifiers;
   }
 
-  private async loadStation(stationIdentifier: string): Promise<Station> {
+  private async lookUpStations(stationIdentifiers: readonly string[]): Promise<StationLookup> {
     const body = await firstValueFrom(
-      this.httpClient.get<unknown>(`${STATIONS_URL}/${encodeURIComponent(stationIdentifier)}`)
+      this.httpClient.get<unknown>(STATIONS_BY_IDENTIFIERS_URL, {
+        params: { identifiers: stationIdentifiers.join(',') },
+      })
     );
-    return parseStation(body);
+    return parseResponse(stationLookupSchema, body, `GET ${STATIONS_BY_IDENTIFIERS_URL}`);
   }
 }

@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { UnexpectedResponseError } from '../http/unexpected-response-error';
+import { StationSourceUnavailableError } from './station-source-unavailable-error';
 
 export const STATION_NOT_FOUND_MESSAGE =
   'Die Tankstelle konnte in unserer Datenbank nicht gefunden werden.';
@@ -10,6 +11,9 @@ const HTTP_STATUS_BAD_GATEWAY = 502;
 const HTTP_STATUS_SERVICE_UNAVAILABLE = 503;
 const HTTP_STATUS_GATEWAY_TIMEOUT = 504;
 
+const PRICES_UNAVAILABLE_MESSAGE =
+  'Die Preisdaten sind gerade nicht erreichbar. Bitte versuche es später erneut.';
+
 export const isNotFoundError = (error: unknown): boolean =>
   error instanceof HttpErrorResponse && error.status === HTTP_STATUS_NOT_FOUND;
 
@@ -17,6 +21,9 @@ export const isNotFoundError = (error: unknown): boolean =>
 export const describeStationsError = (error: unknown): string => {
   if (error instanceof UnexpectedResponseError) {
     return 'Der Server hat unerwartete Daten geliefert. Bitte versuche es später erneut.';
+  }
+  if (error instanceof StationSourceUnavailableError) {
+    return PRICES_UNAVAILABLE_MESSAGE;
   }
   if (!(error instanceof HttpErrorResponse)) {
     return 'Die Tankstellen konnten nicht geladen werden. Bitte versuche es später erneut.';
@@ -31,7 +38,7 @@ export const describeStationsError = (error: unknown): string => {
     case HTTP_STATUS_BAD_GATEWAY:
     case HTTP_STATUS_SERVICE_UNAVAILABLE:
     case HTTP_STATUS_GATEWAY_TIMEOUT:
-      return 'Die Preisdaten sind gerade nicht erreichbar. Bitte versuche es später erneut.';
+      return PRICES_UNAVAILABLE_MESSAGE;
     default:
       return 'Die Tankstellen konnten nicht geladen werden. Bitte versuche es später erneut.';
   }

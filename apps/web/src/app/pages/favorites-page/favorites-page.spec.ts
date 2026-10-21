@@ -9,7 +9,11 @@ import type { PageTestContext } from '../../../testing/render-page';
 import { carrefourStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
 import { FavoritesPage } from './favorites-page';
 
-const NOT_FOUND = { status: 404, statusText: 'Not Found' };
+const BAD_GATEWAY = { status: 502, statusText: 'Bad Gateway' };
+const BAD_GATEWAY_BODY = { statusCode: 502, message: 'Upstream unavailable' };
+
+const lookupUrl = (identifiers: string): string =>
+  `/api/stations/by-identifiers?identifiers=${identifiers}`;
 
 const stationTitles = (element: HTMLElement): string[] =>
   [...element.querySelectorAll('main li a')].map(title => textOf(title));
@@ -41,10 +45,11 @@ describe('FavoritesPage', () => {
       storage: new FakeStorage({ favoriteIDs: '["fr-75001001","fr-75005002"]' }),
     });
     const rendered = await renderComponent(FavoritesPage);
-    context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
-    context.httpTesting
-      .expectOne('/api/stations/fr-75005002')
-      .flush(withoutDistance(carrefourStation));
+    context.httpTesting.expectOne(lookupUrl('fr-75001001,fr-75005002')).flush({
+      stations: [withoutDistance(totalStation), withoutDistance(carrefourStation)],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [],
+    });
     await context.settle();
     return rendered;
   };
@@ -93,10 +98,11 @@ describe('FavoritesPage', () => {
     });
     const { element } = await renderComponent(FavoritesPage);
 
-    context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
-    context.httpTesting
-      .expectOne('/api/stations/de-unavailable')
-      .flush({ statusCode: 404, message: 'Station not found' }, NOT_FOUND);
+    context.httpTesting.expectOne(lookupUrl('fr-75001001,de-unavailable')).flush({
+      stations: [withoutDistance(totalStation)],
+      unavailableIdentifiers: ['de-unavailable'],
+      failedIdentifiers: [],
+    });
     await context.settle();
 
     expect(stationTitles(element)).toEqual(['TotalEnergies']);
@@ -112,13 +118,11 @@ describe('FavoritesPage', () => {
     });
     const { element } = await renderComponent(FavoritesPage);
 
-    context.httpTesting
-      .expectOne('/api/stations/de-first')
-      .flush({ statusCode: 404, message: 'Station not found' }, NOT_FOUND);
-    context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
-    context.httpTesting
-      .expectOne('/api/stations/de-second')
-      .flush({ statusCode: 404, message: 'Station not found' }, NOT_FOUND);
+    context.httpTesting.expectOne(lookupUrl('de-first,fr-75001001,de-second')).flush({
+      stations: [withoutDistance(totalStation)],
+      unavailableIdentifiers: ['de-first', 'de-second'],
+      failedIdentifiers: [],
+    });
     await context.settle();
 
     expect(textOf(element.querySelector('main p[role="status"]'))).toBe(
@@ -141,8 +145,8 @@ describe('FavoritesPage', () => {
     const { element } = await renderComponent(FavoritesPage);
 
     context.httpTesting
-      .expectOne('/api/stations/de-first')
-      .flush({ statusCode: 404, message: 'Station not found' }, NOT_FOUND);
+      .expectOne(lookupUrl('de-first'))
+      .flush({ stations: [], unavailableIdentifiers: ['de-first'], failedIdentifiers: [] });
     await context.settle();
 
     getButton(element, 'Nicht verfügbare Favoriten entfernen').click();
@@ -157,13 +161,11 @@ describe('FavoritesPage', () => {
     });
     const { element } = await renderComponent(FavoritesPage);
 
-    context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
-    context.httpTesting
-      .expectOne('/api/stations/fr-75005002')
-      .flush(
-        { statusCode: 502, message: 'Upstream unavailable' },
-        { status: 502, statusText: 'Bad Gateway' }
-      );
+    context.httpTesting.expectOne(lookupUrl('fr-75001001,fr-75005002')).flush({
+      stations: [withoutDistance(totalStation)],
+      unavailableIdentifiers: [],
+      failedIdentifiers: ['fr-75005002'],
+    });
     await context.settle();
 
     expect(stationTitles(element)).toEqual(['TotalEnergies']);
@@ -177,12 +179,7 @@ describe('FavoritesPage', () => {
     context = configurePageTest({ storage: new FakeStorage({ favoriteIDs: '["fr-75001001"]' }) });
     const { element } = await renderComponent(FavoritesPage);
 
-    context.httpTesting
-      .expectOne('/api/stations/fr-75001001')
-      .flush(
-        { statusCode: 502, message: 'Upstream unavailable' },
-        { status: 502, statusText: 'Bad Gateway' }
-      );
+    context.httpTesting.expectOne(lookupUrl('fr-75001001')).flush(BAD_GATEWAY_BODY, BAD_GATEWAY);
     await context.settle();
 
     expect(textOf(element.querySelector('[role="alert"]'))).toBe(
