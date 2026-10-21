@@ -47,11 +47,31 @@ updates:
           - angular-eslint
           - prettier
           - globals
+      # Dependabot documents first-match precedence, but this catch-all still pulled in development
+      # dependencies of the groups above (e.g. @angular/compiler-cli without @angular/compiler,
+      # which broke the build). Keep exclude-patterns in sync with the patterns of those groups.
       development-minor-patch:
         dependency-type: development
         update-types:
           - minor
           - patch
+        exclude-patterns:
+          - '@angular/*'
+          - '@angular-devkit/*'
+          - '@schematics/*'
+          - '@nestjs/*'
+          - vitest
+          - '@vitest/*'
+          - '@playwright/test'
+          - jsdom
+          - supertest
+          - '@types/supertest'
+          - eslint
+          - '@eslint/*'
+          - typescript-eslint
+          - angular-eslint
+          - prettier
+          - globals
 
   - package-ecosystem: github-actions
     # Covers .github/workflows and the composite action in .github/actions.
