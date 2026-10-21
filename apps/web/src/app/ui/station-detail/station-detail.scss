@@ -10,7 +10,6 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: var(--space-md);
-  margin-top: calc(-1 * var(--space-sm));
 }
 
 .station-detail__identity {
@@ -21,7 +20,18 @@
   min-width: 0;
 }
 
+.station-detail__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
 .station-detail__title {
+  // Focused by the card when it opens, as a starting point; not an interactive control.
+  &:focus {
+    outline: none;
+  }
+
   font-size: var(--font-size-2xl);
   line-height: var(--line-height-tight);
   overflow-wrap: anywhere;

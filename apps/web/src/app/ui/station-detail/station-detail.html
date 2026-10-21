@@ -1,12 +1,7 @@
 <article class="station-detail">
-  <app-station-location-map
-    class="station-detail__map"
-    [station]="station()"
-    [stationTitle]="title()" />
-
   <div class="station-detail__heading">
     <div class="station-detail__identity">
-      <h2 class="station-detail__title" translate="no">{{ title() }}</h2>
+      <h2 class="station-detail__title" translate="no" tabindex="-1">{{ title() }}</h2>
       @if (subtitle(); as subtitle) {
         <p class="station-detail__subtitle">{{ subtitle }}</p>
       }
@@ -17,10 +12,13 @@
         }
       </address>
     </div>
-    <app-favorite-button
-      [stationName]="title()"
-      [isFavorite]="isFavorite()"
-      (toggled)="favoriteToggled.emit()" />
+    <div class="station-detail__actions">
+      <app-favorite-button
+        [stationName]="title()"
+        [isFavorite]="isFavorite()"
+        (toggled)="favoriteToggled.emit()" />
+      <ng-content select="[stationDetailActions]" />
+    </div>
   </div>
 
   <app-route-button

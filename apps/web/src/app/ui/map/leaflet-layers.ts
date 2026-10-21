@@ -277,14 +277,6 @@ const createOwnPositionIcon = (): L.DivIcon =>
     iconSize: ZERO_SIZE,
   });
 
-/** Non-interactive pin for a single location, e.g. the station on the detail page. */
-export const createLocationPin = (coordinates: Coordinates): L.Marker =>
-  L.marker([coordinates.latitude, coordinates.longitude], {
-    icon: createPinIcon(),
-    interactive: false,
-    keyboard: false,
-  });
-
 /**
  * Search center with its label; the user's own position is a dot greeting them instead. A center
  * the user moved the map to needs no label: it is where they are looking.

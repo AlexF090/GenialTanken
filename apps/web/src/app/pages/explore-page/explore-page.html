@@ -59,7 +59,7 @@
     label="Tankstellen"
     [(snapPosition)]="snapPosition"
     (heightChanged)="updateSheetHeight($event)">
-    <div class="explore-page__header" bottomSheetHeader>
+    <div class="explore-page__header" bottomSheetHeader [hidden]="isStationCardOpen()">
       <h1 class="explore-page__title" translate="no">GenialTanken</h1>
 
       <div class="explore-page__toolbar">
@@ -90,22 +90,26 @@
       <app-loading-state [isLoading]="isLoading()" />
     </div>
 
-    @if (hasLoaded() && stations().length === 0) {
-      <p class="message explore-page__empty">
-        Keine Tankstellen mit Preis für {{ fuelLabel() }} im Umkreis von
-        {{ radiusInKilometers() }}&nbsp;km gefunden.
-      </p>
-    }
-    <app-station-list
-      [stations]="stations()"
-      [fuelType]="fuelType()"
-      [favoriteStationIds]="favoriteStationIds()"
-      [cheapestStationIds]="cheapestStationIds()"
-      [selectedStationId]="selectedStationId()"
-      [selectsOnMap]="true"
-      (stationSelected)="showOnMap($event)"
-      (favoriteToggled)="toggleFavorite($event)" />
-    <app-data-source-credit class="explore-page__credit" />
+    <router-outlet />
+    <!-- Hidden, not removed, while a station card is open: the list keeps its state. -->
+    <div [hidden]="isStationCardOpen()">
+      @if (hasLoaded() && stations().length === 0) {
+        <p class="message explore-page__empty">
+          Keine Tankstellen mit Preis für {{ fuelLabel() }} im Umkreis von
+          {{ radiusInKilometers() }}&nbsp;km gefunden.
+        </p>
+      }
+      <app-station-list
+        [stations]="stations()"
+        [fuelType]="fuelType()"
+        [favoriteStationIds]="favoriteStationIds()"
+        [cheapestStationIds]="cheapestStationIds()"
+        [selectedStationId]="selectedStationId()"
+        [selectsOnMap]="true"
+        (stationSelected)="showOnMap($event)"
+        (favoriteToggled)="toggleFavorite($event)" />
+      <app-data-source-credit class="explore-page__credit" />
+    </div>
   </app-bottom-sheet>
 
   <app-stations-map

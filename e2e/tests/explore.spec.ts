@@ -111,13 +111,12 @@ test.describe('explore page', () => {
     await expect(stationsMap(page).getByText(eiffelTower.label, { exact: true })).toHaveCount(0);
   });
 
-  test('a station title opens the detail page of the station', async ({ page }) => {
+  test('the details link of a row opens the card of the station', async ({ page }) => {
     await page.goto('/');
 
     await stationCard(page, rueBailleulStation).getByRole('link').click();
 
     await expect(page).toHaveURL(`/stations/${rueBailleulStation.id}`);
-    await expect(page.getByRole('heading', { level: 1, name: 'Details' })).toBeVisible();
     await expect(
       page.getByRole('article').getByRole('heading', { level: 2, name: rueBailleulStation.title })
     ).toBeVisible();

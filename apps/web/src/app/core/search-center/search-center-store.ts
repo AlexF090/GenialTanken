@@ -81,6 +81,17 @@ export class SearchCenterStore {
     });
   }
 
+  /** Searches around a station opened from elsewhere (e.g. the favorites), named after it. */
+  useStation(station: Coordinates & { label: string }): void {
+    this.changeCenter();
+    this.state.set({
+      latitude: station.latitude,
+      longitude: station.longitude,
+      label: station.label,
+      source: 'station',
+    });
+  }
+
   resetToDefault(): void {
     this.changeCenter();
     this.state.set(DEFAULT_SEARCH_CENTER);

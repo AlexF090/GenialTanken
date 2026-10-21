@@ -13,7 +13,6 @@ import { FavoriteButton } from '../favorite-button/favorite-button';
 import { OpeningTimes } from '../opening-times/opening-times';
 import { Price } from '../price/price';
 import { RouteButton } from '../route-button/route-button';
-import { StationLocationMap } from '../station-location-map/station-location-map';
 
 interface FuelPrice {
   fuelType: FuelType;
@@ -25,7 +24,7 @@ interface FuelPrice {
 /** Details of one station with all its prices; the user's fuel leads the price board. */
 @Component({
   selector: 'app-station-detail',
-  imports: [FavoriteButton, OpeningTimes, Price, RouteButton, StationLocationMap],
+  imports: [FavoriteButton, OpeningTimes, Price, RouteButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './station-detail.html',
   styleUrl: './station-detail.scss',

@@ -1,4 +1,3 @@
-import type { ElementRef } from '@angular/core';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
@@ -6,11 +5,19 @@ import {
   computed,
   debounced,
   DestroyRef,
+  effect,
+  ElementRef,
   inject,
+  Injector,
   linkedSignal,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, PRIMARY_OUTLET, Router, RouterOutlet } from '@angular/router';
+import type { UrlTree } from '@angular/router';
+import { filter, map, startWith } from 'rxjs';
 import { FUEL_TYPES } from '@genialtanken/contracts';
 import type { FuelType, Place, Station } from '@genialtanken/contracts';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
@@ -25,7 +32,9 @@ import { SearchCenterStore } from '../../core/search-center/search-center-store'
 import { radiusStepsIncluding } from '../../core/settings/radius-steps';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { NearbyStationsStore } from '../../core/stations/nearby-stations-store';
+import { OpenedStationStore } from '../../core/stations/opened-station-store';
 import { sortStations } from '../../core/stations/sort-stations';
+import { stationTitle } from '../../core/stations/station-display';
 import type { SortOrder } from '../../core/stations/sort-stations';
 import { ColorSchemeController } from '../../core/theme/color-scheme-controller';
 import { BottomSheet } from '../../ui/bottom-sheet/bottom-sheet';
@@ -61,6 +70,12 @@ const waitForTypingPause = (query: string | undefined): Promise<void> | undefine
     ? undefined
     : new Promise(resolve => setTimeout(resolve, PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS));
 
+/** `/stations/<id>` opens the card of a station. */
+const stationIdIn = (url: UrlTree | undefined): string | undefined => {
+  const segments = url?.root.children[PRIMARY_OUTLET]?.segments ?? [];
+  return segments.length === 2 && segments[0]?.path === 'stations' ? segments[1]?.path : undefined;
+};
+
 const describeCenter = (center: SearchCenter): string =>
   center.source === 'map-area' ? 'die Kartenmitte' : center.label;
 
@@ -80,6 +95,7 @@ const describeStationCount = (count: number): string =>
     Icon,
     LoadingState,
     PlaceSearchField,
+    RouterOutlet,
     SelectMenu,
     SortOrderControl,
     StationList,
@@ -172,8 +188,29 @@ export class ExplorePage {
       : ''
   );
 
-  /** Cleared when the search center changes or the station is no longer in the results. */
-  protected readonly selectedStationId = linkedSignal<SelectionSource, string | undefined>({
+  private readonly router = inject(Router);
+  private readonly openedStation = inject(OpenedStationStore).station;
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  private readonly injector = inject(Injector);
+
+  /** Station whose card is open in the sheet: the child route `stations/:id`. */
+  protected readonly openedStationId = toSignal(
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd),
+      map(event => this.router.parseUrl(event.urlAfterRedirects)),
+      // The page is created during the navigation to it, before its `NavigationEnd`.
+      startWith(this.router.currentNavigation()?.finalUrl ?? this.router.parseUrl(this.router.url)),
+      map(stationIdIn)
+    ),
+    { initialValue: undefined }
+  );
+  protected readonly isStationCardOpen = computed(() => this.openedStationId() !== undefined);
+
+  /**
+   * Chosen in the list or on the map. Cleared when the search center changes or the station is
+   * no longer in the results.
+   */
+  private readonly listSelectedStationId = linkedSignal<SelectionSource, string | undefined>({
     source: () => ({ stations: this.nearbyStations.stations(), center: this.center() }),
     computation: (source, previous) => {
       const previousStationId = previous?.value;
@@ -185,6 +222,10 @@ export class ExplorePage {
         : undefined;
     },
   });
+  /** An open card wins: its station is the one shown on the map. */
+  protected readonly selectedStationId = computed(
+    () => this.openedStationId() ?? this.listSelectedStationId()
+  );
 
   protected readonly snapPosition = signal<SnapPosition>('half');
   private readonly sheetHeightInPixels = signal(0);
@@ -213,6 +254,89 @@ export class ExplorePage {
       observer.observe(searchOverlay);
       destroyRef.onDestroy(() => {
         observer.disconnect();
+      });
+    });
+
+    this.followStationCard();
+    this.showOpenedStationOnMap();
+  }
+
+  /**
+   * Opening a card shows it from its top and lifts a peeking sheet; closing it returns to the list
+   * where it was, with the station still selected and focused.
+   */
+  private followStationCard(): void {
+    let previousStationId: string | undefined;
+    let listScrollTop = 0;
+    effect(() => {
+      const stationId = this.openedStationId();
+      const closedStationId = previousStationId;
+      previousStationId = stationId;
+      if (stationId === closedStationId) {
+        return;
+      }
+      untracked(() => {
+        const scroller = this.host.querySelector<HTMLElement>('.bottom-sheet__content');
+        if (stationId !== undefined) {
+          if (closedStationId === undefined) {
+            listScrollTop = scroller?.scrollTop ?? 0;
+          }
+          if (scroller !== null) {
+            scroller.scrollTop = 0;
+          }
+          if (this.isCompactViewport() && this.snapPosition() === 'peek') {
+            this.snapPosition.set('half');
+          }
+          return;
+        }
+        if (closedStationId === undefined) {
+          return;
+        }
+        this.listSelectedStationId.set(closedStationId);
+        afterNextRender(
+          () => {
+            if (scroller !== null) {
+              scroller.scrollTop = listScrollTop;
+            }
+            this.host
+              .querySelector<HTMLElement>(
+                `[data-station-id="${CSS.escape(closedStationId)}"] .station-row__title`
+              )
+              ?.focus({ preventScroll: true });
+          },
+          { injector: this.injector }
+        );
+      });
+    });
+  }
+
+  /**
+   * A card can open a station outside the results (e.g. from the favorites); the search then
+   * moves there, so the map shows it. Once per station, so a station without a price for the
+   * chosen fuel does not move the search again and again.
+   */
+  private showOpenedStationOnMap(): void {
+    let movedForStationId: string | undefined;
+    effect(() => {
+      const station = this.openedStation();
+      if (
+        station === undefined ||
+        station.id !== this.openedStationId() ||
+        !this.hasLoaded() ||
+        station.id === movedForStationId
+      ) {
+        return;
+      }
+      if (this.nearbyStations.stations().some(nearby => nearby.id === station.id)) {
+        return;
+      }
+      movedForStationId = station.id;
+      untracked(() => {
+        this.searchCenter.useStation({
+          latitude: station.address.latitude,
+          longitude: station.address.longitude,
+          label: stationTitle(station),
+        });
       });
     });
   }
@@ -279,7 +403,12 @@ export class ExplorePage {
 
   /** A price tag on the map was chosen: the sheet shows its row and leaves the map visible. */
   protected selectFromMap(stationId: string): void {
-    this.selectedStationId.set(stationId);
+    // With a card open, the chosen price tag opens its own card instead, like in Apple Maps.
+    if (this.isStationCardOpen()) {
+      void this.router.navigate(['/stations', stationId]);
+      return;
+    }
+    this.listSelectedStationId.set(stationId);
     if (this.isCompactViewport()) {
       this.snapPosition.set('half');
     }
@@ -293,7 +422,7 @@ export class ExplorePage {
     if (this.selectedStationId() === stationId) {
       this.stationsMap().revealSelectedStation();
     }
-    this.selectedStationId.set(stationId);
+    this.listSelectedStationId.set(stationId);
     if (this.isCompactViewport() && this.snapPosition() === 'full') {
       this.snapPosition.set('half');
     }

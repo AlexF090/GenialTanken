@@ -50,10 +50,12 @@ test.describe('navigation', () => {
     ).toHaveAttribute('aria-current', 'page');
   });
 
-  test('no navigation link is current on a detail page', async ({ page }) => {
+  test('no navigation link is current while a station card is open', async ({ page }) => {
     await page.goto(`/stations/${rueBailleulStation.id}`);
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Details' })).toBeVisible();
+    await expect(
+      page.getByRole('article').getByRole('heading', { level: 2, name: rueBailleulStation.title })
+    ).toBeVisible();
     await expect(mainNavigation(page).locator('[aria-current]')).toHaveCount(0);
   });
 });

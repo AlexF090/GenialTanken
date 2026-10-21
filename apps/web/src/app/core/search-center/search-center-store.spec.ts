@@ -140,6 +140,17 @@ describe('SearchCenterStore', () => {
     expect(store.center().source).toBe('map-area');
   });
 
+  it('moves to a station opened from elsewhere, named after it', () => {
+    store.useStation({ latitude: 48.89, longitude: 2.39, label: 'TotalEnergies' });
+
+    expect(store.center()).toEqual({
+      latitude: 48.89,
+      longitude: 2.39,
+      label: 'TotalEnergies',
+      source: 'station',
+    });
+  });
+
   it('returns to the Eiffel Tower on reset', () => {
     store.usePlace(kasselPlace);
 

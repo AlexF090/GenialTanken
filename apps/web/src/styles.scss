@@ -9,6 +9,11 @@
   box-sizing: border-box;
 }
 
+// Components often set `display`; `hidden` must win anyway.
+[hidden] {
+  display: none !important;
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;

@@ -4,30 +4,28 @@ import {
   quaiDeLaRapeeStation,
   rueBailleulStation,
   stationCard,
+  stationRowButton,
+  stationsMap,
   test,
 } from '../fixtures.js';
 
-test.describe('detail page', () => {
+test.describe('station card', () => {
   test('shows address, opening times and every fuel price of a station', async ({ page }) => {
     await page.goto(`/stations/${quaiDeLaRapeeStation.id}`);
 
     await expect(page).toHaveTitle('Details – GenialTanken');
-    await expect(page.getByRole('heading', { level: 1, name: 'Details' })).toBeVisible();
-    // The detail page shows every fuel type, so the header has no fuel label.
-    await expect(page.getByText(/^Kraftstoff:/)).toHaveCount(0);
+    // The card opens in the sheet of the explore page, next to the map, instead of the list.
+    await expect(page.getByRole('heading', { level: 1, name: 'GenialTanken' })).toBeAttached();
+    await expect(stationsMap(page)).toBeVisible();
+    // The card shows every fuel type, so the hidden list header with its fuel menu stays hidden.
+    await expect(page.getByRole('button', { name: /^Kraftstoff:/ })).toBeHidden();
 
     const details = page.getByRole('article');
     await expect(
       details.getByRole('heading', { level: 2, name: quaiDeLaRapeeStation.title })
     ).toBeVisible();
-    await expect(
-      details.getByText(`${quaiDeLaRapeeStation.title} ${quaiDeLaRapeeStation.cityLine}`, {
-        exact: true,
-      })
-    ).toBeVisible();
-    await expect(
-      details.getByRole('region', { name: `Karte: Lage von ${quaiDeLaRapeeStation.title}` })
-    ).toBeVisible();
+    // Without a name the street is the title, so the address below adds only the city.
+    await expect(details.locator('address')).toHaveText(quaiDeLaRapeeStation.cityLine);
 
     const openingTimes = details.getByRole('region', { name: 'Öffnungszeiten' });
     // French open data has no live open state, so none is claimed.
@@ -80,16 +78,30 @@ test.describe('detail page', () => {
     await expect(prices.nth(1)).toContainText('kein Preis');
   });
 
-  test('the back link returns to the explore page', async ({ page }) => {
-    await page.goto(`/stations/${quaiDeLaRapeeStation.id}`);
+  test('closing the card returns to the list with the station selected', async ({ page }) => {
+    await page.goto('/');
+    await stationCard(page, rueBailleulStation).getByRole('link').click();
+    await expect(page).toHaveURL(`/stations/${rueBailleulStation.id}`);
 
-    await page.getByRole('link', { name: 'Zurück', exact: true }).click();
+    await page.getByRole('button', { name: 'Schließen', exact: true }).click();
 
     await expect(page).toHaveURL('/');
-    await expect(page.getByRole('heading', { level: 1, name: 'GenialTanken' })).toBeVisible();
+    const rowButton = stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation);
+    await expect(rowButton).toHaveAttribute('aria-pressed', 'true');
+    await expect(rowButton).toBeFocused();
   });
 
-  test('the back link returns to the favorites when the station was opened there', async ({
+  test('Escape closes the card', async ({ page }) => {
+    await page.goto(`/stations/${quaiDeLaRapeeStation.id}`);
+    await expect(page.getByRole('region', { name: 'Preise' })).toBeVisible();
+
+    await page.keyboard.press('Escape');
+
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('article')).toHaveCount(0);
+  });
+
+  test('a station from the favorites opens as a card on the map; back returns there', async ({
     page,
   }) => {
     await page.addInitScript(identifier => {
@@ -97,10 +109,14 @@ test.describe('detail page', () => {
     }, quaiDeLaRapeeStation.id);
     await page.goto('/favorites');
     await stationCard(page, quaiDeLaRapeeStation).getByRole('link').click();
+
     await expect(page).toHaveURL(`/stations/${quaiDeLaRapeeStation.id}`);
+    await expect(stationsMap(page)).toBeVisible();
+    await expect(
+      page.getByRole('article').getByRole('heading', { level: 2, name: quaiDeLaRapeeStation.title })
+    ).toBeVisible();
 
-    await page.getByRole('link', { name: 'Zurück', exact: true }).click();
-
+    await page.goBack();
     await expect(page).toHaveURL('/favorites');
     await expect(page.getByRole('heading', { level: 1, name: 'Favoriten' })).toBeVisible();
   });
@@ -125,7 +141,6 @@ test.describe('detail page', () => {
   test('shows an error for a station the API does not know', async ({ page }) => {
     await page.goto('/stations/fr-99999999');
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Details' })).toBeVisible();
     await expect(page.getByRole('alert')).toHaveText(
       'Die Tankstelle konnte in unserer Datenbank nicht gefunden werden.'
     );

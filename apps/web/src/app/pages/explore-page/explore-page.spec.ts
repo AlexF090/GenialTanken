@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import type { ComponentFixture } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
+import { Router } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { COMPACT_MEDIA_QUERY } from '../../core/layout/breakpoints';
 import { MATCH_MEDIA } from '../../core/layout/media-query';
 import { SearchCenterStore } from '../../core/search-center/search-center-store';
@@ -18,10 +20,13 @@ import {
 } from '../../../testing/render-page';
 import type { PageTestContext } from '../../../testing/render-page';
 import {
+  aralStation,
   carrefourStation,
   totalStation,
   unbrandedStation,
+  withoutDistance,
 } from '../../../testing/station-fixtures';
+import { routes } from '../../app.routes';
 import { ExplorePage, PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS } from './explore-page';
 
 const EIFFEL_TOWER_E5_URL =
@@ -621,6 +626,107 @@ describe('ExplorePage on a phone', () => {
     await context.settle();
 
     expect(childComponent(fixture, BottomSheet).snapPosition()).toBe('peek');
+  });
+});
+
+describe('ExplorePage with a station card', () => {
+  let context: PageTestContext;
+
+  const TOTAL_DETAILS_URL = `/api/stations/${totalStation.id}`;
+
+  const openAt = async (url: string) => {
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(url);
+    await context.settle();
+    const element = harness.fixture.nativeElement as HTMLElement;
+    const router = TestBed.inject(Router);
+    const navigate = async (target: string) => {
+      await router.navigateByUrl(target);
+      await context.settle();
+    };
+    return { harness, element, router, navigate };
+  };
+
+  const listContainer = (element: HTMLElement) =>
+    element.querySelector('app-station-list')?.parentElement;
+
+  beforeEach(() => {
+    context = configurePageTest({ routes });
+  });
+
+  afterEach(() => {
+    context.httpTesting.verify();
+    vi.restoreAllMocks();
+  });
+
+  it('shows the card instead of the list and selects its station on the map', async () => {
+    const { harness, element, navigate } = await openAt('/');
+    context.httpTesting
+      .expectOne(EIFFEL_TOWER_E5_URL)
+      .flush([totalStation, carrefourStation, unbrandedStation]);
+    await context.settle();
+
+    await navigate(`/stations/${totalStation.id}`);
+    context.httpTesting.expectOne(TOTAL_DETAILS_URL).flush(withoutDistance(totalStation));
+    await context.settle();
+
+    expect(listContainer(element)?.hidden).toBe(true);
+    expect(textOf(element.querySelector('app-station-detail-page h2'))).toBe('TotalEnergies');
+    expect(childComponent(harness.fixture, StationsMap).selectedStationId()).toBe(totalStation.id);
+  });
+
+  it('returns to the list with the station still selected when the card closes', async () => {
+    const { harness, element } = await openAt(`/stations/${totalStation.id}`);
+    context.httpTesting
+      .expectOne(EIFFEL_TOWER_E5_URL)
+      .flush([totalStation, carrefourStation, unbrandedStation]);
+    context.httpTesting.expectOne(TOTAL_DETAILS_URL).flush(withoutDistance(totalStation));
+    await context.settle();
+
+    getButton(element, 'Schließen').click();
+    await context.settle();
+    await harness.fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe('/');
+    expect(listContainer(element)?.hidden).toBe(false);
+    expect(element.querySelector('app-station-detail-page')).toBeNull();
+    expect(selectedStationTitles(element)).toEqual(['TotalEnergies']);
+  });
+
+  it('opens the card of another price tag chosen while a card is open', async () => {
+    const { harness, router } = await openAt(`/stations/${totalStation.id}`);
+    context.httpTesting
+      .expectOne(EIFFEL_TOWER_E5_URL)
+      .flush([totalStation, carrefourStation, unbrandedStation]);
+    context.httpTesting.expectOne(TOTAL_DETAILS_URL).flush(withoutDistance(totalStation));
+    await context.settle();
+
+    childComponent(harness.fixture, StationsMap).stationSelected.emit(carrefourStation.id);
+    await context.settle();
+
+    expect(router.url).toBe(`/stations/${carrefourStation.id}`);
+    context.httpTesting.expectOne(`/api/stations/${carrefourStation.id}`);
+  });
+
+  it('moves the search to a station outside the results, named after it', async () => {
+    const { element } = await openAt(`/stations/${aralStation.id}`);
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
+    context.httpTesting
+      .expectOne(`/api/stations/${aralStation.id}`)
+      .flush(withoutDistance(aralStation));
+    await context.settle();
+
+    context.httpTesting
+      .expectOne(
+        `/api/stations?latitude=${String(aralStation.address.latitude)}&longitude=${String(aralStation.address.longitude)}&radiusInKilometers=5&fuel=e5`
+      )
+      .flush([aralStation]);
+    await context.settle();
+
+    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+      '1 Tankstelle im Umkreis von 5 km um Aral'
+    );
+    context.httpTesting.expectNone(request => request.url === '/api/stations');
   });
 });
 

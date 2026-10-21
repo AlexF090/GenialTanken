@@ -79,7 +79,7 @@ describe('App', () => {
     }
   );
 
-  it.each(['/favorites', '/settings', '/stations/fr-75001001', '/unknown'])(
+  it.each(['/favorites', '/settings', '/unknown'])(
     'renders exactly one page header on %s',
     async url => {
       const element = await navigateTo(url);
@@ -115,11 +115,15 @@ describe('App', () => {
     expect(textOf(element.querySelector('h1'))).toBe('Einstellungen');
   });
 
-  it('opens the detail page under /stations/:id', async () => {
+  it('opens a station as a card on the explore page under /stations/:id', async () => {
     const element = await navigateTo('/stations/fr-75001001');
 
-    expect(textOf(element.querySelector('h1'))).toBe('Details');
+    expect(textOf(element.querySelector('main h1'))).toBe('GenialTanken');
+    expect(element.querySelector('main app-stations-map')).not.toBeNull();
+    expect(element.querySelector('main app-station-detail-page')).not.toBeNull();
+    expect(document.title).toBe('Details – GenialTanken');
     context.httpTesting.expectOne('/api/stations/fr-75001001');
+    context.httpTesting.expectOne(request => request.url === '/api/stations');
   });
 
   it.each(['/unknown', '/unknown/deep/route', '/stations'])(

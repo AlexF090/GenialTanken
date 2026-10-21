@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { RouterTestingHarness } from '@angular/router/testing';
+import { Router } from '@angular/router';
+import { OpenedStationStore } from '../../core/stations/opened-station-store';
 import {
   accessibleTextOf,
   configurePageTest,
@@ -14,60 +15,12 @@ import { StationDetailPage } from './station-detail-page';
 @Component({ template: '' })
 class EmptyPage {}
 
-const backLinkOf = (element: Element): string | null | undefined =>
-  [...element.querySelectorAll('header a')]
-    .find(link => accessibleTextOf(link) === 'Zurück')
-    ?.getAttribute('href');
-
-describe('StationDetailPage back link', () => {
-  let context: PageTestContext;
-
-  beforeEach(() => {
-    context = configurePageTest({
-      routes: [
-        { path: '', component: EmptyPage },
-        { path: 'favorites', component: EmptyPage },
-        { path: 'settings', component: EmptyPage },
-        { path: 'stations/:id', component: StationDetailPage },
-      ],
-    });
-  });
-
-  afterEach(() => {
-    context.httpTesting.match(() => true);
-  });
-
-  const openStationAfter = async (previousUrl: string | undefined): Promise<Element> => {
-    const harness = await RouterTestingHarness.create();
-    if (previousUrl !== undefined) {
-      await harness.navigateByUrl(previousUrl);
-    }
-    await harness.navigateByUrl(`/stations/${totalStation.id}`);
-    return harness.routeNativeElement ?? document.createElement('div');
-  };
-
-  it('returns to the favorites when the station was opened there', async () => {
-    expect(backLinkOf(await openStationAfter('/favorites'))).toBe('/favorites');
-  });
-
-  it('returns to the start page when the station was opened from it', async () => {
-    expect(backLinkOf(await openStationAfter('/'))).toBe('/');
-  });
-
-  it('returns to the start page when the station was opened from another page', async () => {
-    expect(backLinkOf(await openStationAfter('/settings'))).toBe('/');
-  });
-
-  it('returns to the start page when the station was opened directly', async () => {
-    expect(backLinkOf(await openStationAfter(undefined))).toBe('/');
-  });
-});
-
 describe('StationDetailPage', () => {
   let context: PageTestContext;
 
   const renderStation = async (stationId: string) => {
     const fixture = TestBed.createComponent(StationDetailPage);
+    document.body.append(fixture.nativeElement as HTMLElement);
     fixture.componentRef.setInput('id', stationId);
     await context.settle();
     return { fixture, element: fixture.nativeElement as HTMLElement };
@@ -76,12 +29,13 @@ describe('StationDetailPage', () => {
   beforeEach(() => {
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(400);
     vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(160);
-    context = configurePageTest();
+    context = configurePageTest({ routes: [{ path: '', component: EmptyPage }] });
   });
 
   afterEach(() => {
     context.httpTesting.verify();
     vi.restoreAllMocks();
+    document.body.replaceChildren();
   });
 
   it('shows brand, name, address, open status, opening times and all prices', async () => {
@@ -93,7 +47,6 @@ describe('StationDetailPage', () => {
     await context.settle();
 
     const article = element.querySelector('article');
-    expect(textOf(element.querySelector('header h1'))).toBe('Details');
     expect(textOf(article?.querySelector('h2'))).toBe('Aral');
     expect(textOf(article?.querySelector('address'))).toBe('Wilhelmshöher Allee 100 34119 Kassel');
     expect(article?.textContent).toContain('Aral Tankstelle Kassel');
@@ -110,7 +63,6 @@ describe('StationDetailPage', () => {
       'Sonntag: keine Angabe',
       'Feiertag: 08:00 - 12:00',
     ]);
-    expect(element.querySelector('.leaflet-container')).not.toBeNull();
   });
 
   it('leads the price board with the stored fuel and names missing prices', async () => {
@@ -149,9 +101,9 @@ describe('StationDetailPage', () => {
     context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
     await context.settle();
 
-    expect(
-      textOf(element.querySelector('main a[href="https://www.prix-carburants.gouv.fr/"]'))
-    ).toBe('Preisdaten: prix-carburants.gouv.fr (öffnet in neuem Tab)');
+    expect(textOf(element.querySelector('a[href="https://www.prix-carburants.gouv.fr/"]'))).toBe(
+      'Preisdaten: prix-carburants.gouv.fr (öffnet in neuem Tab)'
+    );
   });
 
   it('does not credit the French open data for a German station', async () => {
@@ -190,5 +142,46 @@ describe('StationDetailPage', () => {
       'Die Tankstelle konnte in unserer Datenbank nicht gefunden werden.'
     );
     expect(element.querySelector('article')).toBeNull();
+  });
+
+  it('starts at the station name once it is shown', async () => {
+    await renderStation(totalStation.id);
+    context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
+    await context.settle();
+
+    expect(textOf(document.activeElement)).toBe('TotalEnergies');
+  });
+
+  it('shares the loaded station while it is open', async () => {
+    const { fixture } = await renderStation(totalStation.id);
+    const openedStation = TestBed.inject(OpenedStationStore);
+    context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
+    await context.settle();
+
+    expect(openedStation.station()?.id).toBe('fr-75001001');
+
+    fixture.destroy();
+    expect(openedStation.station()).toBeUndefined();
+  });
+
+  it('returns to the list with the close button and with Escape', async () => {
+    const { element } = await renderStation(totalStation.id);
+    context.httpTesting.expectOne('/api/stations/fr-75001001').flush(withoutDistance(totalStation));
+    await context.settle();
+    const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl');
+
+    getButton(element, 'Schließen').click();
+    element
+      .querySelector('section')
+      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    expect(navigateByUrl.mock.calls).toEqual([['/'], ['/']]);
+  });
+
+  it('can be closed while it is still loading', async () => {
+    const { element } = await renderStation(totalStation.id);
+
+    expect(getButton(element, 'Schließen')).toBeDefined();
+    context.httpTesting.expectOne('/api/stations/fr-75001001');
   });
 });
