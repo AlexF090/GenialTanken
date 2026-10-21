@@ -1,6 +1,7 @@
 // Leaflet has to be imported before the marker cluster plugin, which extends the global `L`.
 import L from 'leaflet';
 import 'leaflet.markercluster';
+import { METERS_PER_KILOMETER } from '@genialtanken/contracts';
 import { formatPrice, formatPriceParts } from '../../core/formatting/number-format';
 import type { Coordinates } from '../../core/geolocation/coordinates';
 import type { SearchCenter } from '../../core/search-center/search-center';
@@ -17,7 +18,6 @@ const OPEN_STREET_MAP_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png
 const OPEN_STREET_MAP_ATTRIBUTION =
   '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende';
 export const MAXIMUM_ZOOM = 19;
-const METERS_PER_KILOMETER = 1000;
 
 const mapboxTileUrl = (style: string, accessToken: string): string =>
   `https://api.mapbox.com/styles/v1/${style}/tiles/256/{z}/{x}/{y}@2x?access_token=${encodeURIComponent(accessToken)}`;

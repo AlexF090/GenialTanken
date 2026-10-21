@@ -3,7 +3,7 @@ import type { Place } from '@genialtanken/contracts';
 import type { Coordinates } from '../geolocation/coordinates';
 import { GeolocationService } from '../geolocation/geolocation-service';
 import { DEFAULT_SEARCH_CENTER, isSameSearchCenter } from './search-center';
-import type { SearchCenter } from './search-center';
+import type { LabeledCoordinates, SearchCenter } from './search-center';
 
 const OWN_POSITION_LABEL = 'Dein Standort';
 const MAP_AREA_LABEL = 'Kartenmitte';
@@ -82,7 +82,7 @@ export class SearchCenterStore {
   }
 
   /** Searches around a station opened from elsewhere (e.g. the favorites), named after it. */
-  useStation(station: Coordinates & { label: string }): void {
+  useStation(station: LabeledCoordinates): void {
     this.changeCenter();
     this.state.set({
       latitude: station.latitude,

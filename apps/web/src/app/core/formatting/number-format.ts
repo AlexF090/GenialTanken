@@ -1,3 +1,5 @@
+import { METERS_PER_KILOMETER } from '@genialtanken/contracts';
+
 const LOCALE = 'de-DE';
 
 const PRICE_FORMAT = new Intl.NumberFormat(LOCALE, {
@@ -9,8 +11,6 @@ const DISTANCE_FORMAT = new Intl.NumberFormat(LOCALE, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
-
-const METERS_PER_KILOMETER = 1000;
 
 export interface PriceParts {
   /** "1,85" */

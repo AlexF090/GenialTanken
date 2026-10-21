@@ -4,9 +4,13 @@ import type { Coordinates } from '../geolocation/coordinates';
 /** Where the current search center came from. */
 export type SearchCenterSource = 'default' | 'place' | 'own-position' | 'map-area' | 'station';
 
-/** Point the nearby stations are searched around, with a label to show to the user. */
-export interface SearchCenter extends Coordinates {
+/** A point with a name to show to the user, e.g. a station's title. */
+export interface LabeledCoordinates extends Coordinates {
   label: string;
+}
+
+/** Point the nearby stations are searched around, with a label to show to the user. */
+export interface SearchCenter extends LabeledCoordinates {
   source: SearchCenterSource;
 }
 

@@ -1,7 +1,7 @@
+import { METERS_PER_KILOMETER } from '@genialtanken/contracts';
 import type { Coordinates } from '../geolocation/coordinates';
 
 const EARTH_RADIUS_IN_METERS = 6_371_000;
-const METERS_PER_KILOMETER = 1000;
 /** Moving the map by less than this share of the radius is not worth a new search. */
 const MINIMUM_SHIFT_AS_SHARE_OF_RADIUS = 0.25;
 
