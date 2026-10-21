@@ -6,3 +6,4 @@ pnpm-lock.yaml
 .angular
 playwright-report
 test-results
+.claude/skills
