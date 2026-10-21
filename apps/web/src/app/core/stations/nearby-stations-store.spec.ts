@@ -1,5 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { ApplicationRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { Station } from '@genialtanken/contracts';
 import { FakeGeolocation } from '../../../testing/fake-geolocation';
@@ -27,10 +28,10 @@ describe('NearbyStationsStore', () => {
   let store: NearbyStationsStore;
   let searchCenter: SearchCenterStore;
 
+  /** Every request is flushed or never sent here, so the app becomes stable without waiting. */
   const settle = async (): Promise<void> => {
     TestBed.tick();
-    await new Promise(resolve => setTimeout(resolve));
-    TestBed.tick();
+    await TestBed.inject(ApplicationRef).whenStable();
   };
 
   const loadAtEiffelTower = async (stations: Station[] = [totalStation, carrefourStation]) => {
