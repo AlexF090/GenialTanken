@@ -20,7 +20,6 @@ const NUMERIC_IDENTIFIER_PATTERN = /^\d+$/;
 const STATION_DETAILS_PATH = '/map/recuperer_infos_pdv/';
 /** Station pages are fetched one per station; a few at once keeps it polite and still quick. */
 const MAXIMUM_PARALLEL_STATION_DETAILS_REQUESTS = 8;
-const MILLISECONDS_PER_SECOND = 1000;
 
 /** French fuel prices from the government open data portal (no API key, 50,000 requests per day). */
 @Injectable()
@@ -78,7 +77,7 @@ export class FranceFuelPriceProvider implements FuelPriceProvider {
       const html = await this.upstreamTextFetcher.fetch({
         url,
         cacheTimeToLiveInMilliseconds:
-          this.configuration.franceStationDetailsCacheTimeToLiveInSeconds * MILLISECONDS_PER_SECOND,
+          this.configuration.franceStationDetailsCacheTimeToLiveInMilliseconds,
       });
       return html === undefined ? undefined : parseFrenchStationIdentity(html);
     } catch (error) {

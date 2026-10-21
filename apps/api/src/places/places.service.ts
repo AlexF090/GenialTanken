@@ -9,7 +9,6 @@ import { photonResponseSchema } from './photon/photon-response.schema.js';
 import { toPlaceFromPhoton } from './photon/to-place-from-photon.js';
 import { normalizePlaceQuery, selectPlaces } from './place-search.js';
 
-const MILLISECONDS_PER_SECOND = 1000;
 const SEARCH_PATH = '/api';
 const RESULT_LANGUAGE = 'de';
 /** Photon also answers places outside France and Germany; ask for more to keep enough of them. */
@@ -45,8 +44,7 @@ export class PlacesService {
         url,
         schema: photonResponseSchema,
         headers: { 'User-Agent': this.userAgent },
-        cacheTimeToLiveInMilliseconds:
-          this.configuration.placesCacheTimeToLiveInSeconds * MILLISECONDS_PER_SECOND,
+        cacheTimeToLiveInMilliseconds: this.configuration.placesCacheTimeToLiveInMilliseconds,
       });
       return selectPlaces(response.features.map(toPlaceFromPhoton), limit);
     } catch (error) {

@@ -6,7 +6,6 @@ import { ApplicationConfiguration } from '../configuration/application-configura
 import { describeUpstreamFailure, requestUpstream } from './request-upstream.js';
 import { UpstreamError } from './upstream-error.js';
 
-const MILLISECONDS_PER_SECOND = 1000;
 const NOT_FOUND_STATUS = 404;
 
 export interface UpstreamJsonRequest<Schema extends z.ZodType> {
@@ -33,8 +32,7 @@ export class UpstreamJsonFetcher {
     url,
     schema,
     headers = {},
-    cacheTimeToLiveInMilliseconds = this.configuration.cacheTimeToLiveInSeconds *
-      MILLISECONDS_PER_SECOND,
+    cacheTimeToLiveInMilliseconds = this.configuration.cacheTimeToLiveInMilliseconds,
   }: UpstreamJsonRequest<Schema>): Promise<z.infer<Schema> | undefined> {
     const cacheKey = url.toString();
     const cached = await this.cache.get<z.infer<Schema>>(cacheKey);

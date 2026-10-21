@@ -12,7 +12,6 @@ import { ClientAddressThrottlerGuard } from './rate-limit/client-address-throttl
 import { StationsModule } from './stations/stations.module.js';
 
 const MILLISECONDS_PER_MINUTE = 60_000;
-const MILLISECONDS_PER_SECOND = 1000;
 
 @Module({})
 export class AppModule {
@@ -26,7 +25,7 @@ export class AppModule {
           isGlobal: true,
           inject: [ApplicationConfiguration],
           useFactory: (configuration: ApplicationConfiguration) => ({
-            ttl: configuration.cacheTimeToLiveInSeconds * MILLISECONDS_PER_SECOND,
+            ttl: configuration.cacheTimeToLiveInMilliseconds,
           }),
         }),
         ThrottlerModule.forRootAsync({

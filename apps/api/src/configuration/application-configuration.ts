@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Environment } from './environment.js';
 
+/** Durations are configured in seconds and used in milliseconds; converted only here. */
+const MILLISECONDS_PER_SECOND = 1000;
+
 /** Typed, validated access to the environment; the only place that reads configuration. */
 @Injectable()
 export class ApplicationConfiguration {
@@ -15,10 +18,12 @@ export class ApplicationConfiguration {
     return this.configService.get('FRANCE_STATION_DETAILS_BASE_URL', { infer: true });
   }
 
-  get franceStationDetailsCacheTimeToLiveInSeconds(): number {
-    return this.configService.get('FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS', {
-      infer: true,
-    });
+  get franceStationDetailsCacheTimeToLiveInMilliseconds(): number {
+    return (
+      this.configService.get('FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS', {
+        infer: true,
+      }) * MILLISECONDS_PER_SECOND
+    );
   }
 
   /** `undefined` when the German provider is disabled. */
@@ -34,8 +39,11 @@ export class ApplicationConfiguration {
     return this.configService.get('PHOTON_BASE_URL', { infer: true });
   }
 
-  get placesCacheTimeToLiveInSeconds(): number {
-    return this.configService.get('PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS', { infer: true });
+  get placesCacheTimeToLiveInMilliseconds(): number {
+    return (
+      this.configService.get('PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS', { infer: true }) *
+      MILLISECONDS_PER_SECOND
+    );
   }
 
   get webOrigins(): string[] {
@@ -50,8 +58,11 @@ export class ApplicationConfiguration {
     return this.configService.get('UPSTREAM_TIMEOUT_IN_MILLISECONDS', { infer: true });
   }
 
-  get cacheTimeToLiveInSeconds(): number {
-    return this.configService.get('CACHE_TIME_TO_LIVE_IN_SECONDS', { infer: true });
+  get cacheTimeToLiveInMilliseconds(): number {
+    return (
+      this.configService.get('CACHE_TIME_TO_LIVE_IN_SECONDS', { infer: true }) *
+      MILLISECONDS_PER_SECOND
+    );
   }
 
   get rateLimitRequestsPerMinute(): number {
