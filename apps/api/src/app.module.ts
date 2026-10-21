@@ -1,3 +1,4 @@
+import { createKeyv } from '@cacheable/memory';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module, StandardSchemaValidationPipe } from '@nestjs/common';
 import type { DynamicModule } from '@nestjs/common';
@@ -24,9 +25,14 @@ export class AppModule {
         CacheModule.registerAsync({
           isGlobal: true,
           inject: [ApplicationConfiguration],
-          useFactory: (configuration: ApplicationConfiguration) => ({
-            ttl: configuration.cacheTimeToLiveInMilliseconds,
-          }),
+          // The default Keyv store is an unbounded Map; the LRU store caps the memory use.
+          useFactory: (configuration: ApplicationConfiguration) => {
+            const ttl = configuration.cacheTimeToLiveInMilliseconds;
+            return {
+              ttl,
+              stores: [createKeyv({ ttl, lruSize: configuration.cacheMaximumEntries })],
+            };
+          },
         }),
         ThrottlerModule.forRootAsync({
           inject: [ApplicationConfiguration],

@@ -193,6 +193,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@cacheable/memory':
+        specifier: 2.2.0
+        version: 2.2.0
       '@genialtanken/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts

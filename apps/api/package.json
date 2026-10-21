@@ -17,6 +17,7 @@
     "start:container": "nest start --watch"
   },
   "dependencies": {
+    "@cacheable/memory": "2.2.0",
     "@genialtanken/contracts": "workspace:*",
     "@nestjs/cache-manager": "12.0.0",
     "@nestjs/common": "12.1.2",

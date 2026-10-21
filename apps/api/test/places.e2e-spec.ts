@@ -9,6 +9,8 @@ import { bastilleFeatures, PHOTON_SEARCH_PATH, photonResponse } from './support/
 
 const strictApiErrorSchema = apiErrorSchema.strict();
 
+const MILLISECONDS_PER_SECOND = 1000;
+
 const UNAVAILABLE_BODY = { statusCode: 502, message: 'The place search is unavailable.' };
 
 const searchParametersOf = (recordedRequest: RecordedRequest | undefined): URLSearchParams =>
@@ -125,11 +127,34 @@ describe('GET /api/places', () => {
       PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS: '60',
     });
 
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      await api.get('/api/places').query({ query: 'bastille' }).expect(200);
+      vi.setSystemTime(Date.now() + 2 * MILLISECONDS_PER_SECOND);
+      await api.get('/api/places').query({ query: 'bastille' }).expect(200);
+      expect(photon.requests).toHaveLength(1);
+
+      vi.setSystemTime(Date.now() + 60 * MILLISECONDS_PER_SECOND);
+      await api.get('/api/places').query({ query: 'bastille' }).expect(200);
+      expect(photon.requests).toHaveLength(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('evicts the least recently used answer once the cache is full', async () => {
+    photon.respondTo(PHOTON_SEARCH_PATH, { status: 200, body: photonResponse(bastilleFeatures) });
+    const api = await startApplication({ CACHE_MAXIMUM_ENTRIES: '1' });
+
     await api.get('/api/places').query({ query: 'bastille' }).expect(200);
-    await new Promise(resolve => setTimeout(resolve, 1100));
+    await api.get('/api/places').query({ query: 'kassel' }).expect(200);
     await api.get('/api/places').query({ query: 'bastille' }).expect(200);
 
-    expect(photon.requests).toHaveLength(1);
+    expect(photon.requests.map(recorded => searchParametersOf(recorded).get('q'))).toEqual([
+      'bastille',
+      'kassel',
+      'bastille',
+    ]);
   });
 
   it.each([

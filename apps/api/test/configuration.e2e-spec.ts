@@ -29,6 +29,8 @@ describe('Startup configuration', () => {
     ['FRANCE_FUEL_PRICES_BASE_URL', 'not a url'],
     ['FRANCE_STATION_DETAILS_BASE_URL', 'not a url'],
     ['TANKENTANKEN_BASE_URL', 'not a url'],
+    ['CACHE_MAXIMUM_ENTRIES', '0'],
+    ['CACHE_MAXIMUM_ENTRIES', 'many'],
     ['PHOTON_BASE_URL', 'not a url'],
     ['PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS', '0'],
     ['WEB_ORIGIN', 'genialtanken'],

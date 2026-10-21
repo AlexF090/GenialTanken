@@ -48,6 +48,8 @@ export const environmentSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   UPSTREAM_TIMEOUT_IN_MILLISECONDS: positiveIntegerSchema.default(8000),
   CACHE_TIME_TO_LIVE_IN_SECONDS: positiveIntegerSchema.default(300),
+  /** Upper bound of the in-memory cache; the least recently used entries are evicted beyond it. */
+  CACHE_MAXIMUM_ENTRIES: positiveIntegerSchema.default(5000),
   RATE_LIMIT_REQUESTS_PER_MINUTE: positiveIntegerSchema.default(60),
   /**
    * Shared with the Cloudflare Pages Function; only requests carrying it may name the client

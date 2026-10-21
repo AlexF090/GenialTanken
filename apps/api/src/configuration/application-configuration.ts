@@ -65,6 +65,10 @@ export class ApplicationConfiguration {
     );
   }
 
+  get cacheMaximumEntries(): number {
+    return this.configService.get('CACHE_MAXIMUM_ENTRIES', { infer: true });
+  }
+
   get rateLimitRequestsPerMinute(): number {
     return this.configService.get('RATE_LIMIT_REQUESTS_PER_MINUTE', { infer: true });
   }

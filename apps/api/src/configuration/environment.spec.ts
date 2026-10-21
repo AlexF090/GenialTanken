@@ -1,6 +1,12 @@
 import { environmentSchema } from './environment.js';
 
 describe('environmentSchema', () => {
+  it('defaults the cache size', () => {
+    const environment = environmentSchema.parse({});
+
+    expect(environment.CACHE_MAXIMUM_ENTRIES).toBe(5000);
+  });
+
   it.each([
     'FRANCE_FUEL_PRICES_BASE_URL',
     'FRANCE_STATION_DETAILS_BASE_URL',
