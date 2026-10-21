@@ -12,7 +12,9 @@
     "source=${localEnv:HOME}/.claude.json,target=/home/node/.claude.json.seed,type=bind,readonly",
     "source=${localEnv:HOME}/Developer/dotfiles,target=${localEnv:HOME}/Developer/dotfiles,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.agents,target=${localEnv:HOME}/.agents,type=bind,readonly",
-    "source=genialtanken-claude-plugins,target=/home/node/.claude/plugins,type=volume"
+    "source=genialtanken-claude-plugins,target=/home/node/.claude/plugins,type=volume",
+    "source=genialtanken-gh-config,target=/home/node/.config/gh,type=volume",
+    "source=${localEnv:HOME}/.zsh_history,target=/home/node/.zsh_history,type=bind,consistency=cached"
   ],
   "forwardPorts": [9323],
   "portsAttributes": {
