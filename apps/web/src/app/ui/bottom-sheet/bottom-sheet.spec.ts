@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { COMPACT_MEDIA_QUERY } from '../../core/layout/breakpoints';
 import { MATCH_MEDIA } from '../../core/layout/media-query';
 import { FakeMatchMedia } from '../../../testing/fake-match-media';
@@ -227,5 +228,24 @@ describe('BottomSheet', () => {
     await layOut(element, () => fixture.whenStable());
 
     expect(host.heights).toEqual([0]);
+  });
+
+  it('tells and restores the scroll position of its content', async () => {
+    const { fixture, element } = await render({ isCompact: true });
+    const sheet = fixture.debugElement.query(By.directive(BottomSheet))
+      .componentInstance as BottomSheet;
+    const content = element.querySelector<HTMLElement>('.bottom-sheet__content');
+    if (content === null) {
+      throw new Error('BottomSheet rendered no content');
+    }
+    content.scrollTop = 240;
+
+    expect(sheet.scrollPosition()).toBe(240);
+
+    sheet.restoreScrollPosition(0);
+    expect(content.scrollTop).toBe(0);
+
+    sheet.restoreScrollPosition(240);
+    expect(content.scrollTop).toBe(240);
   });
 });

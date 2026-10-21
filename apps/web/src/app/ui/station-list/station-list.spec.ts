@@ -195,4 +195,30 @@ describe('StationList', () => {
     expect(scrollIntoView).toHaveBeenCalledExactlyOnceWith({ block: 'nearest' });
     expect(scrollIntoView.mock.contexts[0]).toBe(items[1]);
   });
+
+  it.each([true, false])(
+    'focuses the title of a station without scrolling (selects on map: %s)',
+    async selectsOnMap => {
+      const { fixture, items } = await render({
+        stations: [totalStation, carrefourStation],
+        selectsOnMap,
+      });
+      const title = items[1]?.querySelector<HTMLElement>('.station-row__title');
+      const focus = vi.spyOn(title ?? HTMLElement.prototype, 'focus');
+
+      fixture.componentInstance.focusStation(carrefourStation.id);
+
+      expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true });
+      expect(document.activeElement).toBe(title);
+    }
+  );
+
+  it('leaves the focus alone for a station it does not list', async () => {
+    const { fixture } = await render({ stations: [totalStation] });
+    const previouslyFocused = document.activeElement;
+
+    fixture.componentInstance.focusStation(carrefourStation.id);
+
+    expect(document.activeElement).toBe(previouslyFocused);
+  });
 });

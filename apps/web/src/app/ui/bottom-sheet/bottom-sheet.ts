@@ -124,6 +124,15 @@ export class BottomSheet {
     });
   }
 
+  /** How far the content is scrolled, e.g. to return there after showing something else. */
+  scrollPosition(): number {
+    return this.content().nativeElement.scrollTop;
+  }
+
+  restoreScrollPosition(position: number): void {
+    this.content().nativeElement.scrollTop = position;
+  }
+
   protected activateHandle(): void {
     if (this.suppressesNextClick) {
       this.suppressesNextClick = false;

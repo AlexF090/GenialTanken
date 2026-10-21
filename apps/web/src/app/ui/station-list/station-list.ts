@@ -51,7 +51,6 @@ export class StationList {
   readonly favoriteStationIdentifiers = input.required<ReadonlySet<string>>();
   readonly selectedStationIdentifier = input<string>();
   readonly cheapestStationIdentifiers = input<ReadonlySet<string>>(NO_STATION_IDENTIFIERS);
-  /** Renders the "Auf Karte zeigen" toggle per row; bind `stationSelected` along with it. */
   /**
    * On the explore page a row selects its station on the map, and a details button opens the
    * detail page. Otherwise the title links to the detail page.
@@ -75,20 +74,32 @@ export class StationList {
     }))
   );
 
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+
   constructor() {
-    const host = inject<ElementRef<HTMLElement>>(ElementRef);
     afterRenderEffect(() => {
       const selectedStationIdentifier = this.selectedStationIdentifier();
       if (selectedStationIdentifier === undefined) {
         return;
       }
-      const row = [
-        ...host.nativeElement.querySelectorAll<HTMLElement>('[data-station-identifier]'),
-      ].find(candidate => candidate.dataset['stationIdentifier'] === selectedStationIdentifier);
+      const row = this.rowOf(selectedStationIdentifier);
       // jsdom does not implement scrolling
       if (row !== undefined && typeof row.scrollIntoView === 'function') {
         row.scrollIntoView({ block: 'nearest' });
       }
     });
+  }
+
+  /** Moves the focus to the title of a station's row, without scrolling the list. */
+  focusStation(stationIdentifier: string): void {
+    this.rowOf(stationIdentifier)
+      ?.querySelector<HTMLElement>('.station-row__title')
+      ?.focus({ preventScroll: true });
+  }
+
+  private rowOf(stationIdentifier: string): HTMLElement | undefined {
+    return [...this.host.querySelectorAll<HTMLElement>('[data-station-identifier]')].find(
+      candidate => candidate.dataset['stationIdentifier'] === stationIdentifier
+    );
   }
 }
