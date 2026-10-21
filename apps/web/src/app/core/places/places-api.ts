@@ -7,18 +7,13 @@ import {
   placesSchema,
 } from '@genialtanken/contracts';
 import type { Place } from '@genialtanken/contracts';
-import { UnexpectedResponseError } from '../http/unexpected-response-error';
+import { parseResponse } from '../http/parse-response';
 
 /** Same origin: dev proxy locally, a Cloudflare Pages Function in production. */
 const PLACES_URL = '/api/places';
 
-const parsePlaces = (body: unknown): readonly Place[] => {
-  const result = placesSchema.safeParse(body);
-  if (!result.success) {
-    throw new UnexpectedResponseError('GET /api/places', result.error.message);
-  }
-  return result.data;
-};
+const parsePlaces = (body: unknown): readonly Place[] =>
+  parseResponse(placesSchema, body, 'GET /api/places');
 
 /**
  * Place search of the GenialTanken BFF. Responses are validated against the shared contract; a
