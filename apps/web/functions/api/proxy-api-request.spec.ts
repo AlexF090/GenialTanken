@@ -1,5 +1,6 @@
+import { UPSTREAM_UNAVAILABLE_MESSAGE as CONTRACTS_UPSTREAM_UNAVAILABLE_MESSAGE } from '@genialtanken/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { proxyApiRequest } from './proxy-api-request.ts';
+import { UPSTREAM_UNAVAILABLE_MESSAGE, proxyApiRequest } from './proxy-api-request.ts';
 import type { FetchImplementation } from './proxy-api-request.ts';
 
 const API_ORIGIN = 'https://genialtanken-api.onrender.com';
@@ -9,6 +10,12 @@ const respondWith =
   (response: Response): FetchImplementation =>
   () =>
     Promise.resolve(response);
+
+describe('UPSTREAM_UNAVAILABLE_MESSAGE', () => {
+  it('matches the message the API sends', () => {
+    expect(UPSTREAM_UNAVAILABLE_MESSAGE).toBe(CONTRACTS_UPSTREAM_UNAVAILABLE_MESSAGE);
+  });
+});
 
 describe('proxyApiRequest', () => {
   beforeEach(() => {
@@ -56,17 +63,73 @@ describe('proxyApiRequest', () => {
 
     await proxyApiRequest(
       new Request(STATIONS_REQUEST_URL),
-      { API_ORIGIN, API_PROXY_SECRET: 'proxy-secret' },
+      { API_ORIGIN, PROXY_SHARED_SECRET: 'proxy-secret' },
       fetchImplementation
     );
 
     expect(forwardedSecrets).toEqual(['proxy-secret']);
   });
 
+  it('forwards the deprecated API_PROXY_SECRET when PROXY_SHARED_SECRET is not set', async () => {
+    const forwardedSecrets: (string | null)[] = [];
+    const fetchImplementation: FetchImplementation = request => {
+      forwardedSecrets.push(request.headers.get('X-GenialTanken-Proxy-Secret'));
+      return Promise.resolve(new Response(null, { status: 204 }));
+    };
+
+    await proxyApiRequest(
+      new Request(STATIONS_REQUEST_URL),
+      { API_ORIGIN, API_PROXY_SECRET: 'deprecated-secret' },
+      fetchImplementation
+    );
+
+    expect(forwardedSecrets).toEqual(['deprecated-secret']);
+  });
+
+  it('prefers PROXY_SHARED_SECRET over the deprecated API_PROXY_SECRET', async () => {
+    const forwardedSecrets: (string | null)[] = [];
+    const fetchImplementation: FetchImplementation = request => {
+      forwardedSecrets.push(request.headers.get('X-GenialTanken-Proxy-Secret'));
+      return Promise.resolve(new Response(null, { status: 204 }));
+    };
+
+    await proxyApiRequest(
+      new Request(STATIONS_REQUEST_URL),
+      { API_ORIGIN, PROXY_SHARED_SECRET: 'shared-secret', API_PROXY_SECRET: 'deprecated-secret' },
+      fetchImplementation
+    );
+
+    expect(forwardedSecrets).toEqual(['shared-secret']);
+  });
+
+  it.each([
+    ['https', 'https://genialtanken-api.onrender.com'],
+    ['http on localhost', 'http://localhost:3000'],
+    ['http on 127.0.0.1', 'http://127.0.0.1:3000'],
+    ['http on [::1]', 'http://[::1]:3000'],
+  ])('calls the API when API_ORIGIN is %s', async (_case, apiOrigin) => {
+    const forwardedUrls: string[] = [];
+    const fetchImplementation: FetchImplementation = request => {
+      forwardedUrls.push(request.url);
+      return Promise.resolve(new Response(null, { status: 204 }));
+    };
+
+    const response = await proxyApiRequest(
+      new Request(STATIONS_REQUEST_URL),
+      { API_ORIGIN: apiOrigin },
+      fetchImplementation
+    );
+
+    expect(response.status).toBe(204);
+    expect(forwardedUrls).toEqual([`${apiOrigin}/api/stations?latitude=48.85`]);
+  });
+
   it.each([
     ['missing', {}],
     ['empty', { API_ORIGIN: '' }],
     ['not a URL', { API_ORIGIN: 'genialtanken-api' }],
+    ['http on a public host', { API_ORIGIN: 'http://api.example.com' }],
+    ['not http(s)', { API_ORIGIN: 'ftp://localhost' }],
   ])('answers 500 without calling the API when API_ORIGIN is %s', async (_case, environment) => {
     const fetchImplementation = vi.fn<FetchImplementation>();
 

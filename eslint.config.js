@@ -8,18 +8,14 @@ import tseslint from 'typescript-eslint';
  * Apps must not import each other's source; shared code lives in @genialtanken/contracts.
  * @param {string} forbiddenApp
  */
+const forbiddenAppImportPattern = forbiddenApp => ({
+  group: [`**/apps/${forbiddenApp}/**`, `${forbiddenApp}/*`],
+  message: `Do not import from apps/${forbiddenApp}. Share code via @genialtanken/contracts.`,
+});
+
+/** @param {string} forbiddenApp */
 const forbidImportsFrom = forbiddenApp => ({
-  'no-restricted-imports': [
-    'error',
-    {
-      patterns: [
-        {
-          group: [`**/apps/${forbiddenApp}/**`, `${forbiddenApp}/*`],
-          message: `Do not import from apps/${forbiddenApp}. Share code via @genialtanken/contracts.`,
-        },
-      ],
-    },
-  ],
+  'no-restricted-imports': ['error', { patterns: [forbiddenAppImportPattern(forbiddenApp)] }],
 });
 
 export default tseslint.config(
@@ -78,6 +74,33 @@ export default tseslint.config(
       '@angular-eslint/component-selector': [
         'error',
         { type: 'element', prefix: 'app', style: 'kebab-case' },
+      ],
+    },
+  },
+  {
+    // The deploy bundles functions/ without node_modules, so only specs may use contracts.
+    // Flat config replaces rule options instead of merging them, hence the API pattern again.
+    files: ['apps/web/functions/**/*.ts'],
+    ignores: ['**/*.spec.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@genialtanken/contracts',
+              message:
+                'Pages Functions are deployed without node_modules. Duplicate the value and keep it in sync through a spec.',
+            },
+          ],
+          patterns: [
+            forbiddenAppImportPattern('api'),
+            {
+              group: ['@genialtanken/contracts/*'],
+              message: 'Pages Functions are deployed without node_modules.',
+            },
+          ],
+        },
       ],
     },
   },

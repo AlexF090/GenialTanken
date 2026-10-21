@@ -1,5 +1,21 @@
+import {
+  CLIENT_ADDRESS_HEADER as CONTRACTS_CLIENT_ADDRESS_HEADER,
+  PROXY_SECRET_HEADER as CONTRACTS_PROXY_SECRET_HEADER,
+} from '@genialtanken/contracts';
 import { describe, expect, it } from 'vitest';
-import { createApiRequest } from './create-api-request.ts';
+import {
+  CLIENT_ADDRESS_HEADER,
+  PROXY_SECRET_HEADER,
+  createApiRequest,
+} from './create-api-request.ts';
+
+describe('proxy header names', () => {
+  // HTTP header names are case-insensitive, so only the lowercase forms must match.
+  it('match the header names the API reads', () => {
+    expect(PROXY_SECRET_HEADER.toLowerCase()).toBe(CONTRACTS_PROXY_SECRET_HEADER.toLowerCase());
+    expect(CLIENT_ADDRESS_HEADER.toLowerCase()).toBe(CONTRACTS_CLIENT_ADDRESS_HEADER.toLowerCase());
+  });
+});
 
 const API_ORIGIN = 'https://genialtanken-api.onrender.com';
 const PROXY_SECRET = 'proxy-secret';

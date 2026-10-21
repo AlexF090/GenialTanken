@@ -6,8 +6,10 @@ export interface ApiRequestOptions {
 }
 
 const FORWARDED_FOR_HEADER = 'X-Forwarded-For';
-const CLIENT_ADDRESS_HEADER = 'X-GenialTanken-Client-Address';
-const PROXY_SECRET_HEADER = 'X-GenialTanken-Proxy-Secret';
+// Duplicated from @genialtanken/contracts on purpose: the deploy bundles `functions/` without
+// node_modules. create-api-request.spec.ts keeps both in sync (header names are case-insensitive).
+export const CLIENT_ADDRESS_HEADER = 'X-GenialTanken-Client-Address';
+export const PROXY_SECRET_HEADER = 'X-GenialTanken-Proxy-Secret';
 const CONNECTING_CLIENT_ADDRESS_HEADER = 'CF-Connecting-IP';
 
 /**
