@@ -48,6 +48,39 @@ const geolocationCallCount = (page: Page): Promise<unknown> =>
     GEOLOCATION_CALL_COUNT_PROPERTY
   );
 
+const LAST_POINTER_MOVE_TIME_PROPERTY = 'e2eLastPointerMoveTime';
+/**
+ * Leaflet's inertia only considers pointer positions of the last 50 ms before release
+ * (`Map.Drag._prunePositions`). Released any sooner, the map keeps gliding for a distance and time
+ * that depend on how fast the input events arrived, i.e. on the load of the machine.
+ */
+const LEAFLET_INERTIA_WINDOW_IN_MILLISECONDS = 50;
+
+/**
+ * Drags the map like a user who holds the pointer still before letting go, so the map stops where
+ * it was released and announces the new center at once.
+ */
+const dragMapWithoutInertia = async (
+  page: Page,
+  start: { x: number; y: number },
+  offset: { x: number; y: number }
+): Promise<void> => {
+  await page.evaluate(property => {
+    document.addEventListener('mousemove', () => {
+      Reflect.set(window, property, performance.now());
+    });
+  }, LAST_POINTER_MOVE_TIME_PROPERTY);
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(start.x + offset.x, start.y + offset.y, { steps: 10 });
+  await page.waitForFunction(
+    ([property, inertiaWindowInMilliseconds]) =>
+      performance.now() - Number(Reflect.get(window, property)) > inertiaWindowInMilliseconds,
+    [LAST_POINTER_MOVE_TIME_PROPERTY, LEAFLET_INERTIA_WINDOW_IN_MILLISECONDS] as const
+  );
+  await page.mouse.up();
+};
+
 const sortOptions = (page: Page) => page.getByRole('group', { name: 'Sortierung', exact: true });
 
 test.describe('explore page', () => {
@@ -330,10 +363,7 @@ test.describe('explore page', () => {
       throw new Error('The map has no size');
     }
     const start = { x: mapBox.x + mapBox.width / 2, y: mapBox.y + mapBox.height * 0.75 };
-    await page.mouse.move(start.x, start.y);
-    await page.mouse.down();
-    await page.mouse.move(start.x - 250, start.y - 250, { steps: 10 });
-    await page.mouse.up();
+    await dragMapWithoutInertia(page, start, { x: -250, y: -250 });
 
     await areaSearch.click();
     await expect(resultSummary(page)).toContainText('um die Kartenmitte');
