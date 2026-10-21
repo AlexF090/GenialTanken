@@ -18,6 +18,7 @@
   "include": [
     "playwright.config.ts",
     "fixtures.ts",
+    "global-teardown.ts",
     "mock-upstream.ts",
     "mock-upstream-endpoints.ts",
     "tests/**/*.ts"

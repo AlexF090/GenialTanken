@@ -2,8 +2,12 @@ import { fileURLToPath } from 'node:url';
 import { MOCK_UPSTREAM_PORT } from './mock-upstream-endpoints.js';
 import { defineConfig, devices } from '@playwright/test';
 
-const API_PORT = 3000;
-const WEB_PORT = 4200;
+/**
+ * Not the development ports (API 3000, web 4200): `reuseExistingServer` would otherwise pick up a
+ * running `pnpm dev`, which talks to the real upstreams, and the suite would test real data.
+ */
+const API_PORT = 3100;
+const WEB_PORT = 4300;
 
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${String(WEB_PORT)}`;
 const repositoryRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -24,6 +28,8 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 10_000 },
   reporter: [['list'], ['html', { open: 'never' }]],
+  // Runs before the web servers stop, so it can still ask the mock upstream.
+  globalTeardown: './global-teardown.ts',
   use: {
     baseURL,
     trace: 'retain-on-failure',
@@ -66,7 +72,8 @@ export default defineConfig({
     {
       name: 'Web',
       // Without a Mapbox token the maps use OpenStreetMap tiles, which the fixtures mock.
-      command: 'pnpm --filter web start',
+      // The proxy configuration path is relative to apps/web, where `pnpm --filter web exec` runs.
+      command: `pnpm --filter web exec ng serve --port ${String(WEB_PORT)} --proxy-config ../../e2e/web-proxy.conf.json`,
       cwd: repositoryRoot,
       url: baseURL,
       reuseExistingServer: !isContinuousIntegration,

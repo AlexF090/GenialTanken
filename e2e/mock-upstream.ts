@@ -19,8 +19,8 @@ import { MOCK_UPSTREAM_PORT as PORT, UNEXPECTED_REQUESTS_PATH } from './mock-ups
  * French station names) answer 404, so the stations keep their street as title like the
  * recorded fixtures expect.
  *
- * Requests the mock does not know are answered with 500 and recorded; the test fixture reads
- * them from `UNEXPECTED_REQUESTS_PATH` after every test and fails the test.
+ * Requests the mock does not know are answered with 500 and recorded; `global-teardown.ts` reads
+ * them from `UNEXPECTED_REQUESTS_PATH` after the run and fails it.
  */
 
 const franceRecordSchema = z.looseObject({

@@ -1,7 +1,5 @@
 import { test as base, expect } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
-import { z } from 'zod';
-import { MOCK_UPSTREAM_PORT, UNEXPECTED_REQUESTS_PATH } from './mock-upstream-endpoints.js';
 
 /**
  * Stations of `data/france-stations.json` as the app shows them for a user at the centre of
@@ -68,7 +66,8 @@ const transparentPixelPng = Buffer.from(
  * Keeps every test offline and deterministic. Station data comes from the API, which talks to
  * the mock upstream (`mock-upstream.ts`) instead of the French government API; map tiles are a
  * transparent pixel. Any other request leaving the app origin is aborted and recorded, so the
- * test fails. Routes registered later take precedence, so the catch-all comes first.
+ * test fails. Routes registered later take precedence, so the catch-all comes first. Requests of
+ * the API that the mock upstream does not know fail the run in `global-teardown.ts`.
  */
 const mockExternalServices = async (
   page: Page,
@@ -88,16 +87,6 @@ const mockExternalServices = async (
   );
 };
 
-const unexpectedUpstreamRequestsSchema = z.array(z.string());
-
-/** Requests the API sent to the mock upstream that it does not know (see `mock-upstream.ts`). */
-const readUnexpectedUpstreamRequests = async (): Promise<string[]> => {
-  const response = await fetch(
-    `http://localhost:${String(MOCK_UPSTREAM_PORT)}${UNEXPECTED_REQUESTS_PATH}`
-  );
-  return unexpectedUpstreamRequestsSchema.parse(await response.json());
-};
-
 export const test = base.extend({
   geolocation: parisCenter,
   permissions: ['geolocation'],
@@ -109,10 +98,6 @@ export const test = base.extend({
     await mockExternalServices(page, new URL(baseURL).origin, unmockedRequests);
     await use(page);
     expect(unmockedRequests, 'every request outside the app origin must be mocked').toEqual([]);
-    expect(
-      await readUnexpectedUpstreamRequests(),
-      'every request of the API to the French open data API must be mocked'
-    ).toEqual([]);
   },
 });
 
