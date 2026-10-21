@@ -10,6 +10,7 @@ on:
       - '.devcontainer/**'
       - '.github/workflows/devcontainer.yml'
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - '.devcontainer/**'
       - '.github/workflows/devcontainer.yml'
@@ -25,6 +26,8 @@ concurrency:
 jobs:
   verify:
     name: Build dev container and run checks
+    # Draft pull requests are skipped, like in CI.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     # postCreateCommand installs Playwright Chromium with system dependencies, which is slow.
     timeout-minutes: 45

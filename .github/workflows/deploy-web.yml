@@ -6,7 +6,8 @@ name: Deploy web
 # Security model: workflow_run executes in the context of the base repository and
 # has access to secrets. This workflow therefore never checks out or executes code
 # from the triggering ref. It only downloads the static `web-dist` artifact that the
-# successful CI run produced and uploads it to Cloudflare Pages.
+# successful CI run produced and uploads it to Cloudflare Pages. Runs without that
+# artifact (CI skips all jobs for draft pull requests) skip the deploy instead of failing.
 on:
   workflow_run:
     workflows: [CI]
@@ -19,8 +20,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Deploy to Cloudflare Pages
+  artifact:
+    name: Check for web build
     # Only successful CI runs from this repository (pull requests from forks are skipped),
     # either for pull requests (preview) or for the main branch (production).
     if: >-
@@ -33,6 +34,41 @@ jobs:
           contains(fromJSON('["push", "workflow_dispatch"]'), github.event.workflow_run.event)
         )
       )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      # List the artifacts of the triggering CI run.
+      actions: read
+    outputs:
+      web-dist-available: ${{ steps.lookup.outputs.web-dist-available }}
+    steps:
+      # CI skips every job for draft pull requests, yet such a run may still conclude with
+      # `success`. Without a `web-dist` artifact there is nothing to deploy, so the deploy job is
+      # skipped instead of failing. Only the GitHub API is queried; no code from the ref runs.
+      - name: Look up web-dist artifact
+        id: lookup
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          RUN_IDENTIFIER: ${{ github.event.workflow_run.id }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner,
+              repo,
+              run_id: Number(process.env.RUN_IDENTIFIER),
+              name: 'web-dist',
+            });
+            const isAvailable = data.artifacts.some((artifact) => !artifact.expired);
+            if (!isAvailable) {
+              core.notice('The CI run produced no web-dist artifact (for example a draft pull request); skipping deploy.');
+            }
+            core.setOutput('web-dist-available', String(isAvailable));
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: artifact
+    if: needs.artifact.outputs.web-dist-available == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
