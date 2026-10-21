@@ -1,0 +1,31 @@
+{
+  "autoMode": {
+    "environment": [
+      "### Org-wide",
+      "**Organization**: None configured",
+      "**Cloud provider(s)**: Cloudflare (Pages, account-scoped via CLOUDFLARE_ACCOUNT_ID/CLOUDFLARE_API_TOKEN secrets), Render (API hosting, free tier)",
+      "**Repository visibility**: Not queryable via gh (nonessential traffic disabled/policy-restricted); remote is github.com:AlexF090/GenialTanken.git — infer private is not confirmed and name/host don't indicate public; treat as unverified — scope commits/pushes as for a possibly-public repo until confirmed",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: CI secrets CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN (GitHub Actions secrets, deploy keys only — values not gathered)",
+      "**Default / protected branches**: Default branch is main; protected-branch/ruleset status not queryable via gh here — treat main as protected by convention pending confirmation",
+      "**CI/CD deploy targets**: Cloudflare Pages (web), Render (API, Docker image) — per README/CLAUDE.md; GitHub Actions workflow builds Docker image, runs pnpm audit",
+      "**Network posture**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine or CI runner with open internet",
+      "**Source control**: The trusted repo (github.com:AlexF090/GenialTanken.git) and its remote(s) only (no additional orgs configured)",
+      "**Trusted internal domains**: None configured",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: data.economie.gouv.fr, www.prix-carburants.gouv.fr (French fuel-price open data upstreams used by this repo's API); tankentanken.de (German fuel-price API, key-gated); photon.komoot.io (place search geocoder)",
+      "**Internal package registry**: None configured (registry.npmjs.org used, public)",
+      "**Sensitive data locations & audiences**: .env, .env.local, .env.development.local, .env.test.local, .env.production.local (gitignored, hold environment/config values such as TANKENTANKEN_API_KEY, CLOUDFLARE_API_TOKEN, NG_APP_MAPBOX_ACCESS_TOKEN) — do not commit, print, or share outside this project",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries prod or production as a whole word or name segment",
+      "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries prod or production as a whole word or name segment",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development (this repo: GenialTanken, Angular + NestJS fuel-price finder)",
+      "**Trusted repo**: github.com:AlexF090/GenialTanken.git (working directory /workspaces/GenialTanken), visibility unconfirmed — treat as possibly public until confirmed; only this repo's own work should be pushed there",
+      "**Org-specific CLIs**: rtk (seen 8× in this project's transcripts) — purpose not documented in recon, treat as project-local tool, not an org-wide credentialed CLI",
+      "no \"routine under <user>/ prefix\" qualifiers found"
+    ]
+  }
+}
