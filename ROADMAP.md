@@ -17,6 +17,8 @@ Datenquellen: aktuelle Preise, keine Historie.
 - **Module:** ESM durchgehend (Nest-12-Default)
 - **Tests:** Vitest überall (Angular- und Nest-12-Default), Supertest für API-E2E, Playwright für Browser-E2E
 - **Lint:** ESLint Flat Config im Root (typescript-eslint strict, angular-eslint inkl. Template-Accessibility)
+- **Git-Hooks und Draft-CI:** lefthook prüft vor jedem Commit Formatierung und Lint der gestagten Dateien, vor jedem Push Typecheck und Unit-Tests. Fehler fallen so lokal auf statt erst in der CI. Die CI überspringt Draft-PRs; PRs werden als Draft eröffnet und erst im fertigen Zustand auf „Ready for review“ gestellt. Zwischenstände lösen so weder CI-Läufe noch Preview-Deploys aus.
+- **Suchradius:** 1 bis 30 km. Die tankentanken-API dokumentiert keine Grenze, ihre Website bietet 1 bis 25 km an; deshalb fragt der BFF Deutschland mit höchstens 25 km ab.
 
 ## Phase 1 – BFF-Proxy (umgesetzt)
 
@@ -35,9 +37,9 @@ Datenquellen: aktuelle Preise, keine Historie.
 
 Offene Punkte aus dem Review (Follow-ups):
 
-- [ ] Größenbegrenzung des In-Memory-Caches (LRU), sobald der Traffic es erfordert
+- [x] Größenbegrenzung des In-Memory-Caches (LRU über `@cacheable/memory`, `CACHE_MAXIMUM_ENTRIES`, Standard 5000 Einträge)
 - [ ] Echter HTTP-Status 404 für unbekannte Routen; mit statischem Build liefert Cloudflare Pages die SPA mit 200 aus (bräuchte SSR oder eine Pages Function)
-- [ ] Favoriten gebündelt in einem Request laden statt einem Request pro Favorit
+- [x] Favoriten gebündelt in einem Request laden statt einem Request pro Favorit (`GET /api/stations/by-identifiers`, bis zu 50 IDs pro Request)
 
 ## Phase 2 – Persistenz (geplant)
 
