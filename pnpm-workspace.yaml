@@ -15,3 +15,5 @@ allowBuilds:
   msgpackr-extract: true
   # Telemetry from swagger-ui-dist
   '@scarf/scarf': false
+  # Binary comes from its platform package; the postinstall would only install the hooks again
+  lefthook: false

@@ -1,0 +1,17 @@
+# Git hooks that catch formatting, lint, type and unit test failures before CI does.
+# Installed by `pnpm install` (root `prepare` script). Skip them once with `LEFTHOOK=0 git commit …`.
+pre-commit:
+  parallel: true
+  commands:
+    prettier:
+      glob: '*.{ts,js,mjs,cjs,json,md,scss,css,html,yml,yaml}'
+      run: pnpm exec prettier --check --ignore-unknown --no-error-on-unmatched-pattern {staged_files}
+    eslint:
+      glob: '*.{ts,js,mjs,cjs}'
+      run: pnpm exec eslint --no-warn-ignored --no-error-on-unmatched-pattern {staged_files}
+pre-push:
+  commands:
+    typecheck:
+      run: pnpm typecheck
+    test:
+      run: pnpm test

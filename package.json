@@ -15,6 +15,7 @@
     }
   },
   "scripts": {
+    "prepare": "lefthook install",
     "dev": "pnpm --parallel --filter web --filter api run start:dev",
     "dev:container": "pnpm --parallel --filter web --filter api run start:container",
     "build": "pnpm --recursive --filter \"./apps/*\" --filter \"./packages/*\" run build",
@@ -31,6 +32,7 @@
     "angular-eslint": "22.5.0",
     "eslint": "10.11.0",
     "globals": "17.13.0",
+    "lefthook": "2.2.2",
     "prettier": "3.9.9",
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.0"
