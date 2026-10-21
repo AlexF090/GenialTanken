@@ -1,4 +1,4 @@
-import { UpstreamError } from './upstream-error.js';
+import { UpstreamAbortedError, UpstreamError } from './upstream-error.js';
 
 const NOT_FOUND_STATUS = 404;
 
@@ -15,10 +15,24 @@ export const describeUpstreamFailure = (error: unknown): string => {
   return 'failed for an unknown reason';
 };
 
+/** Also used for failures while reading the body, which the same signal can abort. */
+export const toUpstreamError = (
+  url: URL,
+  error: unknown,
+  callerSignal: AbortSignal | undefined
+): UpstreamError => {
+  if (callerSignal?.aborted === true) {
+    return new UpstreamAbortedError(`GET ${url.pathname} was aborted by the caller`);
+  }
+  return new UpstreamError(`GET ${url.pathname} ${describeUpstreamFailure(error)}`);
+};
+
 export interface UpstreamRequestOptions {
   accept: string;
   headers: Record<string, string>;
   timeoutInMilliseconds: number;
+  /** Lets the caller give up early; the request then fails with an `UpstreamAbortedError`. */
+  signal?: AbortSignal;
 }
 
 /**
@@ -27,14 +41,16 @@ export interface UpstreamRequestOptions {
  */
 export const requestUpstream = async (
   url: URL,
-  { accept, headers, timeoutInMilliseconds }: UpstreamRequestOptions
+  { accept, headers, timeoutInMilliseconds, signal: callerSignal }: UpstreamRequestOptions
 ): Promise<Response | undefined> => {
-  const signal = AbortSignal.timeout(timeoutInMilliseconds);
+  const timeoutSignal = AbortSignal.timeout(timeoutInMilliseconds);
+  const signal =
+    callerSignal === undefined ? timeoutSignal : AbortSignal.any([timeoutSignal, callerSignal]);
   let response: Response;
   try {
     response = await fetch(url, { headers: { Accept: accept, ...headers }, signal });
   } catch (error) {
-    throw new UpstreamError(`GET ${url.pathname} ${describeUpstreamFailure(error)}`);
+    throw toUpstreamError(url, error, callerSignal);
   }
   if (response.status === NOT_FOUND_STATUS) {
     return undefined;

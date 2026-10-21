@@ -26,6 +26,13 @@ export class ApplicationConfiguration {
     );
   }
 
+  /** Total time one station search may spend waiting for French station pages. */
+  get franceStationDetailsTimeBudgetInMilliseconds(): number {
+    return this.configService.get('FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS', {
+      infer: true,
+    });
+  }
+
   /** `undefined` when the German provider is disabled. */
   get tankenTankenApiKey(): string | undefined {
     return this.configService.get('TANKENTANKEN_API_KEY', { infer: true });

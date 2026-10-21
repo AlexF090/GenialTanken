@@ -2,12 +2,13 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
 import type { Cache } from 'cache-manager';
 import { ApplicationConfiguration } from '../configuration/application-configuration.js';
-import { describeUpstreamFailure, requestUpstream } from './request-upstream.js';
-import { UpstreamError } from './upstream-error.js';
+import { requestUpstream, toUpstreamError } from './request-upstream.js';
 
 export interface UpstreamTextRequest {
   url: URL;
   cacheTimeToLiveInMilliseconds: number;
+  /** Lets the caller give up early; see `requestUpstream`. */
+  signal?: AbortSignal;
 }
 
 /** Keeps text answers apart from JSON answers of the same URL in the shared cache. */
@@ -28,6 +29,7 @@ export class UpstreamTextFetcher {
   async fetch({
     url,
     cacheTimeToLiveInMilliseconds,
+    signal,
   }: UpstreamTextRequest): Promise<string | undefined> {
     const cacheKey = `${CACHE_KEY_PREFIX}${url.toString()}`;
     const cached = await this.cache.get<string>(cacheKey);
@@ -38,6 +40,7 @@ export class UpstreamTextFetcher {
       accept: 'text/html, text/plain',
       headers: {},
       timeoutInMilliseconds: this.configuration.upstreamTimeoutInMilliseconds,
+      signal,
     });
     if (response === undefined) {
       return undefined;
@@ -46,7 +49,7 @@ export class UpstreamTextFetcher {
     try {
       body = await response.text();
     } catch (error) {
-      throw new UpstreamError(`GET ${url.pathname} ${describeUpstreamFailure(error)}`);
+      throw toUpstreamError(url, error, signal);
     }
     await this.cache.set(cacheKey, body, cacheTimeToLiveInMilliseconds);
     return body;

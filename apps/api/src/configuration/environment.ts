@@ -28,6 +28,11 @@ export const environmentSchema = z.object({
   FRANCE_STATION_DETAILS_BASE_URL: baseUrlSchema('https://www.prix-carburants.gouv.fr'),
   /** Names and brands rarely change, so they are cached far longer than fuel prices. */
   FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS: positiveIntegerSchema.default(604_800),
+  /**
+   * How long one station search may wait for station pages in total; stations whose page has
+   * not arrived by then are served without name.
+   */
+  FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS: positiveIntegerSchema.default(3000),
   /** Enables the German provider; without it only French stations are served. */
   TANKENTANKEN_API_KEY: optionalTrimmedString(),
   TANKENTANKEN_BASE_URL: baseUrlSchema('https://api.tankentanken.de'),

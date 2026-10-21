@@ -28,6 +28,7 @@ describe('Startup configuration', () => {
   it.each([
     ['FRANCE_FUEL_PRICES_BASE_URL', 'not a url'],
     ['FRANCE_STATION_DETAILS_BASE_URL', 'not a url'],
+    ['FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS', '0'],
     ['TANKENTANKEN_BASE_URL', 'not a url'],
     ['CACHE_MAXIMUM_ENTRIES', '0'],
     ['CACHE_MAXIMUM_ENTRIES', 'many'],

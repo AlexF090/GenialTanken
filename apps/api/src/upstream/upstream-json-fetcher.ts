@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Cache } from 'cache-manager';
 import type { z } from 'zod';
 import { ApplicationConfiguration } from '../configuration/application-configuration.js';
-import { describeUpstreamFailure, requestUpstream } from './request-upstream.js';
+import { requestUpstream, toUpstreamError } from './request-upstream.js';
 import { UpstreamError } from './upstream-error.js';
 
 const NOT_FOUND_STATUS = 404;
@@ -14,6 +14,8 @@ export interface UpstreamJsonRequest<Schema extends z.ZodType> {
   headers?: Record<string, string>;
   /** How long a successful answer stays cached; defaults to `CACHE_TIME_TO_LIVE_IN_SECONDS`. */
   cacheTimeToLiveInMilliseconds?: number;
+  /** Lets the caller give up early; see `requestUpstream`. */
+  signal?: AbortSignal;
 }
 
 /**
@@ -33,6 +35,7 @@ export class UpstreamJsonFetcher {
     schema,
     headers = {},
     cacheTimeToLiveInMilliseconds = this.configuration.cacheTimeToLiveInMilliseconds,
+    signal,
   }: UpstreamJsonRequest<Schema>): Promise<z.infer<Schema> | undefined> {
     const cacheKey = url.toString();
     const cached = await this.cache.get<z.infer<Schema>>(cacheKey);
@@ -40,7 +43,7 @@ export class UpstreamJsonFetcher {
       return cached;
     }
 
-    const body = await this.request(url, headers);
+    const body = await this.request(url, headers, signal);
     if (body === undefined) {
       return undefined;
     }
@@ -68,11 +71,16 @@ export class UpstreamJsonFetcher {
     return body;
   }
 
-  private async request(url: URL, headers: Record<string, string>): Promise<unknown> {
+  private async request(
+    url: URL,
+    headers: Record<string, string>,
+    signal: AbortSignal | undefined
+  ): Promise<unknown> {
     const response = await requestUpstream(url, {
       accept: 'application/json',
       headers,
       timeoutInMilliseconds: this.configuration.upstreamTimeoutInMilliseconds,
+      signal,
     });
     if (response === undefined) {
       return undefined;
@@ -80,7 +88,7 @@ export class UpstreamJsonFetcher {
     try {
       return await response.json();
     } catch (error) {
-      throw new UpstreamError(`GET ${url.pathname} ${describeUpstreamFailure(error)}`);
+      throw toUpstreamError(url, error, signal);
     }
   }
 }
