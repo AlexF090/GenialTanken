@@ -1,0 +1,415 @@
+<!doctype html>
+<!--
+  Frames for the product images in docs/images/. capture-product-shots.ts opens this page with
+  ?composition=desktop|mobile|hero, fills every img[data-shot] with a raw screenshot and saves the
+  visible .stage. Open it in a browser to tweak the layout; the images stay empty there.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>GenialTanken product images</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=block" />
+    <style>
+      :root {
+        /* Values of apps/web/src/styles/tokens.scss (light), so the frames match the app. */
+        --color-canvas: #f2f2f7;
+        --color-surface: #ffffff;
+        --color-text: #1c1c1e;
+        --color-text-secondary: #6c6c70;
+        --color-hairline: #c6c6c8;
+        --color-chrome: rgb(249 249 249);
+        --color-highlight: #1e7d36;
+        --color-price-low: #d9f2df;
+        --color-own-position: #007aff;
+
+        /* Frame details that belong to the devices, not to the app */
+        --color-window-close: #ff5f57;
+        --color-window-minimize: #febc2e;
+        --color-window-zoom: #28c840;
+        --color-bezel: var(--color-text);
+        --color-island: #000000;
+
+        --shadow-device:
+          0 1px 2px rgb(28 28 30 / 6%), 0 12px 32px -8px rgb(28 28 30 / 14%),
+          0 48px 96px -24px rgb(28 28 30 / 22%);
+        --font-family: Roboto, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+      }
+
+      body {
+        background: transparent;
+        font-family: var(--font-family);
+        color: var(--color-text);
+      }
+
+      .stage {
+        display: none;
+        position: relative;
+        overflow: hidden;
+        /* Canvas with a faint wash of the cheapest-price green, as if lit by a price tag */
+        background:
+          radial-gradient(
+            ellipse 70% 60% at 12% 100%,
+            color-mix(in srgb, var(--color-price-low) 85%, transparent),
+            transparent 70%
+          ),
+          radial-gradient(
+            ellipse 55% 50% at 95% 0%,
+            color-mix(in srgb, var(--color-surface) 90%, transparent),
+            transparent 70%
+          ),
+          var(--color-canvas);
+      }
+
+      body[data-composition='desktop'] .stage--desktop,
+      body[data-composition='mobile'] .stage--mobile,
+      body[data-composition='hero'] .stage--hero {
+        display: block;
+      }
+
+      /* Browser window */
+
+      .window {
+        position: absolute;
+        overflow: hidden;
+        border-radius: 14px;
+        background: var(--color-surface);
+        box-shadow:
+          0 0 0 1px rgb(28 28 30 / 8%),
+          var(--shadow-device);
+      }
+
+      .window__bar {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        height: 52px;
+        padding: 0 20px;
+        background: var(--color-chrome);
+        border-bottom: 1px solid var(--color-hairline);
+      }
+
+      .window__lights {
+        display: flex;
+        gap: 9px;
+      }
+
+      .window__light {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--color-window-close);
+      }
+
+      .window__light:nth-child(2) {
+        background: var(--color-window-minimize);
+      }
+
+      .window__light:nth-child(3) {
+        background: var(--color-window-zoom);
+      }
+
+      .window__address {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 460px;
+        justify-content: center;
+        padding: 7px 18px;
+        border-radius: 9px;
+        background: color-mix(in srgb, var(--color-text) 6%, transparent);
+        color: var(--color-text-secondary);
+        font-size: 15px;
+        letter-spacing: 0.01em;
+      }
+
+      .window__lock {
+        width: 10px;
+        height: 8px;
+        border-radius: 2px;
+        background: var(--color-text-secondary);
+        position: relative;
+        top: 2px;
+      }
+
+      .window__lock::before {
+        content: '';
+        position: absolute;
+        left: 2px;
+        bottom: 6px;
+        width: 6px;
+        height: 6px;
+        border: 1.5px solid var(--color-text-secondary);
+        border-bottom: none;
+        border-radius: 3px 3px 0 0;
+        box-sizing: border-box;
+      }
+
+      .window__screen {
+        display: block;
+        width: 100%;
+      }
+
+      /* Phone */
+
+      .phone {
+        position: absolute;
+        padding: 14px;
+        border-radius: 72px;
+        background: var(--color-bezel);
+        box-shadow:
+          inset 0 0 0 2px rgb(255 255 255 / 14%),
+          0 0 0 1.5px rgb(28 28 30 / 30%),
+          var(--shadow-device);
+      }
+
+      .phone__screen {
+        position: relative;
+        overflow: hidden;
+        border-radius: 58px;
+        background: var(--color-surface);
+      }
+
+      .phone--dark .phone__screen {
+        background: var(--color-island);
+      }
+
+      /* iOS reserves this strip for the status bar; the app content starts below it. */
+      .phone__status {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 52px;
+        padding: 6px 34px 0 46px;
+        font-size: 17px;
+        font-weight: 500;
+        color: var(--color-text);
+      }
+
+      .phone--dark .phone__status {
+        color: var(--color-surface);
+      }
+
+      .phone__battery {
+        width: 26px;
+        height: 12px;
+        border-radius: 4px;
+        border: 1.5px solid currentColor;
+        opacity: 0.9;
+        position: relative;
+        padding: 1.5px;
+      }
+
+      .phone__battery::before {
+        content: '';
+        display: block;
+        width: 75%;
+        height: 100%;
+        border-radius: 1.5px;
+        background: currentColor;
+      }
+
+      .phone__battery::after {
+        content: '';
+        position: absolute;
+        right: -4px;
+        top: 3px;
+        width: 2px;
+        height: 4px;
+        border-radius: 0 1px 1px 0;
+        background: currentColor;
+      }
+
+      .phone__island {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        width: 118px;
+        height: 34px;
+        transform: translateX(-50%);
+        border-radius: 17px;
+        background: var(--color-island);
+      }
+
+      .phone__home {
+        position: absolute;
+        bottom: 8px;
+        left: 50%;
+        width: 136px;
+        height: 5px;
+        transform: translateX(-50%);
+        border-radius: 3px;
+        background: var(--color-text);
+      }
+
+      .phone--dark .phone__home {
+        background: var(--color-surface);
+      }
+
+      .phone__screen img {
+        display: block;
+        width: 100%;
+      }
+
+      /* Desktop: one window, 2000 × 1340 */
+
+      .stage--desktop {
+        width: 2000px;
+        height: 1340px;
+      }
+
+      .stage--desktop .window {
+        left: 140px;
+        top: 106px;
+        width: 1720px;
+      }
+
+      /* Mobile: three phones, 2000 × 1250 */
+
+      .stage--mobile {
+        width: 2000px;
+        height: 1250px;
+      }
+
+      .stage--mobile .phone {
+        top: 140px;
+        width: 448px;
+      }
+
+      .stage--mobile .phone:nth-of-type(1) {
+        left: 260px;
+      }
+
+      .stage--mobile .phone:nth-of-type(2) {
+        left: 776px;
+        top: 100px;
+      }
+
+      .stage--mobile .phone:nth-of-type(3) {
+        left: 1292px;
+      }
+
+      /* Hero: window with an overlapping phone and the app name, 2000 × 1250 */
+
+      .stage--hero {
+        width: 2000px;
+        height: 1250px;
+      }
+
+      .stage--hero .window {
+        left: 110px;
+        top: 200px;
+        width: 1460px;
+      }
+
+      .stage--hero .phone {
+        left: 1440px;
+        top: 236px;
+        width: 420px;
+        padding: 13px;
+        border-radius: 68px;
+      }
+
+      .stage--hero .phone__screen {
+        border-radius: 55px;
+      }
+
+      .wordmark {
+        position: absolute;
+        left: 112px;
+        top: 74px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        font-size: 58px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      /* The own-position dot of the map, the one place where the app always starts */
+      .wordmark__dot {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: var(--color-own-position);
+        box-shadow:
+          0 0 0 5px var(--color-surface),
+          0 0 0 14px color-mix(in srgb, var(--color-own-position) 18%, transparent);
+      }
+    </style>
+  </head>
+  <body>
+    <template id="window">
+      <div class="window">
+        <div class="window__bar">
+          <div class="window__lights">
+            <span class="window__light"></span><span class="window__light"></span
+            ><span class="window__light"></span>
+          </div>
+          <div class="window__address">
+            <span class="window__lock"></span>genialtanken.alexf090.workers.dev
+          </div>
+        </div>
+        <img class="window__screen" data-shot="desktop" alt="" />
+      </div>
+    </template>
+
+    <template id="phone">
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__status"><span>9:41</span><span class="phone__battery"></span></div>
+          <img alt="" />
+          <span class="phone__island"></span>
+          <span class="phone__home"></span>
+        </div>
+      </div>
+    </template>
+
+    <div class="stage stage--desktop" data-slots="window"></div>
+    <div
+      class="stage stage--mobile"
+      data-slots="phone:mobile-explore phone:mobile-station phone--dark:mobile-dark"></div>
+    <div class="stage stage--hero" data-slots="wordmark window phone--dark:mobile-dark"></div>
+
+    <script>
+      const composition = new URLSearchParams(location.search).get('composition') ?? 'desktop';
+      document.body.dataset.composition = composition;
+
+      const windowTemplate = document.querySelector('#window');
+      const phoneTemplate = document.querySelector('#phone');
+
+      const createPhone = (shot, isDark) => {
+        const phone = phoneTemplate.content.firstElementChild.cloneNode(true);
+        phone.classList.toggle('phone--dark', isDark);
+        phone.querySelector('img').dataset.shot = shot;
+        return phone;
+      };
+
+      const createWordmark = () => {
+        const wordmark = document.createElement('div');
+        wordmark.className = 'wordmark';
+        wordmark.innerHTML = '<span class="wordmark__dot"></span>GenialTanken';
+        return wordmark;
+      };
+
+      for (const stage of document.querySelectorAll('.stage[data-slots]')) {
+        for (const slot of stage.dataset.slots.split(' ')) {
+          const [kind, shot] = slot.split(':');
+          if (kind === 'window') {
+            stage.append(windowTemplate.content.firstElementChild.cloneNode(true));
+          } else if (kind === 'wordmark') {
+            stage.append(createWordmark());
+          } else {
+            stage.append(createPhone(shot, kind === 'phone--dark'));
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
