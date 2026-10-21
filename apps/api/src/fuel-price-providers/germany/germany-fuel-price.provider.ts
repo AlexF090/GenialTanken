@@ -1,3 +1,4 @@
+import { METERS_PER_KILOMETER } from '@genialtanken/contracts';
 import type { FuelType, Station, StationsQuery } from '@genialtanken/contracts';
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
@@ -12,13 +13,12 @@ import {
 } from './tankentanken-station.schema.js';
 import { toStationFromGermany } from './to-station-from-germany.js';
 
-const METERS_PER_KILOMETER = 1000;
 // tankentanken documents no radius limit, but its website offers 1 to 25 km. Larger requests are
 // capped; the StationsService filters by exact distance anyway.
 const MAXIMUM_UPSTREAM_RADIUS_IN_KILOMETERS = 25;
 const STATIONS_PATH = '/gas-stations';
 const OFFERED_FUEL_TYPES: readonly FuelType[] = ['e5', 'e10', 'diesel'];
-const stationIdentifierSchema = z.guid();
+const tankenTankenStationGuidSchema = z.guid();
 
 /** German fuel prices from the tankentanken API; enabled only with an API key. */
 @Injectable()
@@ -59,7 +59,7 @@ export class GermanyFuelPriceProvider implements FuelPriceProvider {
   }
 
   async findStationByIdentifier(localIdentifier: string): Promise<Station | null> {
-    if (!stationIdentifierSchema.safeParse(localIdentifier).success) {
+    if (!tankenTankenStationGuidSchema.safeParse(localIdentifier).success) {
       return null;
     }
 
