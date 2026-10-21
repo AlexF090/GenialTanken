@@ -17,7 +17,7 @@ const toUniqueIdentifiers = (identifiers: string): string[] => [
   ),
 ];
 
-/** Query parameters of the bulk station lookup, e.g. `?identifiers=fr-92242003,de-…`. */
+/** Query parameters of the bulk station lookup, e.g. `?identifiers=fr-92242003,fr-75001001`. */
 export const stationLookupQuerySchema = z.object({
   identifiers: z
     .string()

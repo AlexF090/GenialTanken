@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { Place } from '@genialtanken/contracts';
-import { bastillePlace, kasselPlace } from '../../../testing/place-fixtures';
+import { bastillePlace, lyonPlace } from '../../../testing/place-fixtures';
 import { getButton, textOf } from '../../../testing/render-page';
 import { PlaceSearchField } from './place-search-field';
 
@@ -88,14 +88,14 @@ describe('PlaceSearchField', () => {
     expect(host.query()).toBe('Bast');
     expect(isListShown()).toBe(false);
 
-    host.suggestions.set([bastillePlace, kasselPlace]);
+    host.suggestions.set([bastillePlace, lyonPlace]);
     await fixture.whenStable();
 
     expect(isListShown()).toBe(true);
     expect(combobox().getAttribute('aria-expanded')).toBe('true');
     expect(options().map(option => textOf(option))).toEqual([
       'Place de la Bastille, 75011 Paris, Frankreich',
-      'Kassel, Hessen, Deutschland',
+      'Lyon, Auvergne-Rhône-Alpes, Frankreich',
     ]);
   });
 
@@ -103,7 +103,7 @@ describe('PlaceSearchField', () => {
     const { fixture, element, type, host } = await render();
     await type('Bast');
 
-    host.suggestions.set([bastillePlace, kasselPlace]);
+    host.suggestions.set([bastillePlace, lyonPlace]);
     await fixture.whenStable();
 
     expect(textOf(element.querySelector('[role="status"]'))).toBe('2 Orte gefunden');
@@ -125,7 +125,7 @@ describe('PlaceSearchField', () => {
   it('highlights suggestions with the arrow keys and chooses one with Enter', async () => {
     const { fixture, combobox, options, isListShown, type, press, host } = await render();
     await type('Bast');
-    host.suggestions.set([bastillePlace, kasselPlace]);
+    host.suggestions.set([bastillePlace, lyonPlace]);
     await fixture.whenStable();
 
     await press('ArrowDown');
@@ -139,7 +139,7 @@ describe('PlaceSearchField', () => {
     await press('ArrowUp');
     await press('Enter');
 
-    expect(host.selectedPlaces).toEqual([kasselPlace]);
+    expect(host.selectedPlaces).toEqual([lyonPlace]);
     expect(isListShown()).toBe(false);
     expect(document.activeElement).not.toBe(combobox());
   });

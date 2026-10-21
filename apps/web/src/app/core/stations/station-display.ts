@@ -3,11 +3,11 @@ import type { NavigationDestination } from '../navigation-apps/navigation-apps';
 
 const hasText = (value: string | null): value is string => value !== null && value.trim() !== '';
 
-/** "Wilhelmshöher Allee 100" — the house number is optional. */
+/** "Boulevard Vivier-Merle 19" — the house number is optional. */
 export const formatStreetLine = (station: Station): string =>
   [station.address.street, station.address.houseNumber].filter(hasText).join(' ');
 
-/** "34119 Kassel" */
+/** "69003 Lyon" */
 export const formatCityLine = (station: Station): string =>
   [station.address.postalCode, station.address.city].filter(hasText).join(' ');
 

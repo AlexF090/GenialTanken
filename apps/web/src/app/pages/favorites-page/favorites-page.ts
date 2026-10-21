@@ -40,8 +40,8 @@ export class FavoritesPage {
   /**
    * Loaded once per visit for the favorites present on arrival. Unstarring only hides a
    * station (see `stations`), so the list updates immediately without refetching.
-   * Favorites are never removed automatically: a 404 can be temporary, e.g. for German stations
-   * while the German provider is disabled.
+   * Favorites are never removed automatically: a 404 can be temporary, e.g. for a station the
+   * French price service does not list at the moment.
    */
   private readonly favoriteStationsResource = resource({
     loader: () =>
@@ -57,10 +57,11 @@ export class FavoritesPage {
       .value()
       .stations.filter(station => favoriteStationIdentifiers.has(station.id));
   });
-  /** The Licence Ouverte requires the credit wherever French prices show. */
-  protected readonly showsFrenchPrices = computed(() =>
-    this.stations().some(station => station.country === 'FR')
-  );
+  /**
+   * The Licence Ouverte requires the credit wherever French prices show. Every station is French
+   * while France is the only country; with another one, check `station.country` here again.
+   */
+  protected readonly showsFrenchPrices = computed(() => this.stations().length > 0);
   private readonly unavailableStationIdentifiers = computed(() => {
     if (!this.favoriteStationsResource.hasValue()) {
       return [];

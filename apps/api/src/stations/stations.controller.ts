@@ -61,7 +61,7 @@ export class StationsController {
   @ApiQuery({
     name: 'identifiers',
     type: String,
-    description: `Comma-separated station identifiers, e.g. \`fr-92242003,de-…\`; at most ${String(MAXIMUM_STATION_IDENTIFIERS_PER_REQUEST)} after removing duplicates.`,
+    description: `Comma-separated station identifiers, e.g. \`fr-92242003,fr-75012010\`; at most ${String(MAXIMUM_STATION_IDENTIFIERS_PER_REQUEST)} after removing duplicates.`,
   })
   @ApiOkResponse({
     description:

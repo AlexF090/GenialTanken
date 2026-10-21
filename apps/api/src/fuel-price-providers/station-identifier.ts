@@ -22,7 +22,6 @@ export interface StationIdentifierParts {
 // makes the compiler demand an entry for every new country.
 const COUNTRY_PREFIXES: { readonly [Code in CountryCode]: Lowercase<Code> } = {
   FR: 'fr',
-  DE: 'de',
 };
 
 export const toCountryPrefix = (country: CountryCode): CountryPrefix => COUNTRY_PREFIXES[country];

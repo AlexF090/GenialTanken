@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ApplicationRef, Injector, runInInjectionContext, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { bastillePlace, kasselPlace } from '../../../testing/place-fixtures';
+import { bastillePlace, lyonPlace } from '../../../testing/place-fixtures';
 import { UnexpectedResponseError } from '../http/unexpected-response-error';
 import { PlacesApi } from './places-api';
 
@@ -34,10 +34,10 @@ describe('PlacesApi', () => {
 
     httpTesting
       .expectOne('/api/places?query=Place%20de%20la&limit=6')
-      .flush([bastillePlace, kasselPlace]);
+      .flush([bastillePlace, lyonPlace]);
     await settle();
 
-    expect(places.value()).toEqual([bastillePlace, kasselPlace]);
+    expect(places.value()).toEqual([bastillePlace, lyonPlace]);
   });
 
   it('sends no request for a missing or too short query', () => {
@@ -60,16 +60,16 @@ describe('PlacesApi', () => {
     httpTesting.expectOne('/api/places?query=Bastille&limit=6').flush([bastillePlace]);
     await settle();
 
-    query.set('Kassel');
+    query.set('Lyon');
     TestBed.tick();
 
-    httpTesting.expectOne('/api/places?query=Kassel&limit=6').flush([kasselPlace]);
+    httpTesting.expectOne('/api/places?query=Lyon&limit=6').flush([lyonPlace]);
     await settle();
-    expect(places.value()).toEqual([kasselPlace]);
+    expect(places.value()).toEqual([lyonPlace]);
   });
 
   it('fails with an UnexpectedResponseError when the body violates the contract', async () => {
-    const places = runInInjectionContext(injector, () => placesApi.placesMatching(() => 'Kassel'));
+    const places = runInInjectionContext(injector, () => placesApi.placesMatching(() => 'Lyon'));
     TestBed.tick();
 
     httpTesting.expectOne(() => true).flush([{ id: 'N1' }]);

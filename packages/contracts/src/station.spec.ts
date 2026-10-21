@@ -32,13 +32,12 @@ const station = {
 };
 
 describe('countryCodeSchema', () => {
-  it('accepts France and Germany', () => {
+  it('accepts France', () => {
     expect(countryCodeSchema.parse('FR')).toBe('FR');
-    expect(countryCodeSchema.parse('DE')).toBe('DE');
   });
 
-  it('rejects other countries', () => {
-    expect(countryCodeSchema.safeParse('AT').success).toBe(false);
+  it.each(['DE', 'AT'])('rejects the unsupported country %s', country => {
+    expect(countryCodeSchema.safeParse(country).success).toBe(false);
   });
 });
 

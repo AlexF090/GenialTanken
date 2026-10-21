@@ -18,7 +18,7 @@ export type PlacesQuery = z.infer<typeof placesQuerySchema>;
 export const placeSchema = z.object({
   /** Source-namespaced identifier, e.g. `N123456`; treat as opaque. */
   id: z.string().min(1),
-  /** Primary line, e.g. `Place de la Bastille` or `Kassel`. */
+  /** Primary line, e.g. `Place de la Bastille` or `Lyon`. */
   name: z.string().min(1),
   /** Secondary line in German, e.g. `75011 Paris, Frankreich`. */
   description: z.string(),

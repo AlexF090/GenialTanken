@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import type { FuelType, Station } from '@genialtanken/contracts';
 import { accessibleTextOf, getButton, textOf } from '../../../testing/render-page';
-import { aralStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
+import { essoStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
 import { StationDetail } from './station-detail';
 
 interface RenderOptions {
@@ -48,11 +48,11 @@ describe('StationDetail', () => {
   });
 
   it('is an article with title, name and address', async () => {
-    const { article } = await render({ station: aralStation });
+    const { article } = await render({ station: essoStation });
 
-    expect(textOf(article?.querySelector('h2'))).toBe('Aral');
-    expect(article?.textContent).toContain('Aral Tankstelle Kassel');
-    expect(textOf(article?.querySelector('address'))).toBe('Wilhelmshöher Allee 100 34119 Kassel');
+    expect(textOf(article?.querySelector('h2'))).toBe('Esso');
+    expect(article?.textContent).toContain('Relais Esso Part-Dieu');
+    expect(textOf(article?.querySelector('address'))).toBe('Boulevard Vivier-Merle 19 69003 Lyon');
   });
 
   it('lists all six fuels with the selected fuel first and marked', async () => {
@@ -85,7 +85,7 @@ describe('StationDetail', () => {
   });
 
   it('shows the open status next to the opening times', async () => {
-    const { element } = await render({ station: aralStation });
+    const { element } = await render({ station: essoStation });
     const openingTimes = regionNamed(element, 'Öffnungszeiten');
 
     expect(openingTimes.textContent).toContain('Die Tankstelle hat leider geschlossen.');

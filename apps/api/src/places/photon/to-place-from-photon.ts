@@ -4,7 +4,6 @@ import type { PhotonFeature } from './photon-response.schema.js';
 
 const GERMAN_COUNTRY_NAMES: Record<CountryCode, string> = {
   FR: 'Frankreich',
-  DE: 'Deutschland',
 };
 
 const joinPresent = (parts: (string | undefined)[], separator: string): string =>

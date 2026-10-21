@@ -14,7 +14,7 @@ export interface FakeResponse {
 
 const NOT_FOUND_RESPONSE: FakeResponse = { status: 404, body: { message: 'Not Found' } };
 
-/** Stand-in for the tankentanken API, answering per path with programmed responses. */
+/** Stand-in for an upstream source, answering per path with programmed responses. */
 export class FakeUpstream {
   readonly requests: RecordedRequest[] = [];
   private readonly responses = new Map<string, FakeResponse>();

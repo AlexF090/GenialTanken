@@ -29,19 +29,19 @@ describe('toPlaceFromPhoton', () => {
     });
   });
 
-  it('describes a German city without postcode by its country only', () => {
+  it('describes a city without postcode by its country only', () => {
     const feature = photonFeature(
-      { osm_type: 'R', osm_id: 62598, name: 'Kassel', countrycode: 'DE', type: 'city' },
-      [9.4978479, 51.3157833]
+      { osm_type: 'R', osm_id: 120965, name: 'Lyon', countrycode: 'FR', type: 'city' },
+      [4.8320114, 45.7578137]
     );
 
     expect(toPlaceFromPhoton(feature)).toEqual({
-      id: 'R62598',
-      name: 'Kassel',
-      description: 'Deutschland',
-      country: 'DE',
-      latitude: 51.3157833,
-      longitude: 9.4978479,
+      id: 'R120965',
+      name: 'Lyon',
+      description: 'Frankreich',
+      country: 'FR',
+      latitude: 45.7578137,
+      longitude: 4.8320114,
     });
   });
 
@@ -50,21 +50,21 @@ describe('toPlaceFromPhoton', () => {
       toPlaceFromPhoton(photonFeature({ name: 'A', city: 'Paris', countrycode: 'FR' }))?.description
     ).toBe('Paris, Frankreich');
     expect(
-      toPlaceFromPhoton(photonFeature({ name: 'A', postcode: '34117', countrycode: 'DE' }))
+      toPlaceFromPhoton(photonFeature({ name: 'A', postcode: '69002', countrycode: 'FR' }))
         ?.description
-    ).toBe('34117, Deutschland');
+    ).toBe('69002, Frankreich');
   });
 
   it('names an address without a name by street and house number', () => {
     const feature = photonFeature({
-      street: 'Rainer-Dierichs-Platz',
+      street: 'Rue de la République',
       housenumber: '1',
-      postcode: '34117',
-      city: 'Kassel',
-      countrycode: 'DE',
+      postcode: '69002',
+      city: 'Lyon',
+      countrycode: 'FR',
     });
 
-    expect(toPlaceFromPhoton(feature)?.name).toBe('Rainer-Dierichs-Platz 1');
+    expect(toPlaceFromPhoton(feature)?.name).toBe('Rue de la République 1');
   });
 
   it('names an address without a house number by its street', () => {
@@ -81,6 +81,7 @@ describe('toPlaceFromPhoton', () => {
 
   it.each([
     ['a country without fuel prices', { name: 'Bastille', countrycode: 'NL' }],
+    ['a German place inside the bounding box', { name: 'Kehl', countrycode: 'DE' }],
     ['a missing country', { name: 'Bastille' }],
     ['a missing name and street', { housenumber: '1', countrycode: 'FR' }],
     ['a blank name', { name: '  ', countrycode: 'FR' }],

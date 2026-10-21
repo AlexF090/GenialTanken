@@ -3,8 +3,6 @@ import { Test } from '@nestjs/testing';
 import { AppModule } from '../../src/app.module.js';
 import { configureApplication } from '../../src/configure-application.js';
 
-export const GERMAN_TEST_API_KEY = 'german-test-api-key';
-
 /** Variables to set for the application; `undefined` removes a variable. */
 export type EnvironmentOverrides = Record<string, string | undefined>;
 
@@ -30,14 +28,12 @@ const applyEnvironment = (overrides: EnvironmentOverrides): (() => void) => {
 
 /**
  * Boots the real application the same way `main.ts` does, configured through the environment.
- * The German provider stays disabled unless the overrides set its API key; French station names
- * are only looked up when the overrides name a station details server.
+ * French station names are only looked up when the overrides name a station details server.
  */
 export const createTestApplication = async (
   overrides: EnvironmentOverrides
 ): Promise<NestExpressApplication> => {
   const restoreEnvironment = applyEnvironment({
-    TANKENTANKEN_API_KEY: undefined,
     // A closed local port: tests never reach the real website, and names stay missing unless a
     // test points this at a fake.
     FRANCE_STATION_DETAILS_BASE_URL: 'http://127.0.0.1:9',

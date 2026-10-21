@@ -100,8 +100,8 @@ describe('StationsService.findStationsAround', () => {
   it('returns the stations of the providers that answered when another one fails', async () => {
     const service = new StationsService([
       fakeProvider('FR', { findStationsAround: () => Promise.resolve([stationOf('FR', '1')]) }),
-      fakeProvider('DE', {
-        findStationsAround: failingWith(new UpstreamError('tankentanken is down')),
+      fakeProvider('FR', {
+        findStationsAround: failingWith(new UpstreamError('the second source is down')),
       }),
     ]);
 
@@ -113,19 +113,19 @@ describe('StationsService.findStationsAround', () => {
   it('returns partial results when a provider fails with an unexpected error', async () => {
     const service = new StationsService([
       fakeProvider('FR', { findStationsAround: failingWith(new TypeError('a bug')) }),
-      fakeProvider('DE', { findStationsAround: () => Promise.resolve([stationOf('DE', 'a')]) }),
+      fakeProvider('FR', { findStationsAround: () => Promise.resolve([stationOf('FR', 'a')]) }),
     ]);
 
     const stations = await service.findStationsAround(PARIS);
 
-    expect(stations.map(station => station.id)).toEqual(['de-a']);
+    expect(stations.map(station => station.id)).toEqual(['fr-a']);
     expect(loggedError).toHaveBeenCalled();
   });
 
   it('responds with 502 when every provider fails', async () => {
     const service = new StationsService([
       fakeProvider('FR', { findStationsAround: failingWith(new UpstreamError('timeout')) }),
-      fakeProvider('DE', { findStationsAround: failingWith(new TypeError('a bug')) }),
+      fakeProvider('FR', { findStationsAround: failingWith(new TypeError('a bug')) }),
     ]);
 
     const search = service.findStationsAround(PARIS);
@@ -136,18 +136,16 @@ describe('StationsService.findStationsAround', () => {
 });
 
 describe('StationsService.findStationsByIdentifiers', () => {
-  it('asks the provider of each country prefix for its local identifiers', async () => {
+  it('asks the provider of the country prefix for its local identifiers only', async () => {
     const france = knowing('FR', '1', '2');
-    const germany = knowing('DE', 'a');
-    const service = new StationsService([france, germany]);
+    const service = new StationsService([france]);
 
-    const lookup = await service.findStationsByIdentifiers(['fr-1', 'de-a', 'fr-2']);
+    const lookup = await service.findStationsByIdentifiers(['fr-1', 'it-a', 'fr-2']);
 
     expect(france.requestedIdentifiers).toEqual(['1', '2']);
-    expect(germany.requestedIdentifiers).toEqual(['a']);
     expect(lookup).toEqual({
-      stations: [stationOf('FR', '1'), stationOf('DE', 'a'), stationOf('FR', '2')],
-      unavailableIdentifiers: [],
+      stations: [stationOf('FR', '1'), stationOf('FR', '2')],
+      unavailableIdentifiers: ['it-a'],
       failedIdentifiers: [],
     });
   });
@@ -164,23 +162,25 @@ describe('StationsService.findStationsByIdentifiers', () => {
     });
   });
 
-  it('lists the identifiers of failing providers as failed and keeps the others', async () => {
+  it('lists the identifiers of failing lookups as failed and keeps the others', async () => {
     const service = new StationsService([
-      knowing('FR', '1'),
-      fakeProvider('DE', {
-        findStationByIdentifier: failingWith(new UpstreamError('tankentanken is down')),
+      fakeProvider('FR', {
+        findStationByIdentifier: localIdentifier =>
+          localIdentifier === '1'
+            ? Promise.resolve(stationOf('FR', '1'))
+            : Promise.reject(new UpstreamError('the station page is down')),
       }),
     ]);
 
-    const lookup = await service.findStationsByIdentifiers(['de-a', 'fr-1', 'de-b']);
+    const lookup = await service.findStationsByIdentifiers(['fr-a', 'fr-1', 'fr-b']);
 
     expect(lookup).toEqual({
       stations: [stationOf('FR', '1')],
       unavailableIdentifiers: [],
-      failedIdentifiers: ['de-a', 'de-b'],
+      failedIdentifiers: ['fr-a', 'fr-b'],
     });
     expect(loggedWarning).toHaveBeenCalledWith(
-      'Fuel price provider DE failed: tankentanken is down'
+      'Fuel price provider FR failed: the station page is down'
     );
   });
 
@@ -226,11 +226,11 @@ describe('StationsService.findStationsByIdentifiers', () => {
       fakeProvider('FR', { findStationByIdentifier: failingWith(new UpstreamError('timeout')) }),
     ]);
 
-    const lookup = await service.findStationsByIdentifiers(['fr-1', 'de-a']);
+    const lookup = await service.findStationsByIdentifiers(['fr-1', 'it-a']);
 
     expect(lookup).toEqual({
       stations: [],
-      unavailableIdentifiers: ['de-a'],
+      unavailableIdentifiers: ['it-a'],
       failedIdentifiers: ['fr-1'],
     });
   });

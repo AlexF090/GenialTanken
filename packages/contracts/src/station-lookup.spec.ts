@@ -37,7 +37,7 @@ const station = {
 };
 
 describe('STATION_IDENTIFIER_PATTERN', () => {
-  it.each(['fr-92242003', 'de-005056ba-7cb6-1ed2-bceb-90e59ad2cd35'])('accepts %s', identifier => {
+  it.each(['fr-92242003', 'fr-005056ba-7cb6-1ed2-bceb-90e59ad2cd35'])('accepts %s', identifier => {
     expect(STATION_IDENTIFIER_PATTERN.test(identifier)).toBe(true);
   });
 
@@ -51,14 +51,14 @@ describe('STATION_IDENTIFIER_PATTERN', () => {
 
 describe('stationLookupQuerySchema', () => {
   it('splits comma-separated identifiers', () => {
-    expect(stationLookupQuerySchema.parse({ identifiers: 'fr-1,de-abc-2' })).toEqual({
-      identifiers: ['fr-1', 'de-abc-2'],
+    expect(stationLookupQuerySchema.parse({ identifiers: 'fr-1,fr-abc-2' })).toEqual({
+      identifiers: ['fr-1', 'fr-abc-2'],
     });
   });
 
   it('trims entries, drops empty ones and removes duplicates', () => {
-    expect(stationLookupQuerySchema.parse({ identifiers: ' fr-1 ,, de-2,fr-1, ' })).toEqual({
-      identifiers: ['fr-1', 'de-2'],
+    expect(stationLookupQuerySchema.parse({ identifiers: ' fr-1 ,, fr-2,fr-1, ' })).toEqual({
+      identifiers: ['fr-1', 'fr-2'],
     });
   });
 
@@ -102,7 +102,7 @@ describe('stationLookupSchema', () => {
     const lookup = {
       stations: [station],
       unavailableIdentifiers: ['fr-404'],
-      failedIdentifiers: ['de-500'],
+      failedIdentifiers: ['fr-500'],
     };
     expect(stationLookupSchema.parse(lookup)).toEqual(lookup);
   });

@@ -94,13 +94,13 @@ describe('FavoritesPage', () => {
 
   it('keeps favorites the API does not know right now and says so', async () => {
     context = configurePageTest({
-      storage: new FakeStorage({ favoriteIDs: '["fr-75001001","de-unavailable"]' }),
+      storage: new FakeStorage({ favoriteIDs: '["fr-75001001","fr-99000001"]' }),
     });
     const { element } = await renderComponent(FavoritesPage);
 
-    context.httpTesting.expectOne(lookupUrl('fr-75001001,de-unavailable')).flush({
+    context.httpTesting.expectOne(lookupUrl('fr-75001001,fr-99000001')).flush({
       stations: [withoutDistance(totalStation)],
-      unavailableIdentifiers: ['de-unavailable'],
+      unavailableIdentifiers: ['fr-99000001'],
       failedIdentifiers: [],
     });
     await context.settle();
@@ -109,18 +109,18 @@ describe('FavoritesPage', () => {
     expect(textOf(element.querySelector('main p[role="status"]'))).toBe(
       'Ein Favorit ist gerade nicht verfügbar.'
     );
-    expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75001001","de-unavailable"]');
+    expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75001001","fr-99000001"]');
   });
 
   it('removes unavailable favorites only when the user asks for it', async () => {
     context = configurePageTest({
-      storage: new FakeStorage({ favoriteIDs: '["de-first","fr-75001001","de-second"]' }),
+      storage: new FakeStorage({ favoriteIDs: '["fr-99000001","fr-75001001","fr-99000002"]' }),
     });
     const { element } = await renderComponent(FavoritesPage);
 
-    context.httpTesting.expectOne(lookupUrl('de-first,fr-75001001,de-second')).flush({
+    context.httpTesting.expectOne(lookupUrl('fr-99000001,fr-75001001,fr-99000002')).flush({
       stations: [withoutDistance(totalStation)],
-      unavailableIdentifiers: ['de-first', 'de-second'],
+      unavailableIdentifiers: ['fr-99000001', 'fr-99000002'],
       failedIdentifiers: [],
     });
     await context.settle();
@@ -140,13 +140,13 @@ describe('FavoritesPage', () => {
 
   it('moves the focus to the empty state when the last favorites are removed', async () => {
     context = configurePageTest({
-      storage: new FakeStorage({ favoriteIDs: '["de-first"]' }),
+      storage: new FakeStorage({ favoriteIDs: '["fr-99000001"]' }),
     });
     const { element } = await renderComponent(FavoritesPage);
 
     context.httpTesting
-      .expectOne(lookupUrl('de-first'))
-      .flush({ stations: [], unavailableIdentifiers: ['de-first'], failedIdentifiers: [] });
+      .expectOne(lookupUrl('fr-99000001'))
+      .flush({ stations: [], unavailableIdentifiers: ['fr-99000001'], failedIdentifiers: [] });
     await context.settle();
 
     getButton(element, 'Nicht verfügbare Favoriten entfernen').click();

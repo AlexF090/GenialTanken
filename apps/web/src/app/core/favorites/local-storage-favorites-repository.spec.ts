@@ -29,9 +29,9 @@ describe('LocalStorageFavoritesRepository', () => {
     });
 
     it('returns the stored identifiers', () => {
-      storage.setItem(FAVORITES_STORAGE_KEY, '["fr-75001001","de-1"]');
+      storage.setItem(FAVORITES_STORAGE_KEY, '["fr-75001001","fr-75005002"]');
 
-      expect(createRepository().load()).toEqual(['fr-75001001', 'de-1']);
+      expect(createRepository().load()).toEqual(['fr-75001001', 'fr-75005002']);
       expect(warn).not.toHaveBeenCalled();
     });
 
@@ -54,9 +54,9 @@ describe('LocalStorageFavoritesRepository', () => {
 
   describe('save', () => {
     it('stores the identifiers as JSON', () => {
-      createRepository().save(['fr-75001001', 'de-1']);
+      createRepository().save(['fr-75001001', 'fr-75005002']);
 
-      expect(storage.getItem(FAVORITES_STORAGE_KEY)).toBe('["fr-75001001","de-1"]');
+      expect(storage.getItem(FAVORITES_STORAGE_KEY)).toBe('["fr-75001001","fr-75005002"]');
     });
 
     it('keeps going and warns when the storage refuses to write', () => {

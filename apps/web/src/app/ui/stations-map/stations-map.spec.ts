@@ -4,7 +4,7 @@ import { DEFAULT_SEARCH_CENTER } from '../../core/search-center/search-center';
 import type { Coordinates } from '../../core/geolocation/coordinates';
 import type { SearchCenter } from '../../core/search-center/search-center';
 import {
-  aralStation,
+  essoStation,
   carrefourStation,
   totalStation,
   unbrandedStation,
@@ -94,7 +94,7 @@ describe('StationsMap', () => {
       totalStation,
       carrefourStation,
       unbrandedStation,
-      aralStation,
+      essoStation,
     ]);
     const levelOf = (name: string): string | undefined =>
       /price-tag--(low|medium|high)/.exec(

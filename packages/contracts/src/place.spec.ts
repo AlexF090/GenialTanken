@@ -10,7 +10,7 @@ describe('placesQuerySchema', () => {
   });
 
   it('defaults to six suggestions', () => {
-    expect(placesQuerySchema.parse({ query: 'Kassel' })).toEqual({ query: 'Kassel', limit: 6 });
+    expect(placesQuerySchema.parse({ query: 'Lyon' })).toEqual({ query: 'Lyon', limit: 6 });
   });
 
   it.each([

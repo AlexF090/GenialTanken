@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import type { FuelType, Station } from '@genialtanken/contracts';
 import { accessibleTextOf, getButton, textOf } from '../../../testing/render-page';
 import {
-  aralStation,
+  essoStation,
   carrefourStation,
   totalStation,
   unbrandedStation,
@@ -85,11 +85,11 @@ describe('StationList', () => {
   });
 
   it('shows only the brand above the address, not the station name too', async () => {
-    const { items } = await render({ stations: [aralStation] });
+    const { items } = await render({ stations: [essoStation] });
 
-    expect(textOf(linkOf(items[0]))).toBe('Aral');
-    expect(accessibleTextOf(items[0])).not.toContain('Aral Tankstelle Kassel');
-    expect(accessibleTextOf(items[0])).toContain('Wilhelmshöher Allee 100');
+    expect(textOf(linkOf(items[0]))).toBe('Esso');
+    expect(accessibleTextOf(items[0])).not.toContain('Relais Esso Part-Dieu');
+    expect(accessibleTextOf(items[0])).toContain('Boulevard Vivier-Merle 19');
   });
 
   it('omits the distance when it is unknown', async () => {

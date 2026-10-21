@@ -1,7 +1,7 @@
 import { computed } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FakeGeolocation } from '../../../testing/fake-geolocation';
-import { bastillePlace, kasselPlace } from '../../../testing/place-fixtures';
+import { bastillePlace, lyonPlace } from '../../../testing/place-fixtures';
 import { GEOLOCATION } from '../geolocation/geolocation-service';
 import { DEFAULT_SEARCH_CENTER } from './search-center';
 import { SearchCenterStore } from './search-center-store';
@@ -62,13 +62,13 @@ describe('SearchCenterStore', () => {
   });
 
   it('keeps the previous center and explains why when locating fails', async () => {
-    store.usePlace(kasselPlace);
+    store.usePlace(lyonPlace);
 
     const located = store.useOwnPosition();
     geolocation.rejectWithPermissionDenied();
     await located;
 
-    expect(store.center().label).toBe('Kassel');
+    expect(store.center().label).toBe('Lyon');
     expect(store.locationErrorMessage()).toBe(PERMISSION_DENIED_MESSAGE);
   });
 
@@ -152,7 +152,7 @@ describe('SearchCenterStore', () => {
   });
 
   it('returns to the Eiffel Tower on reset', () => {
-    store.usePlace(kasselPlace);
+    store.usePlace(lyonPlace);
 
     store.resetToDefault();
 

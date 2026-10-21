@@ -1,12 +1,12 @@
-import { aralStation, carrefourStation, unbrandedStation } from '../../../testing/station-fixtures';
+import { essoStation, carrefourStation, unbrandedStation } from '../../../testing/station-fixtures';
 import { addressLinesBelowTitle, stationTitle } from './station-display';
 
 describe('addressLinesBelowTitle', () => {
   it('shows street and city below a brand', () => {
-    expect(stationTitle(aralStation)).toBe('Aral');
-    expect(addressLinesBelowTitle(aralStation)).toEqual([
-      'Wilhelmshöher Allee 100',
-      '34119 Kassel',
+    expect(stationTitle(essoStation)).toBe('Esso');
+    expect(addressLinesBelowTitle(essoStation)).toEqual([
+      'Boulevard Vivier-Merle 19',
+      '69003 Lyon',
     ]);
   });
 

@@ -9,11 +9,11 @@ export const bastillePlace: Place = {
   longitude: 2.3692,
 };
 
-export const kasselPlace: Place = {
-  id: 'R62453',
-  name: 'Kassel',
-  description: 'Hessen, Deutschland',
-  country: 'DE',
-  latitude: 51.3127,
-  longitude: 9.4797,
+export const lyonPlace: Place = {
+  id: 'R120965',
+  name: 'Lyon',
+  description: 'Auvergne-Rhône-Alpes, Frankreich',
+  country: 'FR',
+  latitude: 45.7578,
+  longitude: 4.832,
 };

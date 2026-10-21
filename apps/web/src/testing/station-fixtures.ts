@@ -76,19 +76,19 @@ export const unbrandedStation: Station = {
   distanceInMeters: 3120,
 };
 
-/** German station with name and live opening status; closed. */
-export const aralStation: Station = {
-  id: 'de-11111111-1111-4111-8111-111111111111',
-  country: 'DE',
-  name: 'Aral Tankstelle Kassel',
-  brand: 'Aral',
+/** Station with name, separate house number and live opening status; closed. */
+export const essoStation: Station = {
+  id: 'fr-69003001',
+  country: 'FR',
+  name: 'Relais Esso Part-Dieu',
+  brand: 'Esso',
   address: {
-    street: 'Wilhelmshöher Allee',
-    houseNumber: '100',
-    postalCode: '34119',
-    city: 'Kassel',
-    latitude: 51.3135,
-    longitude: 9.4721,
+    street: 'Boulevard Vivier-Merle',
+    houseNumber: '19',
+    postalCode: '69003',
+    city: 'Lyon',
+    latitude: 45.7606,
+    longitude: 4.8597,
   },
   pricesInEuro: { e5: 1.869, e10: 1.809, superPlus: 1.949, diesel: 1.699, e85: null, lpg: 1.049 },
   isOpen: false,

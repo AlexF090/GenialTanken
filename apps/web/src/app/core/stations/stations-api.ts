@@ -26,8 +26,9 @@ export interface StationLoadFailure {
 export interface StationsByIdentifiers {
   stations: Station[];
   /**
-   * Identifiers the providers do not know right now, e.g. a German station while the optional
-   * German provider is disabled. They may come back, so callers must not treat them as deleted.
+   * Identifiers the providers do not know right now, e.g. a station the French price service
+   * does not list at the moment or a country without provider. They may come back, so callers
+   * must not treat them as deleted.
    */
   unavailableStationIdentifiers: string[];
   /**

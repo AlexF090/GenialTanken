@@ -9,7 +9,7 @@ export const createOpenApiDocument = (application: INestApplication): OpenAPIObj
     new DocumentBuilder()
       .setTitle('GenialTanken API')
       .setDescription(
-        'Backend-for-frontend that merges current fuel prices from French government open data and, optionally, the German tankentanken API.'
+        'Backend-for-frontend that serves current fuel prices from French government open data.'
       )
       .setVersion(readApplicationVersion())
       .build()

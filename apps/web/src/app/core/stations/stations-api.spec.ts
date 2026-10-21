@@ -150,21 +150,21 @@ describe('StationsApi', () => {
     it('loads all stations with one request and reports unavailable identifiers', async () => {
       const result = stationsApi.loadStationsByIdentifiers([
         'fr-75001001',
-        'de-unavailable',
+        'fr-99000001',
         'fr-75005002',
       ]);
 
       httpTesting
-        .expectOne(`${BY_IDENTIFIERS_URL}?identifiers=fr-75001001,de-unavailable,fr-75005002`)
+        .expectOne(`${BY_IDENTIFIERS_URL}?identifiers=fr-75001001,fr-99000001,fr-75005002`)
         .flush({
           stations: [withoutDistance(totalStation), withoutDistance(carrefourStation)],
-          unavailableIdentifiers: ['de-unavailable'],
+          unavailableIdentifiers: ['fr-99000001'],
           failedIdentifiers: [],
         });
 
       await expect(result).resolves.toEqual({
         stations: [withoutDistance(totalStation), withoutDistance(carrefourStation)],
-        unavailableStationIdentifiers: ['de-unavailable'],
+        unavailableStationIdentifiers: ['fr-99000001'],
         failures: [],
       });
     });

@@ -3,7 +3,7 @@ import { fuelTypeSchema } from './stations-query.js';
 
 const priceInEuroSchema = z.number().positive().nullable();
 
-export const COUNTRY_CODES = ['FR', 'DE'] as const;
+export const COUNTRY_CODES = ['FR'] as const;
 
 export const countryCodeSchema = z.enum(COUNTRY_CODES);
 

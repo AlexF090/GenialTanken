@@ -9,7 +9,7 @@ import {
   textOf,
 } from '../../../testing/render-page';
 import type { PageTestContext } from '../../../testing/render-page';
-import { aralStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
+import { essoStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
 import { StationDetailPage } from './station-detail-page';
 
 @Component({ template: '' })
@@ -39,17 +39,15 @@ describe('StationDetailPage', () => {
   });
 
   it('shows brand, name, address, open status, opening times and all prices', async () => {
-    const { element } = await renderStation(aralStation.id);
+    const { element } = await renderStation(essoStation.id);
 
-    context.httpTesting
-      .expectOne('/api/stations/de-11111111-1111-4111-8111-111111111111')
-      .flush(withoutDistance(aralStation));
+    context.httpTesting.expectOne('/api/stations/fr-69003001').flush(withoutDistance(essoStation));
     await context.settle();
 
     const article = element.querySelector('article');
-    expect(textOf(article?.querySelector('h2'))).toBe('Aral');
-    expect(textOf(article?.querySelector('address'))).toBe('Wilhelmshöher Allee 100 34119 Kassel');
-    expect(article?.textContent).toContain('Aral Tankstelle Kassel');
+    expect(textOf(article?.querySelector('h2'))).toBe('Esso');
+    expect(textOf(article?.querySelector('address'))).toBe('Boulevard Vivier-Merle 19 69003 Lyon');
+    expect(article?.textContent).toContain('Relais Esso Part-Dieu');
     expect(article?.textContent).toContain('Die Tankstelle hat leider geschlossen.');
     expect(
       [...(article?.querySelectorAll('.opening-times li') ?? [])].map(day => textOf(day))
@@ -104,16 +102,6 @@ describe('StationDetailPage', () => {
     expect(textOf(element.querySelector('a[href="https://www.prix-carburants.gouv.fr/"]'))).toBe(
       'Preisdaten: prix-carburants.gouv.fr (öffnet in neuem Tab)'
     );
-  });
-
-  it('does not credit the French open data for a German station', async () => {
-    const { element } = await renderStation(aralStation.id);
-    context.httpTesting
-      .expectOne('/api/stations/de-11111111-1111-4111-8111-111111111111')
-      .flush(withoutDistance(aralStation));
-    await context.settle();
-
-    expect(element.querySelector('app-data-source-credit')).toBeNull();
   });
 
   it('stars the station', async () => {

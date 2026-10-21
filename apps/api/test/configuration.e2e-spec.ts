@@ -1,14 +1,8 @@
 import { createTestApplication } from './support/create-test-application.js';
 
 describe('Startup configuration', () => {
-  it('starts without a German API key, with only the French provider', async () => {
-    const application = await createTestApplication({ TANKENTANKEN_API_KEY: undefined });
-
-    await application.close();
-  });
-
-  it('treats an empty German API key as not configured', async () => {
-    const application = await createTestApplication({ TANKENTANKEN_API_KEY: ' ' });
+  it('starts with the defaults', async () => {
+    const application = await createTestApplication({});
 
     await application.close();
   });
@@ -29,7 +23,6 @@ describe('Startup configuration', () => {
     ['FRANCE_FUEL_PRICES_BASE_URL', 'not a url'],
     ['FRANCE_STATION_DETAILS_BASE_URL', 'not a url'],
     ['FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS', '0'],
-    ['TANKENTANKEN_BASE_URL', 'not a url'],
     ['CACHE_MAXIMUM_ENTRIES', '0'],
     ['CACHE_MAXIMUM_ENTRIES', 'many'],
     ['PHOTON_BASE_URL', 'not a url'],

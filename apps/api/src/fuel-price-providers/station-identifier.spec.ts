@@ -9,20 +9,19 @@ import {
 describe('toStationIdentifier', () => {
   it('prefixes the local identifier with the lowercase country code', () => {
     expect(toStationIdentifier('FR', '92242003')).toBe('fr-92242003');
-    expect(toStationIdentifier('DE', '005056ba-7cb6')).toBe('de-005056ba-7cb6');
   });
 });
 
 describe('toCountryPrefix', () => {
   it('lowercases the country code', () => {
-    expect(toCountryPrefix('DE')).toBe('de');
+    expect(toCountryPrefix('FR')).toBe('fr');
   });
 });
 
 describe('splitStationIdentifier', () => {
   it('splits at the first separator only', () => {
-    expect(splitStationIdentifier('de-005056ba-7cb6')).toEqual({
-      countryPrefix: 'de',
+    expect(splitStationIdentifier('it-005056ba-7cb6')).toEqual({
+      countryPrefix: 'it',
       localIdentifier: '005056ba-7cb6',
     });
   });

@@ -9,7 +9,7 @@ describe('stationIdentifierIn', () => {
   });
 
   it('decodes the station identifier', () => {
-    expect(stationIdentifierIn(parse('/stations/de-a%2Fb'))).toBe('de-a/b');
+    expect(stationIdentifierIn(parse('/stations/fr-a%2Fb'))).toBe('fr-a/b');
   });
 
   it.each(['/', '/stations', '/favorites', '/stations/fr-75001001/extra', '/places/fr-75001001'])(

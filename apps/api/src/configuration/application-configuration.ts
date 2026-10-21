@@ -33,15 +33,6 @@ export class ApplicationConfiguration {
     });
   }
 
-  /** `undefined` when the German provider is disabled. */
-  get tankenTankenApiKey(): string | undefined {
-    return this.configService.get('TANKENTANKEN_API_KEY', { infer: true });
-  }
-
-  get tankenTankenBaseUrl(): string {
-    return this.configService.get('TANKENTANKEN_BASE_URL', { infer: true });
-  }
-
   get photonBaseUrl(): string {
     return this.configService.get('PHOTON_BASE_URL', { infer: true });
   }

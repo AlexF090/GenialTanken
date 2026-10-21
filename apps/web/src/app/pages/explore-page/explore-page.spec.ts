@@ -20,7 +20,7 @@ import {
 } from '../../../testing/render-page';
 import type { PageTestContext } from '../../../testing/render-page';
 import {
-  aralStation,
+  essoStation,
   carrefourStation,
   totalStation,
   unbrandedStation,
@@ -744,22 +744,22 @@ describe('ExplorePage with a station card', () => {
   });
 
   it('moves the search to a station outside the results, named after it', async () => {
-    const { element } = await openAt(`/stations/${aralStation.id}`);
+    const { element } = await openAt(`/stations/${essoStation.id}`);
     context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
     context.httpTesting
-      .expectOne(`/api/stations/${aralStation.id}`)
-      .flush(withoutDistance(aralStation));
+      .expectOne(`/api/stations/${essoStation.id}`)
+      .flush(withoutDistance(essoStation));
     await context.settle();
 
     context.httpTesting
       .expectOne(
-        `/api/stations?latitude=${String(aralStation.address.latitude)}&longitude=${String(aralStation.address.longitude)}&radiusInKilometers=5&fuel=e5`
+        `/api/stations?latitude=${String(essoStation.address.latitude)}&longitude=${String(essoStation.address.longitude)}&radiusInKilometers=5&fuel=e5`
       )
-      .flush([aralStation]);
+      .flush([essoStation]);
     await context.settle();
 
     expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
-      '1 Tankstelle im Umkreis von 5 km um Aral'
+      '1 Tankstelle im Umkreis von 5 km um Esso'
     );
     context.httpTesting.expectNone(request => request.url === '/api/stations');
   });
