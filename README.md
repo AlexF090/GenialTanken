@@ -1,8 +1,20 @@
 # GenialTanken
 
+![GenialTanken on a desktop browser and a phone in dark mode: gas stations in Paris with diesel prices as a list and as price tags on a map](docs/images/product-hero.jpg)
+
+Live: https://genialtanken.alexf090.workers.dev
+
 Find the cheapest fuel nearby: current prices of the gas stations around you as a list or on a map, filtered by fuel type and radius (up to 30 km).
 
 GenialTanken started as a React capstone project and is being rebuilt as a full-stack showcase with Angular and NestJS. See [ROADMAP.md](ROADMAP.md) for decisions and next steps.
+
+## Screenshots
+
+![GenialTanken in a desktop browser: a list of Paris gas stations with diesel prices and distances next to a map whose price tags mark each station, the two cheapest in green](docs/images/product-desktop.jpg)
+
+![GenialTanken on three phones: the map with price tags above the station list at half height, the details card of a station with its prices per fuel, and the same explore view in dark mode](docs/images/product-mobile.jpg)
+
+The images show the live app with real prices. To regenerate them, run `node e2e/product-shots/capture-product-shots.ts` (details in the script header).
 
 ## Architecture
 
