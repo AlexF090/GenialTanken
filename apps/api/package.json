@@ -1,0 +1,47 @@
+{
+  "name": "api",
+  "version": "2.0.0",
+  "description": "Backend-for-frontend for GenialTanken in front of the French fuel price open data",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "build": "nest build",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "typecheck": "tsc --noEmit",
+    "start:container": "nest start --watch"
+  },
+  "dependencies": {
+    "@cacheable/memory": "2.2.0",
+    "@genialtanken/contracts": "workspace:*",
+    "@nestjs/cache-manager": "12.0.0",
+    "@nestjs/common": "12.1.2",
+    "@nestjs/config": "12.0.1",
+    "@nestjs/core": "12.1.2",
+    "@nestjs/platform-express": "12.1.2",
+    "@nestjs/swagger": "12.0.2",
+    "@nestjs/terminus": "12.1.0",
+    "@nestjs/throttler": "6.7.1",
+    "cache-manager": "7.2.9",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "12.0.8",
+    "@nestjs/schematics": "12.0.6",
+    "@nestjs/testing": "12.1.2",
+    "@types/express": "5.0.6",
+    "@types/node": "24.19.0",
+    "@types/supertest": "7.2.1",
+    "@vitest/coverage-v8": "5.0.3",
+    "supertest": "7.3.0",
+    "typescript": "6.0.3",
+    "vitest": "5.0.3"
+  }
+}

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <title>GenialTanken</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Aktuelle Spritpreise der Tankstellen in deiner Nähe." />
+    <!-- Browser UI colors: the opaque light and dark --color-chrome of src/styles/tokens.scss, kept
+         in sync by hand (the script below runs before any stylesheet loads). The script and
+         ColorSchemeController switch the one of the resolved scheme on through `media`. -->
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: light)"
+      content="#f9f9f9"
+      data-scheme="light" />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#1d1d1d"
+      data-scheme="dark" />
+    <script>
+      // Applies the stored color scheme before the first paint; ColorSchemeController takes
+      // over after bootstrap. Without this script the operating system decides (see tokens.scss).
+      (function () {
+        try {
+          var settings = JSON.parse(localStorage.getItem('genialtanken.settings') || '{}');
+          var preference = settings && settings.colorScheme;
+          var scheme =
+            preference === 'light' || preference === 'dark'
+              ? preference
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.setAttribute('data-color-scheme', scheme);
+          // A preference overrides the operating system the `media` queries ask.
+          var themeColors = document.querySelectorAll('meta[name="theme-color"][data-scheme]');
+          for (var index = 0; index < themeColors.length; index++) {
+            themeColors[index].media =
+              themeColors[index].getAttribute('data-scheme') === scheme ? 'all' : 'not all';
+          }
+        } catch (error) {
+          // Storage blocked or corrupt: leave the choice to the operating system.
+        }
+      })();
+    </script>
+    <link rel="icon" href="favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png" />
+    <meta name="apple-mobile-web-app-title" content="GenialTanken" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="manifest.webmanifest" />
+  </head>
+  <body>
+    <app-root></app-root>
+    <noscript>Bitte aktiviere JavaScript, um GenialTanken zu nutzen.</noscript>
+  </body>
+</html>

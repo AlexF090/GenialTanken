@@ -1,0 +1,365 @@
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  Injector,
+  linkedSignal,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
+import type { ElementRef } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { filter, map, startWith } from 'rxjs';
+import { FUEL_TYPES } from '@genialtanken/contracts';
+import type { FuelType, Place, Station } from '@genialtanken/contracts';
+import { FavoritesStore } from '../../core/favorites/favorites-store';
+import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
+import type { Coordinates } from '../../core/geolocation/coordinates';
+import { observeElementHeight } from '../../core/layout/observe-element-height';
+import { Viewport } from '../../core/layout/viewport';
+import { shouldOfferAreaSearch } from '../../core/search-center/area-search';
+import type { SearchCenter } from '../../core/search-center/search-center';
+import { SearchCenterStore } from '../../core/search-center/search-center-store';
+import { radiusStepsIncluding } from '../../core/settings/radius-steps';
+import { SettingsStore } from '../../core/settings/settings-store';
+import { NearbyStationsStore } from '../../core/stations/nearby-stations-store';
+import { OpenedStationStore } from '../../core/stations/opened-station-store';
+import { sortStations } from '../../core/stations/sort-stations';
+import { stationTitle } from '../../core/stations/station-display';
+import type { SortOrder } from '../../core/stations/sort-stations';
+import { ColorSchemeController } from '../../core/theme/color-scheme-controller';
+import { BottomSheet } from '../../ui/bottom-sheet/bottom-sheet';
+import type { SnapPosition } from '../../ui/bottom-sheet/bottom-sheet-snap';
+import { DataSourceCredit } from '../../ui/data-source-credit/data-source-credit';
+import { Icon } from '../../ui/icon/icon';
+import { LoadingState } from '../../ui/loading-state/loading-state';
+import type { ViewportPadding } from '../../ui/map/map-viewport';
+import { PlaceSearchField } from '../../ui/place-search-field/place-search-field';
+import { SelectMenu } from '../../ui/select-menu/select-menu';
+import type { SelectMenuOption } from '../../ui/select-menu/select-menu';
+import { SortOrderControl } from '../../ui/sort-order-control/sort-order-control';
+import { StationList } from '../../ui/station-list/station-list';
+import { StationsMap } from '../../ui/stations-map/stations-map';
+import { injectPlaceSearch } from './place-search';
+import { describeResult } from './result-summary';
+import { stationIdentifierIn } from './station-card-route';
+
+interface SelectionSource {
+  stations: readonly Station[];
+  center: SearchCenter;
+}
+
+const FUEL_TYPE_OPTIONS: readonly SelectMenuOption<FuelType>[] = FUEL_TYPES.map(fuelType => ({
+  value: fuelType,
+  label: FUEL_TYPE_LABELS[fuelType].long,
+}));
+
+/**
+ * Start page: stations around the search center as a price board and on a map. On phones the
+ * list is a bottom sheet over a full-screen map; from 48rem it is a side panel next to the map.
+ * List and map share one selection.
+ */
+@Component({
+  selector: 'app-explore-page',
+  imports: [
+    BottomSheet,
+    DataSourceCredit,
+    Icon,
+    LoadingState,
+    PlaceSearchField,
+    RouterOutlet,
+    SelectMenu,
+    SortOrderControl,
+    StationList,
+    StationsMap,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './explore-page.html',
+  styleUrl: './explore-page.scss',
+})
+export class ExplorePage {
+  private readonly nearbyStations = inject(NearbyStationsStore);
+  private readonly searchCenter = inject(SearchCenterStore);
+  private readonly settings = inject(SettingsStore);
+  private readonly favorites = inject(FavoritesStore);
+  private readonly isCompactViewport = inject(Viewport).isCompactViewport;
+  private readonly stationsMap = viewChild.required(StationsMap);
+  // Optional: an effect reads them before the first render when the page opens with a card.
+  private readonly bottomSheet = viewChild(BottomSheet);
+  private readonly stationList = viewChild(StationList);
+  private readonly searchOverlay = viewChild.required<ElementRef<HTMLElement>>('searchOverlay');
+
+  protected readonly fuelType = this.settings.fuelType;
+  protected readonly fuelLabel = computed(() => FUEL_TYPE_LABELS[this.fuelType()].short);
+  protected readonly fuelTypeOptions = FUEL_TYPE_OPTIONS;
+  protected readonly radiusInKilometers = this.settings.radiusInKilometers;
+  protected readonly radiusOptions = computed(() =>
+    radiusStepsIncluding(this.radiusInKilometers()).map(radius => ({
+      value: radius,
+      label: `${String(radius)}\u00a0km`,
+    }))
+  );
+  protected readonly center = this.searchCenter.center;
+  protected readonly isLocating = this.searchCenter.isLocating;
+  /** Where the user moved the map to; forgotten whenever the search center changes. */
+  private readonly visibleMapCenter = linkedSignal<SearchCenter, Coordinates | undefined>({
+    source: this.center,
+    computation: () => undefined,
+  });
+  protected readonly isAreaSearchOffered = computed(() =>
+    shouldOfferAreaSearch(this.center(), this.visibleMapCenter(), this.radiusInKilometers())
+  );
+  protected readonly isAtOwnPosition = computed(() => this.center().source === 'own-position');
+
+  private readonly placeSearch = injectPlaceSearch();
+  protected readonly placeQuery = this.placeSearch.query;
+  protected readonly placeSearchPlaceholder = computed(() =>
+    this.isAtOwnPosition() ? this.center().label : 'Position auf Karte'
+  );
+  protected readonly placeSuggestions = this.placeSearch.suggestions;
+  protected readonly placeSearchStatus = this.placeSearch.statusMessage;
+  protected readonly locationErrorMessage = this.searchCenter.locationErrorMessage;
+  protected readonly stationsErrorMessage = this.nearbyStations.errorMessage;
+  protected readonly isLoading = this.nearbyStations.isLoading;
+  protected readonly hasLoaded = this.nearbyStations.hasLoaded;
+  protected readonly mapStations = this.nearbyStations.stations;
+  protected readonly cheapestStationIdentifiers = this.nearbyStations.cheapestStationIdentifiers;
+  protected readonly favoriteStationIdentifiers = this.favorites.favoriteStationIdentifierSet;
+  protected readonly colorScheme = inject(ColorSchemeController).resolvedScheme;
+
+  protected readonly sortOrder = signal<SortOrder>('distance');
+  protected readonly stations = computed(() =>
+    sortStations(this.nearbyStations.stations(), this.sortOrder(), this.fuelType())
+  );
+
+  protected readonly resultSummary = computed(() =>
+    this.hasLoaded()
+      ? describeResult(this.mapStations().length, this.radiusInKilometers(), this.center())
+      : ''
+  );
+
+  private readonly router = inject(Router);
+  private readonly openedStation = inject(OpenedStationStore).station;
+  private readonly injector = inject(Injector);
+
+  /** Station whose card is open in the sheet: the child route `stations/:id`. */
+  protected readonly openedStationIdentifier = toSignal(
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd),
+      map(event => this.router.parseUrl(event.urlAfterRedirects)),
+      // The page is created during the navigation to it, before its `NavigationEnd`.
+      startWith(this.router.currentNavigation()?.finalUrl ?? this.router.parseUrl(this.router.url)),
+      map(stationIdentifierIn)
+    ),
+    { initialValue: undefined }
+  );
+  protected readonly isStationCardOpen = computed(
+    () => this.openedStationIdentifier() !== undefined
+  );
+
+  /**
+   * Chosen in the list or on the map. Cleared when the search center changes or the station is
+   * no longer in the results.
+   */
+  private readonly listSelectedStationIdentifier = linkedSignal<
+    SelectionSource,
+    string | undefined
+  >({
+    source: () => ({ stations: this.nearbyStations.stations(), center: this.center() }),
+    computation: (source, previous) => {
+      const previousStationIdentifier = previous?.value;
+      if (previousStationIdentifier === undefined || previous?.source.center !== source.center) {
+        return undefined;
+      }
+      return source.stations.some(station => station.id === previousStationIdentifier)
+        ? previousStationIdentifier
+        : undefined;
+    },
+  });
+  /** An open card wins: its station is the one shown on the map. */
+  protected readonly selectedStationIdentifier = computed(
+    () => this.openedStationIdentifier() ?? this.listSelectedStationIdentifier()
+  );
+
+  protected readonly snapPosition = signal<SnapPosition>('half');
+  private readonly sheetHeightInPixels = signal(0);
+  protected readonly isSearchCoveredBySheet = computed(
+    () => this.isCompactViewport() && this.snapPosition() === 'full'
+  );
+  private readonly searchOverlayHeightInPixels = observeElementHeight(
+    () => this.searchOverlay().nativeElement
+  );
+  protected readonly mapViewportPadding = computed<ViewportPadding>(() => ({
+    top: this.searchOverlayHeightInPixels(),
+    right: 0,
+    bottom: this.sheetHeightInPixels(),
+    left: 0,
+  }));
+
+  constructor() {
+    this.followStationCard();
+    this.showOpenedStationOnMap();
+  }
+
+  /**
+   * Opening a card shows it from its top and lifts a peeking sheet; closing it returns to the list
+   * where it was, with the station still selected and focused.
+   */
+  private followStationCard(): void {
+    let previousStationIdentifier: string | undefined;
+    let listScrollPosition = 0;
+    effect(() => {
+      const stationIdentifier = this.openedStationIdentifier();
+      const closedStationIdentifier = previousStationIdentifier;
+      previousStationIdentifier = stationIdentifier;
+      if (stationIdentifier === closedStationIdentifier) {
+        return;
+      }
+      untracked(() => {
+        const bottomSheet = this.bottomSheet();
+        if (stationIdentifier !== undefined) {
+          if (closedStationIdentifier === undefined) {
+            listScrollPosition = bottomSheet?.scrollPosition() ?? 0;
+          }
+          bottomSheet?.restoreScrollPosition(0);
+          if (this.isCompactViewport() && this.snapPosition() === 'peek') {
+            this.snapPosition.set('half');
+          }
+          return;
+        }
+        if (closedStationIdentifier === undefined) {
+          return;
+        }
+        this.listSelectedStationIdentifier.set(closedStationIdentifier);
+        afterNextRender(
+          () => {
+            bottomSheet?.restoreScrollPosition(listScrollPosition);
+            this.stationList()?.focusStation(closedStationIdentifier);
+          },
+          { injector: this.injector }
+        );
+      });
+    });
+  }
+
+  /**
+   * A card can open a station outside the results (e.g. from the favorites); the search then
+   * moves there, so the map shows it. Once per station, so a station without a price for the
+   * chosen fuel does not move the search again and again.
+   */
+  private showOpenedStationOnMap(): void {
+    let movedForStationIdentifier: string | undefined;
+    effect(() => {
+      const station = this.openedStation();
+      if (
+        station === undefined ||
+        station.id !== this.openedStationIdentifier() ||
+        !this.hasLoaded() ||
+        station.id === movedForStationIdentifier
+      ) {
+        return;
+      }
+      if (this.nearbyStations.stations().some(nearby => nearby.id === station.id)) {
+        return;
+      }
+      movedForStationIdentifier = station.id;
+      untracked(() => {
+        this.searchCenter.useStation({
+          latitude: station.address.latitude,
+          longitude: station.address.longitude,
+          label: stationTitle(station),
+        });
+      });
+    });
+  }
+
+  /** On phones the sheet steps aside while typing, so the suggestions stay visible. */
+  protected searchPlaces(query: string): void {
+    this.placeSearch.search(query);
+    if (this.isCompactViewport()) {
+      this.snapPosition.set('peek');
+    }
+  }
+
+  protected choosePlace(place: Place): void {
+    this.placeSearch.choose(place);
+  }
+
+  protected clearPlace(): void {
+    this.placeSearch.clear();
+  }
+
+  protected updateVisibleMapCenter(visibleMapCenter: Coordinates): void {
+    this.visibleMapCenter.set(visibleMapCenter);
+  }
+
+  protected searchVisibleArea(): void {
+    const visibleMapCenter = this.visibleMapCenter();
+    if (visibleMapCenter !== undefined) {
+      this.searchCenter.useMapArea(visibleMapCenter);
+    }
+  }
+
+  protected dismissLocationError(): void {
+    this.searchCenter.dismissLocationError();
+  }
+
+  protected chooseRadius(radiusInKilometers: number): void {
+    this.settings.update({ radiusInKilometers });
+  }
+
+  protected useOwnPosition(): void {
+    if (this.isLocating()) {
+      return;
+    }
+    void this.searchCenter.useOwnPosition();
+  }
+
+  protected chooseFuelType(fuelType: FuelType): void {
+    this.settings.update({ fuelType });
+  }
+
+  protected refresh(): void {
+    this.nearbyStations.refresh();
+  }
+
+  protected toggleFavorite(stationIdentifier: string): void {
+    this.favorites.toggle(stationIdentifier);
+  }
+
+  /** A price tag on the map was chosen: the sheet shows its row and leaves the map visible. */
+  protected selectFromMap(stationIdentifier: string): void {
+    // With a card open, the chosen price tag opens its own card instead, like in Apple Maps.
+    if (this.isStationCardOpen()) {
+      void this.router.navigate(['/stations', stationIdentifier]);
+      return;
+    }
+    this.listSelectedStationIdentifier.set(stationIdentifier);
+    if (this.isCompactViewport()) {
+      this.snapPosition.set('half');
+    }
+  }
+
+  /**
+   * A row of the list was chosen: its pin is centered on the map, again when it was already
+   * selected. A fully opened sheet steps down to half, so pin and row are both visible.
+   */
+  protected showOnMap(stationIdentifier: string): void {
+    if (this.selectedStationIdentifier() === stationIdentifier) {
+      this.stationsMap().revealSelectedStation();
+    }
+    this.listSelectedStationIdentifier.set(stationIdentifier);
+    if (this.isCompactViewport() && this.snapPosition() === 'full') {
+      this.snapPosition.set('half');
+    }
+  }
+
+  protected updateSheetHeight(heightInPixels: number): void {
+    this.sheetHeightInPixels.set(heightInPixels);
+  }
+}

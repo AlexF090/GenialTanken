@@ -1,0 +1,18 @@
+{
+  "name": "e2e",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Playwright end-to-end tests for the GenialTanken web app and API.",
+  "scripts": {
+    "test": "playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.19.0",
+    "typescript": "6.0.3",
+    "zod": "4.6.5"
+  }
+}

@@ -1,0 +1,118 @@
+// Quiet station facts around one loud element: the price board led by the user's fuel.
+.station-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.station-detail__heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.station-detail__identity {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.station-detail__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+
+.station-detail__title {
+  // Focused by the card when it opens, as a starting point; not an interactive control.
+  &:focus {
+    outline: none;
+  }
+
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.station-detail__address {
+  color: var(--color-text-secondary);
+}
+
+.station-detail__subtitle {
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+}
+
+.station-detail__address {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-size-sm);
+  font-style: normal;
+}
+
+.station-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.station-detail__section-title {
+  font-size: var(--font-size-lg);
+}
+
+.station-detail__open-status {
+  font-weight: var(--font-weight-medium);
+}
+
+// Price board: hairline rows on the surface, label left and price right like on a price pylon
+.price-board {
+  border-top: var(--border-width-hairline) solid var(--color-hairline);
+  background-color: var(--color-surface);
+  list-style: none;
+}
+
+.price-board__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: var(--border-width-hairline) solid var(--color-hairline);
+
+  &--selected {
+    padding-block: var(--space-lg);
+  }
+}
+
+.price-board__fuel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.price-board__label {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+
+  .price-board__row--selected & {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+  }
+}
+
+.price-board__marker {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.price-board__price {
+  flex-shrink: 0;
+}
+
+.station-detail__route {
+  align-self: flex-start;
+}

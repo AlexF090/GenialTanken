@@ -1,0 +1,11 @@
+<header class="page-header">
+  <div class="page-header__inner">
+    @if (backLink(); as backLink) {
+      <a class="page-header__back" [routerLink]="backLink">
+        <app-icon class="page-header__back-icon" name="chevron-left" />
+        <span>Zurück</span>
+      </a>
+    }
+    <h1 class="page-header__title">{{ title() }}</h1>
+  </div>
+</header>

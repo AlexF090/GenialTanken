@@ -1,0 +1,62 @@
+<article class="station-detail">
+  <div class="station-detail__heading">
+    <div class="station-detail__identity">
+      <h2 class="station-detail__title" translate="no" tabindex="-1">{{ title() }}</h2>
+      @if (subtitle(); as subtitle) {
+        <p class="station-detail__subtitle">{{ subtitle }}</p>
+      }
+      <address class="station-detail__address">
+        @for (line of addressLines(); track line) {
+          <span>{{ line }}</span
+          >&ngsp;
+        }
+      </address>
+    </div>
+    <div class="station-detail__actions">
+      <app-favorite-button
+        [stationName]="title()"
+        [isFavorite]="isFavorite()"
+        (toggled)="favoriteToggled.emit()" />
+      <ng-content select="[stationDetailActions]" />
+    </div>
+  </div>
+
+  <app-route-button
+    class="station-detail__route"
+    [destination]="destination()"
+    [isLabelled]="true" />
+
+  <section class="station-detail__section" aria-labelledby="prices-heading">
+    <h3 id="prices-heading" class="station-detail__section-title">Preise</h3>
+    <ul class="price-board" role="list">
+      @for (fuelPrice of fuelPrices(); track fuelPrice.fuelType) {
+        <li class="price-board__row" [class.price-board__row--selected]="fuelPrice.isSelected">
+          <span class="price-board__fuel">
+            <span class="price-board__label">{{ fuelPrice.label }}</span>
+            @if (fuelPrice.isSelected) {
+              &ngsp;<span class="price-board__marker">Dein Kraftstoff</span>
+            }
+          </span>
+          &ngsp;<app-price
+            class="price-board__price"
+            [size]="fuelPrice.isSelected ? 'hero' : 'list'"
+            [priceInEuro]="fuelPrice.priceInEuro" />
+        </li>
+      }
+    </ul>
+  </section>
+
+  <section class="station-detail__section" aria-labelledby="opening-times-heading">
+    <h3 id="opening-times-heading" class="station-detail__section-title">Öffnungszeiten</h3>
+    @if (station().isOpen !== null) {
+      <p class="station-detail__open-status">
+        {{
+          station().isOpen
+            ? 'Die Tankstelle ist geöffnet.'
+            : 'Die Tankstelle hat leider geschlossen.'
+        }}
+      </p>
+    }
+    <app-opening-times [openingTimes]="station().openingTimes" />
+  </section>
+</article>

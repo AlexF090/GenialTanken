@@ -1,0 +1,105 @@
+// The host carries the look of the button (background, radius, padding), so each place can
+// style it like its surroundings; the button itself only fills the host.
+:host {
+  display: inline-flex;
+}
+
+.select-menu__trigger {
+  display: inline-flex;
+  flex: 1;
+  gap: var(--space-2xs);
+  align-items: center;
+  justify-content: center;
+  min-width: var(--layout-touch-target);
+  min-height: var(--layout-touch-target);
+  margin: 0;
+  padding: inherit;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+// Anchored below the button, flipped above when there is no room (e.g. in the peeking sheet).
+.select-menu__menu {
+  position: fixed;
+  inset: auto;
+  position-area: block-end span-inline-end;
+  position-try-fallbacks:
+    flip-block,
+    flip-inline,
+    flip-block flip-inline;
+  min-width: 12rem;
+  max-height: 60vh;
+  margin: var(--space-2xs) 0;
+  padding: var(--space-2xs) 0;
+  overflow-y: auto;
+  border: 0;
+  border-radius: var(--radius-menu);
+  background: var(--material-menu);
+  color: var(--color-text);
+  // Not inherited from the button's look
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-tight);
+  box-shadow: var(--shadow-menu);
+  backdrop-filter: var(--material-blur);
+  transform-origin: top left;
+  transition:
+    opacity var(--duration-short) var(--easing-standard),
+    transform var(--duration-short) var(--easing-standard);
+
+  @starting-style {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  // Without anchor positioning the menu becomes an action sheet at the bottom of the screen.
+  @supports not (position-area: block-end) {
+    inset: auto var(--space-xs) calc(var(--safe-area-bottom) + var(--space-xs));
+    margin: 0;
+    transform-origin: bottom center;
+  }
+}
+
+.select-menu__item {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+  width: 100%;
+  min-height: var(--layout-touch-target);
+  margin: 0;
+  padding: 0 var(--space-md) 0 var(--space-sm);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  & + & {
+    border-top: var(--border-width-hairline) solid var(--color-hairline);
+  }
+
+  &:hover,
+  &:focus {
+    background-color: var(--color-menu-highlight);
+  }
+
+  &:focus-visible {
+    outline-offset: calc(-1 * var(--border-width-focus));
+  }
+}
+
+.select-menu__checkmark {
+  flex: none;
+  font-size: var(--icon-size-sm);
+  visibility: hidden;
+
+  [aria-checked='true'] > & {
+    visibility: visible;
+  }
+}

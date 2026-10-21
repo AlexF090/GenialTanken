@@ -1,23 +1,42 @@
 {
-  "name": "express-react-app",
-  "version": "1.0.0",
+  "name": "genialtanken",
+  "version": "2.0.0",
+  "private": true,
   "type": "module",
-  "description": "",
-  "scripts": {
-    "server": "cd server && npm start",
-    "client": "cd client && npm start",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "cd client && npm run build",
-    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
-    "install:frontend": "cd client && npm install",
-    "prettier:check": "npx prettier --check .",
-    "prettier:write": "npx prettier --write ."
+  "description": "Gas station price app: list and map of daily fuel prices by location and radius.",
+  "engines": {
+    "node": ">=24"
   },
-  "keywords": [],
-  "author": "",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.8.1",
+      "onFail": "download"
+    }
+  },
+  "scripts": {
+    "prepare": "lefthook install",
+    "dev": "pnpm --parallel --filter web --filter api run start:dev",
+    "dev:container": "pnpm --parallel --filter web --filter api run start:container",
+    "build": "pnpm --recursive --filter \"./apps/*\" --filter \"./packages/*\" run build",
+    "test": "pnpm --recursive --filter \"./apps/*\" --filter \"./packages/*\" run test",
+    "test:e2e": "pnpm --filter e2e test",
+    "deploy:web": "pnpm --filter web build && pnpm --filter web run deploy",
+    "preview:web": "pnpm --filter web build && pnpm --filter web run preview",
+    "lint": "eslint .",
+    "typecheck": "pnpm --recursive run typecheck",
+    "format:check": "prettier --check .",
+    "format:write": "prettier --write ."
+  },
   "license": "ISC",
-  "dependencies": {
-    "concurrently": "^7.1.0",
-    "react-icons": "^4.3.1"
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "angular-eslint": "22.5.0",
+    "eslint": "10.11.0",
+    "globals": "17.13.0",
+    "lefthook": "2.2.2",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.0"
   }
 }

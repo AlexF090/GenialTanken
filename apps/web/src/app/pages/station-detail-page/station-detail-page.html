@@ -1,0 +1,34 @@
+<section class="station-card" aria-label="Tankstelle">
+  @if (station(); as station) {
+    <app-station-detail
+      [station]="station"
+      [fuelType]="fuelType()"
+      [isFavorite]="isFavorite()"
+      (favoriteToggled)="toggleFavorite()">
+      <button
+        stationDetailActions
+        type="button"
+        class="icon-button station-card__close"
+        aria-label="Schließen"
+        (click)="close()">
+        <span class="station-card__close-circle"><app-icon name="close" /></span>
+      </button>
+    </app-station-detail>
+    <!-- The Licence Ouverte requires the credit wherever French prices show; France is the only country for now. -->
+    <app-data-source-credit />
+  } @else {
+    <div class="station-card__pending">
+      <app-loading-state [isLoading]="isLoading()" label="Tankstelle wird geladen …" />
+      @if (errorMessage(); as message) {
+        <p class="message message--error" role="alert">{{ message }}</p>
+      }
+      <button
+        type="button"
+        class="icon-button station-card__close"
+        aria-label="Schließen"
+        (click)="close()">
+        <span class="station-card__close-circle"><app-icon name="close" /></span>
+      </button>
+    </div>
+  }
+</section>

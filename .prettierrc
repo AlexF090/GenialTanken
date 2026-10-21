@@ -6,6 +6,6 @@
   "trailingComma": "es5",
   "useTabs": false,
   "printWidth": 100,
-  "jsxBracketSameLine": true,
-  "files.autoSave": "onFocusChange"
+  "bracketSameLine": true,
+  "overrides": [{ "files": "*.html", "options": { "parser": "angular" } }]
 }

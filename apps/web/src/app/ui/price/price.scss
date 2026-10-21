@@ -1,0 +1,17 @@
+@use 'typography';
+
+:host {
+  white-space: nowrap;
+}
+
+:host(.price--hero) {
+  @include typography.price-numerals(var(--font-size-price-hero));
+}
+
+:host(.price--list) {
+  @include typography.price-numerals(var(--font-size-price-list));
+}
+
+:host(.price--tag) {
+  @include typography.price-numerals(var(--font-size-price-tag));
+}

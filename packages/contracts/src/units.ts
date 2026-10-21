@@ -1,0 +1,1 @@
+export const METERS_PER_KILOMETER = 1000;

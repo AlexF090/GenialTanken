@@ -1,0 +1,16 @@
+<span class="route-button" [class.route-button--labelled]="isLabelled()">
+  <app-icon name="directions" class="route-button__icon" />
+  @if (isLabelled()) {
+    <span class="route-button__label" aria-hidden="true">Route</span>
+  }
+  <select
+    #select
+    class="route-button__select"
+    [attr.aria-label]="'Route zu ' + destination().name"
+    (change)="openRoute(select)">
+    <option value="" selected disabled>Route starten mit …</option>
+    @for (app of apps; track app.identifier) {
+      <option [value]="app.identifier">{{ app.label }}</option>
+    }
+  </select>
+</span>

@@ -1,0 +1,17 @@
+<nav class="navigation-bar" aria-label="Hauptnavigation">
+  <ul class="navigation-bar__list" role="list">
+    @for (link of links; track link.path) {
+      <li class="navigation-bar__item">
+        <a
+          class="navigation-bar__link"
+          [routerLink]="link.path"
+          routerLinkActive="navigation-bar__link--active"
+          [routerLinkActiveOptions]="{ exact: link.matchesExactly }"
+          ariaCurrentWhenActive="page">
+          <app-icon class="navigation-bar__icon" [name]="link.icon" />
+          <span>{{ link.label }}</span>
+        </a>
+      </li>
+    }
+  </ul>
+</nav>

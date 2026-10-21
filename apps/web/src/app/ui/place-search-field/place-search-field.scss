@@ -1,0 +1,133 @@
+:host {
+  display: block;
+}
+
+.place-search-field {
+  position: relative;
+}
+
+// One capsule: magnifier, input, clear button and the projected accessory (radius menu).
+.place-search-field__bar {
+  display: flex;
+  align-items: center;
+  min-height: var(--layout-touch-target);
+  padding-inline: var(--space-sm) var(--space-2xs);
+  border-radius: var(--radius-pill);
+  background: var(--material-menu);
+  box-shadow: var(--shadow-floating);
+  backdrop-filter: var(--material-blur);
+
+  &:focus-within {
+    outline: var(--border-width-focus) solid var(--color-focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+}
+
+.place-search-field__icon {
+  flex: none;
+  color: var(--color-text-secondary);
+  font-size: var(--icon-size-sm);
+}
+
+.place-search-field__input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--layout-touch-target);
+  margin: 0;
+  padding: 0 var(--space-xs);
+  border: 0;
+  background: none;
+  // 1rem at least: iOS zooms into smaller inputs on focus.
+  font-size: var(--font-size-md);
+  text-overflow: ellipsis;
+  appearance: none;
+
+  &:focus {
+    outline: none;
+  }
+
+  &::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 1;
+  }
+
+  &::-webkit-search-cancel-button {
+    appearance: none;
+  }
+}
+
+.place-search-field__clear {
+  color: var(--color-text-secondary);
+}
+
+.place-search-field__results {
+  position: absolute;
+  inset: calc(100% + var(--space-xs)) 0 auto;
+  z-index: 1;
+  max-height: 50vh;
+  overflow-y: auto;
+  border-radius: var(--radius-menu);
+  background: var(--material-menu);
+  box-shadow: var(--shadow-menu);
+  backdrop-filter: var(--material-blur);
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.place-search-field__listbox {
+  list-style: none;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.place-search-field__option {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  min-height: var(--layout-touch-target);
+  padding: var(--space-xs) var(--space-md);
+  cursor: pointer;
+
+  & + & {
+    border-top: var(--border-width-hairline) solid var(--color-hairline);
+  }
+
+  &:hover,
+  &[aria-selected='true'] {
+    background-color: var(--color-menu-highlight);
+  }
+}
+
+.place-search-field__option-icon {
+  flex: none;
+  color: var(--color-action-text);
+  font-size: var(--icon-size-md);
+}
+
+.place-search-field__option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.place-search-field__option-name {
+  font-weight: var(--font-weight-medium);
+}
+
+.place-search-field__option-description {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.place-search-field__status {
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}

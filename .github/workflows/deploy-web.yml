@@ -1,0 +1,338 @@
+name: Deploy web
+
+# Runs after CI finished on the default branch's copy of this file (workflow_run
+# always uses the workflow definition from the default branch).
+#
+# Security model: workflow_run executes in the context of the base repository and
+# has access to secrets. This workflow therefore never checks out or executes code
+# from the triggering ref. It only downloads the `web-dist` artifact that the
+# successful CI run produced (static build plus the Worker sources) and uploads it to
+# the Cloudflare Worker `genialtanken`. The wrangler configuration comes from the
+# default branch, never from the artifact: a configuration from a pull request could
+# declare a custom build command that wrangler would run with the deploy secrets.
+# Runs without that artifact (CI skips all jobs for draft pull requests) skip the
+# deploy instead of failing.
+#
+# Production (CI on `main`): `wrangler deploy`. Pull requests: `wrangler versions upload`
+# with the preview alias `pr-<number>`, served at
+# https://pr-<number>-genialtanken.alexf090.workers.dev. Version previews serve the static
+# assets and share the production variables and secrets the /api proxy needs.
+#
+# The trusted apps/web/wrangler.jsonc must exist on the default branch. Until the change that
+# introduces it is merged, the deploy job fails with a clear error (previews of that very pull
+# request cannot work anyway, because workflow_run reads this file from the default branch).
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions: {}
+
+concurrency:
+  group: deploy-web-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  artifact:
+    name: Check for web build
+    # Only successful CI runs from this repository (pull requests from forks are skipped),
+    # either for pull requests (preview) or for the main branch (production).
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      (
+        github.event.workflow_run.event == 'pull_request' ||
+        (
+          github.event.workflow_run.head_branch == 'main' &&
+          contains(fromJSON('["push", "workflow_dispatch"]'), github.event.workflow_run.event)
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      # List the artifacts of the triggering CI run.
+      actions: read
+      # Find the pull request of the commit when workflow_run.pull_requests is empty.
+      contents: read
+      pull-requests: read
+    outputs:
+      web-dist-available: ${{ steps.lookup.outputs.web-dist-available }}
+      pull-request-number: ${{ steps.pull-request.outputs.number }}
+    steps:
+      # CI skips every job for draft pull requests, yet such a run may still conclude with
+      # `success`. Without a `web-dist` artifact there is nothing to deploy, so the deploy job is
+      # skipped instead of failing. Only the GitHub API is queried; no code from the ref runs.
+      - name: Look up web-dist artifact
+        id: lookup
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          RUN_IDENTIFIER: ${{ github.event.workflow_run.id }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner,
+              repo,
+              run_id: Number(process.env.RUN_IDENTIFIER),
+              name: 'web-dist',
+            });
+            const isAvailable = data.artifacts.some((artifact) => !artifact.expired);
+            if (!isAvailable) {
+              core.notice('The CI run produced no web-dist artifact (for example a draft pull request); skipping deploy.');
+            }
+            core.setOutput('web-dist-available', String(isAvailable));
+
+      # The preview alias pr-<number> needs the pull request number before the deploy.
+      - name: Determine pull request number
+        id: pull-request
+        if: github.event.workflow_run.event == 'pull_request'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          PULL_REQUEST_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const headSha = process.env.HEAD_SHA;
+
+            let pullRequestNumber = Number(process.env.PULL_REQUEST_NUMBER);
+            if (!pullRequestNumber) {
+              // workflow_run.pull_requests can be empty; fall back to the commit lookup.
+              const { data: pullRequests } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner,
+                repo,
+                commit_sha: headSha,
+              });
+              const openPullRequest = pullRequests.find((pullRequest) => pullRequest.state === 'open');
+              if (!openPullRequest) {
+                core.notice(`No open pull request found for commit ${headSha}; skipping preview.`);
+                return;
+              }
+              pullRequestNumber = openPullRequest.number;
+            }
+            if (!Number.isSafeInteger(pullRequestNumber) || pullRequestNumber <= 0) {
+              core.setFailed(`Invalid pull request number: ${pullRequestNumber}`);
+              return;
+            }
+            core.setOutput('number', String(pullRequestNumber));
+
+  deploy:
+    name: Deploy to Cloudflare Workers
+    needs: artifact
+    if: >-
+      needs.artifact.outputs.web-dist-available == 'true' &&
+      (github.event.workflow_run.event != 'pull_request' || needs.artifact.outputs.pull-request-number != '')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      # Download the artifact of the triggering CI run.
+      actions: read
+      # Sparse checkout of the trusted wrangler.jsonc from the default branch.
+      contents: read
+    environment:
+      name: ${{ github.event.workflow_run.event == 'pull_request' && 'preview' || 'production' }}
+      url: ${{ steps.target.outputs.url }}
+    outputs:
+      url: ${{ steps.target.outputs.url }}
+      version-url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - name: Determine deploy target
+        id: target
+        env:
+          IS_PULL_REQUEST: ${{ github.event.workflow_run.event == 'pull_request' }}
+          PULL_REQUEST_NUMBER: ${{ needs.artifact.outputs.pull-request-number }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if ! printf '%s' "${HEAD_SHA}" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::Unexpected commit hash '${HEAD_SHA}'."
+            exit 1
+          fi
+          message="commit-${HEAD_SHA}"
+          # --keep-vars: API_ORIGIN is set in Cloudflare, not in wrangler.jsonc; without the flag
+          # wrangler would drop it from the new version. Secrets are kept either way.
+          if [ "${IS_PULL_REQUEST}" != 'true' ]; then
+            echo "command=deploy --config=wrangler.jsonc --keep-vars --message=${message}" >> "$GITHUB_OUTPUT"
+            echo "url=https://genialtanken.alexf090.workers.dev" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Validated in the artifact job as well; checked again because it reaches a command line.
+          if ! printf '%s' "${PULL_REQUEST_NUMBER}" | grep -Eq '^[1-9][0-9]*$'; then
+            echo "::error::Unexpected pull request number '${PULL_REQUEST_NUMBER}'."
+            exit 1
+          fi
+          alias="pr-${PULL_REQUEST_NUMBER}"
+          echo "command=versions upload --config=wrangler.jsonc --keep-vars --preview-alias=${alias} --message=${message}" >> "$GITHUB_OUTPUT"
+          echo "url=https://${alias}-genialtanken.alexf090.workers.dev" >> "$GITHUB_OUTPUT"
+
+      - name: Download web build from CI run
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: web-dist
+          path: web-dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      # The artifact comes from a CI run of the pull request. Wrangler runs with the Cloudflare token
+      # in this directory, so only the static build and the Worker sources may be present; any
+      # configuration file wrangler or npm would read (wrangler.*, .dev.vars, .env, package.json,
+      # .npmrc) fails the job.
+      - name: Verify artifact contents
+        working-directory: web-dist
+        run: |
+          unexpected_top_level="$(find . -mindepth 1 -maxdepth 1 ! -name dist ! -name worker)"
+          if [ -n "${unexpected_top_level}" ]; then
+            echo "::error::Unexpected entries in web-dist: ${unexpected_top_level}"
+            exit 1
+          fi
+          if [ ! -f worker/index.ts ]; then
+            echo '::error::worker/index.ts is missing.'
+            exit 1
+          fi
+          unexpected_files="$(find worker ! -type d ! -name '*.ts')"
+          if [ -n "${unexpected_files}" ]; then
+            echo "::error::Only TypeScript sources are allowed in worker/: ${unexpected_files}"
+            exit 1
+          fi
+          if [ ! -f dist/web/browser/index.html ]; then
+            echo '::error::dist/web/browser/index.html is missing.'
+            exit 1
+          fi
+
+      # The only file taken from the repository, and only from the default branch.
+      - name: Check out trusted wrangler configuration
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: trusted-configuration
+          sparse-checkout: apps/web/wrangler.jsonc
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      # Defense in depth: a `build` section would make wrangler run a shell command with the
+      # deploy secrets, so the trusted configuration must not have one (top level or per
+      # environment). Comments are stripped string-aware, because URLs contain `//`.
+      - name: Verify trusted wrangler configuration
+        env:
+          CONFIGURATION_PATH: trusted-configuration/apps/web/wrangler.jsonc
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ ! -f "${CONFIGURATION_PATH}" ]; then
+            echo "::error::apps/web/wrangler.jsonc is missing on '${DEFAULT_BRANCH}'. Deploys start working once the change that adds it is merged."
+            exit 1
+          fi
+          node --input-type=module - <<'EOF'
+          import { readFileSync } from 'node:fs';
+
+          const text = readFileSync(process.env.CONFIGURATION_PATH, 'utf8');
+          let withoutComments = '';
+          let isInString = false;
+          for (let index = 0; index < text.length; index += 1) {
+            const character = text[index];
+            const nextCharacter = text[index + 1];
+            if (isInString) {
+              withoutComments += character;
+              if (character === '\\') {
+                withoutComments += nextCharacter ?? '';
+                index += 1;
+              } else if (character === '"') {
+                isInString = false;
+              }
+              continue;
+            }
+            if (character === '"') {
+              isInString = true;
+              withoutComments += character;
+            } else if (character === '/' && nextCharacter === '/') {
+              while (index < text.length && text[index] !== '\n') index += 1;
+              withoutComments += '\n';
+            } else if (character === '/' && nextCharacter === '*') {
+              const end = text.indexOf('*/', index + 2);
+              index = end === -1 ? text.length : end + 1;
+            } else {
+              withoutComments += character;
+            }
+          }
+          const configuration = JSON.parse(withoutComments.replace(/,(\s*[}\]])/g, '$1'));
+          const environments = Object.entries(configuration.env ?? {});
+          const sectionsWithBuild = [
+            ...('build' in configuration ? ['top level'] : []),
+            ...environments.filter(([, environment]) => 'build' in environment).map(([name]) => `env.${name}`),
+          ];
+          if (sectionsWithBuild.length > 0) {
+            console.log(`::error::wrangler.jsonc must not define a build command (${sectionsWithBuild.join(', ')}).`);
+            process.exit(1);
+          }
+          if (configuration.name !== 'genialtanken') {
+            console.log(`::error::Unexpected Worker name '${configuration.name}' in wrangler.jsonc.`);
+            process.exit(1);
+          }
+          EOF
+          cp "${CONFIGURATION_PATH}" web-dist/wrangler.jsonc
+
+      - name: Deploy to Cloudflare Workers
+        id: deploy
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: 4.144.0
+          # Wrangler bundles worker/index.ts with esbuild (no execution) and uploads
+          # dist/web/browser as static assets, both relative to the trusted wrangler.jsonc.
+          workingDirectory: web-dist
+          command: ${{ steps.target.outputs.command }}
+
+  comment:
+    name: Post preview URL
+    needs: [artifact, deploy]
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Create or update preview comment
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PREVIEW_URL: ${{ needs.deploy.outputs.url }}
+          VERSION_URL: ${{ needs.deploy.outputs.version-url }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          PULL_REQUEST_NUMBER: ${{ needs.artifact.outputs.pull-request-number }}
+        with:
+          script: |
+            const marker = '<!-- genialtanken-web-preview -->';
+            const { owner, repo } = context.repo;
+            const headSha = process.env.HEAD_SHA;
+            const pullRequestNumber = Number(process.env.PULL_REQUEST_NUMBER);
+
+            const lines = [
+              marker,
+              '### Web preview',
+              '',
+              '| | URL |',
+              '| --- | --- |',
+              `| Pull request preview | ${process.env.PREVIEW_URL} |`,
+            ];
+            if (process.env.VERSION_URL) {
+              lines.push(`| This commit | ${process.env.VERSION_URL} |`);
+            }
+            lines.push(
+              '',
+              `Built from ${headSha}. Previews use OpenStreetMap tiles; the Mapbox token only works on the production domain.`,
+            );
+            const body = lines.join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: pullRequestNumber,
+              per_page: 100,
+            });
+            const existingComment = comments.find(
+              (comment) => comment.user?.type === 'Bot' && comment.body?.startsWith(marker),
+            );
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existingComment.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number: pullRequestNumber, body });
+            }

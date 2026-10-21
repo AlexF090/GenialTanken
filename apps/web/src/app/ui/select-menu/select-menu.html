@@ -1,0 +1,38 @@
+<button
+  #trigger
+  type="button"
+  class="select-menu__trigger"
+  aria-haspopup="menu"
+  [attr.aria-expanded]="isOpen()"
+  [attr.aria-controls]="isOpen() ? menuIdentifier : null"
+  [style.anchor-name]="anchorName"
+  (click)="toggle()">
+  <ng-content />
+</button>
+
+@if (isOpen()) {
+  <div
+    #menu
+    popover="manual"
+    role="menu"
+    tabindex="-1"
+    class="select-menu__menu"
+    [id]="menuIdentifier"
+    [attr.aria-label]="label()"
+    [style.position-anchor]="anchorName"
+    (keydown)="handleMenuKeydown($event)">
+    @for (option of options(); track option.value) {
+      <button
+        #item
+        type="button"
+        role="menuitemradio"
+        class="select-menu__item"
+        tabindex="-1"
+        [attr.aria-checked]="option.value === value()"
+        (click)="choose(option)">
+        <app-icon name="checkmark" class="select-menu__checkmark" />
+        {{ option.label }}
+      </button>
+    }
+  </div>
+}

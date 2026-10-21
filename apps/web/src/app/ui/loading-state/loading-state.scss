@@ -1,0 +1,49 @@
+// Quiet on purpose: a thin ring and one line of text, the price board stays the loud part.
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  color: var(--color-text-secondary);
+  text-align: center;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.loading-state__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.loading-state__spinner {
+  flex: none;
+  width: var(--layout-spinner-size);
+  height: var(--layout-spinner-size);
+  border: var(--border-width-focus) solid var(--color-hairline);
+  border-top-color: var(--color-action);
+  border-radius: var(--radius-round);
+  animation: spin 1s linear infinite;
+}
+
+.loading-state__hint {
+  max-width: 40ch;
+  font-size: var(--font-size-sm);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Without motion a full ring stands in for the turning one; the text carries the state
+@media (prefers-reduced-motion: reduce) {
+  .loading-state__spinner {
+    border-color: var(--color-action);
+    animation: none;
+  }
+}

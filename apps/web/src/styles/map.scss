@@ -1,0 +1,354 @@
+// Leaflet renders markers, tooltips and controls outside of Angular's view encapsulation, so
+// their styles live here instead of in the map components.
+@use 'breakpoints';
+@use 'typography';
+
+.leaflet-container {
+  // Shared by the markers and the labels above them.
+  --location-pin-size: var(--icon-size-md);
+  --own-position-dot-size: var(--icon-size-sm);
+
+  background-color: var(--color-canvas);
+  font: inherit;
+}
+
+// OpenStreetMap has no dark style; the tiles are inverted instead. Only the tile layer is
+// filtered, markers keep their colors.
+[data-color-scheme='dark'] .leaflet-tile-pane .open-street-map-tiles {
+  filter: invert(1) hue-rotate(180deg) brightness(0.92) contrast(0.88) saturate(0.55);
+}
+
+// Station price tags: a small price board on a pointer, like the pylon at the roadside.
+
+// Interactive markers keep their content size; `translate` (composed with the `transform` Leaflet
+// positions them with) puts the pointer tip or the cluster center onto the map point.
+.price-tag-marker,
+.price-cluster-marker {
+  --price-tag-pointer-size: var(--space-xs);
+
+  width: max-content;
+  cursor: pointer;
+
+  // The ring is drawn by the board inside, so it follows the selection scale.
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+.price-tag-marker {
+  translate: -50% calc(-100% - var(--price-tag-pointer-size) / 2);
+}
+
+.price-cluster-marker {
+  translate: -50% -50%;
+}
+
+.price-tag {
+  --price-tag-background: var(--color-surface);
+  --price-tag-foreground: var(--color-text);
+  --price-tag-edge: var(--color-surface);
+
+  position: relative;
+  // Keeps the pointer below the digits without sliding under the map.
+  isolation: isolate;
+  padding: var(--space-2xs) var(--space-xs);
+  border: var(--border-width-hairline) solid var(--price-tag-edge);
+  border-radius: var(--radius-sm);
+  background-color: var(--price-tag-background);
+  color: var(--price-tag-foreground);
+  box-shadow: var(--shadow-floating);
+  white-space: nowrap;
+  transform-origin: 50% calc(100% + var(--price-tag-pointer-size) / 2);
+  transition:
+    transform var(--duration-short) var(--easing-standard),
+    background-color var(--duration-short) var(--easing-standard);
+
+  // Pointer: a rotated square sharing the board's fill and edge.
+  &::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    bottom: calc(var(--price-tag-pointer-size) / -2 - var(--border-width-hairline));
+    left: 50%;
+    width: var(--price-tag-pointer-size);
+    height: var(--price-tag-pointer-size);
+    border-right: var(--border-width-hairline) solid var(--price-tag-edge);
+    border-bottom: var(--border-width-hairline) solid var(--price-tag-edge);
+    background-color: var(--price-tag-background);
+    transform: translateX(-50%) rotate(45deg);
+  }
+
+  &--without-price {
+    --price-tag-background: var(--color-canvas);
+    --price-tag-foreground: var(--color-text-secondary);
+    --price-tag-edge: var(--color-hairline);
+  }
+
+  // Tinted from cheap (green) to dear (red) within the prices shown
+  @each $level in low, medium, high {
+    &--#{$level} {
+      --price-tag-background: var(--color-price-#{$level});
+      --price-tag-edge: var(--color-price-#{$level}-edge);
+    }
+  }
+
+  // The cheapest stands out: solid green and a little larger than the others.
+  &--cheapest {
+    --price-tag-background: var(--color-highlight);
+    --price-tag-foreground: var(--color-on-highlight);
+    --price-tag-edge: var(--color-highlight-edge);
+
+    transform: scale(1.1);
+  }
+
+  // Tinted like a selected pin in Apple Maps; the surface edge keeps it apart from dark tiles.
+  &--selected {
+    --price-tag-background: var(--color-action);
+    --price-tag-foreground: var(--color-on-action);
+    --price-tag-edge: var(--color-surface);
+
+    transform: scale(1.15);
+  }
+
+  // A selected cheapest station keeps the green as its edge.
+  &--selected.price-tag--cheapest {
+    --price-tag-edge: var(--color-highlight);
+  }
+
+  .price-tag-marker:hover > & {
+    --price-tag-edge: var(--color-border-control);
+  }
+
+  @each $level in low, medium, high {
+    .price-tag-marker:hover > &--#{$level} {
+      --price-tag-edge: var(--color-price-#{$level}-edge);
+    }
+  }
+
+  .price-tag-marker:hover > &--cheapest {
+    --price-tag-edge: var(--color-highlight-edge);
+  }
+
+  .price-tag-marker:hover > &--selected {
+    --price-tag-edge: var(--color-surface);
+  }
+
+  .price-tag-marker:focus-visible > & {
+    outline: var(--border-width-focus) solid var(--color-focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+}
+
+.price-tag__price {
+  display: block;
+
+  @include typography.price-numerals(var(--font-size-price-tag));
+}
+
+// Names the cheapest price in words, so it is not told by the green alone.
+.price-tag__caption,
+.price-cluster__caption {
+  display: block;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-numerals);
+}
+
+.price-tag__caption {
+  margin-top: var(--space-3xs);
+  text-align: center;
+}
+
+// Clusters: how many stations, and the lowest price among them.
+
+.price-cluster {
+  display: flex;
+  align-items: stretch;
+  border: var(--border-width-hairline) solid var(--color-hairline);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-floating);
+  white-space: nowrap;
+  overflow: hidden;
+
+  .price-cluster-marker:focus-visible > & {
+    outline: var(--border-width-focus) solid var(--color-focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+}
+
+.price-cluster__count {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2xs) var(--space-xs);
+  background-color: var(--color-action);
+  color: var(--color-on-action);
+  font-family: var(--font-family-numerals);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-price);
+  font-variant-numeric: tabular-nums;
+}
+
+.price-cluster__lowest-price {
+  display: grid;
+
+  @each $level in low, medium, high {
+    .price-cluster--#{$level} & {
+      background-color: var(--color-price-#{$level});
+    }
+  }
+
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  align-content: center;
+  column-gap: var(--space-3xs);
+  row-gap: var(--space-3xs);
+  padding: var(--space-2xs) var(--space-xs);
+
+  .price-cluster--cheapest & {
+    background-color: var(--color-highlight);
+    color: var(--color-on-highlight);
+  }
+}
+
+.price-cluster__from {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.price-cluster__price {
+  @include typography.price-numerals(var(--font-size-price-tag));
+}
+
+.price-cluster__caption {
+  grid-column: 1 / -1;
+}
+
+// Search center: a tinted pin for places, a blue dot for the user's own position. Both are drawn
+// around a zero-sized, non-interactive icon.
+
+.location-pin {
+  position: absolute;
+  // The pin's tip sits on the map point: half the head plus half its diagonal above it.
+  top: calc(var(--location-pin-size) * -1.207);
+  left: calc(var(--location-pin-size) / -2);
+  pointer-events: none;
+}
+
+.location-pin__head {
+  display: block;
+  width: var(--location-pin-size);
+  height: var(--location-pin-size);
+  border: var(--border-width-focus) solid var(--color-surface);
+  border-radius: var(--radius-round) var(--radius-round) var(--radius-round) 0;
+  background-color: var(--color-action);
+  box-shadow: var(--shadow-floating);
+  transform: rotate(-45deg);
+}
+
+.own-position-dot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--own-position-dot-size);
+  height: var(--own-position-dot-size);
+  border: var(--border-width-focus) solid var(--color-surface);
+  border-radius: var(--radius-round);
+  background-color: var(--color-own-position);
+  box-shadow:
+    0 0 0 var(--space-xs) color-mix(in srgb, var(--color-own-position) 18%, transparent),
+    var(--shadow-floating);
+  transform: translate(-50%, -50%);
+}
+
+.leaflet-tooltip.center-tooltip {
+  padding: var(--space-3xs) var(--space-xs);
+  border: none;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  box-shadow: var(--shadow-floating);
+
+  &.leaflet-tooltip-top::before {
+    border-top-color: var(--color-surface);
+  }
+
+  // Leaflet anchors the label at the map point; `translate` composes with Leaflet's `transform`
+  // and lifts it above the marker. The rotated pin head reaches √2 of its size above the tip.
+  &--above-pin {
+    translate: 0 calc(var(--location-pin-size) * -1.414);
+  }
+
+  &--above-dot {
+    translate: 0 calc(var(--own-position-dot-size) / -2 - var(--space-2xs));
+  }
+}
+
+// Search radius: a thin outline, the area inside only faintly tinted.
+.search-radius {
+  stroke: var(--color-text);
+  stroke-width: var(--border-width-map-outline);
+  stroke-opacity: 0.7;
+  fill: var(--color-text);
+  fill-opacity: 0.05;
+}
+
+// Controls
+
+// Phones zoom with two fingers, like Apple Maps; the buttons would crowd the search field.
+app-stations-map .leaflet-control-zoom {
+  @include breakpoints.compact {
+    display: none;
+  }
+}
+
+.leaflet-container .leaflet-bar {
+  border: none;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-floating);
+
+  a {
+    width: var(--layout-touch-target);
+    height: var(--layout-touch-target);
+    border-bottom-color: var(--color-hairline);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-size: var(--font-size-xl);
+    line-height: var(--layout-touch-target);
+
+    &:hover {
+      background-color: var(--color-canvas);
+      color: var(--color-text);
+    }
+
+    &:focus-visible {
+      position: relative;
+      z-index: 1;
+    }
+
+    &:first-child {
+      border-top-left-radius: var(--radius-sm);
+      border-top-right-radius: var(--radius-sm);
+    }
+
+    &:last-child {
+      border-bottom-left-radius: var(--radius-sm);
+      border-bottom-right-radius: var(--radius-sm);
+    }
+  }
+}
+
+// OpenStreetMap requires a visible attribution; it stays legible on every tile color.
+.leaflet-container .leaflet-control-attribution {
+  padding: 0 var(--space-2xs);
+  background-color: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+
+  a {
+    color: var(--color-action-text);
+  }
+}

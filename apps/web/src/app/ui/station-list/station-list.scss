@@ -1,0 +1,163 @@
+// An iOS list: rows separated by a hairline inset from the leading edge, prices aligned on the
+// right.
+.station-list {
+  list-style: none;
+}
+
+.station-row {
+  position: relative;
+  display: grid;
+  // Actions top right, price bottom right where the eye ends the row. The price stays first in
+  // the markup, so screen readers hear it right after the station.
+  grid-template-areas:
+    'details actions'
+    'details price';
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-md);
+  row-gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-md);
+  background: linear-gradient(var(--color-hairline), var(--color-hairline)) no-repeat right bottom /
+    calc(100% - var(--space-md)) var(--border-width-hairline);
+  transition: background-color var(--duration-short) var(--easing-standard);
+
+  &:hover {
+    background-color: var(--color-menu-highlight);
+  }
+
+  // Marker bar of the station shown on the map
+  &--selected {
+    background-color: color-mix(in srgb, var(--color-action) 10%, transparent);
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: 0;
+      width: var(--space-2xs);
+      background-color: var(--color-action);
+    }
+  }
+}
+
+.station-row__details {
+  display: flex;
+  flex-direction: column;
+  grid-area: details;
+  min-width: 0;
+}
+
+.station-row__title {
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  overflow: hidden;
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  // The whole row opens the details; the actions sit above this layer
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  // Only a link title is underlined; a selecting row is highlighted as a whole instead.
+  &:is(a):hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: none;
+
+    &::after {
+      outline: var(--border-width-focus) solid var(--color-focus-ring);
+      outline-offset: calc(-1 * var(--border-width-focus));
+    }
+  }
+}
+
+.station-row__line {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+// Below the name, smaller like a footnote: the title already says which station it is.
+.station-row__address {
+  font-size: var(--font-size-footnote);
+}
+
+.station-row__distance {
+  color: var(--color-text);
+  font-weight: var(--font-weight-medium);
+}
+
+.station-row__price {
+  display: flex;
+  flex-direction: column;
+  grid-area: price;
+  align-items: flex-end;
+  align-self: end;
+  justify-self: end;
+  min-width: var(--layout-price-column-width);
+  padding: var(--space-2xs) var(--space-xs);
+  border: var(--border-width-hairline) solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+}
+
+// The green is reserved for the cheapest price and always comes with its label
+.station-row--cheapest .station-row__price {
+  border-color: var(--color-highlight-edge);
+  background-color: var(--color-highlight);
+  color: var(--color-on-highlight);
+}
+
+.station-row__cheapest-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.station-row__actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  grid-area: actions;
+  justify-self: end;
+  align-self: start;
+  // Optically aligns the icons with the title and keeps the touch targets from padding the row
+  margin-block-start: calc(-1 * var(--space-xs));
+  margin-inline-end: calc((var(--icon-size-md) - var(--layout-touch-target)) / 2);
+}
+
+.station-row__action {
+  display: inline-flex;
+  text-decoration: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--layout-touch-target);
+  height: var(--layout-touch-target);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-action-text);
+  font-size: var(--icon-size-md);
+  cursor: pointer;
+  touch-action: manipulation;
+
+  &:hover {
+    color: var(--color-action-text-hover);
+  }
+}

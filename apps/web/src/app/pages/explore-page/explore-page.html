@@ -1,0 +1,127 @@
+<main class="explore-page">
+  <div
+    #searchOverlay
+    class="explore-page__search"
+    [class.explore-page__search--covered]="isSearchCoveredBySheet()">
+    <div class="explore-page__search-bar">
+      <app-place-search-field
+        class="explore-page__place-search"
+        [placeholder]="placeSearchPlaceholder()"
+        [query]="placeQuery()"
+        [suggestions]="placeSuggestions()"
+        [statusMessage]="placeSearchStatus()"
+        (queryChange)="searchPlaces($event)"
+        (placeSelected)="choosePlace($event)"
+        (cleared)="clearPlace()">
+        <app-select-menu
+          placeSearchAccessory
+          class="explore-page__radius"
+          label="Radius"
+          [options]="radiusOptions()"
+          [value]="radiusInKilometers()"
+          (valueChange)="chooseRadius($event)">
+          <span class="visually-hidden">Radius: </span>{{ radiusInKilometers() }}&nbsp;km
+          <app-icon name="chevron-down" class="explore-page__chevron" />
+        </app-select-menu>
+      </app-place-search-field>
+      <button
+        type="button"
+        class="icon-button explore-page__locate"
+        aria-label="Meinen Standort verwenden"
+        [class.explore-page__locate--active]="isAtOwnPosition()"
+        [attr.aria-disabled]="isLocating()"
+        [attr.aria-busy]="isLocating()"
+        (click)="useOwnPosition()">
+        <app-icon name="my-location" />
+      </button>
+    </div>
+    @if (isAreaSearchOffered()) {
+      <button type="button" class="explore-page__area-search" (click)="searchVisibleArea()">
+        In diesem Bereich suchen
+      </button>
+    }
+    @if (locationErrorMessage(); as message) {
+      <div class="message message--error toast">
+        <p role="alert">{{ message }}</p>
+        <button
+          type="button"
+          class="icon-button toast__dismiss"
+          aria-label="Hinweis schließen"
+          (click)="dismissLocationError()">
+          <app-icon name="close" />
+        </button>
+      </div>
+    }
+  </div>
+
+  <app-bottom-sheet
+    class="explore-page__panel"
+    label="Tankstellen"
+    [(snapPosition)]="snapPosition"
+    (heightChanged)="updateSheetHeight($event)">
+    <div class="explore-page__header" bottomSheetHeader [hidden]="isStationCardOpen()">
+      <h1 class="explore-page__title" translate="no">GenialTanken</h1>
+
+      <div class="explore-page__toolbar">
+        <app-select-menu
+          class="explore-page__fuel"
+          label="Kraftstoff"
+          [options]="fuelTypeOptions"
+          [value]="fuelType()"
+          (valueChange)="chooseFuelType($event)">
+          <span class="visually-hidden">Kraftstoff: </span>{{ fuelLabel() }}
+          <app-icon name="chevron-down" class="explore-page__chevron" />
+        </app-select-menu>
+        <app-sort-order-control [(sortOrder)]="sortOrder" />
+        <button
+          type="button"
+          class="icon-button explore-page__refresh"
+          aria-label="Aktualisieren"
+          (click)="refresh()">
+          <app-icon name="refresh" />
+        </button>
+      </div>
+
+      <p class="explore-page__summary" role="status">{{ resultSummary() }}</p>
+
+      @if (stationsErrorMessage(); as message) {
+        <p class="message message--error" role="alert">{{ message }}</p>
+      }
+      <app-loading-state [isLoading]="isLoading()" />
+    </div>
+
+    <router-outlet />
+    <!-- Hidden, not removed, while a station card is open: the list keeps its state. -->
+    <div [hidden]="isStationCardOpen()">
+      @if (hasLoaded() && stations().length === 0) {
+        <p class="message explore-page__empty">
+          Keine Tankstellen mit Preis für {{ fuelLabel() }} im Umkreis von
+          {{ radiusInKilometers() }}&nbsp;km gefunden.
+        </p>
+      }
+      <app-station-list
+        [stations]="stations()"
+        [fuelType]="fuelType()"
+        [favoriteStationIdentifiers]="favoriteStationIdentifiers()"
+        [cheapestStationIdentifiers]="cheapestStationIdentifiers()"
+        [selectedStationIdentifier]="selectedStationIdentifier()"
+        [selectsOnMap]="true"
+        (stationSelected)="showOnMap($event)"
+        (favoriteToggled)="toggleFavorite($event)" />
+      <app-data-source-credit class="explore-page__credit" />
+    </div>
+  </app-bottom-sheet>
+
+  <app-stations-map
+    class="explore-page__map"
+    [stations]="mapStations()"
+    [fuelType]="fuelType()"
+    [center]="center()"
+    [radiusInKilometers]="radiusInKilometers()"
+    [selectedStationIdentifier]="selectedStationIdentifier()"
+    [cheapestStationIdentifiers]="cheapestStationIdentifiers()"
+    [colorScheme]="colorScheme()"
+    [viewportPadding]="mapViewportPadding()"
+    (stationSelected)="selectFromMap($event)"
+    (visibleCenterChanged)="updateVisibleMapCenter($event)" />
+</main>

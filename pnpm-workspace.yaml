@@ -1,0 +1,21 @@
+packages:
+  - apps/*
+  - packages/*
+  - e2e
+
+saveExact: true
+engineStrict: true
+# Minutes a release must be public before it can be installed (supply-chain protection)
+minimumReleaseAge: 1440
+
+allowBuilds:
+  esbuild: true
+  '@parcel/watcher': true
+  lmdb: true
+  # Local runtime of wrangler for `wrangler dev`
+  workerd: true
+  msgpackr-extract: true
+  # Telemetry from swagger-ui-dist
+  '@scarf/scarf': false
+  # Binary comes from its platform package; the postinstall would only install the hooks again
+  lefthook: false

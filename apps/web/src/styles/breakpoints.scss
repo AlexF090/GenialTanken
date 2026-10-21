@@ -1,0 +1,40 @@
+// Window size classes, mirrored in `src/app/core/layout/breakpoints.ts`. Keep both in sync.
+//   compact   < 48rem         phones: bottom navigation, list and map as separate views
+//   medium    48rem – 64rem   small tablets: navigation rail
+//   expanded  ≥ 64rem         list and map side by side
+//
+// Usage in a component stylesheet (`src/styles` is an include path):
+//   @use 'breakpoints';
+//   .layout { @include breakpoints.expanded { grid-template-columns: … } }
+
+$medium-minimum-width: 48rem;
+$expanded-minimum-width: 64rem;
+
+$compact-media-query: '(width < #{$medium-minimum-width})';
+$medium-media-query: '(#{$medium-minimum-width} <= width < #{$expanded-minimum-width})';
+$medium-and-up-media-query: '(width >= #{$medium-minimum-width})';
+$expanded-media-query: '(width >= #{$expanded-minimum-width})';
+
+@mixin compact {
+  @media #{$compact-media-query} {
+    @content;
+  }
+}
+
+@mixin medium {
+  @media #{$medium-media-query} {
+    @content;
+  }
+}
+
+@mixin medium-and-up {
+  @media #{$medium-and-up-media-query} {
+    @content;
+  }
+}
+
+@mixin expanded {
+  @media #{$expanded-media-query} {
+    @content;
+  }
+}

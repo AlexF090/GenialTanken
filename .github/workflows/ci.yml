@@ -1,0 +1,188 @@
+name: CI
+
+on:
+  pull_request:
+    # Draft pull requests skip CI (local lefthook hooks cover format, lint, typecheck and tests);
+    # it runs once the pull request is ready for review and on every push after that.
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  quality:
+    name: Format, lint, typecheck
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Check formatting
+        run: pnpm format:check
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+
+  unit:
+    name: Unit tests
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Run unit tests
+        run: pnpm test
+
+  api-e2e:
+    name: API end-to-end tests
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Run API end-to-end tests
+        run: pnpm --filter api test:e2e
+
+  build:
+    name: Build
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Build all packages
+        run: pnpm build
+        env:
+          # Public Mapbox token (pk.*), stored as repository variable, not as secret. Mapbox
+          # restricts it to the production URL and allows no wildcards, so only builds of `main`
+          # that deploy-web.yml publishes to production embed it. Pull request previews and all
+          # other builds fall back to OpenStreetMap tiles.
+          NG_APP_MAPBOX_ACCESS_TOKEN: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && vars.MAPBOX_ACCESS_TOKEN || '' }}
+      # Static build plus the Worker that proxies /api to Render. The artifact root is apps/web,
+      # so it mirrors that layout: dist/web/browser/ and worker/ side by side. wrangler.jsonc is
+      # left out on purpose: deploy-web.yml takes it from the default branch only.
+      - name: Upload web build
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web-dist
+          path: |
+            apps/web/dist/web/browser
+            apps/web/worker/**/*.ts
+            !apps/web/worker/**/*.spec.ts
+          if-no-files-found: error
+          retention-days: 7
+
+  docker:
+    name: API Docker image
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build API image (no push)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: false
+          tags: genialtanken-api:ci
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+
+  e2e:
+    name: Browser end-to-end tests
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Read Playwright version
+        id: playwright
+        run: echo "version=$(jq --raw-output '.devDependencies["@playwright/test"]' e2e/package.json)" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - name: Install Playwright Chromium with system dependencies
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter e2e exec playwright install --with-deps chromium
+      - name: Install Playwright system dependencies (browsers restored from cache)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter e2e exec playwright install-deps chromium
+      # No Mapbox token on purpose: the app falls back to OpenStreetMap tiles, which the suite mocks.
+      - name: Run browser end-to-end tests
+        run: pnpm test:e2e
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 7
+
+  audit:
+    name: Dependency audit
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - name: Audit production dependencies (blocking)
+        run: pnpm audit --prod --audit-level=high
+      # Advisories in development-only dependencies (build tooling, test runners) do not
+      # ship to users; report them without failing the pipeline.
+      - name: Audit all dependencies (informational)
+        continue-on-error: true
+        run: pnpm audit --audit-level=high
+
+  ci-success:
+    name: CI success
+    # always() so that failed or cancelled jobs fail this check; skipped for drafts like the others.
+    if: always() && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
+    needs: [quality, unit, api-e2e, build, docker, e2e, audit]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fail if any required job did not succeed
+        env:
+          NEEDS_RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: ${NEEDS_RESULTS}"
+          for result in ${NEEDS_RESULTS}; do
+            if [ "${result}" != "success" ]; then
+              echo "::error::At least one required job finished with '${result}'."
+              exit 1
+            fi
+          done

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Simplified Preismast for tab sizes: pixel-aligned segment "9" above two price rows. -->
+  <rect width="32" height="32" rx="7" fill="#0E3B4A" />
+  <rect x="6" y="2" width="20" height="28" rx="2" fill="#F3F5F4" />
+  <rect x="8" y="4" width="16" height="14" rx="1" fill="#F2B705" />
+  <path fill="#0E3B4A" fill-rule="evenodd" d="M12 6h8v10h-8v-2h6v-2h-6zM14 8v2h4V8z" />
+  <rect x="8" y="20" width="16" height="3" rx="1" fill="#1F7A8C" />
+  <rect x="8" y="25" width="16" height="3" rx="1" fill="#1F7A8C" />
+</svg>

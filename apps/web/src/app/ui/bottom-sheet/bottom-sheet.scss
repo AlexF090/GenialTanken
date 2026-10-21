@@ -1,0 +1,110 @@
+@use 'breakpoints';
+
+:host {
+  display: block;
+}
+
+.bottom-sheet {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+.bottom-sheet__content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.bottom-sheet__handle {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--layout-touch-target);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: none;
+  cursor: grab;
+  // The sheet follows the finger instead of the page scrolling
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:focus-visible {
+    outline-offset: calc(-1 * var(--border-width-focus));
+  }
+}
+
+// The iOS grabber: 36 × 5 points
+.bottom-sheet__grip {
+  width: 2.25rem;
+  height: 0.3125rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-border-control);
+}
+
+// Phones: floats over the map above the bottom navigation. The sheet always keeps its full
+// height and slides down by the hidden part, so dragging only changes `transform`.
+@include breakpoints.compact {
+  .bottom-sheet {
+    position: fixed;
+    inset-inline: 0;
+    top: calc(var(--safe-area-top) + var(--space-xl));
+    bottom: calc(var(--layout-navigation-height) + var(--safe-area-bottom));
+    // Below the navigation, which covers the part of the sheet that slid down
+    z-index: calc(var(--layer-chrome) - 1);
+    padding-inline: var(--safe-area-left) var(--safe-area-right);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background-color: var(--material-sheet);
+    box-shadow: var(--shadow-floating);
+    backdrop-filter: var(--material-blur);
+    transform: translateY(var(--bottom-sheet-offset, 0));
+
+    &--animated {
+      transition: transform var(--duration-medium) var(--easing-standard);
+    }
+  }
+
+  // Keeps the end of the list and focused rows scrollable into the visible part of the sheet
+  .bottom-sheet__content {
+    padding-block-end: var(--bottom-sheet-settled-offset, 0);
+    scroll-padding-block-end: var(--bottom-sheet-settled-offset, 0);
+  }
+
+  .bottom-sheet--dragging {
+    user-select: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-sheet--animated {
+    transition: none;
+  }
+}
+
+// Larger windows: a static side panel next to the map
+@include breakpoints.medium-and-up {
+  :host,
+  .bottom-sheet {
+    height: 100%;
+  }
+
+  .bottom-sheet {
+    border-inline-end: var(--border-width-hairline) solid var(--color-hairline);
+  }
+
+  .bottom-sheet__handle {
+    display: none;
+  }
+
+  .bottom-sheet__header {
+    padding-block-start: var(--space-md);
+  }
+}

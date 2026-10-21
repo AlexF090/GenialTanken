@@ -1,0 +1,38 @@
+<app-page-header title="Favoriten" />
+<main class="page-content favorites">
+  @if (hasFavorites()) {
+    <h2 #contentHeading class="visually-hidden" tabindex="-1">Gespeicherte Tankstellen</h2>
+    <app-loading-state [isLoading]="isLoading()" label="Favoriten werden geladen …" />
+    @if (errorMessage(); as message) {
+      <p class="message message--error" role="alert">{{ message }}</p>
+    }
+    @if (unavailableMessage(); as message) {
+      <div class="message unavailable-favorites">
+        <p role="status">{{ message }}</p>
+        <button type="button" class="button button--quiet" (click)="removeUnavailableFavorites()">
+          Nicht verfügbare Favoriten entfernen
+        </button>
+      </div>
+    }
+    <app-station-list
+      class="favorites__list"
+      [stations]="stations()"
+      [fuelType]="fuelType()"
+      [favoriteStationIdentifiers]="favoriteStationIdentifiers()"
+      (favoriteToggled)="toggleFavorite($event)" />
+    @if (showsFrenchPrices()) {
+      <app-data-source-credit />
+    }
+  } @else {
+    <div class="empty-favorites">
+      <h2 #contentHeading class="empty-favorites__title" tabindex="-1">
+        Keine Favoriten gespeichert
+      </h2>
+      <p class="empty-favorites__text">
+        Tippe bei einer Tankstelle auf den Stern. Sie erscheint dann hier mit ihren aktuellen
+        Preisen, ganz ohne Suche.
+      </p>
+      <a class="button" routerLink="/">Tankstellen erkunden</a>
+    </div>
+  }
+</main>

@@ -1,0 +1,48 @@
+{
+  "id": "/",
+  "name": "GenialTanken",
+  "short_name": "GenialTanken",
+  "description": "Aktuelle Spritpreise der Tankstellen in deiner Nähe, als Liste und auf der Karte.",
+  "lang": "de",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#F9F9F9",
+  "background_color": "#F2F2F7",
+  "categories": ["travel", "navigation"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Favoriten",
+      "short_name": "Favoriten",
+      "description": "Deine gespeicherten Tankstellen",
+      "url": "/favorites",
+      "icons": [
+        { "src": "/icons/shortcut-favorites-96.png", "sizes": "96x96", "type": "image/png" }
+      ]
+    },
+    {
+      "name": "Einstellungen",
+      "short_name": "Einstellungen",
+      "description": "Kraftstoff und Suchradius festlegen",
+      "url": "/settings",
+      "icons": [{ "src": "/icons/shortcut-settings-96.png", "sizes": "96x96", "type": "image/png" }]
+    }
+  ]
+}

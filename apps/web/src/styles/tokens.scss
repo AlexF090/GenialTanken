@@ -1,0 +1,184 @@
+// Design tokens after Apple's Human Interface Guidelines: system colors and font, translucent
+// materials over the map, soft corners.
+// Every color token carries its light and dark value via `light-dark()`, resolved against the
+// `color-scheme` set below. Contrast ratios (WCAG 2.2) are recorded next to the pairs that matter.
+
+// Color scheme: `index.html` and `ColorSchemeController` set `data-color-scheme` on <html>.
+// Without the attribute (script blocked or not yet run) the operating system decides.
+:root {
+  color-scheme: light;
+
+  @media (prefers-color-scheme: dark) {
+    color-scheme: dark;
+  }
+
+  &[data-color-scheme='light'] {
+    color-scheme: light;
+  }
+
+  &[data-color-scheme='dark'] {
+    color-scheme: dark;
+  }
+}
+
+:root {
+  // Surfaces, after the iOS system colors: grouped background behind inset groups and sheets
+  --color-canvas: light-dark(#f2f2f7, #000000);
+  --color-surface: light-dark(#ffffff, #1c1c1e);
+
+  // Text (label / secondary label): light 15.2 / 17.0 and dark 21.0 / 17.0 on canvas / surface
+  --color-text: light-dark(#1c1c1e, #ffffff);
+  // Darker than the iOS secondary label so small text keeps 4.5:1: light 4.7 / 5.2, dark 9.5 / 7.7
+  --color-text-secondary: light-dark(#6c6c70, #aeaeb2);
+
+  // Tab bar and other bars: a translucent material over the content. Inactive items: light 5.0,
+  // dark 5.9 on the opaque bar. Also the browser UI color: keep the `theme-color` meta elements
+  // in `index.html` in sync.
+  --color-chrome: light-dark(rgb(249 249 249 / 94%), rgb(29 29 29 / 94%));
+  --color-on-chrome: var(--color-action-text);
+  --color-on-chrome-secondary: light-dark(#6c6c70, #98989f);
+
+  // Tint (iOS blue, darkened for text contrast). Filled actions: white text 5.8, dark 7.4
+  --color-action: light-dark(#0062cc, #409cff);
+  --color-action-hover: light-dark(#0052ab, #66b0ff);
+  --color-on-action: light-dark(#ffffff, #000000);
+  // Links and plain buttons: light 5.8 / 5.2, dark 6.0 / 7.4 on surface / canvas
+  --color-action-text: light-dark(#0062cc, #409cff);
+  --color-action-text-hover: light-dark(#0052ab, #66b0ff);
+
+  // Focus ring (non-text, ≥ 3:1): the tint
+  --color-focus-ring: light-dark(#0062cc, #409cff);
+  --color-focus-ring-on-chrome: light-dark(#0062cc, #409cff);
+
+  // Reserved for the cheapest price only, like a green price in Apple Maps: text on it light 5.2,
+  // dark 10.4; the edge separates it from white surfaces
+  --color-highlight: light-dark(#1e7d36, #30d158);
+  --color-on-highlight: light-dark(#ffffff, #000000);
+  --color-highlight-edge: light-dark(#1e7d36, #30d158);
+
+  // Price levels on the map, cheap to dear: a tint with a colored edge. Text on the tints: light
+  // 14.4 / 14.7 / 13.3, dark 13.5 / 13.4 / 15.5. Edges against the surface: light 5.2 / 4.3 / 6.2,
+  // dark 8.4 / 9.5 / 6.0. Color only repeats what the price says.
+  --color-price-low: light-dark(#d9f2df, #12351d);
+  --color-price-low-edge: light-dark(#1e7d36, #30d158);
+  --color-price-medium: light-dark(#fdedc8, #3d2c08);
+  --color-price-medium-edge: light-dark(#c25e00, #ffb340);
+  --color-price-high: light-dark(#fddcd8, #421616);
+  --color-price-high-edge: light-dark(#c4001a, #ff6961);
+
+  // Errors: light 5.3 / 6.2, dark 5.8 / 6.0 on error surface / surface
+  --color-error: light-dark(#c4001a, #ff6961);
+  --color-error-surface: light-dark(#fde8ea, #3a1416);
+
+  // Lines: separators between rows (decorative), control borders mark inputs (≥ 3:1;
+  // light 3.7 / 3.3, dark 5.2 / 6.4 on surface / canvas)
+  --color-hairline: light-dark(#c6c6c8, #38383a);
+  --color-border-control: light-dark(#848489, #8e8e93);
+
+  // Map: the own position is the blue dot known from Apple Maps
+  --color-own-position: #007aff;
+
+  // The only shadow color; used by `--shadow-floating`
+  --color-shadow: light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 50%));
+  --color-scrim: light-dark(rgb(0 0 0 / 20%), rgb(0 0 0 / 48%));
+
+  // Materials: translucent, blurred layers floating above the map and the content
+  --material-menu: light-dark(rgb(255 255 255 / 90%), rgb(44 44 46 / 90%));
+  // Nearly opaque, so the list stays readable over busy map tiles
+  --material-sheet: light-dark(rgb(255 255 255 / 92%), rgb(28 28 30 / 92%));
+  // Bars on the grouped background, e.g. the page header with its large title
+  --material-bar: light-dark(rgb(242 242 247 / 92%), rgb(0 0 0 / 92%));
+  --material-blur: blur(20px) saturate(180%);
+  // Segmented control: grey track, raised thumb for the chosen segment (the label marks it too)
+  --color-segmented-track: light-dark(rgb(118 118 128 / 12%), rgb(118 118 128 / 24%));
+  --color-segmented-thumb: light-dark(#ffffff, #636366);
+  --color-menu-highlight: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 10%));
+
+  // Spacing
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  // Radii: soft corners like iOS; inset groups use the medium radius, sheets the large one
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1.25rem;
+  --radius-menu: 0.875rem;
+  --radius-pill: 999rem;
+  --radius-round: 50%;
+
+  // Typography: the system font (San Francisco on Apple devices); prices use its rounded variant
+  // like Apple Maps and Wallet. Sizes follow the iOS text styles at the default Dynamic Type size.
+  --font-family-ui: -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-family-numerals: ui-rounded, 'SF Pro Rounded', var(--font-family-ui);
+  // Caption 1, footnote, subheadline, body, title 3, title 2, large title
+  --font-size-xs: 0.75rem;
+  --font-size-footnote: 0.8125rem;
+  --font-size-sm: 0.9375rem;
+  --font-size-md: 1.0625rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.375rem;
+  --font-size-2xl: 2.125rem;
+  --font-size-price-hero: clamp(3rem, 2.25rem + 3.5vw, 4.5rem);
+  --font-size-price-list: 1.5rem;
+  --font-size-price-tag: 1rem;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 600;
+  --font-weight-price: 600;
+  --line-height-base: 1.45;
+  --line-height-tight: 1.2;
+  --line-height-numerals: 1;
+
+  // Borders and focus
+  --border-width-hairline: 1px;
+  --border-width-thin: 1px;
+  --border-width-focus: 3px;
+  // Outlines drawn on the map, e.g. the search radius
+  --border-width-map-outline: 1.5px;
+  --focus-offset: 2px;
+
+  // The only shadow: sheets, the search field and map markers float above the map
+  --shadow-floating: 0 1px 2px var(--color-shadow), 0 6px 20px var(--color-shadow);
+  --shadow-menu:
+    0 0 0 var(--border-width-hairline) var(--color-hairline), 0 10px 40px var(--color-shadow);
+
+  // Icons
+  --icon-size-sm: 1.25rem;
+  --icon-size-md: 1.5rem;
+  --icon-size-lg: 2.25rem;
+
+  // Layout
+  --layout-touch-target: 2.75rem;
+  --layout-rail-width: 5rem;
+  --layout-header-height: 6.25rem;
+  --layout-navigation-height: 4.5rem;
+  --layout-content-max-width: 48rem;
+  // Station panel next to the map: fluid between minimum and maximum on medium screens, fixed on
+  // expanded ones
+  --layout-panel-width-minimum: 20rem;
+  --layout-panel-width-maximum: 24rem;
+  --layout-panel-width-expanded: 26rem;
+  --layout-fuel-badge-width: 3.125rem;
+  --layout-fuel-badge-height: 2.125rem;
+  --layout-price-column-width: 6.5rem;
+  --layout-spinner-size: 1.5rem;
+  --layout-map-minimum-height: 20rem;
+  --safe-area-top: env(safe-area-inset-top, 0);
+  --safe-area-right: env(safe-area-inset-right, 0);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0);
+  --safe-area-left: env(safe-area-inset-left, 0);
+
+  // Stacking: above Leaflet panes and controls (max. 1000)
+  --layer-chrome: 1100;
+
+  // Motion
+  --duration-short: 150ms;
+  --duration-medium: 250ms;
+  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+}

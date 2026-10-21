@@ -1,0 +1,125 @@
+@use 'visually-hidden';
+
+// iOS settings: inset grouped lists on the grouped background, small section headers above
+// them, a checkmark on the chosen row.
+.settings {
+  gap: var(--space-xl);
+}
+
+.settings__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.settings__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+  padding: 0;
+  border: none;
+}
+
+.settings__title {
+  // A legend only takes part in the flex layout when it does not float
+  float: none;
+  padding: 0 var(--space-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-tight);
+}
+
+.settings__options,
+.settings__slider-row,
+.settings__card {
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  overflow: hidden;
+}
+
+.settings__option {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+  min-height: var(--layout-touch-target);
+  padding: var(--space-2xs) var(--space-md);
+  background: linear-gradient(var(--color-hairline), var(--color-hairline)) no-repeat right bottom /
+    calc(100% - var(--space-md)) var(--border-width-hairline);
+  cursor: pointer;
+  touch-action: manipulation;
+
+  &:last-child {
+    background-image: none;
+  }
+
+  &:hover {
+    background-color: var(--color-menu-highlight);
+  }
+
+  &:has(:focus-visible) {
+    outline: var(--border-width-focus) solid var(--color-focus-ring);
+    outline-offset: calc(-1 * var(--border-width-focus));
+  }
+}
+
+// The native radio stays for assistive technology and the keyboard; the checkmark is its face.
+.settings__radio {
+  @include visually-hidden.visually-hidden;
+}
+
+.settings__checkmark {
+  flex: none;
+  color: var(--color-action-text);
+  font-size: var(--icon-size-sm);
+  visibility: hidden;
+
+  .settings__option:has(:checked) > & {
+    visibility: visible;
+  }
+}
+
+.settings__slider-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-2xs) var(--space-md);
+}
+
+.settings__slider {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--layout-touch-target);
+  margin: 0;
+  accent-color: var(--color-action);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.settings__range-limit {
+  flex: none;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.settings__text {
+  color: var(--color-text-secondary);
+}
+
+.settings__card {
+  padding: var(--space-sm) var(--space-md);
+  font-size: var(--font-size-sm);
+}
+
+.settings__link {
+  color: var(--color-action-text);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--color-action-text-hover);
+  }
+}
