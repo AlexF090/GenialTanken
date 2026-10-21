@@ -166,6 +166,6 @@ describe('SettingsStore', () => {
 
     store.update({ fuelType: 'e5', radiusInKilometers: 40 });
 
-    expect(store.radiusInKilometers()).toBe(25);
+    expect(store.radiusInKilometers()).toBe(30);
   });
 });

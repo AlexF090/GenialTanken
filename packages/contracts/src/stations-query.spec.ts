@@ -32,9 +32,16 @@ describe('stationsQuerySchema', () => {
     });
   });
 
+  it('accepts a 30 km radius', () => {
+    expect(
+      stationsQuerySchema.parse({ latitude: '51.3', longitude: '9.4', radiusInKilometers: '30' })
+        .radiusInKilometers
+    ).toBe(30);
+  });
+
   it.each([
     ['a radius below 1 km', { radiusInKilometers: '0' }],
-    ['a radius above 25 km', { radiusInKilometers: '26' }],
+    ['a radius above 30 km', { radiusInKilometers: '31' }],
     ['a latitude outside -90..90', { latitude: '91' }],
     ['a longitude outside -180..180', { longitude: '-181' }],
     ['a non-numeric latitude', { latitude: 'north' }],

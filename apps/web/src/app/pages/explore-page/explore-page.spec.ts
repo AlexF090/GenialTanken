@@ -175,6 +175,7 @@ describe('ExplorePage', () => {
       '10 km',
       '15 km',
       '25 km',
+      '30 km',
     ]);
 
     getButton(element, '10 km').click();

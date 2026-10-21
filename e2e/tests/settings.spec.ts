@@ -46,7 +46,7 @@ test.describe('settings', () => {
     const radiusSlider = page.getByRole('slider', { name: 'Radius: 5 km' });
     await expect(radiusSlider).toHaveValue('5');
     await expect(radiusSlider).toHaveAttribute('min', '1');
-    await expect(radiusSlider).toHaveAttribute('max', '25');
+    await expect(radiusSlider).toHaveAttribute('max', '30');
 
     await expect(colorSchemeOptions(page).getByRole('radio')).toHaveCount(
       COLOR_SCHEME_LABELS.length

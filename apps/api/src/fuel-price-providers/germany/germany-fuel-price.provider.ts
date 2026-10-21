@@ -13,6 +13,9 @@ import {
 import { toStationFromGermany } from './to-station-from-germany.js';
 
 const METERS_PER_KILOMETER = 1000;
+// tankentanken documents no radius limit, but its website offers 1 to 25 km. Larger requests are
+// capped; the StationsService filters by exact distance anyway.
+const MAXIMUM_UPSTREAM_RADIUS_IN_KILOMETERS = 25;
 const STATIONS_PATH = '/gas-stations';
 const OFFERED_FUEL_TYPES: readonly FuelType[] = ['e5', 'e10', 'diesel'];
 const stationIdentifierSchema = z.guid();
@@ -41,7 +44,11 @@ export class GermanyFuelPriceProvider implements FuelPriceProvider {
     url.search = new URLSearchParams({
       latitude: roundCoordinate(latitude),
       longitude: roundCoordinate(longitude),
-      radius: String(Math.round(radiusInKilometers * METERS_PER_KILOMETER)),
+      radius: String(
+        Math.round(
+          Math.min(radiusInKilometers, MAXIMUM_UPSTREAM_RADIUS_IN_KILOMETERS) * METERS_PER_KILOMETER
+        )
+      ),
     }).toString();
     const stations = await this.upstreamJsonFetcher.fetchRequired({
       url,

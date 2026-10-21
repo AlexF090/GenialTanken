@@ -268,7 +268,7 @@ describe('GET /api/stations with French open data only', () => {
 
   it.each([
     ['a missing position', {}, 'latitude'],
-    ['a radius above 25 km', { ...PARIS, radiusInKilometers: '26' }, 'radiusInKilometers'],
+    ['a radius above 30 km', { ...PARIS, radiusInKilometers: '31' }, 'radiusInKilometers'],
     ['an unknown fuel', { ...PARIS, fuel: 'kerosene' }, 'fuel'],
     ['a non-numeric longitude', { latitude: '48.8', longitude: 'east' }, 'longitude'],
   ])('rejects %s with 400', async (_description, query, invalidField) => {
@@ -391,6 +391,21 @@ describe('GET /api/stations with French and German data', () => {
       '/gas-stations?latitude=51.313&longitude=9.48&radius=10000'
     );
     expect(germany.requests[0]?.headers.authorization).toBe(`Bearer ${GERMAN_TEST_API_KEY}`);
+  });
+
+  it('asks the German API for at most 25 km, the radius its website offers', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, { status: 200, body: frenchResponse([]) });
+    germany.respondTo(GERMAN_STATIONS_PATH, { status: 200, body: [] });
+    const api = await startWithGermany();
+
+    await api
+      .get('/api/stations')
+      .query({ latitude: '51.3127', longitude: '9.4797', radiusInKilometers: '30' })
+      .expect(200);
+
+    expect(germany.requests[0]?.url).toBe(
+      '/gas-stations?latitude=51.313&longitude=9.48&radius=25000'
+    );
   });
 
   it('does not ask the German API for a fuel it does not offer', async () => {

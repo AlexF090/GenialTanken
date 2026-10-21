@@ -42,7 +42,7 @@ describe('SettingsPage', () => {
     expect(textOf(element.querySelector('label[for="radius"]'))).toBe('Radius: 5 km');
     expect(radiusSlider(element).value).toBe('5');
     expect(radiusSlider(element).min).toBe('1');
-    expect(radiusSlider(element).max).toBe('25');
+    expect(radiusSlider(element).max).toBe('30');
   });
 
   it('applies and persists a new fuel type immediately', async () => {

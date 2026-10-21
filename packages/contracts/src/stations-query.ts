@@ -9,7 +9,7 @@ export type FuelType = z.infer<typeof fuelTypeSchema>;
 export const DEFAULT_FUEL_TYPE: FuelType = 'e5';
 
 export const MINIMUM_RADIUS_IN_KILOMETERS = 1;
-export const MAXIMUM_RADIUS_IN_KILOMETERS = 25;
+export const MAXIMUM_RADIUS_IN_KILOMETERS = 30;
 export const DEFAULT_RADIUS_IN_KILOMETERS = 5;
 
 /** Query parameters of `GET /api/stations`; values arrive as strings and are coerced. */
