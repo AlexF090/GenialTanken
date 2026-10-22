@@ -66,10 +66,10 @@ describe('keepApiAwake', () => {
     expect(console.error).not.toHaveBeenCalled();
   });
 
-  it('waits at most four minutes', async () => {
+  it('waits at most two minutes, so calls of the ten-minute cron stay at most twelve minutes apart', async () => {
     await keepApiAwake({ API_ORIGIN }, WINTER_NOON, dependencies(0.999_999));
 
-    expect(MAXIMUM_DELAY_IN_MILLISECONDS).toBe(240_000);
+    expect(MAXIMUM_DELAY_IN_MILLISECONDS).toBe(120_000);
     expect(sleep.mock.calls[0]?.[0]).toBeLessThan(MAXIMUM_DELAY_IN_MILLISECONDS);
   });
 

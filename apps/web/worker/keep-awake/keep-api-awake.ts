@@ -9,8 +9,11 @@ const FIRST_AWAKE_HOUR = 6;
 const LAST_AWAKE_HOUR = 23;
 const AWAKE_HOURS_TIME_ZONE = 'Europe/Berlin';
 
-/** Spreads the calls of the cron trigger so they do not hit the API on the same second. */
-export const MAXIMUM_DELAY_IN_MILLISECONDS = 4 * 60 * 1000;
+/**
+ * Spreads the calls of the cron trigger so they do not hit the API on the same second. With the
+ * ten-minute cron, two calls are at most 12 minutes apart, below the 15 idle minutes of Render.
+ */
+export const MAXIMUM_DELAY_IN_MILLISECONDS = 2 * 60 * 1000;
 /** A cold start of the API takes about a minute. */
 export const HEALTH_CHECK_TIMEOUT_IN_MILLISECONDS = 90 * 1000;
 
