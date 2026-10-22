@@ -1,63 +1,80 @@
-# Deployment checklist
+# Deployment runbook
 
-Everything runs on free tiers: web on Cloudflare Workers (static assets), API on Render, CI on GitHub Actions. Work through the steps in order; each step lists where to do it.
+Everything runs on free tiers: web on Cloudflare Workers (static assets), API on Render, CI on GitHub Actions.
 
-## 1. Before going live
+| Part     | Where                                   | Deployed by                                                          |
+| -------- | --------------------------------------- | -------------------------------------------------------------------- |
+| Web      | Cloudflare Worker `genialtanken`        | `deploy-web.yml` after CI passed (production and previews)           |
+| API      | Render web service `genialtanken-api`   | Render after the GitHub checks passed; `release.yml` after a release |
+| Releases | GitHub tags and releases (`v<version>`) | `release.yml` (semantic-release) after CI passed on `main`           |
 
-- [ ] **Disconnect the old Vercel project** from the repository (Vercel dashboard → project `genial-tanken` → Settings → Git → Disconnect, or delete the project). The legacy React app is gone, so the Vercel check fails on every push — and Render only deploys when _all_ checks of a commit pass.
-- [ ] **Rotate or restrict the Mapbox token.** A public `pk.*` token is in the git history (found by gitleaks). In the Mapbox account either rotate it or restrict it to the production URL `https://genialtanken.alexf090.workers.dev` (optionally also `http://localhost:4200` for local development). Mapbox allows no wildcards, so pull request previews cannot use the token; CI embeds it only in builds of `main`, and previews use OpenStreetMap tiles.
-- [ ] **Make the repository public** (GitHub → Settings → General → Danger Zone). Gives unlimited free Actions minutes and branch protection on the free plan. Do this only after the Mapbox step.
+## Shared proxy secret
 
-## 2. Shared proxy secret
+`PROXY_SHARED_SECRET` is set under the same name in Cloudflare and in Render. It lets the Worker pass the visitor's address to the API, so the rate limit works per visitor and cannot be spoofed. Generate a value with at least 32 characters, e.g. `openssl rand -base64 48`. To rotate it, set the new value in both places; until both match, the API rate-limits by the connecting Cloudflare address, so visitors share limits.
 
-- [ ] Generate one random value with at least 32 characters, e.g. `openssl rand -base64 48`. It is used twice under the same name `PROXY_SHARED_SECRET`: in Cloudflare and in Render. It lets the Worker pass the visitor's address to the API, so the rate limit works per visitor and cannot be spoofed.
+## Render (API)
 
-## 3. Render (API)
+- The service comes from the Blueprint [`render.yaml`](../render.yaml) (Render dashboard → **New → Blueprint**): free Docker web service `genialtanken-api`, region Frankfurt, health check `/health`, `autoDeployTrigger: checksPass`.
+- Environment variable: `PROXY_SHARED_SECRET`. All other variables have defaults (see the README).
+- Check: `<service URL>/health` (e.g. `https://genialtanken-api.onrender.com/health`) returns `{"status":"ok",…}`. The free tier sleeps after 15 minutes without traffic; the first request then takes about a minute.
 
-- [ ] Render dashboard → **New → Blueprint** → select this repository. Render reads [`render.yaml`](../render.yaml) and creates the free web service `genialtanken-api` (Docker, region Frankfurt, health check `/health`, deploys only after the GitHub checks passed).
-- [ ] Set environment variables when asked:
-  - `PROXY_SHARED_SECRET`: the value from step 2
-- [ ] Note the service URL, e.g. `https://genialtanken-api.onrender.com`, and check `https://…/health` returns `{"status":"ok",…}`.
+## Cloudflare Workers (web)
 
-## 4. Cloudflare Workers (web)
+The Worker is configured by [`apps/web/wrangler.jsonc`](../apps/web/wrangler.jsonc): it serves the Angular build as a single-page application and runs its code first only for `/api/*`, which it proxies to Render. GitHub Actions deploys it; keep Workers Builds (the Cloudflare Git integration) disconnected, otherwise every push deploys twice.
 
-The web app is the Worker `genialtanken` with static assets ([`apps/web/wrangler.jsonc`](../apps/web/wrangler.jsonc)): it serves the Angular build as a single-page application and runs its code first only for `/api/*`, which it proxies to Render. The Worker already exists.
-
-- [ ] **Disconnect Workers Builds** (Workers & Pages → `genialtanken` → Settings → Builds → Disconnect). GitHub Actions deploys (`deploy-web.yml`); with the Git integration connected, every push would deploy twice, and pull requests show a hanging check "Workers Builds: genialtanken".
-- [ ] Worker → Settings → Variables and secrets:
-  - `API_ORIGIN` (variable): the Render URL from step 3. It must be an `https://` URL; plain `http://` is only accepted for `localhost`, `127.0.0.1` and `[::1]` (local `wrangler dev`).
-  - `PROXY_SHARED_SECRET` (secret): the value from step 2, in the dashboard or with
+- Worker → Settings → Variables and secrets:
+  - `API_ORIGIN` (variable): the Render URL. It must be an `https://` URL; plain `http://` is only accepted for `localhost`, `127.0.0.1` and `[::1]` (local `wrangler dev`).
+  - `PROXY_SHARED_SECRET` (secret): in the dashboard or with
     ```bash
     pnpm --filter web exec wrangler secret put PROXY_SHARED_SECRET
     ```
     Preview versions use the same variables and secrets as production. `wrangler.jsonc` defines no `vars`, and `deploy-web.yml` deploys with `--keep-vars`, so the dashboard value of `API_ORIGIN` survives every deploy.
-- [ ] Worker → Settings → Domains & Routes: keep `workers.dev` enabled and enable **Preview URLs** (pull request previews are aliased version URLs).
-- [ ] Create an API token (My Profile → API Tokens → template _Edit Cloudflare Workers_, or a custom token with _Account → Workers Scripts → Edit_) and note the account ID.
-- [ ] **Old Pages project:** if a Cloudflare Pages project `genialtanken` exists, delete it (Workers & Pages → `genialtanken` (Pages) → Settings → Delete project). The old `genialtanken.pages.dev` address stops working.
-- [ ] Optional manual deploy and local preview (needs `wrangler login` or `CLOUDFLARE_API_TOKEN`; the preview reads `API_ORIGIN` and `PROXY_SHARED_SECRET` from `apps/web/.dev.vars`, which is git-ignored):
+- Worker → Settings → Domains & Routes: `workers.dev` and **Preview URLs** stay enabled (pull request previews are aliased version URLs).
+- The deploy token is a Cloudflare API token (template _Edit Cloudflare Workers_, or a custom token with _Account → Workers Scripts → Edit_).
+- Manual deploy and local preview (needs `wrangler login` or `CLOUDFLARE_API_TOKEN`; the preview reads `API_ORIGIN` and `PROXY_SHARED_SECRET` from the git-ignored `apps/web/.dev.vars`):
   ```bash
   pnpm deploy:web    # build, then wrangler deploy (production)
   pnpm preview:web   # build, then wrangler dev: static assets plus the /api proxy locally
   ```
 
-## 5. GitHub settings
+## Mapbox
 
-- [ ] Settings → Environments: create `preview` and `production` (optionally required reviewers on `production`).
-- [ ] Settings → Secrets and variables → Actions:
-  - Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
-  - Variable: `MAPBOX_ACCESS_TOKEN` (the public `pk.*` token; without it the map uses OpenStreetMap tiles)
-  - Secret: `RELEASE_TOKEN` for `release.yml`. Create a fine-grained personal access token as a repository admin (GitHub → Settings → Developer settings → Fine-grained tokens): repository access only `AlexF090/GenialTanken`, repository permission **Contents: Read and write**, an expiry date you note down. The release commit is pushed to the protected `main` with it; admins are exempt from branch protection (`enforce_admins` off), `GITHUB_TOKEN` is not. Renew it before it expires, otherwise the release job fails. The exemption holds only while `enforce_admins` stays off and the ruleset "main protect" stays disabled; turning on either one blocks releases until the token (or a GitHub App replacing it) is allowed to bypass.
-  - Secret: `RENDER_DEPLOY_HOOK_URL`, the deploy hook of the Render service `genialtanken-api` (Service → Settings → Deploy Hook, not the Blueprint's sync hook). The release commit has no checks, and `autoDeployTrigger: checksPass` never deploys such a commit, so `release.yml` calls the hook after a release.
-- [ ] Settings → Branches → `main`: require the status check **Conventional Commits title** (`pull-request-title.yml`), so a pull request with an invalid title cannot be merged.
-- [ ] Settings → General → Pull Requests: allow only **squash merging** with the default commit message **Pull request title** (title only, no description: a description that mentions `BREAKING CHANGE:` would otherwise release a major version). The squash commit then carries the pull request title, which decides the release.
-- [ ] After the repository is public: Settings → Branches → protect `main`, require the status check **CI success** and one approving review.
+The public `pk.*` token is restricted to `https://genialtanken.alexf090.workers.dev` (optionally `http://localhost:4200` for local development). Mapbox allows no wildcards, so CI embeds the token only in builds of `main`; pull request previews and local builds without the variable use OpenStreetMap tiles.
 
-## 6. Merge and release
+## GitHub settings
 
-- [ ] Merge the pull request into `main`. CI runs on `main`; when it is green, `deploy-web.yml` publishes the web app with `wrangler deploy` to https://genialtanken.alexf090.workers.dev and Render deploys the API. Pull request previews are uploaded as Worker versions with the alias `pr-<number>` and served at `https://pr-<number>-genialtanken.alexf090.workers.dev`; the workflow posts the URL as a pull request comment. Previews start working only once `deploy-web.yml` and `apps/web/wrangler.jsonc` exist on `main`: `workflow_run` reads the workflow from the default branch, and the deploy takes `wrangler.jsonc` only from the default branch (a configuration from a pull request could run a build command with the deploy secrets). Until then the deploy job fails with a message saying so. Previews are built only for pull requests that are ready for review: CI skips drafts, and `deploy-web.yml` deploys only when the CI run produced the `web-dist` artifact. Open pull requests as drafts and mark them ready when final.
-- [ ] Check production: web app loads, list shows stations, `https://genialtanken.alexf090.workers.dev/api/stations?latitude=48.8566&longitude=2.3522&fuel=e10` answers through the Worker.
-- [ ] Releases need no manual step. After CI passed for a push to `main`, `release.yml` runs semantic-release (`release.config.js`). The pull request title, which becomes the squash commit, decides the version: `fix`, `perf` and `revert` → patch, `feat` → minor, `!` or a `BREAKING CHANGE` footer → major; `chore`, `docs`, `ci`, `test`, `build`, `style` and `refactor` release nothing. Keep the title unchanged in the merge dialog, it becomes the commit message. GitHub's revert button titles the pull request `Revert "feat: …"`; rename it to `revert: …` before merging, otherwise the title check fails and nothing is released. A release bumps every `package.json` (the API reports that version), updates `CHANGELOG.md`, pushes `chore(release): <version> [skip ci]`, tags `v<version>` and creates the GitHub release. The release commit skips CI and therefore the web deploy (the web build does not show the version); `release.yml` deploys the API through the Render deploy hook, so it reports the new version. If `main` moved on while CI ran, the job skips and the CI run of the newer commit releases both. After a failed release (for example an expired `RELEASE_TOKEN`), fix the cause and start Actions → Release → Run workflow; it releases the current `main`.
-- [ ] Check a release: `pnpm exec semantic-release --dry-run` on an up-to-date `main` (with `GITHUB_TOKEN` set to a token with push access to the repository, e.g. `GITHUB_TOKEN=$(gh auth token)`; the dry run checks push access but pushes nothing) prints the next version and its notes without changing anything.
+- Environments: `preview` and `production` (optionally with required reviewers on `production`).
+- Actions secrets and variables:
+
+  | Name                     | Kind     | Purpose                                                              |
+  | ------------------------ | -------- | -------------------------------------------------------------------- |
+  | `CLOUDFLARE_API_TOKEN`   | secret   | Deploys the Worker                                                   |
+  | `CLOUDFLARE_ACCOUNT_ID`  | secret   | Cloudflare account of the Worker                                     |
+  | `MAPBOX_ACCESS_TOKEN`    | variable | Public Mapbox token for builds of `main`                             |
+  | `RELEASE_TOKEN`          | secret   | Pushes the release commit and tag to the protected `main`            |
+  | `RENDER_DEPLOY_HOOK_URL` | secret   | Deploy hook of `genialtanken-api` (Service → Settings → Deploy Hook) |
+
+- `RELEASE_TOKEN` is a fine-grained personal access token of a repository admin: repository access only `AlexF090/GenialTanken`, permission **Contents: Read and write**, with an expiry date. Admins are exempt from branch protection while `enforce_admins` stays off and the ruleset "main protect" stays disabled; turning on either one blocks releases until the token (or a GitHub App replacing it) may bypass. Renew it before it expires, otherwise the release job fails.
+- `RENDER_DEPLOY_HOOK_URL` is the service's deploy hook, not the Blueprint's sync hook. The release commit has no checks, and `checksPass` never deploys such a commit, so `release.yml` calls the hook after a release.
+- Branch protection of `main`: required status checks **CI success** and **Conventional Commits title**, one approving review.
+- Pull requests: only **squash merging**, default commit message **Pull request title** (title only: a description mentioning `BREAKING CHANGE:` would otherwise release a major version).
+
+## Deploys
+
+- **Production:** a merge into `main` runs CI; when it passes, `deploy-web.yml` runs `wrangler deploy` to https://genialtanken.alexf090.workers.dev and Render deploys the API.
+- **Previews:** for every pull request that is ready for review, `deploy-web.yml` uploads a Worker version with the alias `pr-<number>` (`https://pr-<number>-genialtanken.alexf090.workers.dev`) and posts the URL as a pull request comment. CI skips drafts, and the deploy runs only when the CI run produced the `web-dist` artifact.
+- `deploy-web.yml` runs from the default branch and takes `apps/web/wrangler.jsonc` and `scripts/verify-wrangler-configuration.ts` only from there, never from the pull request: a configuration with a `build` section could run a command with the deploy secrets.
+- Check production: the web app loads, the list shows stations, and `https://genialtanken.alexf090.workers.dev/api/stations?latitude=48.8566&longitude=2.3522&fuel=e10` answers through the Worker.
+
+## Releases
+
+Releases need no manual step. After CI passed for a push to `main`, `release.yml` runs semantic-release (`release.config.js`):
+
+- The pull request title, which becomes the squash commit, decides the version: `fix`, `perf` and `revert` → patch, `feat` → minor, `!` or a `BREAKING CHANGE` footer → major; `chore`, `docs`, `ci`, `test`, `build`, `style` and `refactor` release nothing. GitHub's revert button titles a pull request `Revert "feat: …"`; rename it to `revert: …` before merging, otherwise the title check fails.
+- A release bumps every `package.json` (the API reports that version), writes `CHANGELOG.md`, pushes `chore(release): <version> [skip ci]`, tags `v<version>`, creates the GitHub release and deploys the API through the Render deploy hook. The release commit skips CI and therefore the web deploy; the web build does not show the version.
+- If `main` moved on while CI ran, the job skips and the CI run of the newer commit releases both.
+- After a failed release (for example an expired `RELEASE_TOKEN`), fix the cause and start Actions → Release → Run workflow; it releases the current `main`.
+- Dry run: `GITHUB_TOKEN=$(gh auth token) pnpm exec semantic-release --dry-run` on an up-to-date `main` prints the next version and its notes; it checks push access but changes nothing.
 
 ## Versions
 
@@ -66,4 +83,4 @@ The web app is the Worker `genialtanken` with static assets ([`apps/web/wrangler
 | 1.0.0   | Original React capstone (tag `v1.0.0`)                                  |
 | 2.0.0   | Angular 22 + NestJS 12 rebuild, French open data, Cloudflare and Render |
 
-Later versions are listed in `CHANGELOG.md` and on the GitHub releases page.
+Later versions are listed on [GitHub Releases](https://github.com/AlexF090/GenialTanken/releases).

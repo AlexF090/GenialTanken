@@ -1,6 +1,6 @@
 # Roadmap GenialTanken
 
-Ziel: GenialTanken als Fullstack-Showcase neu aufbauen (Angular + NestJS im Monorepo).
+Ziel: GenialTanken als Fullstack-Anwendung neu aufbauen (Angular + NestJS im Monorepo).
 
 Datenquellen: aktuelle Preise, keine Historie.
 
@@ -41,6 +41,7 @@ Offene Punkte aus dem Review (Follow-ups):
 - [x] Größenbegrenzung des In-Memory-Caches (LRU über `@cacheable/memory`, `CACHE_MAXIMUM_ENTRIES`, Standard 5000 Einträge)
 - [ ] Echter HTTP-Status 404 für unbekannte Routen; mit Static Assets und `not_found_handling: single-page-application` liefert der Cloudflare Worker die SPA mit 200 aus (bräuchte SSR oder Routing-Logik im Worker)
 - [x] Favoriten gebündelt in einem Request laden statt einem Request pro Favorit (`GET /api/stations/by-identifiers`, bis zu 50 IDs pro Request)
+- [ ] Favoriten auch beim Upstream gebündelt abfragen: eine Abfrage mit `where id in (...)` statt einer Upstream-Anfrage pro ID
 
 ## Phase 2 – Persistenz (geplant)
 
@@ -78,4 +79,4 @@ Umsetzung:
 
 ## Warum dieser Stack
 
-Fullstack-Stellen fragen vor allem nach Datenbank-Erfahrung (PostgreSQL, ORM wie Prisma), Auth sowie sauberem API-Design. Bewusst schlankes Monorepo-Setup ohne Nx: weniger Kopplung, Framework-Updates ohne Wartezeit auf Plugins.
+Die nächsten Phasen ergänzen, was einer Fullstack-Anwendung noch fehlt: Datenbank (PostgreSQL, Prisma), Auth und ein sauberes API-Design darüber. Bewusst schlankes Monorepo-Setup ohne Nx: weniger Kopplung, Framework-Updates ohne Wartezeit auf Plugins.
