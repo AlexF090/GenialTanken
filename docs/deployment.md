@@ -37,6 +37,24 @@ The Worker is configured by [`apps/web/wrangler.jsonc`](../apps/web/wrangler.jso
   pnpm preview:web   # build, then wrangler dev: static assets plus the /api proxy locally
   ```
 
+### Service worker and caching
+
+The production build contains the Angular service worker (`apps/web/ngsw-config.json`). It keeps the app shell (`index.html`, scripts, styles, manifest) for offline starts and caches icons on first use. It caches no `/api` answers: there are no `dataGroups`, navigations to `/api/**` never get the app shell, and the web app sends API requests with the `ngsw-bypass` header, so they skip the service worker entirely. Navigations go to the network first (`navigationRequestStrategy: freshness`).
+
+[`apps/web/public/_headers`](../apps/web/public/_headers) sets the cache times of the static assets. Hashed scripts and styles are immutable for a year (`/*.js`), but the service worker files must be revalidated on every request, or browsers would keep an old worker for a year. So `/ngsw-worker.js`, `/safety-worker.js`, `/worker-basic.min.js`, `/ngsw.json`, `/index.html` and `/` first remove the inherited header (`! Cache-Control`) and then set `Cache-Control: no-cache`. `scripts/static-asset-caching.spec.ts` (`pnpm test:scripts`) guards these rules. Paths of the single-page application (for example `/favorites`) get Cloudflare's default for HTML, which revalidates as well.
+
+After a deploy, the service worker finds the new `ngsw.json` when the app starts or navigates, downloads the new version in the background, and the app shows "Neue Version verfügbar" with "Neu laden". If the cache is broken, the app reloads on its own.
+
+Rollback if a broken service worker is live: copy `safety-worker.js` over `ngsw-worker.js` in the build output and deploy that build:
+
+```bash
+pnpm --filter web build
+cp apps/web/dist/web/browser/safety-worker.js apps/web/dist/web/browser/ngsw-worker.js
+pnpm --filter web run deploy
+```
+
+The safety worker unregisters itself and deletes the service worker caches, so the next load of every visitor comes from the network again. Deploy a regular build afterwards to bring the service worker back.
+
 ## Mapbox
 
 The public `pk.*` token is restricted to `https://genialtanken.alexf090.workers.dev` (optionally `http://localhost:4200` for local development). Mapbox allows no wildcards, so CI embeds the token only in builds of `main`; pull request previews and local builds without the variable use OpenStreetMap tiles.
