@@ -15,6 +15,16 @@ describe('WEEKDAYS', () => {
   });
 });
 
+describe('openingTimesSchema', () => {
+  it('requires every weekday and the public holiday', () => {
+    const { publicHoliday: _publicHoliday, ...withoutPublicHoliday } = emptyOpeningTimes();
+    const { sunday: _sunday, ...withoutSunday } = emptyOpeningTimes();
+
+    expect(openingTimesSchema.safeParse(withoutPublicHoliday).success).toBe(false);
+    expect(openingTimesSchema.safeParse(withoutSunday).success).toBe(false);
+  });
+});
+
 describe('emptyOpeningTimes', () => {
   it('has no interval on any day or public holiday', () => {
     const openingTimes = emptyOpeningTimes();

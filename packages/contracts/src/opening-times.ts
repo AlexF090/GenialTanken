@@ -22,27 +22,14 @@ export type OpeningInterval = z.infer<typeof openingIntervalSchema>;
 
 const openingDaySchema = z.array(openingIntervalSchema);
 
-export const openingTimesSchema = z.object({
-  monday: openingDaySchema,
-  tuesday: openingDaySchema,
-  wednesday: openingDaySchema,
-  thursday: openingDaySchema,
-  friday: openingDaySchema,
-  saturday: openingDaySchema,
-  sunday: openingDaySchema,
-  publicHoliday: openingDaySchema,
-});
+const OPENING_DAYS = [...WEEKDAYS, 'publicHoliday'] as const;
+
+/** Every weekday and the public holiday, each with its intervals; other keys are rejected. */
+export const openingTimesSchema = z.record(z.enum(OPENING_DAYS), openingDaySchema);
 
 export type OpeningTimes = z.infer<typeof openingTimesSchema>;
 
 /** Opening times of a station that publishes none, i.e. closed every day. */
-export const emptyOpeningTimes = (): OpeningTimes => ({
-  monday: [],
-  tuesday: [],
-  wednesday: [],
-  thursday: [],
-  friday: [],
-  saturday: [],
-  sunday: [],
-  publicHoliday: [],
-});
+export const emptyOpeningTimes = (): OpeningTimes =>
+  // Parsing proves to the compiler that no day is missing, without a type assertion.
+  openingTimesSchema.parse(Object.fromEntries(OPENING_DAYS.map(day => [day, []])));
