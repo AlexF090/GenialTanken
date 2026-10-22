@@ -71,4 +71,11 @@
       </p>
     </section>
   </div>
+  <!-- The app-wide notice of a new version is inert behind the modal dialog, so it shows here. -->
+  <app-update-notice
+    sheetDialogFooter
+    class="settings__update"
+    [class.settings__update--shown]="isUpdateReady()"
+    [isUpdateReady]="isUpdateReady()"
+    (reloadRequested)="reloadApplication()" />
 </app-sheet-dialog>

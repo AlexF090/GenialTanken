@@ -19,16 +19,6 @@ describe('App', () => {
     return hostElementOf(fixture);
   };
 
-  const navigationLink = (element: HTMLElement, name: string): HTMLAnchorElement => {
-    const link = [...element.querySelectorAll('nav a')].find(
-      candidate => textOf(candidate) === name
-    );
-    if (!(link instanceof HTMLAnchorElement)) {
-      throw new Error(`No navigation link named "${name}" found`);
-    }
-    return link;
-  };
-
   beforeEach(() => {
     context = configurePageTest({ routes });
   });
@@ -37,31 +27,19 @@ describe('App', () => {
     context.httpTesting.verify();
   });
 
-  it('has a labelled main navigation that marks the current page', async () => {
-    const element = await navigateTo('/');
+  it.each(['/', '/favorites', '/unknown'])(
+    'offers a skip link to the main content of %s as the first focusable element',
+    async url => {
+      const element = await navigateTo(url);
 
-    expect(element.querySelector('nav')?.getAttribute('aria-label')).toBe('Hauptnavigation');
-    expect([...element.querySelectorAll('nav a')].map(link => textOf(link))).toEqual([
-      'Erkunden',
-      'Favoriten',
-      'Einstellungen',
-    ]);
-    expect(navigationLink(element, 'Erkunden').getAttribute('aria-current')).toBe('page');
-    expect(navigationLink(element, 'Einstellungen').getAttribute('aria-current')).toBeNull();
-    context.httpTesting.expectOne(request => request.url === STATIONS_URL);
-  });
-
-  it('offers a skip link to the content as the first focusable element', async () => {
-    const element = await navigateTo('/favorites');
-
-    const skipLink = element.querySelector('a');
-    expect(textOf(skipLink)).toBe('Zum Inhalt springen');
-    const target = element.querySelector(`#${skipLink?.getAttribute('href')?.slice(1) ?? ''}`);
-    expect(target?.getAttribute('tabindex')).toBe('-1');
-    expect(target?.querySelector('main')).not.toBeNull();
-    expect(target?.querySelector('nav')).toBeNull();
-    context.httpTesting.match(() => true);
-  });
+      const skipLink = element.querySelector('a');
+      expect(textOf(skipLink)).toBe('Zum Inhalt springen');
+      const target = element.querySelector(`#${skipLink?.getAttribute('href')?.slice(1) ?? ''}`);
+      expect(target?.tagName).toBe('MAIN');
+      expect(target?.getAttribute('tabindex')).toBe('-1');
+      context.httpTesting.match(() => true);
+    }
+  );
 
   it('moves focus to the content without leaving the page when the skip link is used', async () => {
     const element = await navigateTo('/favorites');
@@ -69,18 +47,18 @@ describe('App', () => {
 
     skipLink?.click();
 
-    expect(document.activeElement?.id).toBe('main-content');
+    expect(document.activeElement?.tagName).toBe('MAIN');
     expect(TestBed.inject(Router).url).toBe('/favorites');
     context.httpTesting.match(() => true);
   });
 
   it.each(['/', '/favorites', '/settings', '/stations/fr-75001001', '/unknown'])(
-    'renders exactly one main and navigation landmark on %s',
+    'renders exactly one main landmark and no navigation bar on %s',
     async url => {
       const element = await navigateTo(url);
 
       expect(element.querySelectorAll('main')).toHaveLength(1);
-      expect(element.querySelectorAll('nav')).toHaveLength(1);
+      expect(element.querySelectorAll('nav')).toHaveLength(0);
       context.httpTesting.match(() => true);
     }
   );
@@ -110,15 +88,13 @@ describe('App', () => {
     const element = await navigateTo('/map');
 
     expect(TestBed.inject(Router).url).toBe('/');
-    expect(navigationLink(element, 'Erkunden').getAttribute('aria-current')).toBe('page');
+    expect(element.querySelector('main app-stations-map')).not.toBeNull();
     context.httpTesting.expectOne(request => request.url === STATIONS_URL);
   });
 
   it('opens the settings as a dialog over the explore page', async () => {
     const element = await navigateTo('/settings');
 
-    expect(navigationLink(element, 'Einstellungen').getAttribute('aria-current')).toBe('page');
-    expect(navigationLink(element, 'Erkunden').getAttribute('aria-current')).toBeNull();
     expect(textOf(element.querySelector('main h1'))).toBe('GenialTanken');
     expect(element.querySelector('main app-stations-map')).not.toBeNull();
     const dialog = element.querySelector('dialog');
@@ -144,7 +120,6 @@ describe('App', () => {
   it('opens the favorites in the sheet of the explore page instead of the list', async () => {
     const element = await navigateTo('/favorites');
 
-    expect(navigationLink(element, 'Favoriten').getAttribute('aria-current')).toBe('page');
     expect(element.querySelector('main app-stations-map')).not.toBeNull();
     expect(element.querySelector('main app-bottom-sheet app-favorites-page')).not.toBeNull();
     expect(element.querySelector('app-station-list')?.parentElement?.hidden).toBe(true);
@@ -165,14 +140,14 @@ describe('App', () => {
   });
 
   it.each(['/unknown', '/unknown/deep/route', '/stations'])(
-    'shows the 404 page with the navigation for %s',
+    'shows the 404 page with a link back to the map for %s',
     async url => {
       const element = await navigateTo(url);
 
       expect(textOf(element.querySelector('main h2'))).toBe('Fehler 404');
       expect(element.querySelector('main')?.textContent).toContain('Diese Seite existiert nicht');
-      expect(textOf(element.querySelector('main a[href="/"]'))).toBe('Zur Startseite');
-      expect(element.querySelector('nav')).not.toBeNull();
+      expect(textOf(element.querySelector('main a[href="/"]'))).toBe('Zur Karte');
+      expect(element.querySelector('app-stations-map')).toBeNull();
     }
   );
 
@@ -181,7 +156,7 @@ describe('App', () => {
     let reloadPage: ReturnType<typeof vi.fn<() => void>>;
 
     const notices = (element: HTMLElement): HTMLElement => {
-      const region = element.querySelector<HTMLElement>('.shell__notices');
+      const region = element.querySelector<HTMLElement>('.shell__notices [role="status"]');
       if (region === null) {
         throw new Error('No notice region rendered');
       }
@@ -235,6 +210,36 @@ describe('App', () => {
 
       expect(serviceWorkerUpdate.activations).toBe(1);
       expect(reloadPage).toHaveBeenCalledOnce();
+    });
+
+    it('shows the notice inside the open settings dialog, which makes the page inert', async () => {
+      const element = await navigateTo('/settings');
+      context.httpTesting.match(() => true);
+
+      serviceWorkerUpdate.announceReadyVersion();
+      await context.settle();
+
+      const dialog = element.querySelector('dialog');
+      expect(dialog?.querySelector('[role="status"]')?.textContent).toContain(
+        'Neue Version verfügbar'
+      );
+      expect(element.querySelector<HTMLElement>('.shell__notices')?.hidden).toBe(true);
+      dialog?.querySelector<HTMLButtonElement>('[role="status"] button')?.click();
+      await context.settle();
+      expect(reloadPage).toHaveBeenCalledOnce();
+    });
+
+    it('shows the notice over the page again once the settings close', async () => {
+      const element = await navigateTo('/settings');
+      context.httpTesting.match(() => true);
+      serviceWorkerUpdate.announceReadyVersion();
+      await context.settle();
+
+      await TestBed.inject(Router).navigateByUrl('/');
+      await context.settle();
+
+      expect(element.querySelector<HTMLElement>('.shell__notices')?.hidden).toBe(false);
+      expect(textOf(notices(element))).toContain('Neue Version verfügbar');
     });
   });
 });

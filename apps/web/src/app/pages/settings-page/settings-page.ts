@@ -8,6 +8,7 @@ import {
   MINIMUM_RADIUS_IN_KILOMETERS,
 } from '@genialtanken/contracts';
 import type { ColorSchemePreference } from '@genialtanken/contracts';
+import { ApplicationUpdateStore } from '../../core/application-update/application-update-store';
 import { uniqueIdentifier } from '../../core/dom/unique-identifier';
 import { fuelTypeOptions } from '../../core/fuel-type-labels';
 import type { LabeledOption } from '../../core/labeled-option';
@@ -16,6 +17,7 @@ import type { Settings } from '../../core/settings/settings-store';
 import { Icon } from '../../ui/icon/icon';
 import { ExternalLink } from '../../ui/external-link/external-link';
 import { SheetDialog } from '../../ui/sheet-dialog/sheet-dialog';
+import { UpdateNotice } from '../../ui/update-notice/update-notice';
 
 type SearchSettings = Pick<Settings, 'fuelType' | 'radiusInKilometers'>;
 
@@ -31,13 +33,15 @@ const COLOR_SCHEME_LABELS: Record<ColorSchemePreference, string> = {
  */
 @Component({
   selector: 'app-settings-page',
-  imports: [SheetDialog, FormField, Icon, KilometersPipe, ExternalLink],
+  imports: [SheetDialog, FormField, Icon, KilometersPipe, ExternalLink, UpdateNotice],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',
 })
 export class SettingsPage {
   private readonly settingsStore = inject(SettingsStore);
+  private readonly applicationUpdate = inject(ApplicationUpdateStore);
+  protected readonly isUpdateReady = this.applicationUpdate.isUpdateReady;
 
   protected readonly fuelTypeOptions = fuelTypeOptions('short');
   protected readonly colorSchemeOptions: readonly LabeledOption<ColorSchemePreference>[] =
@@ -71,6 +75,10 @@ export class SettingsPage {
   }
 
   private readonly router = inject(Router);
+
+  protected reloadApplication(): void {
+    void this.applicationUpdate.reload();
+  }
 
   protected close(): void {
     void this.router.navigateByUrl('/');

@@ -18,6 +18,9 @@ import { Icon } from '../icon/icon';
  * layer and closes it on Escape. On phones it slides up from the bottom like an iOS page sheet,
  * from 48rem it is a centered card. Its heading names it.
  *
+ * Content marked `sheetDialogFooter` stays below the scrolling content, e.g. an app-wide notice:
+ * the modal dialog makes everything outside it inert.
+ *
  * `closed` fires once the dialog closes (✕ or Escape); the browser then returns the focus to the
  * element focused before it opened. Removing the component does not emit.
  */

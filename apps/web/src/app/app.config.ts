@@ -14,6 +14,7 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { routes } from './app.routes';
 import { bypassServiceWorkerForApi } from './core/http/bypass-service-worker';
 import { provideLocalStorageFavorites } from './core/favorites/local-storage-favorites-repository';
+import { InstallationHint } from './core/installation/installation-hint';
 import { ColorSchemeController } from './core/theme/color-scheme-controller';
 
 registerLocaleData(localeGerman);
@@ -37,6 +38,8 @@ export const appConfig: ApplicationConfig = {
     { provide: LOCALE_ID, useValue: 'de' },
     provideAppInitializer(() => {
       inject(ColorSchemeController);
+      // Listens for the browser's install dialog from the start; it is announced only once.
+      inject(InstallationHint);
     }),
   ],
 };

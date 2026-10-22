@@ -1,3 +1,4 @@
+import { AxeBuilder } from '@axe-core/playwright';
 import { test as base, expect } from '@playwright/test';
 import type { BrowserContext, Locator, Page } from '@playwright/test';
 
@@ -130,9 +131,6 @@ export const expectColorScheme = async (page: Page, scheme: 'light' | 'dark'): P
   await expect(page.locator('html')).toHaveAttribute('data-color-scheme', scheme);
 };
 
-export const mainNavigation = (page: Page): Locator =>
-  page.getByRole('navigation', { name: 'Hauptnavigation' });
-
 /** The station list of the explore and favorites pages. */
 export const stationList = (page: Page): Locator =>
   page.getByRole('main').getByRole('list', { name: 'Tankstellen', exact: true });
@@ -187,20 +185,45 @@ export const favoritesRow = (page: Page): Locator =>
     .getByRole('region', { name: 'Favoriten', exact: true })
     .filter({ has: page.getByRole('link', { name: 'Alle Favoriten', exact: true }) });
 
+/** A station's card, shown in the explore sheet instead of the stations. */
+export const openedStationCard = (page: Page): Locator =>
+  page.getByRole('region', { name: 'Tankstelle', exact: true });
+
+/** The round settings button in the header of the explore sheet. */
+export const settingsButton = (page: Page): Locator =>
+  page.getByRole('region', { name: 'Tankstellen', exact: true }).getByRole('link', {
+    name: 'Einstellungen',
+    exact: true,
+  });
+
 /**
- * Opens the explore page, keeping the app state of the current visit: closes the settings dialog
- * (it makes the navigation behind it inert), otherwise uses the navigation.
+ * Returns to the list of the explore page the way a user does, keeping the app state of the
+ * current visit: closes the settings dialog, the favorites or a station's card, or follows the
+ * link of the 404 page. There is no navigation bar; the sheet is the app.
  */
 export const openExplore = async (page: Page): Promise<void> => {
   const dialog = settingsDialog(page);
   if (await dialog.isVisible()) {
     await dialog.getByRole('button', { name: 'Schließen', exact: true }).click();
     await expect(dialog).toBeHidden();
-  } else {
-    await mainNavigation(page).getByRole('link', { name: 'Erkunden', exact: true }).click();
+  } else if (await favoritesList(page).isVisible()) {
+    await favoritesList(page).getByRole('button', { name: 'Zurück', exact: true }).click();
+  } else if (await openedStationCard(page).isVisible()) {
+    await openedStationCard(page).getByRole('button', { name: 'Schließen', exact: true }).click();
+  } else if (new URL(page.url()).pathname !== '/') {
+    await page.getByRole('link', { name: 'Zur Karte', exact: true }).click();
   }
   await expect(page).toHaveURL('/');
   await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
+};
+
+/** Opens the list of all favorites through "Alle" of the favorites row; needs a favorite. */
+export const openFavorites = async (page: Page): Promise<void> => {
+  if (!(await favoritesRow(page).isVisible())) {
+    await openExplore(page);
+  }
+  await favoritesRow(page).getByRole('link', { name: 'Alle Favoriten', exact: true }).click();
+  await expect(favoritesHeading(page)).toBeVisible();
 };
 
 /**
@@ -216,12 +239,16 @@ export const useOwnPosition = async (
 };
 
 /**
- * Opens the settings dialog through the navigation. The router attaches the page before its
- * first change detection binds the form, so the test waits for the bound radius label (its first
- * binding) before interacting; otherwise the input is ignored (Angular error NG0950).
+ * Opens the settings dialog through the round button of the sheet header. The router attaches
+ * the page before its first change detection binds the form, so the test waits for the bound
+ * radius label (its first binding) before interacting; otherwise the input is ignored (Angular
+ * error NG0950).
  */
 export const openSettings = async (page: Page): Promise<void> => {
-  await mainNavigation(page).getByRole('link', { name: 'Einstellungen', exact: true }).click();
+  if (!(await settingsButton(page).isVisible())) {
+    await openExplore(page);
+  }
+  await settingsButton(page).click();
   await expect(
     settingsDialog(page).getByRole('slider', { name: /^Radius: \d+ km$/ })
   ).toBeVisible();
@@ -265,3 +292,37 @@ export const storedFavoriteIdentifiers = (page: Page): Promise<unknown> =>
     (storageKey): unknown => JSON.parse(localStorage.getItem(storageKey) ?? 'null'),
     FAVORITE_IDENTIFIERS_STORAGE_KEY
   );
+
+/** The card in the explore sheet that suggests adding the app to the home screen. */
+export const installationHint = (page: Page): Locator =>
+  page.getByRole('region', { name: 'GenialTanken als App', exact: true });
+
+/**
+ * Makes the browser look like Safari on iOS, which adds web apps to the home screen through its
+ * Share menu and alone knows `navigator.standalone`. On a touch device (the `mobile` project) the
+ * explore sheet then suggests those steps; Chromium never shows the hint on its own in tests.
+ */
+export const suggestHomeScreenSteps = async (page: Page): Promise<void> => {
+  await page.addInitScript(() => {
+    Object.defineProperty(Navigator.prototype, 'standalone', {
+      configurable: true,
+      get: () => false,
+    });
+  });
+};
+
+// `wcag2aaa` adds the enhanced contrast rule (1.4.6).
+const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag2aaa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+/** Scans the page in its current state with axe for violations of WCAG 2.2 up to AAA. */
+export const expectNoAccessibilityViolations = async (page: Page): Promise<void> => {
+  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+
+  expect(
+    results.violations.map(violation => ({
+      rule: violation.id,
+      impact: violation.impact,
+      targets: violation.nodes.map(node => node.target.join(' ')),
+    }))
+  ).toEqual([]);
+};

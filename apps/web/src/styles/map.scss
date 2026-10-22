@@ -299,6 +299,26 @@ $price-levels: low, medium, high;
 
 // Controls
 
+// The map reaches under the status bar, the home indicator and the rounded corners; its controls
+// and the attribution stay inside the safe areas.
+app-stations-map {
+  .leaflet-top {
+    top: var(--safe-area-top);
+  }
+
+  .leaflet-right {
+    right: var(--safe-area-right);
+  }
+
+  .leaflet-bottom {
+    bottom: var(--safe-area-bottom);
+  }
+
+  .leaflet-left {
+    left: var(--safe-area-left);
+  }
+}
+
 // Phones zoom with two fingers, like Apple Maps; the buttons would crowd the search field.
 app-stations-map .leaflet-control-zoom {
   @include breakpoints.compact {

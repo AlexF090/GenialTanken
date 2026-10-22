@@ -5,8 +5,8 @@ import {
   favoriteButton,
   favoritesHeading,
   favoritesRow,
-  mainNavigation,
   openExplore,
+  openFavorites,
   pageHeading,
   quaiDeLaRapeeStation,
   rueBailleulStation,
@@ -18,9 +18,6 @@ import {
   test,
   useOwnPosition,
 } from '../fixtures.ts';
-
-const openFavorites = (page: Page): Promise<void> =>
-  mainNavigation(page).getByRole('link', { name: 'Favoriten', exact: true }).click();
 
 const emptyStateHeading = (page: Page): Locator =>
   page.getByRole('heading', { level: 3, name: 'Keine Favoriten gespeichert' });

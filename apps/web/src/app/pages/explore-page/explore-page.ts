@@ -4,6 +4,7 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   Injector,
   linkedSignal,
@@ -11,7 +12,6 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import type { ElementRef } from '@angular/core';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { distanceInMeters } from '@genialtanken/contracts';
 import type { Coordinates, FuelType, Place, Station } from '@genialtanken/contracts';
@@ -28,8 +28,10 @@ import {
   isRouteOpen,
   SETTINGS_ROUTE_PATH,
 } from '../../core/navigation/explore-routes';
+import { MAIN_CONTENT_IDENTIFIER } from '../../core/navigation/main-content';
 import { injectOpenedStationIdentifier, stationRoute } from '../../core/navigation/station-route';
-import { observeElementHeight } from '../../core/layout/observe-element-height';
+import { InstallationHint } from '../../core/installation/installation-hint';
+import { observeElementBounds } from '../../core/layout/observe-element-bounds';
 import { Viewport } from '../../core/layout/viewport';
 import { NetworkStatus } from '../../core/network/network-status';
 import { shouldOfferAreaSearch } from '../../core/search-center/area-search';
@@ -48,13 +50,17 @@ import type { SnapPosition } from '../../ui/bottom-sheet/bottom-sheet-snap';
 import { DataSourceCredit } from '../../ui/data-source-credit/data-source-credit';
 import { FavoritesRow } from '../../ui/favorites-row/favorites-row';
 import { Icon } from '../../ui/icon/icon';
+import { InstallationHintCard } from '../../ui/installation-hint-card/installation-hint-card';
 import { LoadingState } from '../../ui/loading-state/loading-state';
+import { isSameViewportPadding } from '../../ui/map/map-viewport';
 import type { ViewportPadding } from '../../ui/map/map-viewport';
 import { PlaceSearchField } from '../../ui/place-search-field/place-search-field';
 import { SelectMenu } from '../../ui/select-menu/select-menu';
 import { SortOrderControl } from '../../ui/sort-order-control/sort-order-control';
+import { StatusBarScrim } from '../../ui/status-bar-scrim/status-bar-scrim';
 import { StationList } from '../../ui/station-list/station-list';
 import { StationsMap } from '../../ui/stations-map/stations-map';
+import { mapViewportPaddingFor } from './map-viewport-padding';
 import { injectPlaceSearch } from './place-search';
 import { describeEmptyResult, describeResult } from './result-summary';
 import { injectSheetFollowsCard, isSameCard } from './sheet-follows-card';
@@ -68,9 +74,9 @@ interface SelectionSource {
 const FUEL_TYPE_OPTIONS = fuelTypeOptions('long');
 
 /**
- * Start page: stations around the search center as a price board and on a map. On phones the
- * list is a bottom sheet over a full-screen map; from 48rem it is a side panel next to the map.
- * List and map share one selection.
+ * Start page: stations around the search center as a price board and on a map. The map fills
+ * the window, under the system bars too; on phones the list is a bottom sheet over it, from 48rem
+ * a floating side panel. List and map share one selection.
  */
 @Component({
   selector: 'app-explore-page',
@@ -79,6 +85,7 @@ const FUEL_TYPE_OPTIONS = fuelTypeOptions('long');
     DataSourceCredit,
     FavoritesRow,
     Icon,
+    InstallationHintCard,
     LoadingState,
     PlaceSearchField,
     RouterLink,
@@ -87,6 +94,7 @@ const FUEL_TYPE_OPTIONS = fuelTypeOptions('long');
     SortOrderControl,
     StationList,
     StationsMap,
+    StatusBarScrim,
     KilometersPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -106,10 +114,14 @@ export class ExplorePage {
   private readonly favoritesRow = viewChild(FavoritesRow);
   private readonly settingsLink = viewChild<ElementRef<HTMLElement>>('settingsLink');
   private readonly searchOverlay = viewChild.required<ElementRef<HTMLElement>>('searchOverlay');
+  private readonly panel = viewChild.required<string, ElementRef<HTMLElement>>('panel', {
+    read: ElementRef<HTMLElement>,
+  });
   private readonly resultSummaryElement =
     viewChild<ElementRef<HTMLElement>>('resultSummaryElement');
 
   protected readonly applicationName = APPLICATION_NAME;
+  protected readonly mainContentIdentifier = MAIN_CONTENT_IDENTIFIER;
   protected readonly fuelType = this.settings.fuelType;
   protected readonly fuelLabel = computed(() => FUEL_TYPE_LABELS[this.fuelType()].short);
   protected readonly fuelTypeOptions = FUEL_TYPE_OPTIONS;
@@ -235,15 +247,23 @@ export class ExplorePage {
   protected readonly isSearchCoveredBySheet = computed(
     () => this.isCompactViewport() && this.snapPosition() === 'full'
   );
-  private readonly searchOverlayHeightInPixels = observeElementHeight(
+  private readonly searchOverlayBounds = observeElementBounds(
     () => this.searchOverlay().nativeElement
   );
-  protected readonly mapViewportPadding = computed<ViewportPadding>(() => ({
-    top: this.searchOverlayHeightInPixels(),
-    right: 0,
-    bottom: this.sheetHeightInPixels(),
-    left: 0,
-  }));
+  private readonly panelBounds = observeElementBounds(() => this.panel().nativeElement);
+  protected readonly mapViewportPadding = computed<ViewportPadding>(
+    () =>
+      mapViewportPaddingFor({
+        isCompactViewport: this.isCompactViewport(),
+        searchBottom: this.searchOverlayBounds().bottom,
+        sheetHeight: this.sheetHeightInPixels(),
+        panelRight: this.panelBounds().right,
+      }),
+    { equal: isSameViewportPadding }
+  );
+
+  private readonly installationHint = inject(InstallationHint);
+  protected readonly installationOffer = this.installationHint.offer;
 
   constructor() {
     injectSheetFollowsCard({
@@ -398,6 +418,14 @@ export class ExplorePage {
     if (this.isCompactViewport() && this.snapPosition() === 'full') {
       this.snapPosition.set('half');
     }
+  }
+
+  protected installApplication(): void {
+    void this.installationHint.install();
+  }
+
+  protected dismissInstallationHint(): void {
+    this.installationHint.dismiss();
   }
 
   protected updateSheetHeight(heightInPixels: number): void {

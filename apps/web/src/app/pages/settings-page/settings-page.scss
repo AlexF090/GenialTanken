@@ -121,3 +121,10 @@
   font-weight: var(--font-weight-medium);
   white-space: nowrap;
 }
+
+// Below the scrolling content, clear of the home indicator; takes no space while empty.
+.settings__update--shown {
+  flex: none;
+  padding: var(--space-sm) var(--space-md) calc(var(--safe-area-bottom) + var(--space-md));
+  border-top: var(--border-width-hairline) solid var(--color-hairline);
+}

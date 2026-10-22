@@ -3,45 +3,25 @@
 @use 'materials';
 @use 'typography';
 
-// Full-height page: the map fills it, the station panel floats over it (phones) or stands next
-// to it (from 48rem). The page has no page header, so it absorbs the top safe area itself.
+// The map fills the whole window, under the status bar and the browser's bars too; sheet (phones)
+// or side panel (from 48rem) and the search float over it. Everything is fixed to the window,
+// so the document never scrolls and no `100dvh` jumps while the browser's bars come and go.
 :host {
-  height: var(--layout-page-height);
+  position: fixed;
+  inset: 0;
   overflow: hidden;
 }
 
-.explore-page {
-  position: relative;
-  height: 100%;
-
-  @include breakpoints.medium-and-up {
-    display: grid;
-    grid-template-columns:
-      minmax(var(--layout-panel-width-minimum), var(--layout-panel-width-maximum))
-      minmax(0, 1fr);
-
-    @include breakpoints.expanded {
-      grid-template-columns: var(--layout-panel-width-expanded) minmax(0, 1fr);
-    }
-  }
-}
-
+.explore-page,
 .explore-page__map {
-  @include breakpoints.compact {
-    position: absolute;
-    inset: var(--safe-area-top) 0 0;
-  }
-
-  @include breakpoints.medium-and-up {
-    grid-row: 1;
-    grid-column: 2;
-    height: 100%;
-  }
+  position: absolute;
+  inset: 0;
 }
 
 // Floats over the top of the map. Below the sheet: a fully opened sheet covers it, like the
-// map controls of Apple Maps.
+// map controls of Apple Maps. From 48rem it stands in the map area right of the side panel.
 .explore-page__search {
+  position: absolute;
   z-index: var(--layer-map-search);
   display: flex;
   flex-direction: column;
@@ -49,16 +29,20 @@
   pointer-events: none;
 
   @include breakpoints.compact {
-    position: absolute;
     inset: calc(var(--safe-area-top) + var(--space-xs)) var(--space-xs) auto;
   }
 
   @include breakpoints.medium-and-up {
-    grid-row: 1;
-    grid-column: 2;
-    align-self: start;
-    width: min(var(--layout-search-width-maximum), 100% - 2 * var(--space-md));
-    margin: calc(var(--safe-area-top) + var(--space-md)) var(--space-md);
+    --explore-search-left: calc(
+      var(--safe-area-left) + 2 * var(--layout-panel-inset) + var(--layout-panel-width)
+    );
+
+    top: calc(var(--safe-area-top) + var(--layout-panel-inset));
+    left: var(--explore-search-left);
+    width: min(
+      var(--layout-search-width-maximum),
+      100% - var(--explore-search-left) - var(--safe-area-right) - var(--layout-panel-inset)
+    );
   }
 
   > * {
@@ -139,13 +123,16 @@
   margin-inline-start: auto;
 }
 
+// From 48rem a glass card floating over the map, inset from the window edges; on phones the
+// bottom sheet positions itself.
 .explore-page__panel {
   @include breakpoints.medium-and-up {
-    grid-row: 1;
-    grid-column: 1;
-    min-height: 0;
-    padding-top: var(--safe-area-top);
-    background-color: var(--color-surface);
+    position: absolute;
+    top: calc(var(--safe-area-top) + var(--layout-panel-inset));
+    bottom: calc(var(--safe-area-bottom) + var(--layout-panel-inset));
+    left: calc(var(--safe-area-left) + var(--layout-panel-inset));
+    z-index: var(--layer-sheet);
+    width: var(--layout-panel-width);
   }
 }
 

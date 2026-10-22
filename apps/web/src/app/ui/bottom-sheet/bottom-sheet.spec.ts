@@ -142,6 +142,16 @@ describe('BottomSheet', () => {
     expect(handle.getAttribute('aria-label')).toBe('Liste verkleinern');
   });
 
+  it('peeks with the strip under the home indicator in addition to handle and header', async () => {
+    const { element, fixture } = await render({ isCompact: true });
+    const sheet = element.querySelector('section');
+    sheet?.style.setProperty('padding-bottom', '34px');
+
+    await layOut(element, () => fixture.whenStable());
+
+    expect(sheet?.style.getPropertyValue('--bottom-sheet-offset')).toBe('666px');
+  });
+
   it('opens to half when focus moves into the content at peek', async () => {
     const { fixture, element, host } = await render({ isCompact: true });
 

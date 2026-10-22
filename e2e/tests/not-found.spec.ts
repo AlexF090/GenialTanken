@@ -1,4 +1,4 @@
-import { expect, pageHeading, test } from '../fixtures.ts';
+import { expect, pageHeading, stationsMap, test } from '../fixtures.ts';
 
 const UNKNOWN_PATHS = ['/foo', '/a/b/c', '/stations'] as const;
 
@@ -11,9 +11,10 @@ test.describe('page not found', () => {
       await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
       await expect(page.getByRole('heading', { level: 2, name: 'Fehler 404' })).toBeVisible();
       await expect(page.getByText('Diese Seite existiert nicht', { exact: true })).toBeVisible();
-      await expect(page.getByRole('navigation', { name: 'Hauptnavigation' })).toBeVisible();
+      await expect(page.getByRole('main')).toHaveCount(1);
+      await expect(stationsMap(page)).toHaveCount(0);
 
-      await page.getByRole('link', { name: 'Zur Startseite' }).click();
+      await page.getByRole('link', { name: 'Zur Karte', exact: true }).click();
 
       await expect(page).toHaveURL('/');
       await expect(pageHeading(page, 'GenialTanken')).toBeVisible();

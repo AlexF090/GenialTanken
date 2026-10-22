@@ -4,6 +4,8 @@ import {
   eiffelTower,
   openExplore,
   expect,
+  expectColorScheme,
+  expectNoAccessibilityViolations,
   resultSummary,
   rueBailleulStation,
   sheetHandle,
@@ -12,31 +14,53 @@ import {
   stationCards,
   stationList,
   stationsMap,
+  installationHint,
+  suggestHomeScreenSteps,
   test,
   useOwnPosition,
 } from '../fixtures.ts';
 
 /**
- * Pixels by which the top of an element lies below the visible map, which ends at the navigation
- * bar; negative while the element shows above it. The sheet animates, so callers poll.
+ * Pixels by which the top of an element lies below the bottom edge of the window, where map and
+ * sheet end; negative while the element shows above it. The sheet animates, so callers poll.
  */
-const offsetBelowMap = async (page: Page, element: Locator): Promise<number> => {
+const offsetBelowWindow = async (page: Page, element: Locator): Promise<number> => {
   const elementBox = await element.boundingBox();
-  const mapBox = await stationsMap(page).boundingBox();
-  if (elementBox === null || mapBox === null) {
-    throw new Error('Element and map must be rendered to compare their positions.');
+  const viewport = page.viewportSize();
+  if (elementBox === null || viewport === null) {
+    throw new Error('The element must be rendered in a page with a viewport.');
   }
-  return elementBox.y - (mapBox.y + mapBox.height);
+  return elementBox.y - viewport.height;
 };
 
 /**
  * The sheet height comes from measured, fractional element heights, so at peek the list may
- * start up to a device pixel above the navigation bar; that is not visible.
+ * start up to a device pixel above the bottom edge; that is not visible.
  */
 const SUBPIXEL_TOLERANCE_IN_PIXELS = 1;
 
+/** The sheet itself, the region that holds handle, header and list. */
+const sheet = (page: Page): Locator =>
+  page.getByRole('region', { name: 'Tankstellen', exact: true });
+
+/** Map and sheet reach the edges of the window: the map under the status bar, the sheet down. */
+const expectFullBleed = async (page: Page): Promise<void> => {
+  const viewport = page.viewportSize();
+  const mapBox = await stationsMap(page).boundingBox();
+  const sheetBox = await sheet(page).boundingBox();
+  expect(mapBox).toMatchObject({ x: 0, y: 0, width: viewport?.width, height: viewport?.height });
+  // The sheet slides down by its hidden part, so its untransformed bottom is the window's.
+  const untransformedSheetBottom = await sheet(page).evaluate(
+    element =>
+      element.getBoundingClientRect().bottom -
+      new DOMMatrix(getComputedStyle(element).transform).m42
+  );
+  expect(untransformedSheetBottom).toBeCloseTo(viewport?.height ?? 0, 0);
+  expect(sheetBox?.width).toBe(viewport?.width);
+};
+
 const expectShownOnScreen = async (page: Page, element: Locator): Promise<void> => {
-  await expect.poll(() => offsetBelowMap(page, element)).toBeLessThan(0);
+  await expect.poll(() => offsetBelowWindow(page, element)).toBeLessThan(0);
 };
 
 const expectSheetAt = async (
@@ -47,10 +71,10 @@ const expectSheetAt = async (
   const handle = sheetHandle(page);
   await expect(handle).toHaveAccessibleName(handleLabel);
   await expect(handle).toHaveAttribute('aria-expanded', String(position !== 'peek'));
-  // At peek only handle and header show; the list starts behind the navigation bar.
+  // At peek only handle and header show; the list starts below the window.
   await (position === 'peek'
     ? expect
-        .poll(() => offsetBelowMap(page, stationList(page)))
+        .poll(() => offsetBelowWindow(page, stationList(page)))
         .toBeGreaterThanOrEqual(-SUBPIXEL_TOLERANCE_IN_PIXELS)
     : expectShownOnScreen(page, stationList(page)));
 };
@@ -59,6 +83,16 @@ test.describe('bottom sheet on a phone', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await expect(resultSummary(page)).toContainText(eiffelTower.label);
+  });
+
+  test('the map fills the window and the sheet reaches its bottom edge', async ({ page }) => {
+    await expectFullBleed(page);
+    // Nothing scrolls the document; only the sheet's content scrolls.
+    const overflow = await page.evaluate(() => {
+      const scrollingElement = document.scrollingElement ?? document.documentElement;
+      return scrollingElement.scrollHeight - scrollingElement.clientHeight;
+    });
+    expect(overflow).toBeLessThanOrEqual(0);
   });
 
   test('the handle steps through the positions and turns around at either end', async ({
@@ -161,6 +195,7 @@ test.describe('bottom sheet on a phone', () => {
       await openExplore(page);
       await useOwnPosition(page);
       await expect(stationCards(page)).toHaveCount(4);
+      await expectFullBleed(page);
       await sheetHandle(page).focus();
       await page.keyboard.press('End');
       await expectSheetAt(page, 'full', 'Liste verkleinern');
@@ -191,6 +226,52 @@ test.describe('bottom sheet on a phone', () => {
       await expect.poll(async () => (await scrollPosition()).top).toBeGreaterThan(0);
 
       expect(await scrollPosition()).toMatchObject({ left: 0, pageLeft: 0 });
+    });
+  });
+});
+
+test.describe('installation hint in the browser of an iPhone', () => {
+  test.beforeEach(async ({ page }) => {
+    await suggestHomeScreenSteps(page);
+    await page.goto('/');
+    await expect(resultSummary(page)).toContainText(eiffelTower.label);
+  });
+
+  test('suggests the home screen once and stays closed after a reload', async ({ page }) => {
+    const hint = installationHint(page);
+    await expect(hint).toContainText('Tippe auf Teilen und dann auf „Zum Home-Bildschirm“.');
+
+    const closeButton = hint.getByRole('button', { name: 'Hinweis schließen', exact: true });
+    const closeButtonBox = await closeButton.boundingBox();
+    expect(closeButtonBox?.width).toBeGreaterThanOrEqual(44);
+    expect(closeButtonBox?.height).toBeGreaterThanOrEqual(44);
+    await closeButton.click();
+    await expect(hint).toHaveCount(0);
+
+    await page.reload();
+    await expect(resultSummary(page)).toContainText(eiffelTower.label);
+    await expect(installationHint(page)).toHaveCount(0);
+  });
+
+  test('has no WCAG 2.2 AAA violations, in the dark too', async ({ page }) => {
+    await expect(installationHint(page)).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expectColorScheme(page, 'dark');
+    await expectNoAccessibilityViolations(page);
+  });
+
+  test.describe('at 320 CSS pixels', () => {
+    test.use({ viewport: { width: 320, height: 640 } });
+
+    test('does not scroll horizontally', async ({ page }) => {
+      await expect(installationHint(page)).toBeVisible();
+      const overflow = await page.evaluate(() => {
+        const scrollingElement = document.scrollingElement ?? document.documentElement;
+        return scrollingElement.scrollWidth - scrollingElement.clientWidth;
+      });
+      expect(overflow).toBeLessThanOrEqual(0);
     });
   });
 });

@@ -1,0 +1,51 @@
+// An inset group of the sheet, like the tips Apple shows in its own apps.
+:host {
+  display: block;
+  padding: var(--space-sm) var(--space-md) 0;
+}
+
+.installation-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-2xs) var(--space-sm) var(--space-sm);
+  border-radius: var(--radius-md);
+  background-color: var(--color-action-tint);
+  color: var(--color-text);
+}
+
+.installation-hint__icon {
+  flex: none;
+  width: var(--space-2xl);
+  height: var(--space-2xl);
+  border-radius: var(--radius-md);
+}
+
+.installation-hint__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2xs);
+  min-width: 0;
+  font-size: var(--font-size-sm);
+}
+
+.installation-hint__heading {
+  font-size: var(--font-size-md);
+}
+
+.installation-hint__install {
+  margin-block-start: var(--space-2xs);
+}
+
+.installation-hint__share-icon {
+  color: var(--color-action-text);
+  font-size: var(--icon-size-sm);
+  vertical-align: text-bottom;
+}
+
+// The circle is small; its touch target keeps 44 px (2.5.5).
+.installation-hint__dismiss {
+  margin-block: calc(-1 * var(--space-2xs));
+}

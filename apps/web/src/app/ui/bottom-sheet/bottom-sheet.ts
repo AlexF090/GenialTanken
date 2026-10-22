@@ -41,7 +41,8 @@ interface DragState {
 
 /**
  * List container that floats over the map on phones with three snap positions (peek, half,
- * full) and becomes a static side panel from 48rem. The content is never inert: screen readers
+ * full), from the bottom edge of the window up to just below the status bar, and becomes a
+ * floating side panel from 48rem. The content is never inert: screen readers
  * reach it in every position, and focusing it from peek opens the sheet to half.
  */
 @Component({
@@ -243,8 +244,13 @@ export class BottomSheet {
   }
 
   private measure(): void {
-    this.sheetHeight.set(this.sheet().nativeElement.offsetHeight);
-    // Handle and header stay visible at peek; the content starts right below them.
-    this.peekHeight.set(this.content().nativeElement.offsetTop);
+    const sheet = this.sheet().nativeElement;
+    this.sheetHeight.set(sheet.offsetHeight);
+    // Handle and header stay visible at peek; the content starts right below them. The sheet
+    // reaches under the home indicator, so peek shows that strip (its bottom padding) as well.
+    const safeAreaBottom = Number.parseFloat(getComputedStyle(sheet).paddingBottom);
+    this.peekHeight.set(
+      this.content().nativeElement.offsetTop + (Number.isNaN(safeAreaBottom) ? 0 : safeAreaBottom)
+    );
   }
 }

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, viewChild } from '@angular/core';
 import type { ElementRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { observeElementHeight } from './observe-element-height';
+import { observeElementBounds } from './observe-element-bounds';
 import { hostElementOf } from '../../../testing/render-page';
 import { FakeResizeObserver } from '../../../testing/fake-resize-observer';
 
@@ -11,7 +11,7 @@ import { FakeResizeObserver } from '../../../testing/fake-resize-observer';
 })
 class ObservingHost {
   private readonly box = viewChild.required<ElementRef<HTMLElement>>('box');
-  readonly boxHeightInPixels = observeElementHeight(() => this.box().nativeElement);
+  readonly boxBounds = observeElementBounds(() => this.box().nativeElement);
 }
 
 const render = async () => {
@@ -24,28 +24,31 @@ const render = async () => {
   return { fixture, box };
 };
 
-const resizeTo = (box: HTMLElement, heightInPixels: number): void => {
-  Object.defineProperty(box, 'offsetHeight', { value: heightInPixels, configurable: true });
+const layOut = (box: HTMLElement, rectangle: DOMRect): void => {
+  vi.spyOn(box, 'getBoundingClientRect').mockReturnValue(rectangle);
   FakeResizeObserver.latest?.resize();
 };
 
-describe('observeElementHeight', () => {
+describe('observeElementBounds', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
-  it('follows the height of the element whenever it resizes', async () => {
+  it('follows where the element lies whenever it or the window resizes', async () => {
     vi.stubGlobal('ResizeObserver', FakeResizeObserver);
     const { fixture, box } = await render();
 
-    expect(fixture.componentInstance.boxHeightInPixels()).toBe(0);
-    expect(FakeResizeObserver.latest?.observedElements).toEqual([box]);
+    expect(fixture.componentInstance.boxBounds()).toEqual({ top: 0, right: 0, bottom: 0, left: 0 });
+    expect(FakeResizeObserver.latest?.observedElements).toEqual([box, document.documentElement]);
 
-    resizeTo(box, 72);
-    expect(fixture.componentInstance.boxHeightInPixels()).toBe(72);
-
-    resizeTo(box, 120);
-    expect(fixture.componentInstance.boxHeightInPixels()).toBe(120);
+    layOut(box, new DOMRect(16, 59, 400, 52));
+    expect(fixture.componentInstance.boxBounds()).toEqual({
+      top: 59,
+      right: 416,
+      bottom: 111,
+      left: 16,
+    });
   });
 
   it('stops observing when the component is destroyed', async () => {
@@ -61,6 +64,6 @@ describe('observeElementHeight', () => {
     vi.stubGlobal('ResizeObserver', undefined);
     const { fixture } = await render();
 
-    expect(fixture.componentInstance.boxHeightInPixels()).toBe(0);
+    expect(fixture.componentInstance.boxBounds().bottom).toBe(0);
   });
 });

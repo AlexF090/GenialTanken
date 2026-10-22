@@ -1,3 +1,5 @@
+@use 'breakpoints';
+
 // Design tokens after Apple's Human Interface Guidelines: system colors and font, translucent
 // materials over the map, soft corners.
 // Every color token carries its light and dark value via `light-dark()`, resolved against the
@@ -37,13 +39,10 @@
   // materials and the menu highlight over them
   --color-text-secondary: light-dark(#47474c, #d1d1d6);
 
-  // Tab bar and other bars: a translucent material over the content. Inactive items: light 8.0,
-  // dark 9.9, active ones light 8.0, dark 7.9 on the bar over its worst backdrop. Also the browser
-  // UI color: keep the `theme-color` meta elements in `index.html` in sync.
+  // Browser UI color (`theme-color` in `index.html` and the manifest; keep them in sync) and the
+  // opaque fallback of the materials
   --color-chrome: light-dark(rgb(249 249 249 / 96%), rgb(29 29 29 / 96%));
   --color-chrome-opaque: light-dark(#f9f9f9, #1d1d1d);
-  --color-on-chrome: var(--color-action-text);
-  --color-on-chrome-secondary: var(--color-text-secondary);
 
   // Tint (iOS blue, darkened in light and lightened in dark mode for text contrast). Filled
   // actions: text on it light 9.2 (hover 11.2), dark 10.9 (hover 13.2)
@@ -62,7 +61,6 @@
   // 8.8 / 10.9. The halo in the surface color on both sides of it keeps it visible on any
   // backdrop, e.g. map tiles in the tint's own hue.
   --color-focus-ring: var(--color-action);
-  --color-focus-ring-on-chrome: var(--color-focus-ring);
   --color-focus-ring-halo: var(--color-surface);
 
   // Reserved for the cheapest price only, like a green price in Apple Maps: text on it light 7.2,
@@ -96,6 +94,11 @@
   // The only shadow color; used by `--shadow-floating`
   --color-shadow: light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 50%));
   --color-scrim: light-dark(rgb(0 0 0 / 20%), rgb(0 0 0 / 48%));
+  // Behind the status bar, where the map reaches under it. Dark in both schemes: the installed
+  // app asks for `black-translucent`, so iOS always draws the status bar text white. Fades out
+  // towards the map (`--color-status-bar-scrim-end`); opaque with more contrast below.
+  --color-status-bar-scrim: rgb(0 0 0 / 45%);
+  --color-status-bar-scrim-end: rgb(0 0 0 / 0%);
 
   // Materials: translucent, blurred layers floating above the map and the content. Nearly
   // opaque, so text keeps 7:1 over any backdrop. `--material-edge` is a hairline that only the
@@ -187,15 +190,20 @@
 
   // Layout
   --layout-touch-target: 2.75rem;
-  --layout-rail-width: 5rem;
   --layout-header-height: 6.25rem;
-  --layout-navigation-height: 4.5rem;
   --layout-content-max-width: 48rem;
-  // Station panel next to the map: fluid between minimum and maximum on medium screens, fixed on
-  // expanded ones
+  // Station panel floating over the map from 48rem (`--layout-panel-width`): fluid between minimum
+  // and maximum on medium screens, fixed on expanded ones
   --layout-panel-width-minimum: 20rem;
   --layout-panel-width-maximum: 24rem;
   --layout-panel-width-expanded: 26rem;
+  --layout-panel-width: clamp(
+    var(--layout-panel-width-minimum),
+    40vw,
+    var(--layout-panel-width-maximum)
+  );
+  // Gap between the floating side panel (from 48rem) and the window edges
+  --layout-panel-inset: var(--space-md);
   --layout-fuel-badge-width: 3.125rem;
   --layout-fuel-badge-height: 2.125rem;
   --layout-price-column-width: 6.5rem;
@@ -215,10 +223,11 @@
   --safe-area-bottom: env(safe-area-inset-bottom, 0);
   --safe-area-left: env(safe-area-inset-left, 0);
 
-  // Stacking: above Leaflet panes and controls (max. 1000). From bottom to top: the search over
-  // the map, the sheet (a fully opened one covers the search), the navigation and page header,
-  // app-wide notices (new version), the skip link.
+  // Stacking: above Leaflet panes and controls (max. 1000). From bottom to top: the status bar
+  // scrim and the search over the map, the sheet (a fully opened one covers the search), the
+  // page header, app-wide notices (new version), the skip link.
   --layer-chrome: 1100;
+  --layer-status-bar-scrim: calc(var(--layer-chrome) - 3);
   --layer-map-search: calc(var(--layer-chrome) - 2);
   --layer-sheet: calc(var(--layer-chrome) - 1);
   --layer-notice: calc(var(--layer-chrome) + 1);
@@ -235,6 +244,12 @@
   --scale-marker-selected: 1.15;
 }
 
+:root {
+  @include breakpoints.expanded {
+    --layout-panel-width: var(--layout-panel-width-expanded);
+  }
+}
+
 // Opaque materials where translucency hurts legibility or is not drawn: on request of the user
 // (reduced transparency, more contrast) and without `backdrop-filter`. A hairline takes over the
 // separation the blur gave.
@@ -245,6 +260,13 @@
   --material-bar: var(--color-canvas);
   --material-blur: none;
   --material-edge: var(--color-border-control);
+}
+
+:root {
+  @media (prefers-contrast: more) {
+    --color-status-bar-scrim: rgb(0 0 0);
+    --color-status-bar-scrim-end: rgb(0 0 0);
+  }
 }
 
 :root {

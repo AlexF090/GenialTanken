@@ -1,7 +1,7 @@
 // Window size classes, mirrored in `src/app/core/layout/breakpoints.ts`. Keep both in sync.
-//   compact   < 48rem         phones: bottom navigation, list and map as separate views
-//   medium    48rem – 64rem   small tablets: navigation rail
-//   expanded  ≥ 64rem         list and map side by side
+//   compact   < 48rem         phones: the list is a bottom sheet over the full-screen map
+//   medium    48rem – 64rem   small tablets: a floating side panel over the map
+//   expanded  ≥ 64rem         the same with a wider panel
 //
 // Usage in a component stylesheet (`src/styles` is an include path):
 //   @use 'breakpoints';

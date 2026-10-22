@@ -1,9 +1,9 @@
-import { AxeBuilder } from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 import {
   eiffelTower,
   expect,
   expectColorScheme,
+  expectNoAccessibilityViolations,
   favoritesRow,
   quaiDeLaRapeeStation,
   resultSummary,
@@ -12,9 +12,6 @@ import {
   stationCard,
   test,
 } from '../fixtures.ts';
-
-// `wcag2aaa` adds the enhanced contrast rule (1.4.6).
-const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag2aaa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 interface PageUnderTest {
   name: string;
@@ -134,18 +131,6 @@ const PAGES: PageUnderTest[] = [
   },
 ];
 
-const expectNoViolations = async (page: Page): Promise<void> => {
-  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
-
-  expect(
-    results.violations.map(violation => ({
-      rule: violation.id,
-      impact: violation.impact,
-      targets: violation.nodes.map(node => node.target.join(' ')),
-    }))
-  ).toEqual([]);
-};
-
 const checkPages = (pagesUnderTest: PageUnderTest[]): void => {
   for (const pageUnderTest of pagesUnderTest) {
     test(`${pageUnderTest.name} has no WCAG 2.2 AAA violations`, async ({ page }) => {
@@ -154,7 +139,7 @@ const checkPages = (pagesUnderTest: PageUnderTest[]): void => {
       await pageUnderTest.isReady(page);
       await pageUnderTest.enterState?.(page);
 
-      await expectNoViolations(page);
+      await expectNoAccessibilityViolations(page);
     });
   }
 };
