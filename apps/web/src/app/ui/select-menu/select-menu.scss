@@ -1,3 +1,4 @@
+@use 'focus-ring';
 @use 'materials';
 
 // The host carries the look of the button (background, radius, padding), so each place can
@@ -90,7 +91,7 @@
   }
 
   &:focus-visible {
-    outline-offset: calc(-1 * var(--border-width-focus));
+    @include focus-ring.inset-focus-ring;
   }
 }
 
