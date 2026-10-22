@@ -10,17 +10,17 @@ import {
   carrefourStation,
   totalStation,
   unbrandedStation,
+  withPrices,
 } from '../../../testing/station-fixtures';
 import { BROWSER_STORAGE } from '../browser-storage';
 import { GEOLOCATION } from '../geolocation/geolocation-service';
 import { SearchCenterStore } from '../search-center/search-center-store';
 import { SettingsStore } from '../settings/settings-store';
 import { NearbyStationsStore } from './nearby-stations-store';
+import { stationsUrl } from '../../../testing/api-urls';
 
-const EIFFEL_TOWER_E5_URL =
-  '/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=5&fuel=e5';
-const BASTILLE_E5_URL =
-  '/api/stations?latitude=48.8532&longitude=2.3692&radiusInKilometers=5&fuel=e5';
+const EIFFEL_TOWER_E5_URL = stationsUrl({ latitude: 48.8584, longitude: 2.2945 });
+const BASTILLE_E5_URL = stationsUrl({ latitude: 48.8532, longitude: 2.3692 });
 
 describe('NearbyStationsStore', () => {
   let geolocation: FakeGeolocation;
@@ -83,7 +83,10 @@ describe('NearbyStationsStore', () => {
     TestBed.tick();
     httpTesting
       .expectOne(
-        '/api/stations?latitude=48.8532&longitude=2.3692&radiusInKilometers=10&fuel=diesel'
+        stationsUrl(
+          { latitude: 48.8532, longitude: 2.3692 },
+          { radiusInKilometers: 10, fuel: 'diesel' }
+        )
       )
       .flush([]);
     await settle();
@@ -123,9 +126,7 @@ describe('NearbyStationsStore', () => {
     await located;
     TestBed.tick();
 
-    httpTesting
-      .expectOne('/api/stations?latitude=51.3127&longitude=9.4797&radiusInKilometers=5&fuel=e5')
-      .flush([]);
+    httpTesting.expectOne(stationsUrl({ latitude: 51.3127, longitude: 9.4797 })).flush([]);
     await settle();
     expect(store.isLoading()).toBe(false);
   });
@@ -146,7 +147,7 @@ describe('NearbyStationsStore', () => {
 
     await loadAtEiffelTower([
       totalStation,
-      { ...carrefourStation, pricesInEuro: { ...carrefourStation.pricesInEuro, e5: 1.799 } },
+      withPrices(carrefourStation, { e5: 1.799 }),
       unbrandedStation,
     ]);
 

@@ -9,7 +9,7 @@ import {
 } from '@genialtanken/contracts';
 import type { FuelType, Station, StationLookup } from '@genialtanken/contracts';
 import { firstValueFrom } from 'rxjs';
-import type { Coordinates } from '../geolocation/coordinates';
+import type { Coordinates } from '@genialtanken/contracts';
 import { parseResponse } from '../http/parse-response';
 import { StationSourceUnavailableError } from './station-source-unavailable-error';
 

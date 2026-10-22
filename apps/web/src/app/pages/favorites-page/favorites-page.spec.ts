@@ -1,22 +1,18 @@
-import { FakeStorage } from '../../../testing/fake-storage';
+import { FakeStorage, storedFavorites } from '../../../testing/fake-storage';
 import {
   configurePageTest,
   getButton,
   renderComponent,
+  stationTitles,
   textOf,
 } from '../../../testing/render-page';
 import type { PageTestContext } from '../../../testing/render-page';
 import { carrefourStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
+import { stationLookupUrl } from '../../../testing/api-urls';
 import { FavoritesPage } from './favorites-page';
 
 const BAD_GATEWAY = { status: 502, statusText: 'Bad Gateway' };
 const BAD_GATEWAY_BODY = { statusCode: 502, message: 'Upstream unavailable' };
-
-const lookupUrl = (identifiers: string): string =>
-  `/api/stations/by-identifiers?identifiers=${identifiers}`;
-
-const stationTitles = (element: HTMLElement): string[] =>
-  [...element.querySelectorAll('main li a')].map(title => textOf(title));
 
 describe('FavoritesPage', () => {
   let context: PageTestContext;
@@ -45,7 +41,7 @@ describe('FavoritesPage', () => {
       storage: new FakeStorage({ favoriteIDs: '["fr-75001001","fr-75005002"]' }),
     });
     const rendered = await renderComponent(FavoritesPage);
-    context.httpTesting.expectOne(lookupUrl('fr-75001001,fr-75005002')).flush({
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001,fr-75005002')).flush({
       stations: [withoutDistance(totalStation), withoutDistance(carrefourStation)],
       unavailableIdentifiers: [],
       failedIdentifiers: [],
@@ -83,13 +79,13 @@ describe('FavoritesPage', () => {
     await context.settle();
 
     expect(stationTitles(element)).toEqual(['Carrefour Market']);
-    expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75005002"]');
+    expect(storedFavorites(context.storage)).toBe('["fr-75005002"]');
 
     getButton(element, 'Favorit: Carrefour Market').click();
     await context.settle();
 
     expect(textOf(element.querySelector('main h2'))).toBe('Keine Favoriten gespeichert');
-    expect(context.storage.getItem('favoriteIDs')).toBe('[]');
+    expect(storedFavorites(context.storage)).toBe('[]');
   });
 
   it('keeps favorites the API does not know right now and says so', async () => {
@@ -98,7 +94,7 @@ describe('FavoritesPage', () => {
     });
     const { element } = await renderComponent(FavoritesPage);
 
-    context.httpTesting.expectOne(lookupUrl('fr-75001001,fr-99000001')).flush({
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001,fr-99000001')).flush({
       stations: [withoutDistance(totalStation)],
       unavailableIdentifiers: ['fr-99000001'],
       failedIdentifiers: [],
@@ -109,7 +105,7 @@ describe('FavoritesPage', () => {
     expect(textOf(element.querySelector('main p[role="status"]'))).toBe(
       'Ein Favorit ist gerade nicht verfügbar.'
     );
-    expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75001001","fr-99000001"]');
+    expect(storedFavorites(context.storage)).toBe('["fr-75001001","fr-99000001"]');
   });
 
   it('removes unavailable favorites only when the user asks for it', async () => {
@@ -118,7 +114,7 @@ describe('FavoritesPage', () => {
     });
     const { element } = await renderComponent(FavoritesPage);
 
-    context.httpTesting.expectOne(lookupUrl('fr-99000001,fr-75001001,fr-99000002')).flush({
+    context.httpTesting.expectOne(stationLookupUrl('fr-99000001,fr-75001001,fr-99000002')).flush({
       stations: [withoutDistance(totalStation)],
       unavailableIdentifiers: ['fr-99000001', 'fr-99000002'],
       failedIdentifiers: [],
@@ -132,7 +128,7 @@ describe('FavoritesPage', () => {
     getButton(element, 'Nicht verfügbare Favoriten entfernen').click();
     await context.settle();
 
-    expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75001001"]');
+    expect(storedFavorites(context.storage)).toBe('["fr-75001001"]');
     expect(element.querySelector('main p[role="status"]')).toBeNull();
     expect(stationTitles(element)).toEqual(['TotalEnergies']);
     expect(textOf(document.activeElement)).toBe('Gespeicherte Tankstellen');
@@ -145,7 +141,7 @@ describe('FavoritesPage', () => {
     const { element } = await renderComponent(FavoritesPage);
 
     context.httpTesting
-      .expectOne(lookupUrl('fr-99000001'))
+      .expectOne(stationLookupUrl('fr-99000001'))
       .flush({ stations: [], unavailableIdentifiers: ['fr-99000001'], failedIdentifiers: [] });
     await context.settle();
 
@@ -161,7 +157,7 @@ describe('FavoritesPage', () => {
     });
     const { element } = await renderComponent(FavoritesPage);
 
-    context.httpTesting.expectOne(lookupUrl('fr-75001001,fr-75005002')).flush({
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001,fr-75005002')).flush({
       stations: [withoutDistance(totalStation)],
       unavailableIdentifiers: [],
       failedIdentifiers: ['fr-75005002'],
@@ -172,19 +168,21 @@ describe('FavoritesPage', () => {
     expect(textOf(element.querySelector('[role="alert"]'))).toBe(
       'Ein Favorit konnte nicht geladen werden. Bitte versuche es später erneut.'
     );
-    expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75001001","fr-75005002"]');
+    expect(storedFavorites(context.storage)).toBe('["fr-75001001","fr-75005002"]');
   });
 
   it('reports an unavailable API', async () => {
     context = configurePageTest({ storage: new FakeStorage({ favoriteIDs: '["fr-75001001"]' }) });
     const { element } = await renderComponent(FavoritesPage);
 
-    context.httpTesting.expectOne(lookupUrl('fr-75001001')).flush(BAD_GATEWAY_BODY, BAD_GATEWAY);
+    context.httpTesting
+      .expectOne(stationLookupUrl('fr-75001001'))
+      .flush(BAD_GATEWAY_BODY, BAD_GATEWAY);
     await context.settle();
 
     expect(textOf(element.querySelector('[role="alert"]'))).toBe(
       'Die Preisdaten sind gerade nicht erreichbar. Bitte versuche es später erneut.'
     );
-    expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75001001"]');
+    expect(storedFavorites(context.storage)).toBe('["fr-75001001"]');
   });
 });

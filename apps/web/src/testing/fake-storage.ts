@@ -1,3 +1,6 @@
+import { FAVORITES_STORAGE_KEY } from '../app/core/favorites/local-storage-favorites-repository';
+import { SETTINGS_STORAGE_KEY } from '../app/core/settings/settings-store';
+
 /** In-memory `Storage` for tests. */
 export class FakeStorage implements Storage {
   private readonly entries = new Map<string, string>();
@@ -32,3 +35,11 @@ export class FakeStorage implements Storage {
     this.entries.set(key, value);
   }
 }
+
+/** The settings as the app persisted them, as stored JSON text. */
+export const storedSettings = (storage: Storage): string | null =>
+  storage.getItem(SETTINGS_STORAGE_KEY);
+
+/** The favorite station identifiers as the app persisted them, as stored JSON text. */
+export const storedFavorites = (storage: Storage): string | null =>
+  storage.getItem(FAVORITES_STORAGE_KEY);

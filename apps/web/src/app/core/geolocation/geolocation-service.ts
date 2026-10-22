@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, InjectionToken, signal } from '@angular/core';
+import { MILLISECONDS_PER_MINUTE } from '@genialtanken/contracts';
 import { isSamePosition } from './coordinates';
-import type { Coordinates } from './coordinates';
+import type { Coordinates } from '@genialtanken/contracts';
 
 export type GeolocationFailure = 'permission-denied' | 'unavailable' | 'timeout' | 'unsupported';
 
@@ -13,7 +14,7 @@ export const GEOLOCATION = new InjectionToken<Geolocation | null>('Geolocation',
 const GEOLOCATION_ERROR_CODE_PERMISSION_DENIED = 1;
 const GEOLOCATION_ERROR_CODE_TIMEOUT = 3;
 const POSITION_TIMEOUT_IN_MILLISECONDS = 15_000;
-const MAXIMUM_POSITION_AGE_IN_MILLISECONDS = 60_000;
+const MAXIMUM_POSITION_AGE_IN_MILLISECONDS = MILLISECONDS_PER_MINUTE;
 
 const FAILURE_MESSAGES: Record<GeolocationFailure, string> = {
   'permission-denied':

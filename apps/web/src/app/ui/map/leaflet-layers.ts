@@ -1,135 +1,10 @@
-// Leaflet has to be imported before the marker cluster plugin, which extends the global `L`.
-import L from 'leaflet';
-import 'leaflet.markercluster';
 import { METERS_PER_KILOMETER } from '@genialtanken/contracts';
-import { formatPrice, formatPriceParts } from '../../core/formatting/number-format';
-import type { Coordinates } from '../../core/geolocation/coordinates';
+import type { Coordinates } from '@genialtanken/contracts';
 import type { SearchCenter } from '../../core/search-center/search-center';
 import type { PriceLevel } from '../../core/stations/price-level';
-import type { ResolvedColorScheme } from '../../core/theme/color-scheme-controller';
-
-const MAPBOX_STYLES: Readonly<Record<ResolvedColorScheme, string>> = {
-  light: 'alexf090/cl2uhl8gx008p14qop192uczn',
-  dark: 'mapbox/dark-v11',
-};
-const MAPBOX_ATTRIBUTION =
-  '© <a href="https://www.mapbox.com/about/maps/">Mapbox</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
-const OPEN_STREET_MAP_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const OPEN_STREET_MAP_ATTRIBUTION =
-  '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende';
-export const MAXIMUM_ZOOM = 19;
-
-const mapboxTileUrl = (style: string, accessToken: string): string =>
-  `https://api.mapbox.com/styles/v1/${style}/tiles/256/{z}/{x}/{y}@2x?access_token=${encodeURIComponent(accessToken)}`;
-
-/**
- * Mapbox style matching the color scheme when a token is configured, OpenStreetMap otherwise.
- * OpenStreetMap has no dark style; `map.scss` darkens its tiles with a filter instead.
- */
-export const createTileLayer = (
-  mapboxAccessToken: string,
-  colorScheme: ResolvedColorScheme
-): L.TileLayer =>
-  mapboxAccessToken === ''
-    ? L.tileLayer(OPEN_STREET_MAP_TILE_URL, {
-        attribution: OPEN_STREET_MAP_ATTRIBUTION,
-        maxZoom: MAXIMUM_ZOOM,
-        className: 'open-street-map-tiles',
-      })
-    : L.tileLayer(mapboxTileUrl(MAPBOX_STYLES[colorScheme], mapboxAccessToken), {
-        attribution: MAPBOX_ATTRIBUTION,
-        maxZoom: MAXIMUM_ZOOM,
-      });
-
-// Marker content is built from DOM nodes with `textContent`: station names and place labels come
-// from external sources and must never be parsed as HTML.
-const createElement = (
-  tagName: 'div' | 'span' | 'sup',
-  className: string,
-  text?: string
-): HTMLElement => {
-  const element = document.createElement(tagName);
-  element.className = className;
-  if (text !== undefined) {
-    element.textContent = text;
-  }
-  return element;
-};
-
-const createAccessibleName = (name: string): HTMLElement =>
-  createElement('span', 'visually-hidden', name);
-
-/** "1,85⁹" for the eyes; screen readers get the accessible name instead. */
-const createPriceDigits = (className: string, priceInEuro: number | null): HTMLElement => {
-  const digits = createElement('span', className);
-  digits.setAttribute('aria-hidden', 'true');
-  if (priceInEuro === null) {
-    digits.textContent = '–';
-    return digits;
-  }
-  const { leadingDigits, tenthOfCent } = formatPriceParts(priceInEuro);
-  digits.append(leadingDigits, createElement('sup', '', tenthOfCent));
-  return digits;
-};
-
-/** Visible word for the cheapest price, so it is not told by the green alone (WCAG 1.4.1). */
-const CHEAPEST_CAPTION = 'günstigst';
-
-/** Screen readers hear "günstigster Preis" in the accessible name instead. */
-const createCheapestCaption = (className: string): HTMLElement => {
-  const caption = createElement('span', className, CHEAPEST_CAPTION);
-  caption.setAttribute('aria-hidden', 'true');
-  return caption;
-};
-
-/** Pins are drawn by their inner element in `map.scss` around the zero-sized icon. */
-const ZERO_SIZE: L.PointTuple = [0, 0];
-/**
- * Interactive markers keep their content size (a zero-sized button would have no hit box and
- * count as invisible); `map.scss` moves them onto their point with the CSS `translate` property.
- */
-const CONTENT_SIZE = undefined;
-
-export interface PriceTagIconOptions {
-  /** Usually the station title; price and highlight are appended. */
-  accessibleName: string;
-  priceInEuro: number | null;
-  /** Tints the tag from cheap to dear; missing without a price. */
-  priceLevel?: PriceLevel;
-  isCheapest: boolean;
-  isSelected: boolean;
-}
-
-export const priceTagAccessibleName = ({
-  accessibleName,
-  priceInEuro,
-  isCheapest,
-}: PriceTagIconOptions): string => {
-  if (priceInEuro === null) {
-    return `${accessibleName}, kein Preis`;
-  }
-  const name = `${accessibleName}, ${formatPrice(priceInEuro)}`;
-  return isCheapest ? `${name}, günstigster Preis` : name;
-};
-
-/** A small price board with a pointer to the station's location. */
-export const createPriceTagIcon = (options: PriceTagIconOptions): L.DivIcon => {
-  const tag = createElement('div', 'price-tag');
-  tag.classList.toggle('price-tag--cheapest', options.isCheapest);
-  tag.classList.toggle('price-tag--selected', options.isSelected);
-  tag.classList.toggle('price-tag--without-price', options.priceInEuro === null);
-  if (options.priceLevel !== undefined) {
-    tag.classList.add(`price-tag--${options.priceLevel}`);
-  }
-  tag.append(
-    createAccessibleName(priceTagAccessibleName(options)),
-    createPriceDigits('price-tag__price', options.priceInEuro)
-  );
-  if (options.isCheapest) {
-    tag.append(createCheapestCaption('price-tag__caption'));
-  }
-  return L.divIcon({ html: tag, className: 'price-tag-marker', iconSize: CONTENT_SIZE });
-};
+import { L } from './leaflet';
+import { createMarkerElement, ZERO_SIZE } from './marker-elements';
+import { createPriceClusterIcon, createPriceTagIcon } from './price-tag-icons';
 
 const SELECTED_Z_INDEX_OFFSET = 2000;
 const CHEAPEST_Z_INDEX_OFFSET = 1000;
@@ -220,59 +95,28 @@ export class StationMarker extends L.Marker {
   }
 }
 
-export type StationCluster = Pick<L.MarkerCluster, 'getChildCount' | 'getAllChildMarkers'>;
+type StationCluster = Pick<L.MarkerCluster, 'getChildCount' | 'getAllChildMarkers'>;
 
-/** Number of stations and the lowest price among them, highlighted if it is the cheapest. */
-export const createClusterIcon = (cluster: StationCluster): L.DivIcon => {
-  const stations = cluster.getAllChildMarkers().filter(marker => marker instanceof StationMarker);
-  const prices = stations.flatMap(station =>
-    station.stationPriceInEuro === null ? [] : [station.stationPriceInEuro]
+/** Icon of a cluster of station price tags. */
+export const createClusterIcon = (cluster: StationCluster): L.DivIcon =>
+  createPriceClusterIcon(
+    cluster.getAllChildMarkers().filter(marker => marker instanceof StationMarker),
+    cluster.getChildCount()
   );
-  const minimumPrice = prices.length === 0 ? null : Math.min(...prices);
-  const stationCount = cluster.getChildCount();
-  const accessibleName =
-    minimumPrice === null
-      ? `${String(stationCount)} Tankstellen, kein Preis`
-      : `${String(stationCount)} Tankstellen, ab ${formatPrice(minimumPrice)}`;
 
-  const containsCheapest = stations.some(station => station.isCheapestStation);
-  // Tinted like the tag of its lowest price, so a cheap area is visible before zooming in.
-  const lowestPriceLevel = stations.find(
-    station => station.stationPriceInEuro === minimumPrice
-  )?.stationPriceLevel;
-
-  const board = createElement('div', 'price-cluster');
-  board.classList.toggle('price-cluster--cheapest', containsCheapest);
-  if (lowestPriceLevel !== undefined) {
-    board.classList.add(`price-cluster--${lowestPriceLevel}`);
-  }
-  const count = createElement('span', 'price-cluster__count', String(stationCount));
-  count.setAttribute('aria-hidden', 'true');
-  const lowestPrice = createElement('span', 'price-cluster__lowest-price');
-  lowestPrice.setAttribute('aria-hidden', 'true');
-  lowestPrice.append(
-    createElement('span', 'price-cluster__from', 'ab'),
-    createPriceDigits('price-cluster__price', minimumPrice)
-  );
-  if (containsCheapest) {
-    lowestPrice.append(createElement('span', 'price-cluster__caption', CHEAPEST_CAPTION));
-  }
-  board.append(createAccessibleName(accessibleName), count, lowestPrice);
-  return L.divIcon({ html: board, className: 'price-cluster-marker', iconSize: CONTENT_SIZE });
-};
-
-export const OWN_POSITION_LABEL = 'Du bist hier!';
+/** Greets the user at their own position on the map. */
+const OWN_POSITION_GREETING = 'Du bist hier!';
 
 /** Teardrop pin whose tip marks the location; used for search centers and station locations. */
 const createPinIcon = (): L.DivIcon => {
-  const pin = createElement('div', 'location-pin');
-  pin.append(createElement('span', 'location-pin__head'));
+  const pin = createMarkerElement('div', 'location-pin');
+  pin.append(createMarkerElement('span', 'location-pin__head'));
   return L.divIcon({ html: pin, className: 'location-pin-marker', iconSize: ZERO_SIZE });
 };
 
 const createOwnPositionIcon = (): L.DivIcon =>
   L.divIcon({
-    html: createElement('div', 'own-position-dot'),
+    html: createMarkerElement('div', 'own-position-dot'),
     className: 'own-position-marker',
     iconSize: ZERO_SIZE,
   });
@@ -291,10 +135,10 @@ export const createCenterMarker = (center: SearchCenter): L.Marker => {
   if (center.source === 'map-area') {
     return marker;
   }
-  const label = createElement(
+  const label = createMarkerElement(
     'span',
     'center-tooltip__label',
-    isOwnPosition ? OWN_POSITION_LABEL : center.label
+    isOwnPosition ? OWN_POSITION_GREETING : center.label
   );
   return marker.bindTooltip(label, {
     permanent: true,
@@ -316,28 +160,3 @@ export const createRadiusCircle = (center: Coordinates, radiusInKilometers: numb
     className: 'search-radius',
     interactive: false,
   });
-
-export { L };
-
-/**
- * Ends a running zoom animation at once. Leaflet's `stop()` and `remove()` only cancel pan and fly
- * animations; a zoom animation's 250 ms fallback timeout would otherwise run on the removed panes
- * (`_leaflet_pos` of undefined). Leaflet offers no public API for this.
- */
-const finishZoomAnimation = (map: L.Map): void => {
-  if ('_onZoomTransitionEnd' in map && typeof map._onZoomTransitionEnd === 'function') {
-    Reflect.apply(map._onZoomTransitionEnd, map, []);
-  }
-};
-
-/**
- * Removes a map even while a pan or zoom animation is still running; a plain `remove()` lets
- * pending animation frames and the zoom fallback timeout access the already removed panes
- * (`_leaflet_pos` of undefined).
- */
-export const destroyMap = (map: L.Map): void => {
-  map.stop();
-  finishZoomAnimation(map);
-  map.off();
-  map.remove();
-};

@@ -8,14 +8,13 @@ import { Icon } from '../icon/icon';
   template: `
     <button
       type="button"
-      class="favorite-button"
+      class="icon-button icon-button--row-action"
       [attr.aria-pressed]="isFavorite()"
       [attr.aria-label]="accessibleName()"
       (click)="toggled.emit()">
       <app-icon [name]="isFavorite() ? 'star' : 'star-outline'" />
     </button>
   `,
-  styleUrl: './favorite-button.scss',
 })
 export class FavoriteButton {
   readonly stationName = input.required<string>();

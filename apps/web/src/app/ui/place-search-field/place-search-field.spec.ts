@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { Place } from '@genialtanken/contracts';
 import { bastillePlace, lyonPlace } from '../../../testing/place-fixtures';
-import { getButton, textOf } from '../../../testing/render-page';
+import { getButton, hostElementOf, textOf } from '../../../testing/render-page';
 import { PlaceSearchField } from './place-search-field';
 
 @Component({
@@ -30,9 +30,9 @@ class PlaceSearchFieldHost {
 
 const render = async () => {
   const fixture = TestBed.createComponent(PlaceSearchFieldHost);
-  document.body.append(fixture.nativeElement as HTMLElement);
+  document.body.append(hostElementOf(fixture));
   await fixture.whenStable();
-  const element = fixture.nativeElement as HTMLElement;
+  const element = hostElementOf(fixture);
   const combobox = (): HTMLInputElement => {
     const input = element.querySelector<HTMLInputElement>('input[role="combobox"]');
     if (input === null) {
@@ -40,7 +40,7 @@ const render = async () => {
     }
     return input;
   };
-  const options = () => [...element.querySelectorAll('[role="option"]')];
+  const options = () => [...element.querySelectorAll<HTMLElement>('[role="option"]')];
   const listbox = () => element.querySelector('[role="listbox"]');
   const isListShown = () => listbox()?.parentElement?.hidden === false;
   const type = async (value: string) => {
@@ -150,7 +150,7 @@ describe('PlaceSearchField', () => {
     host.suggestions.set([bastillePlace]);
     await fixture.whenStable();
 
-    (options()[0] as HTMLElement).click();
+    options()[0]?.click();
 
     expect(host.selectedPlaces).toEqual([bastillePlace]);
   });

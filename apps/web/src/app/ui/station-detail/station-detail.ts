@@ -1,6 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
+import type { ElementRef } from '@angular/core';
 import { FUEL_TYPES } from '@genialtanken/contracts';
 import type { FuelType, Station } from '@genialtanken/contracts';
+import { uniqueIdentifier } from '../../core/dom/unique-identifier';
 import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
 import {
   addressLinesBelowTitle,
@@ -34,7 +43,13 @@ export class StationDetail {
   /** The user's fuel type, shown first and largest. */
   readonly fuelType = input.required<FuelType>();
   readonly isFavorite = input.required<boolean>();
+  /** Marks today in the opening times. */
+  readonly today = input.required<Date>();
   readonly favoriteToggled = output();
+
+  private readonly titleHeading = viewChild.required<ElementRef<HTMLElement>>('titleHeading');
+  protected readonly pricesHeadingIdentifier = uniqueIdentifier('prices-heading');
+  protected readonly openingTimesHeadingIdentifier = uniqueIdentifier('opening-times-heading');
 
   protected readonly title = computed(() => stationTitle(this.station()));
   protected readonly destination = computed(() => navigationDestinationOf(this.station()));
@@ -53,4 +68,9 @@ export class StationDetail {
       ...fuelPrices.filter(fuelPrice => !fuelPrice.isSelected),
     ];
   });
+
+  /** Moves the focus to the station's name, e.g. once the card is shown. */
+  focusTitle(): void {
+    this.titleHeading().nativeElement.focus({ preventScroll: true });
+  }
 }

@@ -1,3 +1,6 @@
+@use 'focus-ring';
+@use 'materials';
+
 :host {
   display: block;
 }
@@ -13,13 +16,10 @@
   min-height: var(--layout-touch-target);
   padding-inline: var(--space-sm) var(--space-2xs);
   border-radius: var(--radius-pill);
-  background: var(--material-menu);
-  box-shadow: var(--shadow-floating);
-  backdrop-filter: var(--material-blur);
+  @include materials.floating-material;
 
   &:focus-within {
-    outline: var(--border-width-focus) solid var(--color-focus-ring);
-    outline-offset: var(--focus-offset);
+    @include focus-ring.focus-ring;
   }
 }
 

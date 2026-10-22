@@ -1,3 +1,5 @@
+@use 'focus-ring';
+
 :host {
   display: inline-block;
 }
@@ -30,12 +32,11 @@
   &:has(:checked) {
     background-color: var(--color-segmented-thumb);
     font-weight: var(--font-weight-bold);
-    box-shadow: 0 1px 3px var(--color-shadow);
+    box-shadow: var(--shadow-segmented-thumb);
   }
 
   &:has(:focus-visible) {
-    outline: var(--border-width-focus) solid var(--color-focus-ring);
-    outline-offset: var(--focus-offset);
+    @include focus-ring.focus-ring;
   }
 }
 

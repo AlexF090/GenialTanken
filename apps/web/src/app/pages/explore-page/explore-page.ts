@@ -1,25 +1,23 @@
 import {
-  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
   inject,
-  Injector,
   linkedSignal,
   signal,
   untracked,
   viewChild,
 } from '@angular/core';
 import type { ElementRef } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import { filter, map, startWith } from 'rxjs';
-import { FUEL_TYPES } from '@genialtanken/contracts';
-import type { FuelType, Place, Station } from '@genialtanken/contracts';
+import { Router, RouterOutlet } from '@angular/router';
+import type { Coordinates, FuelType, Place, Station } from '@genialtanken/contracts';
+import { APPLICATION_NAME } from '../../core/application-name';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
-import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
-import type { Coordinates } from '../../core/geolocation/coordinates';
+import { FUEL_TYPE_LABELS, fuelTypeOptions } from '../../core/fuel-type-labels';
+import { KilometersPipe } from '../../core/formatting/kilometers-pipe';
+import { formatKilometers } from '../../core/formatting/number-format';
+import { injectOpenedStationIdentifier, stationRoute } from '../../core/navigation/station-route';
 import { observeElementHeight } from '../../core/layout/observe-element-height';
 import { Viewport } from '../../core/layout/viewport';
 import { shouldOfferAreaSearch } from '../../core/search-center/area-search';
@@ -41,23 +39,19 @@ import { LoadingState } from '../../ui/loading-state/loading-state';
 import type { ViewportPadding } from '../../ui/map/map-viewport';
 import { PlaceSearchField } from '../../ui/place-search-field/place-search-field';
 import { SelectMenu } from '../../ui/select-menu/select-menu';
-import type { SelectMenuOption } from '../../ui/select-menu/select-menu';
 import { SortOrderControl } from '../../ui/sort-order-control/sort-order-control';
 import { StationList } from '../../ui/station-list/station-list';
 import { StationsMap } from '../../ui/stations-map/stations-map';
 import { injectPlaceSearch } from './place-search';
 import { describeResult } from './result-summary';
-import { stationIdentifierIn } from './station-card-route';
+import { injectSheetFollowsCard } from './sheet-follows-card';
 
 interface SelectionSource {
   stations: readonly Station[];
   center: SearchCenter;
 }
 
-const FUEL_TYPE_OPTIONS: readonly SelectMenuOption<FuelType>[] = FUEL_TYPES.map(fuelType => ({
-  value: fuelType,
-  label: FUEL_TYPE_LABELS[fuelType].long,
-}));
+const FUEL_TYPE_OPTIONS = fuelTypeOptions('long');
 
 /**
  * Start page: stations around the search center as a price board and on a map. On phones the
@@ -77,6 +71,7 @@ const FUEL_TYPE_OPTIONS: readonly SelectMenuOption<FuelType>[] = FUEL_TYPES.map(
     SortOrderControl,
     StationList,
     StationsMap,
+    KilometersPipe,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './explore-page.html',
@@ -94,6 +89,7 @@ export class ExplorePage {
   private readonly stationList = viewChild(StationList);
   private readonly searchOverlay = viewChild.required<ElementRef<HTMLElement>>('searchOverlay');
 
+  protected readonly applicationName = APPLICATION_NAME;
   protected readonly fuelType = this.settings.fuelType;
   protected readonly fuelLabel = computed(() => FUEL_TYPE_LABELS[this.fuelType()].short);
   protected readonly fuelTypeOptions = FUEL_TYPE_OPTIONS;
@@ -101,7 +97,7 @@ export class ExplorePage {
   protected readonly radiusOptions = computed(() =>
     radiusStepsIncluding(this.radiusInKilometers()).map(radius => ({
       value: radius,
-      label: `${String(radius)}\u00a0km`,
+      label: formatKilometers(radius),
     }))
   );
   protected readonly center = this.searchCenter.center;
@@ -145,19 +141,9 @@ export class ExplorePage {
 
   private readonly router = inject(Router);
   private readonly openedStation = inject(OpenedStationStore).station;
-  private readonly injector = inject(Injector);
 
   /** Station whose card is open in the sheet: the child route `stations/:id`. */
-  protected readonly openedStationIdentifier = toSignal(
-    this.router.events.pipe(
-      filter(event => event instanceof NavigationEnd),
-      map(event => this.router.parseUrl(event.urlAfterRedirects)),
-      // The page is created during the navigation to it, before its `NavigationEnd`.
-      startWith(this.router.currentNavigation()?.finalUrl ?? this.router.parseUrl(this.router.url)),
-      map(stationIdentifierIn)
-    ),
-    { initialValue: undefined }
-  );
+  protected readonly openedStationIdentifier = injectOpenedStationIdentifier();
   protected readonly isStationCardOpen = computed(
     () => this.openedStationIdentifier() !== undefined
   );
@@ -202,49 +188,16 @@ export class ExplorePage {
   }));
 
   constructor() {
-    this.followStationCard();
-    this.showOpenedStationOnMap();
-  }
-
-  /**
-   * Opening a card shows it from its top and lifts a peeking sheet; closing it returns to the list
-   * where it was, with the station still selected and focused.
-   */
-  private followStationCard(): void {
-    let previousStationIdentifier: string | undefined;
-    let listScrollPosition = 0;
-    effect(() => {
-      const stationIdentifier = this.openedStationIdentifier();
-      const closedStationIdentifier = previousStationIdentifier;
-      previousStationIdentifier = stationIdentifier;
-      if (stationIdentifier === closedStationIdentifier) {
-        return;
-      }
-      untracked(() => {
-        const bottomSheet = this.bottomSheet();
-        if (stationIdentifier !== undefined) {
-          if (closedStationIdentifier === undefined) {
-            listScrollPosition = bottomSheet?.scrollPosition() ?? 0;
-          }
-          bottomSheet?.restoreScrollPosition(0);
-          if (this.isCompactViewport() && this.snapPosition() === 'peek') {
-            this.snapPosition.set('half');
-          }
-          return;
-        }
-        if (closedStationIdentifier === undefined) {
-          return;
-        }
-        this.listSelectedStationIdentifier.set(closedStationIdentifier);
-        afterNextRender(
-          () => {
-            bottomSheet?.restoreScrollPosition(listScrollPosition);
-            this.stationList()?.focusStation(closedStationIdentifier);
-          },
-          { injector: this.injector }
-        );
-      });
+    injectSheetFollowsCard({
+      openedStationIdentifier: this.openedStationIdentifier,
+      bottomSheet: this.bottomSheet,
+      stationList: this.stationList,
+      snapPosition: this.snapPosition,
+      selectInList: stationIdentifier => {
+        this.listSelectedStationIdentifier.set(stationIdentifier);
+      },
     });
+    this.showOpenedStationOnMap();
   }
 
   /**
@@ -336,7 +289,7 @@ export class ExplorePage {
   protected selectFromMap(stationIdentifier: string): void {
     // With a card open, the chosen price tag opens its own card instead, like in Apple Maps.
     if (this.isStationCardOpen()) {
-      void this.router.navigate(['/stations', stationIdentifier]);
+      void this.router.navigate(stationRoute(stationIdentifier));
       return;
     }
     this.listSelectedStationIdentifier.set(stationIdentifier);

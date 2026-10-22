@@ -10,13 +10,8 @@ import {
   viewChildren,
 } from '@angular/core';
 import { Icon } from '../icon/icon';
-
-export interface SelectMenuOption<T> {
-  value: T;
-  label: string;
-}
-
-let nextIdentifier = 0;
+import { uniqueIdentifier } from '../../core/dom/unique-identifier';
+import type { LabeledOption } from '../../core/labeled-option';
 
 /**
  * Button that opens a menu of mutually exclusive options, like a pull-down menu on iOS: the
@@ -38,7 +33,7 @@ let nextIdentifier = 0;
   },
 })
 export class SelectMenu<T> {
-  readonly options = input.required<readonly SelectMenuOption<T>[]>();
+  readonly options = input.required<readonly LabeledOption<T>[]>();
   readonly value = model.required<T>();
   readonly label = input.required<string>();
 
@@ -47,8 +42,8 @@ export class SelectMenu<T> {
   private readonly items = viewChildren<ElementRef<HTMLButtonElement>>('item');
 
   protected readonly isOpen = signal(false);
-  protected readonly menuIdentifier = `select-menu-${String(nextIdentifier)}`;
-  protected readonly anchorName = `--select-menu-${String(nextIdentifier++)}`;
+  protected readonly menuIdentifier = uniqueIdentifier('select-menu');
+  protected readonly anchorName = `--${this.menuIdentifier}`;
 
   constructor() {
     afterRenderEffect(() => {
@@ -66,7 +61,7 @@ export class SelectMenu<T> {
     this.isOpen.update(isOpen => !isOpen);
   }
 
-  protected choose(option: SelectMenuOption<T>): void {
+  protected choose(option: LabeledOption<T>): void {
     this.value.set(option.value);
     this.close();
   }

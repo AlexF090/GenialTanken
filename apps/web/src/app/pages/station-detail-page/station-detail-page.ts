@@ -5,20 +5,23 @@ import {
   computed,
   DestroyRef,
   effect,
-  ElementRef,
   inject,
   input,
+  viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
 import { OpenedStationStore } from '../../core/stations/opened-station-store';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { describeStationsError } from '../../core/stations/stations-error-message';
 import { StationsApi } from '../../core/stations/stations-api';
+import { CURRENT_DATE } from '../../core/time/current-date';
 import { DataSourceCredit } from '../../ui/data-source-credit/data-source-credit';
 import { Icon } from '../../ui/icon/icon';
 import { LoadingState } from '../../ui/loading-state/loading-state';
 import { StationDetail } from '../../ui/station-detail/station-detail';
+import { resourceValueOr } from '../../core/resource-value-or';
 
 /**
  * One station as a card in the explore page's sheet (or side panel), like a place in Apple Maps:
@@ -26,7 +29,7 @@ import { StationDetail } from '../../ui/station-detail/station-detail';
  */
 @Component({
   selector: 'app-station-detail-page',
-  imports: [StationDetail, LoadingState, DataSourceCredit, Icon],
+  imports: [StationDetail, LoadingState, DataSourceCredit, Icon, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './station-detail-page.html',
   styleUrl: './station-detail-page.scss',
@@ -39,13 +42,13 @@ export class StationDetailPage {
   readonly id = input.required<string>();
 
   private readonly router = inject(Router);
+  private readonly stationDetail = viewChild(StationDetail);
   private readonly favorites = inject(FavoritesStore);
   private readonly stationResource = inject(StationsApi).stationByIdentifier(() => this.id());
 
-  protected readonly station = computed(() =>
-    this.stationResource.hasValue() ? this.stationResource.value() : undefined
-  );
+  protected readonly station = computed(() => resourceValueOr(this.stationResource, undefined));
   protected readonly fuelType = inject(SettingsStore).fuelType;
+  protected readonly today = inject(CURRENT_DATE);
   protected readonly isLoading = this.stationResource.isLoading;
   protected readonly errorMessage = computed(() => {
     const error = this.stationResource.error();
@@ -65,16 +68,20 @@ export class StationDetailPage {
       openedStation.close();
     });
 
-    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
     // Screen readers and keyboards start at the station's name once it is shown.
     let focusedStationIdentifier: string | undefined;
     afterRenderEffect(() => {
       const station = this.station();
-      if (station === undefined || station.id === focusedStationIdentifier) {
+      const stationDetail = this.stationDetail();
+      if (
+        station === undefined ||
+        stationDetail === undefined ||
+        station.id === focusedStationIdentifier
+      ) {
         return;
       }
       focusedStationIdentifier = station.id;
-      host.querySelector<HTMLElement>('.station-detail__title')?.focus({ preventScroll: true });
+      stationDetail.focusTitle();
     });
   }
 

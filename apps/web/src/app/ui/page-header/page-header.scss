@@ -1,8 +1,8 @@
 @use 'breakpoints';
+@use 'typography';
 
-// iOS navigation bar with a large title on the canvas: the back button sits above the title,
-// which is aligned with the page content column. It absorbs the top safe area, so pages below it
-// do not have to.
+// iOS navigation bar with a large title on the canvas, aligned with the page content column. It
+// absorbs the top safe area, so pages below it do not have to.
 
 :host {
   position: sticky;
@@ -33,33 +33,8 @@
   }
 }
 
-.page-header__back {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: var(--space-2xs);
-  min-height: var(--layout-touch-target);
-  // Pulls the arrow onto the content edge while keeping the touch target
-  margin-left: calc(-1 * var(--space-xs));
-  padding: 0 var(--space-xs);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-md);
-  text-decoration: none;
-  touch-action: manipulation;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
-.page-header__back-icon {
-  font-size: var(--icon-size-md);
-}
-
 .page-header__title {
   min-width: 0;
   overflow-wrap: anywhere;
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: -0.02em;
+  @include typography.large-title;
 }

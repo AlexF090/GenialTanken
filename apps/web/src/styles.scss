@@ -2,6 +2,7 @@
 @use 'styles/tokens';
 @use 'styles/map';
 @use 'styles/visually-hidden';
+@use 'styles/focus-ring';
 
 *,
 *::before,
@@ -89,8 +90,7 @@ select {
 }
 
 :focus-visible {
-  outline: var(--border-width-focus) solid var(--color-focus-ring);
-  outline-offset: var(--focus-offset);
+  @include focus-ring.focus-ring;
 }
 
 .visually-hidden {
@@ -102,7 +102,7 @@ select {
   position: fixed;
   top: calc(var(--safe-area-top) + var(--space-xs));
   left: calc(var(--safe-area-left) + var(--space-xs));
-  z-index: calc(var(--layer-chrome) + 1);
+  z-index: var(--layer-skip-link);
   padding: var(--space-xs) var(--space-md);
   border-radius: var(--radius-sm);
   background-color: var(--color-surface);
@@ -141,7 +141,7 @@ select {
   padding: var(--space-lg) var(--space-md);
 }
 
-// Primary action: filled teal. `.button--quiet` is the outlined secondary action.
+// Primary action: filled with the tint. `.button--quiet` is the outlined secondary action.
 .button {
   display: inline-flex;
   align-items: center;
@@ -169,7 +169,7 @@ select {
   &:disabled,
   &[aria-disabled='true'] {
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: var(--opacity-disabled);
   }
 
   &--quiet {
@@ -200,8 +200,19 @@ select {
   background: none;
   color: var(--color-action-text);
   font-size: var(--icon-size-sm);
+  text-decoration: none;
   cursor: pointer;
   touch-action: manipulation;
+
+  // Larger icon on a rounded square, for the actions of a list row
+  &--row-action {
+    border-radius: var(--radius-sm);
+    font-size: var(--icon-size-md);
+
+    &:hover {
+      color: var(--color-action-text-hover);
+    }
+  }
 }
 
 // Toast: tapping anywhere on it closes it. The close button stretches over the whole toast, so

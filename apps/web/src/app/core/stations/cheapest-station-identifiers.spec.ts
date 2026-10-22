@@ -1,15 +1,10 @@
-import type { Station } from '@genialtanken/contracts';
 import {
   carrefourStation,
   totalStation,
   unbrandedStation,
+  withPrices,
 } from '../../../testing/station-fixtures';
 import { cheapestStationIdentifiers } from './cheapest-station-identifiers';
-
-const withE5Price = (station: Station, e5: number | null): Station => ({
-  ...station,
-  pricesInEuro: { ...station.pricesInEuro, e5 },
-});
 
 describe('cheapestStationIdentifiers', () => {
   it('contains the station with the lowest price for the fuel type', () => {
@@ -23,7 +18,7 @@ describe('cheapestStationIdentifiers', () => {
 
   it('contains every station tied at the lowest price', () => {
     const identifiers = cheapestStationIdentifiers(
-      [withE5Price(totalStation, 1.799), carrefourStation, unbrandedStation],
+      [withPrices(totalStation, { e5: 1.799 }), carrefourStation, unbrandedStation],
       'e5'
     );
 

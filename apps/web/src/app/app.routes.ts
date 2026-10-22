@@ -1,6 +1,6 @@
 import type { Routes } from '@angular/router';
-
-const APPLICATION_NAME = 'GenialTanken';
+import { APPLICATION_NAME } from './core/application-name';
+import { STATION_ROUTE_PATH } from './core/navigation/station-route';
 
 export const routes: Routes = [
   {
@@ -26,7 +26,7 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', title: APPLICATION_NAME, children: [] },
       {
-        path: 'stations/:id',
+        path: STATION_ROUTE_PATH,
         title: `Details – ${APPLICATION_NAME}`,
         loadComponent: () =>
           import('./pages/station-detail-page/station-detail-page').then(

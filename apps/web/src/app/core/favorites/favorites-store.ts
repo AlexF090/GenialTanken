@@ -20,7 +20,7 @@ export class FavoritesStore {
     const currentIdentifiers = this.stationIdentifiers();
     this.persist(
       currentIdentifiers.includes(stationIdentifier)
-        ? currentIdentifiers.filter(id => id !== stationIdentifier)
+        ? currentIdentifiers.filter(identifier => identifier !== stationIdentifier)
         : [...currentIdentifiers, stationIdentifier]
     );
   }
@@ -29,7 +29,11 @@ export class FavoritesStore {
     if (stationIdentifiersToRemove.length === 0) {
       return;
     }
-    this.persist(this.stationIdentifiers().filter(id => !stationIdentifiersToRemove.includes(id)));
+    this.persist(
+      this.stationIdentifiers().filter(
+        identifier => !stationIdentifiersToRemove.includes(identifier)
+      )
+    );
   }
 
   private persist(stationIdentifiers: readonly string[]): void {

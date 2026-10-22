@@ -1,4 +1,5 @@
 @use 'visually-hidden';
+@use 'focus-ring';
 
 // iOS settings: inset grouped lists on the grouped background, small section headers above
 // them, a checkmark on the chosen row.
@@ -61,8 +62,7 @@
   }
 
   &:has(:focus-visible) {
-    outline: var(--border-width-focus) solid var(--color-focus-ring);
-    outline-offset: calc(-1 * var(--border-width-focus));
+    @include focus-ring.inset-focus-ring;
   }
 }
 
@@ -114,12 +114,8 @@
   font-size: var(--font-size-sm);
 }
 
+// The link inside inherits weight and wrapping; its colors are the global link colors.
 .settings__link {
-  color: var(--color-action-text);
   font-weight: var(--font-weight-medium);
   white-space: nowrap;
-
-  &:hover {
-    color: var(--color-action-text-hover);
-  }
 }

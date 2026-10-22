@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { LoadingState } from './loading-state';
+import { hostElementOf } from '../../../testing/render-page';
 
 const COLD_START_HINT =
   'Der Server wird gerade gestartet. Das kann beim ersten Aufruf bis zu einer Minute dauern.';
@@ -22,7 +23,7 @@ describe('LoadingState', () => {
 
   it('announces loading in a status region', () => {
     const fixture = render(true);
-    const status = (fixture.nativeElement as HTMLElement).querySelector('[role="status"]');
+    const status = hostElementOf(fixture).querySelector('[role="status"]');
 
     expect(status?.textContent).toContain('Tankstellen werden geladen …');
     expect(status?.textContent).not.toContain(COLD_START_HINT);
@@ -34,7 +35,7 @@ describe('LoadingState', () => {
     vi.advanceTimersByTime(4000);
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain(COLD_START_HINT);
+    expect(hostElementOf(fixture).textContent).toContain(COLD_START_HINT);
   });
 
   it('shows nothing once loading is done', () => {
@@ -44,6 +45,6 @@ describe('LoadingState', () => {
     fixture.componentRef.setInput('isLoading', false);
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).textContent.trim()).toBe('');
+    expect(hostElementOf(fixture).textContent.trim()).toBe('');
   });
 });

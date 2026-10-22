@@ -1,17 +1,12 @@
 import { ChangeDetectionStrategy, Component, model } from '@angular/core';
 import type { SortOrder } from '../../core/stations/sort-stations';
+import { uniqueIdentifier } from '../../core/dom/unique-identifier';
+import type { LabeledOption } from '../../core/labeled-option';
 
-interface SortOrderOption {
-  value: SortOrder;
-  label: string;
-}
-
-const SORT_ORDER_OPTIONS: readonly SortOrderOption[] = [
+const SORT_ORDER_OPTIONS: readonly LabeledOption<SortOrder>[] = [
   { value: 'distance', label: 'Entfernung' },
   { value: 'price', label: 'Preis' },
 ];
-
-let nextIdentifier = 0;
 
 /** Segmented control built from native radio buttons, so arrow keys and announcements work. */
 @Component({
@@ -40,5 +35,5 @@ export class SortOrderControl {
   readonly sortOrder = model.required<SortOrder>();
 
   protected readonly options = SORT_ORDER_OPTIONS;
-  protected readonly groupName = `sort-order-${String(nextIdentifier++)}`;
+  protected readonly groupName = uniqueIdentifier('sort-order');
 }

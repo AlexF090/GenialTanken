@@ -13,6 +13,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { observeElementResize } from '../../core/layout/observe-element-resize';
 import { Viewport } from '../../core/layout/viewport';
 import {
   nearestSnapPosition,
@@ -22,6 +23,7 @@ import {
   steppedSnapPosition,
 } from './bottom-sheet-snap';
 import type { SnapDirection, SnapPosition } from './bottom-sheet-snap';
+import { uniqueIdentifier } from '../../core/dom/unique-identifier';
 
 /** Movement in pixels below which a press on the handle counts as a click, not a drag. */
 const DRAG_THRESHOLD_IN_PIXELS = 4;
@@ -36,8 +38,6 @@ interface DragState {
   velocity: number;
   hasMoved: boolean;
 }
-
-let nextIdentifier = 0;
 
 /**
  * List container that floats over the map on phones with three snap positions (peek, half,
@@ -60,7 +60,7 @@ export class BottomSheet {
    */
   readonly heightChanged = output<number>();
 
-  protected readonly contentIdentifier = `bottom-sheet-content-${String(nextIdentifier++)}`;
+  protected readonly contentIdentifier = uniqueIdentifier('bottom-sheet-content');
 
   private readonly isCompactViewport = inject(Viewport).isCompactViewport;
   private readonly sheet = viewChild.required<ElementRef<HTMLElement>>('sheet');
@@ -101,17 +101,13 @@ export class BottomSheet {
       requestAnimationFrame(() => {
         this.isMeasured.set(true);
       });
-      if (typeof ResizeObserver !== 'function') {
-        return;
-      }
-      const observer = new ResizeObserver(() => {
-        this.measure();
-      });
-      observer.observe(this.sheet().nativeElement);
-      observer.observe(this.header().nativeElement);
-      destroyRef.onDestroy(() => {
-        observer.disconnect();
-      });
+      observeElementResize(
+        [this.sheet().nativeElement, this.header().nativeElement],
+        () => {
+          this.measure();
+        },
+        destroyRef
+      );
     });
 
     let lastEmittedHeight: number | undefined;

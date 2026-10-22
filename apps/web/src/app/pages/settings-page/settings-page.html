@@ -19,22 +19,22 @@
     </fieldset>
 
     <div class="settings__group">
-      <label class="settings__title" for="radius">
-        Radius: {{ searchSettingsModel().radiusInKilometers }} km
+      <label class="settings__title" [for]="radiusIdentifier">
+        Radius: {{ searchSettingsModel().radiusInKilometers | kilometers }}
       </label>
       <div class="settings__slider-row">
-        <span class="settings__range-limit" aria-hidden="true"
-          >{{ minimumRadiusInKilometers }} km</span
-        >
+        <span class="settings__range-limit" aria-hidden="true">{{
+          minimumRadiusInKilometers | kilometers
+        }}</span>
         <input
-          id="radius"
+          [id]="radiusIdentifier"
           class="settings__slider"
           type="range"
           step="1"
           [formField]="searchSettingsForm.radiusInKilometers" />
-        <span class="settings__range-limit" aria-hidden="true"
-          >{{ maximumRadiusInKilometers }} km</span
-        >
+        <span class="settings__range-limit" aria-hidden="true">{{
+          maximumRadiusInKilometers | kilometers
+        }}</span>
       </div>
     </div>
 
@@ -63,12 +63,10 @@
     <p class="settings__text settings__card">
       Die Preise für Frankreich stammen aus den offenen Daten der französischen Regierung unter der
       Licence Ouverte 2.0:
-      <a
+      <app-external-link
         class="settings__link"
         href="https://www.prix-carburants.gouv.fr/rubrique/opendata/"
-        target="_blank"
-        rel="noopener noreferrer"
-        >prix-carburants.gouv.fr<span class="visually-hidden"> (öffnet in neuem Tab)</span></a
+        >prix-carburants.gouv.fr</app-external-link
       >. Alle Angaben ohne Gewähr.
     </p>
   </section>

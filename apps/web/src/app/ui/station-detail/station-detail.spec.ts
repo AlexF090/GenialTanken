@@ -1,6 +1,10 @@
-import { TestBed } from '@angular/core/testing';
 import type { FuelType, Station } from '@genialtanken/contracts';
-import { accessibleTextOf, getButton, textOf } from '../../../testing/render-page';
+import {
+  accessibleTextOf,
+  getButton,
+  renderWithInputs,
+  textOf,
+} from '../../../testing/render-page';
 import { essoStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
 import { StationDetail } from './station-detail';
 
@@ -11,12 +15,12 @@ interface RenderOptions {
 }
 
 const render = async ({ station, fuelType = 'e5', isFavorite = false }: RenderOptions) => {
-  const fixture = TestBed.createComponent(StationDetail);
-  fixture.componentRef.setInput('station', withoutDistance(station));
-  fixture.componentRef.setInput('fuelType', fuelType);
-  fixture.componentRef.setInput('isFavorite', isFavorite);
-  await fixture.whenStable();
-  const element = fixture.nativeElement as HTMLElement;
+  const { fixture, element } = await renderWithInputs(StationDetail, {
+    station: withoutDistance(station),
+    fuelType,
+    isFavorite,
+    today: new Date('2026-10-05T12:00:00'),
+  });
   return { fixture, element, article: element.querySelector('article') };
 };
 

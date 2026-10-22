@@ -31,6 +31,16 @@ export const formatPriceParts = (priceInEuro: number): PriceParts => {
 /** 1.859 → "1,859 €" (plain text, e.g. for accessible names). */
 export const formatPrice = (priceInEuro: number): string => `${PRICE_FORMAT.format(priceInEuro)} €`;
 
-/** 1949 → "1,95 km" */
+/** Keeps number and unit on one line. */
+const NO_BREAK_SPACE = '\u00a0';
+
+const withKilometerUnit = (formattedNumber: string): string =>
+  `${formattedNumber}${NO_BREAK_SPACE}km`;
+
+/** 5 → "5 km" with a no-break space, e.g. for search radii. */
+export const formatKilometers = (kilometers: number): string =>
+  withKilometerUnit(String(kilometers));
+
+/** 1949 → "1,95 km" with a no-break space. */
 export const formatDistance = (distanceInMeters: number): string =>
-  `${DISTANCE_FORMAT.format(distanceInMeters / METERS_PER_KILOMETER)} km`;
+  withKilometerUnit(DISTANCE_FORMAT.format(distanceInMeters / METERS_PER_KILOMETER));

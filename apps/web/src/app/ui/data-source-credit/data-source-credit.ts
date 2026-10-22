@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ExternalLink } from '../external-link/external-link';
 
 /**
  * Attribution of the French open data (Licence Ouverte 2.0), required wherever its prices show.
@@ -6,13 +7,12 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
  */
 @Component({
   selector: 'app-data-source-credit',
+  imports: [ExternalLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <p class="data-source-credit">
-      <a href="https://www.prix-carburants.gouv.fr/" target="_blank" rel="noopener noreferrer"
-        >Preisdaten: prix-carburants.gouv.fr<span class="visually-hidden">
-          (öffnet in neuem Tab)</span
-        ></a
+      <app-external-link href="https://www.prix-carburants.gouv.fr/"
+        >Preisdaten: prix-carburants.gouv.fr</app-external-link
       >
     </p>
   `,

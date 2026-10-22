@@ -43,28 +43,28 @@
   --color-action-hover: light-dark(#0052ab, #66b0ff);
   --color-on-action: light-dark(#ffffff, #000000);
   // Links and plain buttons: light 5.8 / 5.2, dark 6.0 / 7.4 on surface / canvas
-  --color-action-text: light-dark(#0062cc, #409cff);
-  --color-action-text-hover: light-dark(#0052ab, #66b0ff);
+  --color-action-text: var(--color-action);
+  --color-action-text-hover: var(--color-action-hover);
 
   // Focus ring (non-text, ≥ 3:1): the tint
-  --color-focus-ring: light-dark(#0062cc, #409cff);
-  --color-focus-ring-on-chrome: light-dark(#0062cc, #409cff);
+  --color-focus-ring: var(--color-action);
+  --color-focus-ring-on-chrome: var(--color-focus-ring);
 
   // Reserved for the cheapest price only, like a green price in Apple Maps: text on it light 5.2,
   // dark 10.4; the edge separates it from white surfaces
   --color-highlight: light-dark(#1e7d36, #30d158);
   --color-on-highlight: light-dark(#ffffff, #000000);
-  --color-highlight-edge: light-dark(#1e7d36, #30d158);
+  --color-highlight-edge: var(--color-highlight);
 
   // Price levels on the map, cheap to dear: a tint with a colored edge. Text on the tints: light
   // 14.4 / 14.7 / 13.3, dark 13.5 / 13.4 / 15.5. Edges against the surface: light 5.2 / 4.3 / 6.2,
   // dark 8.4 / 9.5 / 6.0. Color only repeats what the price says.
   --color-price-low: light-dark(#d9f2df, #12351d);
-  --color-price-low-edge: light-dark(#1e7d36, #30d158);
+  --color-price-low-edge: var(--color-highlight);
   --color-price-medium: light-dark(#fdedc8, #3d2c08);
   --color-price-medium-edge: light-dark(#c25e00, #ffb340);
   --color-price-high: light-dark(#fddcd8, #421616);
-  --color-price-high-edge: light-dark(#c4001a, #ff6961);
+  --color-price-high-edge: var(--color-error);
 
   // Errors: light 5.3 / 6.2, dark 5.8 / 6.0 on error surface / surface
   --color-error: light-dark(#c4001a, #ff6961);
@@ -147,6 +147,11 @@
   --shadow-floating: 0 1px 2px var(--color-shadow), 0 6px 20px var(--color-shadow);
   --shadow-menu:
     0 0 0 var(--border-width-hairline) var(--color-hairline), 0 10px 40px var(--color-shadow);
+  // Lifts the chosen segment of a segmented control off its track
+  --shadow-segmented-thumb: 0 1px 3px var(--color-shadow);
+
+  // Controls that cannot be used right now, e.g. while busy
+  --opacity-disabled: 0.5;
 
   // Icons
   --icon-size-sm: 1.25rem;
@@ -168,17 +173,32 @@
   --layout-fuel-badge-height: 2.125rem;
   --layout-price-column-width: 6.5rem;
   --layout-spinner-size: 1.5rem;
+  // The iOS grabber of a sheet: 36 × 5 points
+  --layout-grabber-width: 2.25rem;
+  --layout-grabber-height: 0.3125rem;
+  --layout-search-width-maximum: 28rem;
+  --layout-menu-width-minimum: 12rem;
   --layout-map-minimum-height: 20rem;
   --safe-area-top: env(safe-area-inset-top, 0);
   --safe-area-right: env(safe-area-inset-right, 0);
   --safe-area-bottom: env(safe-area-inset-bottom, 0);
   --safe-area-left: env(safe-area-inset-left, 0);
 
-  // Stacking: above Leaflet panes and controls (max. 1000)
+  // Stacking: above Leaflet panes and controls (max. 1000). From bottom to top: the search over
+  // the map, the sheet (a fully opened one covers the search), the navigation and page header,
+  // the skip link.
   --layer-chrome: 1100;
+  --layer-map-search: calc(var(--layer-chrome) - 2);
+  --layer-sheet: calc(var(--layer-chrome) - 1);
+  --layer-skip-link: calc(var(--layer-chrome) + 1);
 
   // Motion
   --duration-short: 150ms;
   --duration-medium: 250ms;
+  // One turn of the loading spinner
+  --duration-spin: 1s;
   --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  // Map price tags: the cheapest a little larger than the others, the selected one the largest
+  --scale-marker-cheapest: 1.1;
+  --scale-marker-selected: 1.15;
 }

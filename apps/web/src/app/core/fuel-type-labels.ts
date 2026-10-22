@@ -1,4 +1,6 @@
+import { FUEL_TYPES } from '@genialtanken/contracts';
 import type { FuelType } from '@genialtanken/contracts';
+import type { LabeledOption } from './labeled-option';
 
 export interface FuelTypeLabel {
   /** Compact label for the header badge and the settings options. */
@@ -19,3 +21,9 @@ export const FUEL_TYPE_LABELS: Record<FuelType, FuelTypeLabel> = {
   e85: { short: 'E85', long: 'E85' },
   lpg: { short: 'LPG', long: 'LPG' },
 };
+
+/** Every fuel type as an option, labeled short (compact controls) or long (menus). */
+export const fuelTypeOptions = (
+  labelLength: keyof FuelTypeLabel
+): readonly LabeledOption<FuelType>[] =>
+  FUEL_TYPES.map(fuelType => ({ value: fuelType, label: FUEL_TYPE_LABELS[fuelType][labelLength] }));

@@ -12,8 +12,8 @@ import {
 } from '@angular/core';
 import type { Place } from '@genialtanken/contracts';
 import { Icon } from '../icon/icon';
-
-let nextIdentifier = 0;
+import { pluralize } from '../../core/formatting/pluralize';
+import { uniqueIdentifier } from '../../core/dom/unique-identifier';
 
 /**
  * Search field floating over the map, like the search bar of Apple Maps: suggestions open below
@@ -39,7 +39,7 @@ export class PlaceSearchField {
 
   private readonly inputElement = viewChild.required<ElementRef<HTMLInputElement>>('input');
 
-  protected readonly identifier = `place-search-${String(nextIdentifier++)}`;
+  protected readonly identifier = uniqueIdentifier('place-search');
   protected readonly listboxIdentifier = `${this.identifier}-listbox`;
   private readonly isListRequested = signal(false);
   protected readonly isListOpen = computed(
@@ -64,7 +64,7 @@ export class PlaceSearchField {
     if (count === 0) {
       return this.statusMessage() ?? '';
     }
-    return count === 1 ? '1 Ort gefunden' : `${String(count)} Orte gefunden`;
+    return `${String(count)} ${pluralize(count, 'Ort', 'Orte')} gefunden`;
   });
 
   protected optionIdentifier(index: number): string {

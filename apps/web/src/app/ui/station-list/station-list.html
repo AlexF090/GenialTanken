@@ -1,10 +1,10 @@
 <ul class="station-list" role="list" aria-label="Tankstellen">
-  @for (item of items(); track item.id) {
+  @for (item of items(); track item.stationIdentifier) {
     <li
       class="station-row"
       [class.station-row--selected]="item.isSelected"
       [class.station-row--cheapest]="item.isCheapest"
-      [attr.data-station-identifier]="item.id">
+      [attr.data-station-identifier]="item.stationIdentifier">
       <div class="station-row__details">
         @if (selectsOnMap()) {
           <button
@@ -12,13 +12,16 @@
             class="station-row__title"
             translate="no"
             [attr.aria-pressed]="item.isSelected"
-            (click)="stationSelected.emit(item.id)">
+            (click)="stationSelected.emit(item.stationIdentifier)">
             {{ item.title }}
           </button>
         } @else {
-          <a class="station-row__title" translate="no" [routerLink]="['/stations', item.id]">{{
-            item.title
-          }}</a>
+          <a
+            class="station-row__title"
+            translate="no"
+            [routerLink]="stationRoute(item.stationIdentifier)"
+            >{{ item.title }}</a
+          >
         }
         <span class="station-row__line station-row__address">{{ item.addressLine }}</span>
         @if (item.distance) {
@@ -27,7 +30,7 @@
       </div>
       <div class="station-row__price">
         @if (item.isCheapest) {
-          <span class="station-row__cheapest-label">Günstigster Preis</span>
+          <span class="station-row__cheapest-label">{{ cheapestPriceLabel }}</span>
         }
         <app-price size="list" [priceInEuro]="item.priceInEuro" />
       </div>
@@ -35,8 +38,8 @@
         <app-route-button [destination]="item.destination" />
         @if (selectsOnMap()) {
           <a
-            class="station-row__action"
-            [routerLink]="['/stations', item.id]"
+            class="icon-button icon-button--row-action"
+            [routerLink]="stationRoute(item.stationIdentifier)"
             [attr.aria-label]="'Details: ' + item.title">
             <app-icon name="info" />
           </a>
@@ -44,7 +47,7 @@
         <app-favorite-button
           [stationName]="item.title"
           [isFavorite]="item.isFavorite"
-          (toggled)="favoriteToggled.emit(item.id)" />
+          (toggled)="favoriteToggled.emit(item.stationIdentifier)" />
       </div>
     </li>
   }

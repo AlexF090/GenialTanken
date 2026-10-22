@@ -1,4 +1,4 @@
-import { L } from './leaflet-layers';
+import { L } from './leaflet';
 
 export interface MarkerReveal {
   /** Whether a step still waits for the map or the cluster group. */

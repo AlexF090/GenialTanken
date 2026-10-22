@@ -11,6 +11,8 @@ import {
 import { RouterLink } from '@angular/router';
 import type { FuelType, Station } from '@genialtanken/contracts';
 import { formatDistance } from '../../core/formatting/number-format';
+import { stationRoute } from '../../core/navigation/station-route';
+import { CHEAPEST_PRICE_LABEL } from '../../core/stations/price-labels';
 import {
   addressLinesBelowTitle,
   navigationDestinationOf,
@@ -24,7 +26,7 @@ import { Price } from '../price/price';
 import { RouteButton } from '../route-button/route-button';
 
 interface StationListItem {
-  id: string;
+  stationIdentifier: string;
   destination: NavigationDestination;
   title: string;
   addressLine: string;
@@ -59,9 +61,13 @@ export class StationList {
   readonly favoriteToggled = output<string>();
   readonly stationSelected = output<string>();
 
+  protected readonly stationRoute = stationRoute;
+  protected readonly cheapestPriceLabel =
+    CHEAPEST_PRICE_LABEL.charAt(0).toUpperCase() + CHEAPEST_PRICE_LABEL.slice(1);
+
   protected readonly items = computed<StationListItem[]>(() =>
     this.stations().map(station => ({
-      id: station.id,
+      stationIdentifier: station.id,
       destination: navigationDestinationOf(station),
       title: stationTitle(station),
       addressLine: addressLinesBelowTitle(station).join(', '),

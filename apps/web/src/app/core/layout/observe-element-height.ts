@@ -6,6 +6,7 @@ import {
   signal,
 } from '@angular/core';
 import type { Signal } from '@angular/core';
+import { observeElementResize } from './observe-element-resize';
 
 /**
  * Height in pixels of an element of the component's view, updated whenever it resizes. Starts at
@@ -17,17 +18,14 @@ export const observeElementHeight = (element: () => HTMLElement): Signal<number>
   const destroyRef = inject(DestroyRef);
   const heightInPixels = signal(0);
   afterNextRender(() => {
-    if (typeof ResizeObserver !== 'function') {
-      return;
-    }
     const observedElement = element();
-    const observer = new ResizeObserver(() => {
-      heightInPixels.set(observedElement.offsetHeight);
-    });
-    observer.observe(observedElement);
-    destroyRef.onDestroy(() => {
-      observer.disconnect();
-    });
+    observeElementResize(
+      [observedElement],
+      () => {
+        heightInPixels.set(observedElement.offsetHeight);
+      },
+      destroyRef
+    );
   });
   return heightInPixels.asReadonly();
 };

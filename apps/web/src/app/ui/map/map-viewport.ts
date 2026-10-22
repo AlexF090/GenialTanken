@@ -1,6 +1,6 @@
 import { METERS_PER_KILOMETER } from '@genialtanken/contracts';
-import type { Coordinates } from '../../core/geolocation/coordinates';
-import { L } from './leaflet-layers';
+import type { Coordinates } from '@genialtanken/contracts';
+import { L } from './leaflet';
 
 /** Space in pixels covered by overlays (list panel, bottom sheet) on each side of the map. */
 export interface ViewportPadding {

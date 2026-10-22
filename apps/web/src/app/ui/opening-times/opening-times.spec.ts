@@ -1,9 +1,10 @@
-import { TestBed } from '@angular/core/testing';
+import { emptyOpeningTimes } from '@genialtanken/contracts';
 import type { OpeningTimes as StationOpeningTimes } from '@genialtanken/contracts';
-import { textOf } from '../../../testing/render-page';
+import { renderWithInputs, textOf } from '../../../testing/render-page';
 import { OpeningTimes } from './opening-times';
 
 const OPENING_TIMES: StationOpeningTimes = {
+  ...emptyOpeningTimes(),
   monday: [{ opening: '05:00', closing: '23:00' }],
   tuesday: [{ opening: '05:00', closing: '23:00' }],
   wednesday: [{ opening: '05:00', closing: '23:00' }],
@@ -13,16 +14,11 @@ const OPENING_TIMES: StationOpeningTimes = {
     { opening: '07:00', closing: '12:00' },
     { opening: '14:00', closing: '20:00' },
   ],
-  sunday: [],
-  publicHoliday: [],
 };
 
 const render = async (today: Date) => {
-  const fixture = TestBed.createComponent(OpeningTimes);
-  fixture.componentRef.setInput('openingTimes', OPENING_TIMES);
-  fixture.componentRef.setInput('today', today);
-  await fixture.whenStable();
-  return [...(fixture.nativeElement as HTMLElement).querySelectorAll('li')];
+  const { element } = await renderWithInputs(OpeningTimes, { openingTimes: OPENING_TIMES, today });
+  return [...element.querySelectorAll('li')];
 };
 
 describe('OpeningTimes', () => {

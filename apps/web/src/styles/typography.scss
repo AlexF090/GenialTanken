@@ -19,3 +19,10 @@
     vertical-align: 0.6em;
   }
 }
+
+// Large title of the first screen of an iOS app or a page
+@mixin large-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+}

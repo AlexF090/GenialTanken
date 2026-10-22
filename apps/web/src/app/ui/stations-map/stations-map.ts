@@ -12,25 +12,16 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import type { FuelType, Station } from '@genialtanken/contracts';
-import { injectMediaQueryMatches } from '../../core/layout/media-query';
-import type { Coordinates } from '../../core/geolocation/coordinates';
+import type { Coordinates, FuelType, Station } from '@genialtanken/contracts';
+import { observeElementResize } from '../../core/layout/observe-element-resize';
+import { injectPrefersReducedMotion } from '../../core/layout/reduced-motion';
+import { CONFIGURED_MAPBOX_ACCESS_TOKEN } from '../../core/map/mapbox-access-token';
 import type { SearchCenter } from '../../core/search-center/search-center';
-import { priceLevelOf, priceRangeOf } from '../../core/stations/price-level';
-import type { PriceRange } from '../../core/stations/price-level';
-import { priceInEuro, stationTitle } from '../../core/stations/station-display';
 import type { ResolvedColorScheme } from '../../core/theme/color-scheme-controller';
-import {
-  createCenterMarker,
-  createClusterIcon,
-  createRadiusCircle,
-  createTileLayer,
-  destroyMap,
-  L,
-  MAXIMUM_ZOOM,
-  StationMarker,
-} from '../map/leaflet-layers';
-import { MAPBOX_ACCESS_TOKEN } from '../map/map-configuration';
+import { L } from '../map/leaflet';
+import { createCenterMarker, createRadiusCircle } from '../map/leaflet-layers';
+import type { StationMarker } from '../map/leaflet-layers';
+import { destroyMap } from '../map/map-teardown';
 import {
   centerForVisibleArea,
   EDGE_SPACING_IN_PIXELS,
@@ -43,18 +34,11 @@ import {
 import type { ViewportPadding } from '../map/map-viewport';
 import { revealMarker } from '../map/reveal-marker';
 import type { MarkerReveal } from '../map/reveal-marker';
-
-/** What every price tag of one rendering shares. */
-interface MarkerContext {
-  fuelType: FuelType;
-  priceRange: PriceRange | undefined;
-  cheapestStationIdentifiers: ReadonlySet<string>;
-  selectedStationIdentifier: string | undefined;
-}
+import { createTileLayer, MAXIMUM_ZOOM } from '../map/tile-layer';
+import { StationMarkerLayer } from './station-marker-layer';
 
 /** A price tag stands above its map point; fitting points alone would cut off the top tags. */
 const PRICE_TAG_HEIGHT_IN_PIXELS = 40;
-const CLUSTER_RADIUS_IN_PIXELS = 56;
 /** Leaflet's default is unbounded, so a fast swipe flings the map far and for long. */
 const INERTIA_MAXIMUM_SPEED_IN_PIXELS_PER_SECOND = 1500;
 
@@ -100,22 +84,11 @@ export class StationsMap {
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly container = viewChild.required<ElementRef<HTMLElement>>('map');
-  private readonly mapboxAccessToken = inject(MAPBOX_ACCESS_TOKEN);
-  private readonly prefersReducedMotion = injectMediaQueryMatches(
-    '(prefers-reduced-motion: reduce)'
-  );
+  private readonly mapboxAccessToken = inject(CONFIGURED_MAPBOX_ACCESS_TOKEN);
+  private readonly prefersReducedMotion = injectPrefersReducedMotion();
   private readonly map = signal<L.Map | undefined>(undefined);
-  private readonly markersByStationIdentifier = signal<ReadonlyMap<string, StationMarker>>(
-    new Map()
-  );
-  private readonly markerClusterGroup = L.markerClusterGroup({
-    iconCreateFunction: createClusterIcon,
-    showCoverageOnHover: false,
-    maxClusterRadius: CLUSTER_RADIUS_IN_PIXELS,
-    // The default zoom ignores the overlays; `zoomIntoCluster` fits into the visible part and
-    // decides alone when to fan out.
-    zoomToBoundsOnClick: false,
-    spiderfyOnMaxZoom: false,
+  private readonly stationMarkers = new StationMarkerLayer(marker => {
+    this.selectFromMap(marker);
   });
   private revealedStationIdentifier: string | undefined;
   private markerReveal: MarkerReveal | undefined;
@@ -134,15 +107,13 @@ export class StationsMap {
         maxZoom: MAXIMUM_ZOOM,
         inertiaMaxSpeed: INERTIA_MAXIMUM_SPEED_IN_PIXELS_PER_SECOND,
       });
-      map.fitBounds(searchAreaBounds(this.center(), this.radiusInKilometers()), {
-        ...toPaddingOptions(this.viewportPadding()),
-        animate: false,
-      });
+      this.fitSearchArea(map, { animate: false });
       L.control
         .zoom({ position: 'topright', zoomInTitle: 'Hineinzoomen', zoomOutTitle: 'Herauszoomen' })
         .addTo(map);
-      this.markerClusterGroup.addTo(map);
-      this.markerClusterGroup.on('clusterclick', event => {
+      const clusterGroup = this.stationMarkers.clusterGroup;
+      clusterGroup.addTo(map);
+      clusterGroup.on('clusterclick', event => {
         const cluster: unknown = event.propagatedFrom;
         if (cluster instanceof L.MarkerCluster) {
           this.zoomIntoCluster(map, cluster);
@@ -157,7 +128,13 @@ export class StationsMap {
           this.visibleCenterChanged.emit(visibleAreaCenter(map, this.viewportPadding()));
         }
       });
-      this.observeHostSize(map, destroyRef);
+      observeElementResize(
+        [this.host.nativeElement],
+        () => {
+          map.invalidateSize();
+        },
+        destroyRef
+      );
       this.map.set(map);
     });
 
@@ -176,27 +153,21 @@ export class StationsMap {
       if (!hasPaddingChanged) {
         return;
       }
-      const selectedStationIdentifier = untracked(() => this.selectedStationIdentifier());
-      if (selectedStationIdentifier !== undefined) {
-        // E.g. the sheet moved after a price tag was chosen: keep that station in the middle.
-        const selectedMarker = untracked(() => this.markersByStationIdentifier()).get(
-          selectedStationIdentifier
-        );
-        if (selectedMarker !== undefined && !this.hasUserMovedMapSinceReveal) {
-          untracked(() => {
-            this.reveal(map, selectedMarker);
-          });
-        }
-        return;
-      }
-      if (this.hasUserMovedMap) {
-        return;
-      }
       untracked(() => {
-        map.fitBounds(searchAreaBounds(this.center(), this.radiusInKilometers()), {
-          ...toPaddingOptions(viewportPadding),
-          animate: !this.prefersReducedMotion(),
-        });
+        const selectedStationIdentifier = this.selectedStationIdentifier();
+        if (selectedStationIdentifier !== undefined) {
+          // E.g. the sheet moved after a price tag was chosen: keep that station in the middle.
+          const selectedMarker = this.stationMarkers
+            .markersByStationIdentifier()
+            .get(selectedStationIdentifier);
+          if (selectedMarker !== undefined && !this.hasUserMovedMapSinceReveal) {
+            this.reveal(map, selectedMarker);
+          }
+          return;
+        }
+        if (!this.hasUserMovedMap) {
+          this.fitSearchArea(map, this.motion());
+        }
       });
     });
 
@@ -232,10 +203,7 @@ export class StationsMap {
         return;
       }
       untracked(() => {
-        map.fitBounds(searchAreaBounds(center, radiusInKilometers), {
-          ...toPaddingOptions(this.viewportPadding()),
-          animate: !this.prefersReducedMotion(),
-        });
+        this.fitSearchArea(map, this.motion());
       });
     });
 
@@ -243,42 +211,28 @@ export class StationsMap {
       if (this.map() === undefined) {
         return;
       }
-      const fuelType = this.fuelType();
-      const cheapestStationIdentifiers = this.cheapestStationIdentifiers();
-      const selectedStationIdentifier = untracked(() => this.selectedStationIdentifier());
       const stations = this.stations();
-      const priceRange = priceRangeOf(stations.map(station => priceInEuro(station, fuelType)));
-      const markers = new Map(
-        stations.map(station => [
-          station.id,
-          this.createMarker(station, {
-            fuelType,
-            priceRange,
-            cheapestStationIdentifiers,
-            selectedStationIdentifier,
-          }),
-        ])
-      );
+      const context = {
+        fuelType: this.fuelType(),
+        cheapestStationIdentifiers: this.cheapestStationIdentifiers(),
+        selectedStationIdentifier: untracked(() => this.selectedStationIdentifier()),
+      };
       // A reveal still in progress targets a replaced marker; reveal the new one instead.
       if (this.markerReveal?.isPending === true) {
         this.markerReveal.cancel();
         this.revealedStationIdentifier = undefined;
       }
-      this.markerClusterGroup.clearLayers();
-      this.markerClusterGroup.addLayers([...markers.values()]);
-      this.markersByStationIdentifier.set(markers);
+      this.stationMarkers.showStations(stations, context);
     });
 
     effect(() => {
       const map = this.map();
       const selectedStationIdentifier = this.selectedStationIdentifier();
-      const markers = this.markersByStationIdentifier();
+      const markers = this.stationMarkers.markersByStationIdentifier();
       if (map === undefined) {
         return;
       }
-      for (const [stationIdentifier, marker] of markers) {
-        marker.setSelected(stationIdentifier === selectedStationIdentifier);
-      }
+      this.stationMarkers.select(selectedStationIdentifier);
       if (selectedStationIdentifier === undefined) {
         this.markerReveal?.cancel();
         this.revealedStationIdentifier = undefined;
@@ -309,29 +263,39 @@ export class StationsMap {
     });
   }
 
-  private createMarker(station: Station, context: MarkerContext): StationMarker {
-    const price = priceInEuro(station, context.fuelType);
-    const marker = new StationMarker({
-      stationIdentifier: station.id,
-      coordinates: station.address,
-      title: stationTitle(station),
-      priceInEuro: price,
-      priceLevel:
-        price === null || context.priceRange === undefined
-          ? undefined
-          : priceLevelOf(price, context.priceRange),
-      isCheapest: context.cheapestStationIdentifiers.has(station.id),
-      isSelected: station.id === context.selectedStationIdentifier,
+  /** Centers the selected station again, e.g. when its row in the list is chosen once more. */
+  revealSelectedStation(): void {
+    const map = this.map();
+    const selectedStationIdentifier = this.selectedStationIdentifier();
+    const marker =
+      selectedStationIdentifier === undefined
+        ? undefined
+        : this.stationMarkers.markersByStationIdentifier().get(selectedStationIdentifier);
+    if (map !== undefined && marker !== undefined) {
+      this.reveal(map, marker);
+    }
+  }
+
+  private selectFromMap(marker: StationMarker): void {
+    // A selection does not change when its price tag is clicked again, so center it here.
+    const map = this.map();
+    if (map !== undefined && this.selectedStationIdentifier() === marker.stationIdentifier) {
+      this.reveal(map, marker);
+    }
+    this.stationSelected.emit(marker.stationIdentifier);
+  }
+
+  /** Animates map moves unless the user prefers reduced motion. */
+  private motion(): { animate: boolean } {
+    return { animate: !this.prefersReducedMotion() };
+  }
+
+  /** Fits the search radius into the part of the map not covered by overlays. */
+  private fitSearchArea(map: L.Map, motion: { animate: boolean }): void {
+    map.fitBounds(searchAreaBounds(this.center(), this.radiusInKilometers()), {
+      ...toPaddingOptions(this.viewportPadding()),
+      ...motion,
     });
-    marker.on('click', () => {
-      // A selection does not change when its price tag is clicked again, so center it here.
-      const map = this.map();
-      if (map !== undefined && this.selectedStationIdentifier() === station.id) {
-        this.reveal(map, marker);
-      }
-      this.stationSelected.emit(station.id);
-    });
-    return marker;
   }
 
   /**
@@ -344,8 +308,6 @@ export class StationsMap {
       ...viewportPadding,
       top: viewportPadding.top + PRICE_TAG_HEIGHT_IN_PIXELS,
     };
-    const paddingOptions = toPaddingOptions(paddingForTags);
-    const animate = !this.prefersReducedMotion();
     const bounds = cluster.getBounds();
     const totalPadding = L.point(
       viewportPadding.left + viewportPadding.right + 2 * EDGE_SPACING_IN_PIXELS,
@@ -354,23 +316,14 @@ export class StationsMap {
     const targetZoom = Math.min(map.getBoundsZoom(bounds, false, totalPadding), map.getMaxZoom());
     if (targetZoom <= map.getZoom()) {
       cluster.spiderfy();
-      map.panTo(centerForVisibleArea(map, cluster.getLatLng(), viewportPadding), { animate });
+      map.panTo(centerForVisibleArea(map, cluster.getLatLng(), viewportPadding), this.motion());
       return;
     }
-    map.fitBounds(bounds, { ...paddingOptions, maxZoom: map.getMaxZoom(), animate });
-  }
-
-  /** Centers the selected station again, e.g. when its row in the list is chosen once more. */
-  revealSelectedStation(): void {
-    const map = this.map();
-    const selectedStationIdentifier = this.selectedStationIdentifier();
-    const marker =
-      selectedStationIdentifier === undefined
-        ? undefined
-        : this.markersByStationIdentifier().get(selectedStationIdentifier);
-    if (map !== undefined && marker !== undefined) {
-      this.reveal(map, marker);
-    }
+    map.fitBounds(bounds, {
+      ...toPaddingOptions(paddingForTags),
+      maxZoom: map.getMaxZoom(),
+      ...this.motion(),
+    });
   }
 
   /**
@@ -380,24 +333,11 @@ export class StationsMap {
   private reveal(map: L.Map, marker: StationMarker): void {
     this.markerReveal?.cancel();
     this.hasUserMovedMapSinceReveal = false;
-    this.markerReveal = revealMarker(map, this.markerClusterGroup, marker, () => {
-      map.panTo(centerForVisibleArea(map, marker.getLatLng(), this.viewportPadding()), {
-        animate: !this.prefersReducedMotion(),
-      });
-    });
-  }
-
-  private observeHostSize(map: L.Map, destroyRef: DestroyRef): void {
-    // jsdom (unit tests) has no ResizeObserver; the map keeps its initial size there.
-    if (typeof ResizeObserver === 'undefined') {
-      return;
-    }
-    const observer = new ResizeObserver(() => {
-      map.invalidateSize();
-    });
-    observer.observe(this.host.nativeElement);
-    destroyRef.onDestroy(() => {
-      observer.disconnect();
+    this.markerReveal = revealMarker(map, this.stationMarkers.clusterGroup, marker, () => {
+      map.panTo(
+        centerForVisibleArea(map, marker.getLatLng(), this.viewportPadding()),
+        this.motion()
+      );
     });
   }
 }

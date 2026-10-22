@@ -1,7 +1,6 @@
-import { TestBed } from '@angular/core/testing';
 import type { Station } from '@genialtanken/contracts';
 import { DEFAULT_SEARCH_CENTER } from '../../core/search-center/search-center';
-import type { Coordinates } from '../../core/geolocation/coordinates';
+import type { Coordinates } from '@genialtanken/contracts';
 import type { SearchCenter } from '../../core/search-center/search-center';
 import {
   essoStation,
@@ -9,8 +8,8 @@ import {
   totalStation,
   unbrandedStation,
 } from '../../../testing/station-fixtures';
-import { accessibleTextOf, textOf } from '../../../testing/render-page';
-import { L } from '../map/leaflet-layers';
+import { accessibleTextOf, renderWithInputs, textOf } from '../../../testing/render-page';
+import { L } from '../map/leaflet';
 import { StationsMap } from './stations-map';
 
 interface RenderOptions {
@@ -30,17 +29,14 @@ const render = async (stations: readonly Station[], options: RenderOptions = {})
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(800);
     vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(600);
   }
-  const fixture = TestBed.createComponent(StationsMap);
-  fixture.componentRef.setInput('stations', stations);
-  fixture.componentRef.setInput('fuelType', 'e5');
-  fixture.componentRef.setInput('center', options.center ?? DEFAULT_SEARCH_CENTER);
-  fixture.componentRef.setInput('radiusInKilometers', 5);
-  fixture.componentRef.setInput('selectedStationIdentifier', options.selectedStationIdentifier);
-  if (options.cheapestStationIdentifiers !== undefined) {
-    fixture.componentRef.setInput('cheapestStationIdentifiers', options.cheapestStationIdentifiers);
-  }
-  await fixture.whenStable();
-  const element = fixture.nativeElement as HTMLElement;
+  const { fixture, element } = await renderWithInputs(StationsMap, {
+    stations,
+    fuelType: 'e5',
+    center: options.center ?? DEFAULT_SEARCH_CENTER,
+    radiusInKilometers: 5,
+    selectedStationIdentifier: options.selectedStationIdentifier,
+    cheapestStationIdentifiers: options.cheapestStationIdentifiers,
+  });
   const stationSelections: string[] = [];
   fixture.componentInstance.stationSelected.subscribe(stationIdentifier =>
     stationSelections.push(stationIdentifier)

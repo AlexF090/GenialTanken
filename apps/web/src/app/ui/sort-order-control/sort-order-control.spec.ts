@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { SortOrder } from '../../core/stations/sort-stations';
-import { textOf } from '../../../testing/render-page';
+import { getRadio, hostElementOf, textOf } from '../../../testing/render-page';
 import { SortOrderControl } from './sort-order-control';
 
 @Component({
@@ -16,17 +16,8 @@ class SortOrderControlHost {
 const render = async () => {
   const fixture = TestBed.createComponent(SortOrderControlHost);
   await fixture.whenStable();
-  const element = fixture.nativeElement as HTMLElement;
-  const radio = (name: string): HTMLInputElement => {
-    const label = [...element.querySelectorAll('label')].find(
-      candidate => textOf(candidate) === name
-    );
-    const input = label?.querySelector('input');
-    if (input === null || input === undefined) {
-      throw new Error(`No radio named ${name}`);
-    }
-    return input;
-  };
+  const element = hostElementOf(fixture);
+  const radio = (name: string): HTMLInputElement => getRadio(element, name);
   return { fixture, element, radio, host: fixture.componentInstance };
 };
 

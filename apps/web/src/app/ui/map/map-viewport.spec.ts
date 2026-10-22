@@ -1,4 +1,4 @@
-import { L } from './leaflet-layers';
+import { L } from './leaflet';
 import {
   centerForVisibleArea,
   isSameViewportPadding,

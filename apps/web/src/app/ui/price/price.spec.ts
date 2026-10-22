@@ -1,17 +1,9 @@
-import { TestBed } from '@angular/core/testing';
-import { accessibleTextOf } from '../../../testing/render-page';
+import { accessibleTextOf, renderWithInputs } from '../../../testing/render-page';
 import { Price } from './price';
 import type { PriceSize } from './price';
 
-const render = async (priceInEuro: number | null, size?: PriceSize): Promise<HTMLElement> => {
-  const fixture = TestBed.createComponent(Price);
-  fixture.componentRef.setInput('priceInEuro', priceInEuro);
-  if (size !== undefined) {
-    fixture.componentRef.setInput('size', size);
-  }
-  await fixture.whenStable();
-  return fixture.nativeElement as HTMLElement;
-};
+const render = async (priceInEuro: number | null, size?: PriceSize): Promise<HTMLElement> =>
+  (await renderWithInputs(Price, { priceInEuro, size })).element;
 
 describe('Price', () => {
   it('formats the price German with the tenth of a cent raised', async () => {

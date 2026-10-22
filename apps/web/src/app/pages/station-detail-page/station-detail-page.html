@@ -1,18 +1,22 @@
+<ng-template #closeButton>
+  <button
+    type="button"
+    class="icon-button station-card__close"
+    aria-label="Schließen"
+    (click)="close()">
+    <span class="station-card__close-circle"><app-icon name="close" /></span>
+  </button>
+</ng-template>
+
 <section class="station-card" aria-label="Tankstelle">
   @if (station(); as station) {
     <app-station-detail
       [station]="station"
       [fuelType]="fuelType()"
       [isFavorite]="isFavorite()"
+      [today]="today()"
       (favoriteToggled)="toggleFavorite()">
-      <button
-        stationDetailActions
-        type="button"
-        class="icon-button station-card__close"
-        aria-label="Schließen"
-        (click)="close()">
-        <span class="station-card__close-circle"><app-icon name="close" /></span>
-      </button>
+      <ng-container ngProjectAs="[stationDetailActions]" [ngTemplateOutlet]="closeButton" />
     </app-station-detail>
     <!-- The Licence Ouverte requires the credit wherever French prices show; France is the only country for now. -->
     <app-data-source-credit />
@@ -22,13 +26,7 @@
       @if (errorMessage(); as message) {
         <p class="message message--error" role="alert">{{ message }}</p>
       }
-      <button
-        type="button"
-        class="icon-button station-card__close"
-        aria-label="Schließen"
-        (click)="close()">
-        <span class="station-card__close-circle"><app-icon name="close" /></span>
-      </button>
+      <ng-container [ngTemplateOutlet]="closeButton" />
     </div>
   }
 </section>
