@@ -19,6 +19,7 @@
     "global-teardown.ts",
     "mock-upstream.ts",
     "mock-upstream-endpoints.ts",
+    "pwa-server.ts",
     "tests/**/*.ts",
     "product-shots/**/*.ts"
   ]

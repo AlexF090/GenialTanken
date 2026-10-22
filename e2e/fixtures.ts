@@ -1,5 +1,5 @@
 import { test as base, expect } from '@playwright/test';
-import type { Locator, Page } from '@playwright/test';
+import type { BrowserContext, Locator, Page } from '@playwright/test';
 
 /**
  * Stations of `data/france-stations.json` as the app shows them for a user at the centre of
@@ -70,18 +70,18 @@ const transparentPixelPng = Buffer.from(
  * the API that the mock upstream does not know fail the run in `global-teardown.ts`.
  */
 const mockExternalServices = async (
-  page: Page,
+  target: Page | BrowserContext,
   applicationOrigin: string,
   unmockedRequests: string[]
 ): Promise<void> => {
-  await page.route(
+  await target.route(
     url => url.origin !== applicationOrigin,
     async route => {
       unmockedRequests.push(`${route.request().method()} ${route.request().url()}`);
       await route.abort('blockedbyclient');
     }
   );
-  await page.route(
+  await target.route(
     url => url.protocol === 'https:' && /^([a-z]\.)?tile\.openstreetmap\.org$/.test(url.hostname),
     route => route.fulfill({ body: transparentPixelPng, contentType: 'image/png' })
   );
@@ -97,6 +97,24 @@ export const test = base.extend({
     const unmockedRequests: string[] = [];
     await mockExternalServices(page, new URL(baseURL).origin, unmockedRequests);
     await use(page);
+    expect(unmockedRequests, 'every request outside the app origin must be mocked').toEqual([]);
+  },
+});
+
+/**
+ * For the `pwa` project: the same mocks on the browser context. Requests of the service worker
+ * (it fetches map tiles on behalf of the page) only pass through context routes in Chromium.
+ */
+export const serviceWorkerTest = base.extend({
+  geolocation: parisCenter,
+  permissions: ['geolocation'],
+  context: async ({ context, baseURL }, use) => {
+    if (!baseURL) {
+      throw new Error('baseURL must be configured in playwright.config.ts');
+    }
+    const unmockedRequests: string[] = [];
+    await mockExternalServices(context, new URL(baseURL).origin, unmockedRequests);
+    await use(context);
     expect(unmockedRequests, 'every request outside the app origin must be mocked').toEqual([]);
   },
 });
