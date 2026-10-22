@@ -5,14 +5,16 @@ import {
   favoriteButton,
   mainNavigation,
   openExplore,
+  pageHeading,
   quaiDeLaRapeeStation,
   rueBailleulStation,
+  seedFavorites,
   stationCard,
   stationCards,
   storedFavoriteIdentifiers,
   test,
   useOwnPosition,
-} from '../fixtures.js';
+} from '../fixtures.ts';
 
 const openFavorites = (page: Page): Promise<void> =>
   mainNavigation(page).getByRole('link', { name: 'Favoriten', exact: true }).click();
@@ -21,7 +23,7 @@ test.describe('favorites', () => {
   test('shows an empty state that leads to the explore page', async ({ page }) => {
     await page.goto('/favorites');
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Favoriten' })).toBeVisible();
+    await expect(pageHeading(page, 'Favoriten')).toBeVisible();
     await expect(
       page.getByRole('heading', { level: 2, name: 'Keine Favoriten gespeichert' })
     ).toBeVisible();
@@ -30,7 +32,7 @@ test.describe('favorites', () => {
     await page.getByRole('link', { name: 'Tankstellen erkunden', exact: true }).click();
 
     await expect(page).toHaveURL('/');
-    await expect(page.getByRole('heading', { level: 1, name: 'GenialTanken' })).toBeVisible();
+    await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
   });
 
   test('a station starred in the list is listed on /favorites, survives a reload and can be removed', async ({
@@ -101,13 +103,7 @@ test.describe('favorites', () => {
   });
 
   test('loads several favorites with a single request', async ({ page }) => {
-    await page.goto('/settings');
-    await page.evaluate(
-      identifiers => {
-        localStorage.setItem('favoriteIDs', JSON.stringify(identifiers));
-      },
-      [rueBailleulStation.id, quaiDeLaRapeeStation.id]
-    );
+    await seedFavorites(page, [rueBailleulStation.id, quaiDeLaRapeeStation.id]);
     const bulkLookups: URL[] = [];
     page.on('request', request => {
       const url = new URL(request.url());
@@ -128,10 +124,7 @@ test.describe('favorites', () => {
   });
 
   test('keeps favorites the API does not know until the user removes them', async ({ page }) => {
-    await page.goto('/settings');
-    await page.evaluate(() => {
-      localStorage.setItem('favoriteIDs', JSON.stringify(['fr-99999999']));
-    });
+    await seedFavorites(page, ['fr-99999999']);
 
     await page.goto('/favorites');
 

@@ -4,18 +4,13 @@ import {
   expect,
   resultSummary,
   rueBailleulStation,
+  sheetHandle,
   stationRowButton,
   stationCard,
   stationList,
   stationsMap,
   test,
-} from '../fixtures.js';
-
-/** The list floats over the map as a sheet whose handle names the next step. */
-const sheetHandle = (page: Page): Locator =>
-  page
-    .getByRole('region', { name: 'Tankstellen', exact: true })
-    .getByRole('button', { name: /^Liste (vergrößern|verkleinern)$/ });
+} from '../fixtures.ts';
 
 /**
  * Pixels by which the top of an element lies below the visible map, which ends at the navigation

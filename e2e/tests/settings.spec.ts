@@ -4,17 +4,19 @@ import {
   chooseSettingsOption,
   colorSchemeOptions,
   expect,
+  expectColorScheme,
   FUEL_OPTION_LABELS,
   fuelOptions,
   openExplore,
   openSettings,
+  pageHeading,
   resultSummary,
   rueBailleulStation,
   stationCard,
   stationCards,
   test,
   useOwnPosition,
-} from '../fixtures.js';
+} from '../fixtures.ts';
 
 const COLOR_SCHEME_LABELS = ['System', 'Hell', 'Dunkel'] as const;
 
@@ -37,11 +39,12 @@ test.describe('settings', () => {
   }) => {
     await page.goto('/settings');
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Einstellungen' })).toBeVisible();
+    await expect(pageHeading(page, 'Einstellungen')).toBeVisible();
     await expect(fuelOptions(page).getByRole('radio')).toHaveCount(FUEL_OPTION_LABELS.length);
     for (const fuel of FUEL_OPTION_LABELS) {
-      const radio = fuelOptions(page).getByRole('radio', { name: fuel, exact: true });
-      await (fuel === 'E5' ? expect(radio).toBeChecked() : expect(radio).not.toBeChecked());
+      await expect(fuelOptions(page).getByRole('radio', { name: fuel, exact: true })).toBeChecked({
+        checked: fuel === 'E5',
+      });
     }
 
     const radiusSlider = page.getByRole('slider', { name: 'Radius: 5 km' });
@@ -53,8 +56,7 @@ test.describe('settings', () => {
       COLOR_SCHEME_LABELS.length
     );
     for (const label of COLOR_SCHEME_LABELS) {
-      const radio = colorSchemeRadio(page, label);
-      await (label === 'System' ? expect(radio).toBeChecked() : expect(radio).not.toBeChecked());
+      await expect(colorSchemeRadio(page, label)).toBeChecked({ checked: label === 'System' });
     }
 
     await expect(page.getByRole('heading', { level: 2, name: 'Datenquelle' })).toBeVisible();
@@ -109,22 +111,22 @@ test.describe('settings', () => {
   test('the color scheme applies immediately and survives a reload', async ({ page }) => {
     await page.goto('/settings');
     // Playwright emulates a light operating system unless a test asks for dark.
-    await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'light');
+    await expectColorScheme(page, 'light');
 
     await chooseSettingsOption(colorSchemeOptions(page), 'Dunkel');
-    await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'dark');
+    await expectColorScheme(page, 'dark');
     await expect.poll(() => storedColorScheme(page)).toBe('dark');
 
     await page.reload();
     await expect(colorSchemeRadio(page, 'Dunkel')).toBeChecked();
-    await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'dark');
+    await expectColorScheme(page, 'dark');
 
     await chooseSettingsOption(colorSchemeOptions(page), 'Hell');
-    await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'light');
+    await expectColorScheme(page, 'light');
     await expect.poll(() => storedColorScheme(page)).toBe('light');
 
     await chooseSettingsOption(colorSchemeOptions(page), 'System');
-    await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'light');
+    await expectColorScheme(page, 'light');
     await expect.poll(() => storedColorScheme(page)).toBe('system');
   });
 
@@ -139,7 +141,7 @@ test.describe('settings', () => {
     });
     await page.goto('/settings');
 
-    await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'dark');
+    await expectColorScheme(page, 'dark');
     // Browsers use the first theme color whose media query matches.
     const appliedThemeColor = await page.evaluate(
       () =>
@@ -158,14 +160,14 @@ test.describe('settings', () => {
       await page.goto('/settings');
 
       await expect(colorSchemeRadio(page, 'System')).toBeChecked();
-      await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'dark');
+      await expectColorScheme(page, 'dark');
 
       await chooseSettingsOption(colorSchemeOptions(page), 'Hell');
-      await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'light');
+      await expectColorScheme(page, 'light');
 
       await page.reload();
       await expect(colorSchemeRadio(page, 'Hell')).toBeChecked();
-      await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'light');
+      await expectColorScheme(page, 'light');
     });
   });
 });

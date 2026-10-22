@@ -1,6 +1,7 @@
 // @ts-check
 import eslint from '@eslint/js';
 import angular from 'angular-eslint';
+import playwright from 'eslint-plugin-playwright';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -118,7 +119,17 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.spec.ts', '**/*.e2e-spec.ts', 'e2e/**/*.ts'],
+    files: ['**/*.spec.ts', '**/*.e2e-spec.ts'],
+    ignores: ['e2e/**'],
     languageOptions: { globals: { ...globals.node, ...globals.vitest } },
+  },
+  {
+    files: ['e2e/**/*.ts'],
+    extends: [playwright.configs['flat/recommended']],
+    languageOptions: { globals: globals.node },
+    rules: {
+      // Helpers such as `expectSheetAt` assert on behalf of the test.
+      'playwright/expect-expect': ['warn', { assertFunctionPatterns: ['^expect[A-Z]'] }],
+    },
   }
 );

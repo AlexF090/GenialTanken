@@ -19,9 +19,15 @@ import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium, devices, expect } from '@playwright/test';
 import type { Browser, BrowserContextOptions, Locator, Page } from '@playwright/test';
+import {
+  parisCenter,
+  sheetHandle,
+  stationCards,
+  stationsMap,
+  useOwnPosition,
+} from '../fixtures.ts';
 
 const APPLICATION_URL = 'https://genialtanken.alexf090.workers.dev/';
-const PARIS_CENTER = { latitude: 48.8566, longitude: 2.3522 };
 const FUEL_LABEL = 'Diesel';
 const ROBOTO_STYLESHEET_URL =
   'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=block';
@@ -39,7 +45,7 @@ type Composition = (typeof COMPOSITIONS)[number];
 const sharedContextOptions: BrowserContextOptions = {
   locale: 'de-DE',
   timezoneId: 'Europe/Paris',
-  geolocation: PARIS_CENTER,
+  geolocation: parisCenter,
   permissions: ['geolocation'],
   reducedMotion: 'reduce',
 };
@@ -78,39 +84,34 @@ const serveRoboto = async (page: Page): Promise<void> => {
   );
 };
 
-const resultSummary = (page: Page) =>
-  page.getByRole('status').filter({ hasText: 'im Umkreis von' });
-
-const stationsMap = (page: Page) =>
-  page.getByRole('region', { name: 'Karte der Tankstellen', exact: true });
-
-const stationRows = (page: Page) =>
-  page
-    .getByRole('main')
-    .getByRole('list', { name: 'Tankstellen', exact: true })
-    .getByRole('listitem');
-
-/** Waits until every map tile is loaded, the price tags are drawn and the network is quiet. */
+/**
+ * Waits until the price tags are drawn, every map tile is loaded and faded in, the fonts are ready
+ * and no transition (the sheet settling after measuring) is running.
+ */
 const waitUntilSettled = async (page: Page): Promise<void> => {
   await expect(stationsMap(page).getByRole('button', { name: /€/ }).first()).toBeVisible();
-  await page.waitForLoadState('networkidle');
+  await page.evaluate(() => document.fonts.ready);
+  // Leaflet fades tiles in by stepping their inline opacity, which no animation reports.
   await page.waitForFunction(() => {
     const tiles = [...document.querySelectorAll<HTMLImageElement>('img.leaflet-tile')];
-    return tiles.length > 0 && tiles.every(tile => tile.complete && tile.naturalWidth > 0);
+    return (
+      tiles.length > 0 &&
+      tiles.every(
+        tile =>
+          tile.complete && tile.naturalWidth > 0 && Number(getComputedStyle(tile).opacity) === 1
+      ) &&
+      document.getAnimations().every(animation => animation.playState !== 'running')
+    );
   });
-  await page.evaluate(() => document.fonts.ready);
-  // Leaflet fades tiles in and the sheet settles after measuring; let both finish.
-  await page.waitForTimeout(1500);
 };
 
 const openAtOwnPosition = async (page: Page): Promise<void> => {
   await serveRoboto(page);
   await page.goto(APPLICATION_URL);
-  await page.getByRole('button', { name: 'Meinen Standort verwenden' }).click();
-  await expect(resultSummary(page)).toContainText('um Dein Standort', { timeout: 30_000 });
+  await useOwnPosition(page, { timeout: 30_000 });
   await page.getByRole('button', { name: /^Kraftstoff/ }).click();
   await page.getByRole('menuitemradio', { name: FUEL_LABEL, exact: true }).click();
-  await expect(stationRows(page).first()).toBeVisible({ timeout: 30_000 });
+  await expect(stationCards(page).first()).toBeVisible({ timeout: 30_000 });
   await waitUntilSettled(page);
 };
 
@@ -121,7 +122,7 @@ const selectStation = async (page: Page, row: Locator): Promise<void> => {
 };
 
 const cheapestRow = (page: Page): Locator =>
-  stationRows(page).filter({ hasText: 'Günstigster Preis' }).first();
+  stationCards(page).filter({ hasText: 'Günstigster Preis' }).first();
 
 const sortByPrice = async (page: Page): Promise<void> => {
   await page.getByText('Preis', { exact: true }).click();
@@ -132,10 +133,8 @@ const sortByPrice = async (page: Page): Promise<void> => {
 const openStationCard = async (page: Page, row: Locator): Promise<void> => {
   await row.getByRole('link', { name: /^Details: / }).click();
   await expect(page.getByRole('region', { name: 'Tankstelle', exact: true })).toBeVisible();
-  await page
-    .getByRole('region', { name: 'Tankstellen', exact: true })
-    .getByRole('button', { name: 'Liste vergrößern', exact: true })
-    .click();
+  await expect(sheetHandle(page)).toHaveAccessibleName('Liste vergrößern');
+  await sheetHandle(page).click();
   await waitUntilSettled(page);
 };
 
@@ -159,11 +158,11 @@ const SCENES: Record<RawShotName, Scene> = {
   },
   'mobile-station': {
     contextOptions: phoneContextOptions('light'),
-    arrange: page => openStationCard(page, stationRows(page).nth(1)),
+    arrange: page => openStationCard(page, stationCards(page).nth(1)),
   },
   'mobile-dark': {
     contextOptions: phoneContextOptions('dark'),
-    arrange: page => selectStation(page, stationRows(page).first()),
+    arrange: page => selectStation(page, stationCards(page).first()),
   },
 };
 

@@ -103,6 +103,15 @@ export const test = base.extend({
 
 export { expect };
 
+/** The level 1 heading that names the current page. */
+export const pageHeading = (page: Page, name: string): Locator =>
+  page.getByRole('heading', { level: 1, name });
+
+/** The color scheme the app has resolved and applied to the document. */
+export const expectColorScheme = async (page: Page, scheme: 'light' | 'dark'): Promise<void> => {
+  await expect(page.locator('html')).toHaveAttribute('data-color-scheme', scheme);
+};
+
 export const mainNavigation = (page: Page): Locator =>
   page.getByRole('navigation', { name: 'Hauptnavigation' });
 
@@ -132,19 +141,28 @@ export const stationsMap = (page: Page): Locator =>
 export const resultSummary = (page: Page): Locator =>
   page.getByRole('status').filter({ hasText: 'im Umkreis von' });
 
+/** The list floats over the map as a sheet whose handle names the next step. */
+export const sheetHandle = (page: Page): Locator =>
+  page
+    .getByRole('region', { name: 'Tankstellen', exact: true })
+    .getByRole('button', { name: /^Liste (vergrößern|verkleinern)$/ });
+
 /** Opens the explore page through the navigation, keeping the app state of the current visit. */
 export const openExplore = async (page: Page): Promise<void> => {
   await mainNavigation(page).getByRole('link', { name: 'Erkunden', exact: true }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'GenialTanken' })).toBeVisible();
+  await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
 };
 
 /**
  * Centers the explore page on the emulated own position (`parisCenter`), where every fixture
  * station is in range, and waits until the stations around it have loaded.
  */
-export const useOwnPosition = async (page: Page): Promise<void> => {
+export const useOwnPosition = async (
+  page: Page,
+  options: { timeout?: number } = {}
+): Promise<void> => {
   await page.getByRole('button', { name: 'Meinen Standort verwenden' }).click();
-  await expect(resultSummary(page)).toContainText(`um ${OWN_POSITION_LABEL}`);
+  await expect(resultSummary(page)).toContainText(`um ${OWN_POSITION_LABEL}`, options);
 };
 
 /**
@@ -178,5 +196,20 @@ export const chooseFuel = async (page: Page, fuel: FuelOptionLabel): Promise<voi
   await chooseSettingsOption(fuelOptions(page), fuel);
 };
 
+const FAVORITE_IDENTIFIERS_STORAGE_KEY = 'favoriteIDs';
+
+/** Stores favorites before every page load of the test, as an earlier visit would have. */
+export const seedFavorites = async (page: Page, identifiers: string[]): Promise<void> => {
+  await page.addInitScript(
+    ({ storageKey, favoriteIdentifiers }) => {
+      localStorage.setItem(storageKey, JSON.stringify(favoriteIdentifiers));
+    },
+    { storageKey: FAVORITE_IDENTIFIERS_STORAGE_KEY, favoriteIdentifiers: identifiers }
+  );
+};
+
 export const storedFavoriteIdentifiers = (page: Page): Promise<unknown> =>
-  page.evaluate((): unknown => JSON.parse(localStorage.getItem('favoriteIDs') ?? 'null'));
+  page.evaluate(
+    (storageKey): unknown => JSON.parse(localStorage.getItem(storageKey) ?? 'null'),
+    FAVORITE_IDENTIFIERS_STORAGE_KEY
+  );

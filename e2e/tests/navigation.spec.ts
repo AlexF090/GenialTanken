@@ -1,4 +1,4 @@
-import { expect, mainNavigation, rueBailleulStation, test } from '../fixtures.js';
+import { expect, mainNavigation, pageHeading, rueBailleulStation, test } from '../fixtures.ts';
 
 test.describe('navigation', () => {
   test('the main navigation reaches every page and marks the current one', async ({ page }) => {
@@ -11,7 +11,7 @@ test.describe('navigation', () => {
     await expect(navigation.getByRole('link')).toHaveCount(3);
     // The settings are only part of the navigation, there is no second link in a header.
     await expect(page.getByRole('link', { name: 'Einstellungen' })).toHaveCount(1);
-    await expect(page.getByRole('heading', { level: 1, name: 'GenialTanken' })).toBeVisible();
+    await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
     await expect(exploreLink).toHaveAttribute('aria-current', 'page');
     await expect(favoritesLink).not.toHaveAttribute('aria-current');
     await expect(settingsLink).not.toHaveAttribute('aria-current');
@@ -19,21 +19,21 @@ test.describe('navigation', () => {
     await favoritesLink.click();
     await expect(page).toHaveURL('/favorites');
     await expect(page).toHaveTitle('Favoriten – GenialTanken');
-    await expect(page.getByRole('heading', { level: 1, name: 'Favoriten' })).toBeVisible();
+    await expect(pageHeading(page, 'Favoriten')).toBeVisible();
     await expect(favoritesLink).toHaveAttribute('aria-current', 'page');
     await expect(exploreLink).not.toHaveAttribute('aria-current');
 
     await settingsLink.click();
     await expect(page).toHaveURL('/settings');
     await expect(page).toHaveTitle('Einstellungen – GenialTanken');
-    await expect(page.getByRole('heading', { level: 1, name: 'Einstellungen' })).toBeVisible();
+    await expect(pageHeading(page, 'Einstellungen')).toBeVisible();
     await expect(settingsLink).toHaveAttribute('aria-current', 'page');
     await expect(favoritesLink).not.toHaveAttribute('aria-current');
 
     await exploreLink.click();
     await expect(page).toHaveURL('/');
     await expect(page).toHaveTitle('GenialTanken');
-    await expect(page.getByRole('heading', { level: 1, name: 'GenialTanken' })).toBeVisible();
+    await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
     await expect(exploreLink).toHaveAttribute('aria-current', 'page');
     await expect(settingsLink).not.toHaveAttribute('aria-current');
   });
@@ -43,7 +43,7 @@ test.describe('navigation', () => {
 
     await expect(page).toHaveURL('/');
     await expect(page).toHaveTitle('GenialTanken');
-    await expect(page.getByRole('heading', { level: 1, name: 'GenialTanken' })).toBeVisible();
+    await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Karte der Tankstellen' })).toBeVisible();
     await expect(
       mainNavigation(page).getByRole('link', { name: 'Erkunden', exact: true })

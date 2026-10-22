@@ -3,12 +3,14 @@ import type { Page } from '@playwright/test';
 import {
   eiffelTower,
   expect,
+  expectColorScheme,
   quaiDeLaRapeeStation,
   resultSummary,
   rueBailleulStation,
+  seedFavorites,
   stationCard,
   test,
-} from '../fixtures.js';
+} from '../fixtures.ts';
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -38,14 +40,7 @@ const PAGES: PageUnderTest[] = [
   {
     name: 'favorites',
     path: '/favorites',
-    prepare: async page => {
-      await page.addInitScript(
-        identifiers => {
-          localStorage.setItem('favoriteIDs', JSON.stringify(identifiers));
-        },
-        [rueBailleulStation.id, quaiDeLaRapeeStation.id]
-      );
-    },
+    prepare: page => seedFavorites(page, [rueBailleulStation.id, quaiDeLaRapeeStation.id]),
     isReady: async page => {
       await expect(stationCard(page, rueBailleulStation)).toContainText('2,540 €');
       await expect(stationCard(page, quaiDeLaRapeeStation)).toContainText('kein Preis');
@@ -104,7 +99,7 @@ test.describe('accessibility in dark mode', () => {
   test('the system preference resolves to the dark color scheme', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.locator('html')).toHaveAttribute('data-color-scheme', 'dark');
+    await expectColorScheme(page, 'dark');
   });
 
   checkEveryPage();

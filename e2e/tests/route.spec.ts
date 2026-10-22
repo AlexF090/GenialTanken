@@ -1,4 +1,4 @@
-import { expect, rueBailleulStation, stationCard, test } from '../fixtures.js';
+import { expect, rueBailleulStation, stationCard, test } from '../fixtures.ts';
 
 declare global {
   interface Window {

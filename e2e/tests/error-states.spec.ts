@@ -1,5 +1,5 @@
 import type { Page, Route } from '@playwright/test';
-import { expect, resultSummary, stationCards, test } from '../fixtures.js';
+import { expect, resultSummary, stationCards, test } from '../fixtures.ts';
 
 /** Station searches of the explore page; detail and bulk lookups have their own paths. */
 const isStationSearch = (url: URL): boolean => url.pathname === '/api/stations';
