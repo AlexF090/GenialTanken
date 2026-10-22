@@ -178,6 +178,33 @@ describe('InstallationHint', () => {
     expect(hint.offer()).toBe('install-dialog');
   });
 
+  it.each([
+    {
+      failing: 'opening the dialog',
+      prepare: (event: Event, failure: Error) =>
+        Object.assign(event, { prompt: () => Promise.reject(failure) }),
+    },
+    {
+      failing: 'the choice of the user',
+      prepare: (event: Event, failure: Error) =>
+        Object.assign(event, { userChoice: Promise.reject(failure) }),
+    },
+  ])('logs a failure of $failing and hides the used-up offer', async ({ prepare }) => {
+    const { hint, storage } = createHint(ANDROID_IN_CHROME);
+    const logger = TestBed.inject(Logger);
+    const warn = vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
+    const failure = new Error('NotAllowedError');
+    const { event } = installDialogEvent('accepted');
+    prepare(event, failure);
+    window.dispatchEvent(event);
+
+    await expect(hint.install()).resolves.toBeUndefined();
+
+    expect(warn).toHaveBeenCalledWith('The install dialog of the browser failed.', failure);
+    expect(hint.offer()).toBeUndefined();
+    expect(storage.getItem(INSTALLATION_HINT_STORAGE_KEY)).toBeNull();
+  });
+
   it('closes for good once the app was installed another way', () => {
     const { hint } = createHint(IPHONE_IN_SAFARI);
 

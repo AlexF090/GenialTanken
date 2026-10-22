@@ -108,7 +108,10 @@ export class InstallationHint {
     });
   }
 
-  /** Opens the browser's install dialog; the hint closes for good once the user installs. */
+  /**
+   * Opens the browser's install dialog; the hint closes for good once the user installs. Never
+   * rejects: a failing dialog is logged and only hides the used-up offer.
+   */
   async install(): Promise<void> {
     const installDialog = this.installDialog();
     if (installDialog === undefined) {
@@ -116,10 +119,14 @@ export class InstallationHint {
     }
     // The browser opens its dialog only once per event.
     this.installDialog.set(undefined);
-    await installDialog.prompt();
-    const { outcome } = await installDialog.userChoice;
-    if (outcome === 'accepted') {
-      this.dismiss();
+    try {
+      await installDialog.prompt();
+      const { outcome } = await installDialog.userChoice;
+      if (outcome === 'accepted') {
+        this.dismiss();
+      }
+    } catch (error: unknown) {
+      this.logger.warn('The install dialog of the browser failed.', error);
     }
   }
 
