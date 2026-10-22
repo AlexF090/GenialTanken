@@ -106,9 +106,7 @@ test.describe('settings', () => {
     await expect(page.getByText(emptyMessage, { exact: true })).toBeVisible();
     // Announced once, by the result summary
     await expect(page.getByRole('status').filter({ hasText: emptyMessage })).toHaveCount(1);
-    await expect(resultSummary(page)).toHaveText(
-      `0 Tankstellen im Umkreis von 1 km um Dein Standort. ${emptyMessage}`
-    );
+    await expect(resultSummary(page)).toHaveText(emptyMessage);
     await expect(stationCards(page)).toHaveCount(0);
   });
 

@@ -1,4 +1,5 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
+import { z } from 'zod';
 import {
   boulevardDeLHopitalStation,
   boulevardVincentAuriolStation,
@@ -89,6 +90,55 @@ const lowerMiddleOfMap = async (page: Page): Promise<{ x: number; y: number }> =
   }
   return { x: mapBox.x + mapBox.width / 2, y: mapBox.y + mapBox.height * 0.75 };
 };
+
+/** Keys that activate a focused price tag or cluster, as on a native button. */
+const ACTIVATION_KEYS = ['Enter', 'Space'] as const;
+
+/** At 60 frames per second longer than any map animation of Leaflet (250 ms). */
+const SETTLED_FRAME_COUNT = 20;
+const MAXIMUM_FRAME_COUNT = 600;
+
+/**
+ * Waits until the map has stopped moving the element: it stays attached and in place for
+ * `SETTLED_FRAME_COUNT` frames in a row. Retried while the map replaces the element.
+ */
+const waitUntilSettled = async (element: Locator): Promise<void> => {
+  await expect(async () => {
+    const isSettled = await element.evaluate(
+      (node, frameCounts) =>
+        new Promise<boolean>(resolve => {
+          let previous = node.getBoundingClientRect();
+          let settledFrames = 0;
+          let frames = 0;
+          const check = (): void => {
+            frames += 1;
+            if (!node.isConnected || frames > frameCounts.maximum) {
+              resolve(false);
+              return;
+            }
+            const current = node.getBoundingClientRect();
+            settledFrames =
+              current.x === previous.x && current.y === previous.y ? settledFrames + 1 : 0;
+            previous = current;
+            if (settledFrames >= frameCounts.settled) {
+              resolve(true);
+              return;
+            }
+            requestAnimationFrame(check);
+          };
+          requestAnimationFrame(check);
+        }),
+      { settled: SETTLED_FRAME_COUNT, maximum: MAXIMUM_FRAME_COUNT }
+    );
+    expect(isSettled, 'the map has stopped moving the element').toBe(true);
+  }).toPass();
+};
+
+/** The part of a station of `GET /api/stations` that the refresh test changes. */
+const refreshedStationSchema = z.looseObject({
+  id: z.string(),
+  pricesInEuro: z.record(z.string(), z.number().nullable()),
+});
 
 const sortOptions = (page: Page) => page.getByRole('group', { name: 'Sortierung', exact: true });
 
@@ -248,21 +298,38 @@ test.describe('explore page', () => {
       ]);
     });
 
-    test('"Aktualisieren" fetches the prices again', async ({ page }) => {
-      await expect(resultSummary(page)).toContainText(eiffelTower.label);
+    test('"Aktualisieren" fetches the prices again and shows the new ones', async ({ page }) => {
+      await expect(stationCard(page, rueBailleulStation)).toContainText('2,540 €');
+      // The recorded prices never change, so the refreshed answer carries a new price.
+      await page.route(
+        url => url.pathname === '/api/stations',
+        async route => {
+          const response = await route.fetch();
+          const stations = z.array(refreshedStationSchema).parse(await response.json());
+          await route.fulfill({
+            response,
+            json: stations.map(station =>
+              station.id === rueBailleulStation.id
+                ? { ...station, pricesInEuro: { ...station.pricesInEuro, e5: 2.499 } }
+                : station
+            ),
+          });
+        }
+      );
 
-      const stationsRequest = page.waitForRequest(
-        request => new URL(request.url()).pathname === '/api/stations'
+      const stationsResponse = page.waitForResponse(
+        response =>
+          new URL(response.url()).pathname === '/api/stations' && response.status() === 200
       );
       await page.getByRole('button', { name: 'Aktualisieren', exact: true }).click();
-      const requestUrl = new URL((await stationsRequest).url());
+      const requestUrl = new URL((await stationsResponse).url());
 
       expect(requestUrl.searchParams.get('fuel')).toBe('e5');
       expect(requestUrl.searchParams.get('radiusInKilometers')).toBe('5');
       expect(requestUrl.searchParams.get('latitude')).toBe(String(eiffelTower.latitude));
       expect(requestUrl.searchParams.get('longitude')).toBe(String(eiffelTower.longitude));
       await expect(stationCards(page)).toHaveCount(1);
-      await expect(stationCard(page, rueBailleulStation)).toContainText('2,540 €');
+      await expect(stationCard(page, rueBailleulStation)).toContainText('2,499 €');
     });
 
     test('marks the cheapest stations in list and map with text', async ({ page }) => {
@@ -312,48 +379,54 @@ test.describe('explore page', () => {
       await expect(marker).toHaveAttribute('aria-pressed', 'true');
     });
 
-    test('Enter on a focused price tag selects its station', async ({ page }) => {
-      const marker = stationsMap(page).getByRole('button', {
-        name: `${rueBailleulStation.title}, 2,540 €, günstigster Preis`,
-        exact: true,
+    for (const key of ACTIVATION_KEYS) {
+      test(`${key} on a focused price tag selects its station`, async ({ page }) => {
+        const marker = stationsMap(page).getByRole('button', {
+          name: `${rueBailleulStation.title}, 2,540 €, günstigster Preis`,
+          exact: true,
+        });
+        const listButton = stationRowButton(
+          stationCard(page, rueBailleulStation),
+          rueBailleulStation
+        );
+        await expect(marker).toHaveAttribute('aria-pressed', 'false');
+
+        await marker.focus();
+        await expect(marker).toBeFocused();
+        await page.keyboard.press(key);
+
+        await expect(marker).toHaveAttribute('aria-pressed', 'true');
+        await expect(listButton).toHaveAttribute('aria-pressed', 'true');
       });
-      const listButton = stationRowButton(
-        stationCard(page, rueBailleulStation),
-        rueBailleulStation
-      );
-      await expect(marker).toHaveAttribute('aria-pressed', 'false');
 
-      await marker.focus();
-      await page.keyboard.press('Enter');
+      test(`${key} on a focused cluster zooms into it and focuses its cheapest station`, async ({
+        page,
+      }) => {
+        await chooseFuel(page, 'Diesel');
+        await openExplore(page);
+        await useOwnPosition(page);
 
-      await expect(marker).toHaveAttribute('aria-pressed', 'true');
-      await expect(listButton).toHaveAttribute('aria-pressed', 'true');
-    });
+        const map = stationsMap(page);
+        // At the zoom level of a 5 km radius the stations south-east of the center form a cluster.
+        const cluster = map.getByRole('button', { name: '3 Tankstellen, ab 2,250 €', exact: true });
+        // Of the two stations at 2,250 € the nearer one comes first.
+        const cheapestMarker = map.getByRole('button', {
+          name: `${boulevardDeLHopitalStation.title}, 2,250 €, günstigster Preis`,
+          exact: true,
+        });
+        await expect(cheapestMarker).toHaveCount(0);
+        // The clusters are drawn anew when a zoom ends, which would drop a focus taken earlier.
+        await waitUntilSettled(cluster);
 
-    test('Enter on a focused cluster zooms into it and focuses its cheapest station', async ({
-      page,
-    }) => {
-      await chooseFuel(page, 'Diesel');
-      await openExplore(page);
-      await useOwnPosition(page);
+        await cluster.focus();
+        await expect(cluster).toBeFocused();
+        await page.keyboard.press(key);
 
-      const map = stationsMap(page);
-      // At the zoom level of a 5 km radius the stations south-east of the center form a cluster.
-      const cluster = map.getByRole('button', { name: '3 Tankstellen, ab 2,250 €', exact: true });
-      // Of the two stations at 2,250 € the nearer one comes first.
-      const cheapestMarker = map.getByRole('button', {
-        name: `${boulevardDeLHopitalStation.title}, 2,250 €, günstigster Preis`,
-        exact: true,
+        await expect(cluster).toHaveCount(0);
+        await expect(cheapestMarker).toBeFocused();
+        await expect(cheapestMarker).toHaveAttribute('aria-pressed', 'false');
       });
-      await expect(cheapestMarker).toHaveCount(0);
-
-      await cluster.focus();
-      await page.keyboard.press('Enter');
-
-      await expect(cluster).toHaveCount(0);
-      await expect(cheapestMarker).toBeFocused();
-      await expect(cheapestMarker).toHaveAttribute('aria-pressed', 'false');
-    });
+    }
 
     test('choosing a row opens the cluster of its station and keeps it selected', async ({
       page,
@@ -413,7 +486,8 @@ test.describe('explore page', () => {
       const areaSearch = page.getByRole('button', { name: 'In diesem Bereich suchen' });
       await expect(areaSearch).toBeHidden();
 
-      await dragMapWithoutInertia(page, await lowerMiddleOfMap(page), { x: -250, y: -250 });
+      // Towards the east, where the fixture stations are; an empty result would not name a center.
+      await dragMapWithoutInertia(page, await lowerMiddleOfMap(page), { x: -250, y: 0 });
 
       await areaSearch.click();
       await expect(resultSummary(page)).toContainText('um die Kartenmitte');

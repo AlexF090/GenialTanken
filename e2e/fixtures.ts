@@ -51,7 +51,7 @@ export const parisCenter = { latitude: 48.8566, longitude: 2.3522 };
 /** Start center of every visit; the app never asks for the position on its own. */
 export const eiffelTower = { latitude: 48.8584, longitude: 2.2945, label: 'Eiffelturm, Paris' };
 
-export const OWN_POSITION_LABEL = 'Dein Standort';
+const OWN_POSITION_LABEL = 'Dein Standort';
 
 export const FUEL_OPTION_LABELS = ['E5', 'E10', 'Super Plus', 'Diesel', 'E85', 'LPG'] as const;
 
@@ -137,7 +137,8 @@ export const stationsMap = (page: Page): Locator =>
 /**
  * "N Tankstellen im Umkreis von R km um <label>" on the explore page. It is only filled once the
  * stations of the current search center have loaded, so its label proves the list is current.
- * For an empty result it also announces the empty-list message, hidden from the eyes.
+ * An empty result reads "Keine Tankstellen mit Preis für <fuel> im Umkreis von R km gefunden."
+ * instead, without the center.
  */
 export const resultSummary = (page: Page): Locator =>
   page.getByRole('status').filter({ hasText: 'im Umkreis von' });
