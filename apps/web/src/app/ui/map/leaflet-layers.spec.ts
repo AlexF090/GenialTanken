@@ -36,15 +36,21 @@ describe('createCenterMarker', () => {
     ).toBe('<b>Gare du Nord</b>');
   });
 
-  it('greets the user at their own position', () => {
-    expect(
-      tooltipText({
-        latitude: 48.86,
-        longitude: 2.34,
-        label: 'Dein Standort',
-        source: 'own-position',
-      })
-    ).toBe('Du bist hier!');
+  it('shows the own position as a dot named for screen readers, without a label covering the map', () => {
+    const ownPosition: SearchCenter = {
+      latitude: 48.86,
+      longitude: 2.34,
+      label: 'Dein Standort',
+      source: 'own-position',
+    };
+
+    expect(tooltipText(ownPosition)).toBe('');
+    withMap(map => {
+      createCenterMarker(ownPosition).addTo(map);
+      const dot = map.getContainer().querySelector('.own-position-dot');
+      expect(dot?.getAttribute('role')).toBe('img');
+      expect(dot?.getAttribute('aria-label')).toBe('Dein Standort');
+    });
   });
 
   it('leaves the center of a moved map area unlabeled', () => {

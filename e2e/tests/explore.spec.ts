@@ -180,7 +180,7 @@ test.describe('explore page', () => {
 
     const map = stationsMap(page);
     await expect(map.getByText(eiffelTower.label, { exact: true })).toBeVisible();
-    await expect(map.getByText('Du bist hier!', { exact: true })).toHaveCount(0);
+    await expect(map.getByRole('img', { name: 'Dein Standort' })).toHaveCount(0);
     await expect(
       page.getByRole('link', { name: 'Preisdaten: prix-carburants.gouv.fr (öffnet in neuem Tab)' })
     ).toHaveAttribute('href', 'https://www.prix-carburants.gouv.fr/');
@@ -211,7 +211,9 @@ test.describe('explore page', () => {
       boulevardDeLHopitalStation.distance,
       boulevardVincentAuriolStation.distance,
     ]);
-    await expect(stationsMap(page).getByText('Du bist hier!', { exact: true })).toBeVisible();
+    // A dot without a permanent label, so it never covers the price tags of nearby stations.
+    await expect(stationsMap(page).getByRole('img', { name: 'Dein Standort' })).toBeVisible();
+    await expect(stationsMap(page).getByRole('tooltip')).toHaveCount(0);
     await expect(stationsMap(page).getByText(eiffelTower.label, { exact: true })).toHaveCount(0);
   });
 

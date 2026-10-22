@@ -1,3 +1,5 @@
+import { afterNextRender, Component, output, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import type { Station } from '@genialtanken/contracts';
 import { DEFAULT_SEARCH_CENTER } from '../../core/search-center/search-center';
 import type { Coordinates } from '@genialtanken/contracts';
@@ -11,6 +13,8 @@ import {
 import { accessibleTextOf, renderWithInputs, textOf } from '../../../testing/render-page';
 import { FakeResizeObserver } from '../../../testing/fake-resize-observer';
 import { L } from '../map/leaflet';
+import { NO_VIEWPORT_PADDING } from '../map/map-viewport';
+import type { ViewportPadding } from '../map/map-viewport';
 import { StationsMap } from './stations-map';
 
 interface RenderOptions {
@@ -186,7 +190,9 @@ describe('StationsMap', () => {
     });
     await fixture.whenStable();
 
-    expect(textOf(element.querySelector('.leaflet-tooltip'))).toBe('Du bist hier!');
+    expect(element.querySelector('.own-position-dot')?.getAttribute('aria-label')).toBe(
+      'Dein Standort'
+    );
   });
 
   it('labels the search center', async () => {
@@ -202,7 +208,37 @@ describe('StationsMap', () => {
     });
     await fixture.whenStable();
 
-    expect(textOf(element.querySelector('.leaflet-tooltip'))).toBe('Du bist hier!');
+    // Like the blue dot in Apple Maps: a permanent label there would cover nearby price tags.
+    expect(element.querySelector('.leaflet-tooltip')).toBeNull();
+    expect(element.querySelector('.own-position-dot')?.getAttribute('aria-label')).toBe(
+      'Dein Standort'
+    );
+  });
+
+  it('stacks every price tag, selected or not, above the own position', async () => {
+    const { element } = await render([totalStation, carrefourStation], {
+      // South of both tags: Leaflet stacks markers lower on the screen above higher ones.
+      center: {
+        latitude:
+          Math.min(totalStation.address.latitude, carrefourStation.address.latitude) - 0.002,
+        longitude: totalStation.address.longitude,
+        label: 'Dein Standort',
+        source: 'own-position',
+      },
+      selectedStationIdentifier: totalStation.id,
+    });
+    const zIndexOf = (marker: Element | null | undefined): number => {
+      if (!(marker instanceof HTMLElement)) {
+        throw new Error('No marker element');
+      }
+      return Number(marker.style.zIndex);
+    };
+    const ownPosition = zIndexOf(element.querySelector('.own-position-marker'));
+
+    expect(markerButtons(element)).toHaveLength(2);
+    for (const priceTag of markerButtons(element)) {
+      expect(zIndexOf(priceTag.closest('.leaflet-marker-icon'))).toBeGreaterThan(ownPosition);
+    }
   });
 
   describe('centering a chosen station', () => {
@@ -552,6 +588,100 @@ describe('StationsMap', () => {
       fixture.componentRef.setInput('radiusInKilometers', 10);
       await fixture.whenStable();
       expect(fitBounds).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('when the overlays report their size after the first view', () => {
+    const besideSidePanel = { top: 0, right: 0, bottom: 0, left: 400 };
+
+    it('fits the search area again into the part the overlays leave visible, without animation', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture } = await render([]);
+      expect(fitBounds.mock.calls.at(-1)?.[1]).toMatchObject({ paddingTopLeft: [24, 24] });
+      fitBounds.mockClear();
+
+      fixture.componentRef.setInput('viewportPadding', besideSidePanel);
+      await fixture.whenStable();
+      await nextAnimationFrame();
+
+      expect(fitBounds).toHaveBeenCalledOnce();
+      expect(fitBounds.mock.calls[0]?.[1]).toMatchObject({
+        paddingTopLeft: [424, 24],
+        animate: false,
+      });
+    });
+
+    it('corrects the first view for an overlay measured right after the map was created', async () => {
+      // Like the bottom sheet: measured after the first render, once the map fitted its view.
+      @Component({ selector: 'app-measured-overlay', template: '' })
+      class MeasuredOverlay {
+        readonly measured = output<ViewportPadding>();
+
+        constructor() {
+          afterNextRender(() => {
+            this.measured.emit(besideSidePanel);
+          });
+        }
+      }
+      @Component({
+        imports: [StationsMap, MeasuredOverlay],
+        template: `<app-stations-map
+            [stations]="[]"
+            fuelType="e5"
+            [center]="center"
+            [radiusInKilometers]="5"
+            [viewportPadding]="viewportPadding()" />
+          <app-measured-overlay (measured)="viewportPadding.set($event)" />`,
+      })
+      class ExploreLikeHost {
+        protected readonly center = DEFAULT_SEARCH_CENTER;
+        protected readonly viewportPadding = signal<ViewportPadding>(NO_VIEWPORT_PADDING);
+      }
+      vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(800);
+      vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(600);
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+
+      const fixture = TestBed.createComponent(ExploreLikeHost);
+      await fixture.whenStable();
+      await nextAnimationFrame();
+
+      expect(fitBounds.mock.calls.at(-1)?.[1]).toMatchObject({
+        paddingTopLeft: [424, 24],
+        animate: false,
+      });
+    });
+
+    it('keeps the view once the user moved the map', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture, map } = await render([]);
+      map.fire('dragstart');
+      fitBounds.mockClear();
+
+      fixture.componentRef.setInput('viewportPadding', besideSidePanel);
+      await fixture.whenStable();
+      await nextAnimationFrame();
+
+      expect(fitBounds).not.toHaveBeenCalled();
+    });
+
+    it('keeps the view the user searched in', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture, map } = await render([]);
+      map.fire('dragstart');
+      fixture.componentRef.setInput('center', {
+        latitude: 48.87,
+        longitude: 2.33,
+        label: 'Kartenmitte',
+        source: 'map-area',
+      });
+      await fixture.whenStable();
+      fitBounds.mockClear();
+
+      fixture.componentRef.setInput('viewportPadding', besideSidePanel);
+      await fixture.whenStable();
+      await nextAnimationFrame();
+
+      expect(fitBounds).not.toHaveBeenCalled();
     });
   });
 

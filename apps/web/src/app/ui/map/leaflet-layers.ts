@@ -4,8 +4,11 @@ import type { SearchCenter } from '../../core/search-center/search-center';
 import { L } from './leaflet';
 import { createMarkerElement, ZERO_SIZE } from './marker-elements';
 
-/** Greets the user at their own position on the map. */
-const OWN_POSITION_GREETING = 'Du bist hier!';
+/**
+ * Leaflet stacks markers by their position on the screen plus this offset; price tags, even the
+ * highest-ranked ones, must never be hidden behind the search center.
+ */
+const BELOW_PRICE_TAGS_Z_INDEX_OFFSET = -10_000;
 
 /** Teardrop pin whose tip marks the search center. */
 const createPinIcon = (): L.DivIcon => {
@@ -14,39 +17,35 @@ const createPinIcon = (): L.DivIcon => {
   return L.divIcon({ html: pin, className: 'location-pin-marker', iconSize: ZERO_SIZE });
 };
 
-const createOwnPositionIcon = (): L.DivIcon =>
-  L.divIcon({
-    html: createMarkerElement('div', 'own-position-dot'),
-    className: 'own-position-marker',
-    iconSize: ZERO_SIZE,
-  });
+const createOwnPositionIcon = (accessibleName: string): L.DivIcon => {
+  const dot = createMarkerElement('div', 'own-position-dot');
+  dot.setAttribute('role', 'img');
+  dot.setAttribute('aria-label', accessibleName);
+  return L.divIcon({ html: dot, className: 'own-position-marker', iconSize: ZERO_SIZE });
+};
 
 /**
- * Search center with its label; the user's own position is a dot greeting them instead. A center
- * the user moved the map to needs no label: it is where they are looking.
+ * Search center with its label. The user's own position is only a dot, like in Apple Maps: a
+ * permanent label next to it would cover the price tags of the closest stations. A center the
+ * user moved the map to needs no label: it is where they are looking.
  */
 export const createCenterMarker = (center: SearchCenter): L.Marker => {
   const isOwnPosition = center.source === 'own-position';
   const marker = L.marker([center.latitude, center.longitude], {
-    icon: isOwnPosition ? createOwnPositionIcon() : createPinIcon(),
+    icon: isOwnPosition ? createOwnPositionIcon(center.label) : createPinIcon(),
     interactive: false,
     keyboard: false,
+    zIndexOffset: BELOW_PRICE_TAGS_Z_INDEX_OFFSET,
   });
-  if (center.source === 'map-area') {
+  if (isOwnPosition || center.source === 'map-area') {
     return marker;
   }
-  const label = createMarkerElement(
-    'span',
-    'center-tooltip__label',
-    isOwnPosition ? OWN_POSITION_GREETING : center.label
-  );
+  const label = createMarkerElement('span', 'center-tooltip__label', center.label);
   return marker.bindTooltip(label, {
     permanent: true,
     direction: 'top',
-    // `map.scss` lifts the label above the dot or pin, sized like them in rem.
-    className: isOwnPosition
-      ? 'center-tooltip center-tooltip--above-dot'
-      : 'center-tooltip center-tooltip--above-pin',
+    // `map.scss` lifts the label above the pin, sized like it in rem.
+    className: 'center-tooltip center-tooltip--above-pin',
   });
 };
 

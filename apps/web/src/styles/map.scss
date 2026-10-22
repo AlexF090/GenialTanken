@@ -302,10 +302,6 @@ $price-levels: low, medium, high;
   &--above-pin {
     translate: 0 calc(var(--location-pin-size) * -1.414);
   }
-
-  &--above-dot {
-    translate: 0 calc(var(--own-position-dot-size) / -2 - var(--space-2xs));
-  }
 }
 
 // Search radius: a thin outline, the area inside only faintly tinted.

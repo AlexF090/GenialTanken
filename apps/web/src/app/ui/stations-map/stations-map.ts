@@ -207,16 +207,19 @@ export class StationsMap {
         circle.remove();
         centerMarker.remove();
       });
-      // A new search area is a fresh start, even after the user moved the map.
-      this.hasUserMovedMap = false;
+      const isFirstSearchArea = previousRadiusInKilometers === undefined;
       const hasRadiusChanged = radiusInKilometers !== previousRadiusInKilometers;
       previousRadiusInKilometers = radiusInKilometers;
-      // The user is already looking at an area they moved the map to; fitting would jump.
+      // The user is already looking at an area they moved the map to; fitting would jump, and so
+      // would fitting it again once the overlays change.
       if (center.source === 'map-area' && !hasRadiusChanged) {
         return;
       }
+      // A new search area is a fresh start, even after the user moved the map.
+      this.hasUserMovedMap = false;
+      // Overlays measured after the map was created change the first view before anyone saw it.
       untracked(() => {
-        this.fitSearchArea(map, this.motion());
+        this.fitSearchArea(map, isFirstSearchArea ? { animate: false } : this.motion());
       });
     });
 
