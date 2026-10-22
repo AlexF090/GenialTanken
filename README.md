@@ -8,7 +8,12 @@
 
 Live: https://genialtanken.alexf090.workers.dev
 
-Find the cheapest fuel nearby: current prices of the gas stations around you as a list or on a map, filtered by fuel type and radius (up to 30 km). Installed as an app, it opens offline too: a service worker keeps the app itself, never the prices, and offers a reload when a new version is out.
+Find the cheapest fuel nearby: current prices of the gas stations around you as a list or on a map, filtered by fuel type and radius (up to 30 km).
+
+- **Map first, like Apple Maps:** a full-screen map with price tags under a draggable sheet (a floating side panel on larger screens) that holds the place search, filter chips for fuel, radius and sort order, your favorites and the station list. A station opens as a card with route, favorite and share actions; settings open as a dialog over the map.
+- **Installable and offline-ready:** a service worker keeps the app itself, never the prices, so the installed app opens offline, says so and reloads the prices once you are back online; a notice offers a reload when a new version is out.
+- **Accessible:** built for WCAG 2.2 AAA, with 7:1 text contrast, a two-tone focus ring, 44 px touch targets, Dynamic Type on iOS and opaque surfaces when you ask for reduced transparency or more contrast.
+- **Quick to start:** the API sleeps on its free tier; the app wakes it on start, and a cron trigger keeps it awake during the day.
 
 GenialTanken started as a React capstone project and is being rebuilt with Angular and NestJS. See [ROADMAP.md](ROADMAP.md) for decisions and next steps.
 
@@ -18,7 +23,7 @@ GenialTanken started as a React capstone project and is being rebuilt with Angul
 
 ![GenialTanken on three phones: the map with price tags above the station list at half height, the details card of a station with its prices per fuel, and the same explore view in dark mode](docs/images/product-mobile.jpg)
 
-The images show the live app with real prices. To regenerate them, run `node e2e/product-shots/capture-product-shots.ts` (details in the script header).
+The images show the live app with real prices; they predate the redesign above and are refreshed once it is deployed to production. To regenerate them, run `node e2e/product-shots/capture-product-shots.ts` (details in the script header).
 
 ## Architecture
 
@@ -176,7 +181,7 @@ Locally `pnpm preview:web` reads both from `apps/web/.dev.vars` (git-ignored).
 
 - **Unit (Vitest):** contracts schemas, API mappers and parsers, Angular services and components through their public interfaces.
 - **API end-to-end (Supertest):** the real Nest application against fake upstream servers for the French open data, the French station pages and Photon.
-- **Browser end-to-end (Playwright):** web + API + a local stand-in for the French open data API and the Photon place search serving recorded real data, on their own ports (web 4300, API 3100, mock upstream 4110), so a running dev server is never reused. Every request leaving the app fails the run unless it is mocked; a global teardown checks the mock upstream for unexpected requests. A desktop project covers all pages (including axe WCAG 2.2 AA checks in light and dark mode); a phone project (Pixel 7) covers the bottom sheet and repeats the axe checks in the phone viewport. A `pwa` project runs against a production build with the service worker (`e2e/pwa-server.ts`, port 4400) and checks the offline start.
+- **Browser end-to-end (Playwright):** web + API + a local stand-in for the French open data API and the Photon place search serving recorded real data, on their own ports (web 4300, API 3100, mock upstream 4110), so a running dev server is never reused. Every request leaving the app fails the run unless it is mocked; a global teardown checks the mock upstream for unexpected requests. A desktop project covers all pages (including axe WCAG 2.2 AAA checks in light and dark mode, with more contrast and with reduced transparency); a phone project (Pixel 7) covers the bottom sheet and repeats the axe checks in the phone viewport. A `pwa` project runs against a production build with the service worker (`e2e/pwa-server.ts`, port 4400) and checks the offline start.
 
 ## Deployment
 
