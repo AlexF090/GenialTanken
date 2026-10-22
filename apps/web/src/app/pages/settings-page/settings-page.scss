@@ -128,3 +128,22 @@
   padding: var(--space-sm) var(--space-md) calc(var(--safe-area-bottom) + var(--space-md));
   border-top: var(--border-width-hairline) solid var(--color-hairline);
 }
+
+// Signs the settings like the about screen of an iOS app: icon above the wordmark.
+.settings__about {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-block-end: var(--space-md);
+  color: var(--color-text);
+}
+
+.settings__app-icon {
+  width: var(--layout-app-icon-size);
+  height: var(--layout-app-icon-size);
+}
+
+.settings__wordmark {
+  font-size: var(--font-size-title-3);
+}

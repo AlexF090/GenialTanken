@@ -5,6 +5,7 @@ import { StationsMap } from '../../ui/stations-map/stations-map';
 import { FakeStorage, storedFavorites } from '../../../testing/fake-storage';
 import { bastillePlace } from '../../../testing/place-fixtures';
 import {
+  accessibleTextOf,
   configurePageTest,
   getButton,
   renderComponent,
@@ -62,7 +63,7 @@ describe('ExplorePage', () => {
     const { element } = await renderComponent(ExplorePage);
 
     expect(element.querySelectorAll('main')).toHaveLength(1);
-    expect(textOf(element.querySelector('main h1'))).toBe('GenialTanken');
+    expect(accessibleTextOf(element.querySelector('main h1'))).toBe('GenialTanken');
     context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL);
   });
 

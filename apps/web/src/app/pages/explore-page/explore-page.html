@@ -41,7 +41,9 @@
     [(snapPosition)]="snapPosition"
     (heightChanged)="updateSheetHeight($event)">
     <div class="explore-page__header" bottomSheetHeader [hidden]="isCardOpen()">
-      <h1 class="explore-page__title" translate="no">{{ applicationName }}</h1>
+      <h1 class="explore-page__title" translate="no">
+        <app-wordmark class="explore-page__wordmark" />
+      </h1>
 
       <div class="explore-page__search-row">
         <app-place-search-field

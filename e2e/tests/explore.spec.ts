@@ -383,11 +383,20 @@ test.describe('explore page', () => {
         rueBailleulStation
       );
       await expect(listButton).toHaveAttribute('aria-pressed', 'false');
+      // The fill tells the price level; the selection must not repaint it.
+      const tagFill = (): Promise<string> =>
+        marker.evaluate(element => {
+          const tag = element.querySelector('.price-tag');
+          return tag === null ? '' : getComputedStyle(tag).backgroundImage;
+        });
+      const fillBeforeSelection = await tagFill();
+      expect(fillBeforeSelection).toContain('gradient');
 
       await marker.click();
 
       await expect(listButton).toHaveAttribute('aria-pressed', 'true');
       await expect(marker).toHaveAttribute('aria-pressed', 'true');
+      expect(await tagFill()).toBe(fillBeforeSelection);
     });
 
     for (const key of ACTIVATION_KEYS) {

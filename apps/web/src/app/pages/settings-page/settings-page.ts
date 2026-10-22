@@ -18,6 +18,7 @@ import { Icon } from '../../ui/icon/icon';
 import { ExternalLink } from '../../ui/external-link/external-link';
 import { SheetDialog } from '../../ui/sheet-dialog/sheet-dialog';
 import { UpdateNotice } from '../../ui/update-notice/update-notice';
+import { Wordmark } from '../../ui/wordmark/wordmark';
 
 type SearchSettings = Pick<Settings, 'fuelType' | 'radiusInKilometers'>;
 
@@ -33,7 +34,7 @@ const COLOR_SCHEME_LABELS: Record<ColorSchemePreference, string> = {
  */
 @Component({
   selector: 'app-settings-page',
-  imports: [SheetDialog, FormField, Icon, KilometersPipe, ExternalLink, UpdateNotice],
+  imports: [SheetDialog, FormField, Icon, KilometersPipe, ExternalLink, UpdateNotice, Wordmark],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',

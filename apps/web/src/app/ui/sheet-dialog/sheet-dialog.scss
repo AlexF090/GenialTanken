@@ -15,7 +15,7 @@
   overflow: hidden;
   border: var(--border-width-hairline) solid var(--color-hairline);
   background-color: var(--color-canvas);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--shadow-panel);
   color: var(--color-text);
 
   &:not([open]) {
@@ -28,6 +28,7 @@
     max-height: none;
     border-bottom: 0;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--shadow-sheet);
     transition:
       transform var(--duration-medium) var(--easing-standard),
       display var(--duration-medium) allow-discrete,

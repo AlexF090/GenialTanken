@@ -56,6 +56,7 @@
   height: var(--layout-grabber-height);
   border-radius: var(--radius-pill);
   background-color: var(--color-border-control);
+  box-shadow: var(--shadow-grabber);
 }
 
 // Phones: floats over the map down to the bottom edge of the window, under the home indicator.
@@ -72,7 +73,7 @@
     // Keeps the end of the content clear of the home indicator
     padding-block-end: var(--safe-area-bottom);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    @include materials.floating-material($material: var(--material-sheet));
+    @include materials.floating-material(var(--shadow-sheet), var(--material-sheet));
     transform: translateY(var(--bottom-sheet-offset, 0));
 
     &--animated {
@@ -107,7 +108,7 @@
   .bottom-sheet {
     overflow: hidden;
     border-radius: var(--radius-lg);
-    @include materials.floating-material($material: var(--material-sheet));
+    @include materials.floating-material(var(--shadow-panel), var(--material-sheet));
   }
 
   .bottom-sheet__handle {

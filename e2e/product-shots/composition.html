@@ -20,8 +20,7 @@
         --color-text-secondary: #47474c;
         --color-hairline: #c6c6c8;
         --color-chrome: rgb(249 249 249);
-        --color-highlight: #34c759;
-        --color-price-low: #b8ebc5;
+        --color-brand: #c8f53b;
         --color-own-position: #007aff;
 
         /* Frame details that belong to the devices, not to the app */
@@ -52,11 +51,11 @@
         display: none;
         position: relative;
         overflow: hidden;
-        /* Canvas with a faint wash of the cheapest-price green, as if lit by a price tag */
+        /* Canvas with a faint wash of the brand lime, as if lit by the app icon */
         background:
           radial-gradient(
             ellipse 70% 60% at 12% 100%,
-            color-mix(in srgb, var(--color-price-low) 85%, transparent),
+            color-mix(in srgb, var(--color-brand) 40%, transparent),
             transparent 70%
           ),
           radial-gradient(

@@ -123,7 +123,9 @@ $price-levels: low, medium, high;
 // price says; the cheapest is solid green and named in words.
 .station-row__price {
   --price-tile-background: var(--color-canvas);
+  --price-tile-gradient: none;
   --price-tile-foreground: var(--color-text);
+  --price-tile-shadow: none;
 
   display: flex;
   flex-direction: column;
@@ -136,17 +138,24 @@ $price-levels: low, medium, high;
   padding: var(--space-xs);
   border-radius: var(--radius-md);
   background-color: var(--price-tile-background);
+  background-image: var(--price-tile-gradient);
   color: var(--price-tile-foreground);
+  box-shadow: var(--price-tile-shadow);
 
+  // Plastic like the price tags on the map
   @each $level in $price-levels {
     &--#{$level} {
-      --price-tile-background: var(--color-price-#{$level});
+      --price-tile-background: var(--color-price-#{$level}-bottom);
+      --price-tile-gradient: var(--gradient-price-#{$level});
+      --price-tile-shadow: var(--shadow-price-tile);
     }
   }
 
   &--cheapest {
-    --price-tile-background: var(--color-highlight);
+    --price-tile-background: var(--color-highlight-bottom);
+    --price-tile-gradient: var(--gradient-price-cheapest);
     --price-tile-foreground: var(--color-on-highlight);
+    --price-tile-shadow: var(--shadow-price-tile);
   }
 
   &--without-price {

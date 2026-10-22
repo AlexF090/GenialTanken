@@ -34,11 +34,19 @@ import { SelectMenu } from '../select-menu/select-menu';
       padding-inline: var(--space-sm) var(--space-xs);
       border-radius: var(--radius-pill);
       background-color: var(--color-search-field);
+      background-image: var(--gradient-control-sheen);
       color: var(--color-text);
+      box-shadow: var(--shadow-control);
       font-size: var(--font-size-subheadline);
       font-weight: var(--font-weight-medium);
       line-height: var(--line-height-tight);
       white-space: nowrap;
+    }
+
+    /* Sinks while pressed, like every raised control (pressed-control in styles.scss) */
+    .filter-chip:has(:active) {
+      box-shadow: var(--shadow-control-pressed);
+      transform: translateY(var(--border-width-hairline));
     }
 
     .filter-chip__chevron {

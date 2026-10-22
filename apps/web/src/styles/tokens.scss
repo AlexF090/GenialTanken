@@ -44,49 +44,115 @@
   --color-chrome: light-dark(rgb(249 249 249 / 96%), rgb(29 29 29 / 96%));
   --color-chrome-opaque: light-dark(#f9f9f9, #1d1d1d);
 
-  // Tint for text and filled controls with text: the accessible variants of iOS blue (Apple's
-  // "increased contrast" blues). Filled actions: text on it light 7.6 (hover 9.5), dark 7.4
-  // (hover 9.7)
-  --color-action: light-dark(#0040dd, #409cff);
-  --color-action-hover: light-dark(#0035b8, #6eb5ff);
-  --color-on-action: light-dark(#ffffff, #000000);
-  // Links and plain buttons: light 8.8 / 7.9, dark 8.5 / 10.5 on surface / canvas; at least 7.2
-  // (light) and 7.1 (dark) on materials and the tint below
-  --color-action-text: light-dark(#0038c6, #7dbcff);
-  --color-action-text-hover: light-dark(#002fa3, #a8d1ff);
-  // Vivid iOS system blue for everything without text: icons, the focus ring, the own position,
-  // spinners, filled icon buttons. Against surface / canvas light 4.0 / 3.6, dark 4.7 / 5.8; at
-  // least 3.1 on materials, the menu highlight, the grey fills and the tint below. White icons
-  // on it: light 4.0, dark 3.7
-  --color-tint-vivid: light-dark(#007aff, #0a84ff);
-  --color-on-tint-vivid: #ffffff;
-  // Opaque tint behind tinted capsules and the selected row: link text on it light 7.3, dark
-  // 7.2; secondary text light 7.7, dark 9.5
-  --color-action-tint: color-mix(in srgb, var(--color-tint-vivid) 14%, var(--color-surface));
+  // Brand: the lime of the app icon and the wordmark (`apps/web/icon-source`). Dark text on it
+  // (`--color-on-brand`) 13.3. The gradient is the drop of the icon.
+  --color-brand: #c8f53b;
+  --color-brand-gradient-start: #e6ff5e;
+  --color-brand-gradient-end: #9ada10;
+  --color-on-brand: #1d1d1d;
+  // "Tanken" and the drop of the wordmark: the green of the light wordmark, the lime on dark.
+  // A logotype is exempt from contrast minimums; it still keeps 3:1 (light 4.0 / 3.6, dark 13.4
+  // / 16.6 on surface / canvas).
+  --color-wordmark-accent: light-dark(#4a8f00, var(--color-brand));
 
-  // Focus ring (non-text, ≥ 3:1): the vivid tint, against surface / canvas light 4.0 / 3.6, dark
-  // 4.7 / 5.8, on the tint light 3.3, dark 4.0. The halo in the surface color on both sides of
-  // it keeps it visible on any backdrop, e.g. map tiles in the tint's own hue.
-  --color-focus-ring: var(--color-tint-vivid);
+  // Filled controls with text are lime in both schemes, with dark text: 13.3 (hover light 11.2,
+  // dark 14.6). The text alone marks them, so their edge needs no contrast (1.4.11).
+  --color-action: var(--color-brand);
+  --color-action-hover: light-dark(#b5e31f, #dcfc75);
+  --color-on-action: var(--color-on-brand);
+  // Links and plain buttons: lime is far too light on white, so light uses a dark green of the
+  // same hue. Light 9.1 / 8.2 on surface / canvas, at least 7.5 on materials (bar 7.5), the grey
+  // fill (7.9), the menu highlight (7.1) and the tint below (8.4). Dark the lime itself: 13.4 /
+  // 16.6, at least 11.2 on materials and 9.3 on the tint. Hover light 12.2, dark 15.3 on surface.
+  --color-action-text: light-dark(#2a5200, var(--color-brand));
+  --color-action-text-hover: light-dark(#1f3d00, var(--color-brand-gradient-start));
+  // Tint for everything without text: icons, spinners, the search center pin, filled icon
+  // buttons. Light the wordmark green, against surface / canvas 4.0 / 3.6, at least 3.3 on
+  // materials, 3.5 on the grey fill, 3.1 on the menu highlight, 3.7 on the tint below. Dark the
+  // lime: 13.4 / 16.6, at least 9.0. Icons on it: white 4.0 (light), dark 13.3 (dark).
+  --color-tint-vivid: var(--color-wordmark-accent);
+  --color-on-tint-vivid: light-dark(#ffffff, var(--color-on-brand));
+  // Opaque lime wash behind tinted capsules, hints and the selected row. Text on it light 15.7 /
+  // secondary 8.5 / link 8.4; dark 11.8 / 7.8 / 9.3.
+  --color-action-tint: light-dark(
+    color-mix(in srgb, var(--color-brand) 30%, #ffffff),
+    color-mix(in srgb, var(--color-brand) 14%, #1c1c1e)
+  );
+
+  // Focus ring (non-text, ≥ 3:1): the link color. Light against surface / canvas 9.1 / 8.2, on
+  // the lime of filled controls 7.2, on the tint 8.4; dark 13.4 / 16.6 and 9.3 on the tint. The
+  // halo in the surface color on both sides of it keeps it visible on any backdrop, including a
+  // lime control it surrounds in dark mode, and map tiles.
+  --color-focus-ring: var(--color-action-text);
   --color-focus-ring-halo: var(--color-surface);
+  // Ring of a selected price tag on the map: the focus ring's color around a gap
+  --color-selection-ring: var(--color-focus-ring);
+  --color-selection-ring-gap: light-dark(var(--color-brand), var(--color-surface));
 
-  // Reserved for the cheapest price only, like a green price in Apple Maps: iOS system green
-  // with black text, light 9.5, dark 10.4. The edge separates it from white surfaces (light 4.4,
-  // dark 8.4 against the surface).
-  --color-highlight: light-dark(#34c759, #30d158);
-  --color-on-highlight: #000000;
-  --color-highlight-edge: light-dark(#248a3d, #30d158);
+  // Reserved for the cheapest price only. Light a deep green with white text (7.8), the opposite
+  // polarity of the lime selection with its dark text, so the two never read alike; dark the
+  // vivid iOS green with black text (10.4), which stays apart from the lime (hue) and from the
+  // dark green tint of the low prices. Against the surface light 7.8, dark 8.4.
+  --color-highlight: light-dark(#0f5f27, #30d158);
+  --color-on-highlight: light-dark(#ffffff, #000000);
+  --color-highlight-edge: var(--color-highlight);
 
   // Price levels on the map and in the list, cheap to dear: a tint of iOS green, orange and red
-  // with a colored edge. Text on the tints: light 12.7 / 12.8 / 10.5, dark 9.1 / 9.1 / 11.5.
-  // Edges against the surface: light 4.4 / 4.3 / 5.4, dark 8.4 / 8.3 / 5.0. Color only repeats
-  // what the price says.
-  --color-price-low: light-dark(#b8ebc5, #22522f);
-  --color-price-low-edge: var(--color-highlight-edge);
-  --color-price-medium: light-dark(#ffdaa6, #604318);
+  // (the plastic fills below) with a colored edge. Edges against the surface: light 4.4 / 4.3 /
+  // 5.4, dark 8.4 / 8.3 / 5.0. Color only repeats what the price says.
+  --color-price-low-edge: light-dark(#248a3d, #30d158);
   --color-price-medium-edge: light-dark(#c55a00, #ff9f0a);
-  --color-price-high: light-dark(#ffbab7, #602826);
   --color-price-high-edge: light-dark(#d70015, #ff453a);
+
+  // Plastic price tags and tiles, like iOS buttons and Wallet passes: every fill runs from a
+  // lighter top to a deeper bottom (the bottom also fills the tag's pointer). Text against top /
+  // bottom: low light 13.7 / 11.0, dark 7.7 / 11.3; medium light 13.7 / 11.0, dark 7.7 / 11.3;
+  // high light 11.9 / 9.0, dark 9.7 / 13.6; cheapest light 7.4 / 10.4, dark 12.6 / 7.7;
+  // neutral light 17.0 / 15.2, dark 13.9 / 17.0 (secondary
+  // text dark 9.2 / 11.2). Flat fills under `prefers-contrast: more` and forced colors.
+  --color-price-low-top: light-dark(#caf0d4, #2f5c3b);
+  --color-price-low-bottom: light-dark(#abdbb7, #1b4226);
+  --color-price-medium-top: light-dark(#ffe3bc, #6a4e26);
+  --color-price-medium-bottom: light-dark(#edcb9a, #4d3613);
+  --color-price-high-top: light-dark(#ffcbc9, #6a3533);
+  --color-price-high-bottom: light-dark(#edadaa, #4d201e);
+  --color-highlight-top: light-dark(#116328, #5ce27e);
+  --color-highlight-bottom: light-dark(#0a4a1d, #26b44a);
+  --color-price-neutral-top: light-dark(#ffffff, #2c2c2e);
+  --color-price-neutral-bottom: light-dark(#f2f2f7, #1c1c1e);
+  --gradient-price-low: linear-gradient(var(--color-price-low-top), var(--color-price-low-bottom));
+  --gradient-price-medium: linear-gradient(
+    var(--color-price-medium-top),
+    var(--color-price-medium-bottom)
+  );
+  --gradient-price-high: linear-gradient(
+    var(--color-price-high-top),
+    var(--color-price-high-bottom)
+  );
+  --gradient-price-cheapest: linear-gradient(
+    var(--color-highlight-top),
+    var(--color-highlight-bottom)
+  );
+  --gradient-price-neutral: linear-gradient(
+    var(--color-price-neutral-top),
+    var(--color-price-neutral-bottom)
+  );
+  // The light catching the top edge of a plastic fill or control (decorative)
+  --color-gloss: light-dark(rgb(255 255 255 / 45%), rgb(255 255 255 / 12%));
+
+  // Depth of controls: a sheen from the top fades out over the control's own fill. Text keeps
+  // its contrast on the lighter top: chips light 16.0, dark 10.6; tinted tiles light 8.8, dark
+  // 7.8 (hover 8.8). Filled controls run down the icon's drop to the brand lime: dark text 15.1 /
+  // 13.3 against top / bottom, hover light 14.3 / 11.2, dark 15.6 / 14.6, pressed 13.3 / 11.2.
+  --color-control-sheen: light-dark(rgb(255 255 255 / 55%), rgb(255 255 255 / 6%));
+  --gradient-control-sheen: linear-gradient(var(--color-control-sheen), transparent);
+  --gradient-action: linear-gradient(var(--color-brand-gradient-start), var(--color-brand));
+  --gradient-action-hover: linear-gradient(light-dark(#d8fb4a, #f0ff8a), var(--color-action-hover));
+  --gradient-action-pressed: linear-gradient(var(--color-brand), #b5e31f);
+  // Draws the edge of a control only where contrast comes first (see below)
+  --color-control-edge: transparent;
+  // Fine light edge along the top of glass sheets and floating controls (decorative)
+  --color-material-highlight: light-dark(rgb(255 255 255 / 60%), rgb(255 255 255 / 8%));
 
   // A favorite's filled star: iOS system yellow with an edge that carries the contrast (light
   // 5.2 against the surface, 4.3 on the tint; dark the yellow itself, 12.1 / 10.2)
@@ -102,8 +168,9 @@
   --color-hairline: light-dark(#c6c6c8, #38383a);
   --color-border-control: light-dark(#848489, #8e8e93);
 
-  // Map: the own position is the blue dot known from Apple Maps
-  --color-own-position: var(--color-tint-vivid);
+  // Map: the own position stays the blue dot known from Apple Maps and every other map app, so it
+  // never reads as the lime of a selection. Against surface light 4.0, dark 4.7.
+  --color-own-position: light-dark(#007aff, #0a84ff);
 
   // The only shadow color; used by `--shadow-floating`
   --color-shadow: light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 50%));
@@ -202,6 +269,40 @@
   --shadow-floating: 0 1px 2px var(--color-shadow), 0 6px 20px var(--color-shadow);
   --shadow-menu:
     0 0 0 var(--border-width-hairline) var(--color-hairline), 0 10px 40px var(--color-shadow);
+  // Plastic price tags on the map: a gloss line at the top, a contact shadow and a soft one;
+  // the selected tag floats higher. List tiles sit on the sheet, so their shadow stays short.
+  --shadow-price-tag:
+    inset 0 1px 0 var(--color-gloss), 0 1px 1px var(--color-shadow), 0 4px 12px var(--color-shadow);
+  --shadow-price-tag-raised:
+    inset 0 1px 0 var(--color-gloss), 0 2px 3px var(--color-shadow), 0 10px 24px var(--color-shadow);
+  // A selected tag keeps its fill and gets a ring with a gap (non-text, ≥ 3:1): light a dark
+  // green ring around a lime gap (ring against light map tiles at least 5.7 (water), against the gap 7.2),
+  // dark a lime ring around a surface gap (against dark tiles at least 9.0, the gap 13.4).
+  --shadow-price-tag-selected:
+    0 0 0 var(--border-width-focus-halo) var(--color-selection-ring-gap),
+    0 0 0 calc(var(--border-width-focus-halo) + var(--border-width-focus))
+      var(--color-selection-ring),
+    var(--shadow-price-tag-raised);
+  --shadow-price-tile: inset 0 1px 0 var(--color-gloss), 0 1px 2px var(--color-shadow);
+  // Raised controls (chips, round buttons, action tiles, filled buttons) and their pressed state,
+  // which sinks into the surface
+  --shadow-control:
+    inset 0 1px 0 var(--color-gloss), 0 0 0 var(--border-width-hairline) var(--color-control-edge),
+    0 1px 1px var(--color-shadow), 0 2px 6px var(--color-shadow);
+  --shadow-control-pressed:
+    inset 0 1px 2px var(--color-shadow),
+    0 0 0 var(--border-width-hairline) var(--color-control-edge);
+  // Glass over the map: the phone sheet casts upwards, the side panel all around; both catch the
+  // light along their top edge. Floating map controls get the same edge.
+  --shadow-sheet:
+    inset 0 1px 0 var(--color-material-highlight), 0 -1px 2px var(--color-shadow),
+    0 -8px 32px var(--color-shadow);
+  --shadow-panel:
+    inset 0 1px 0 var(--color-material-highlight), 0 1px 2px var(--color-shadow),
+    0 12px 40px var(--color-shadow);
+  --shadow-floating-control: inset 0 1px 0 var(--color-material-highlight), var(--shadow-floating);
+  // The grabber is pressed into the sheet
+  --shadow-grabber: inset 0 1px 1px var(--color-shadow);
   // Lifts the chosen segment of a segmented control off its track
   --shadow-segmented-thumb: 0 1px 3px var(--color-shadow);
 
@@ -212,6 +313,8 @@
   --icon-size-sm: 1.25rem;
   --icon-size-md: 1.5rem;
   --icon-size-lg: 2.25rem;
+  // The app icon where the app signs a screen, e.g. the settings
+  --layout-app-icon-size: 4rem;
 
   // Layout
   --layout-touch-target: 2.75rem;
@@ -297,6 +400,23 @@
   @media (prefers-contrast: more) {
     --color-status-bar-scrim: rgb(0 0 0);
     --color-status-bar-scrim-end: rgb(0 0 0);
+  }
+
+  // Flat fills: no gradient, sheen or gloss where contrast or system colors come first; controls
+  // draw their edge instead
+  @media (prefers-contrast: more), (forced-colors: active) {
+    --gradient-control-sheen: none;
+    --gradient-action: none;
+    --gradient-action-hover: none;
+    --gradient-action-pressed: none;
+    --color-material-highlight: transparent;
+    --color-control-edge: var(--color-border-control);
+    --gradient-price-low: none;
+    --gradient-price-medium: none;
+    --gradient-price-high: none;
+    --gradient-price-cheapest: none;
+    --gradient-price-neutral: none;
+    --color-gloss: transparent;
   }
 }
 

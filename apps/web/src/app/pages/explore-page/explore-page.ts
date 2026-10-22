@@ -16,7 +16,6 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { distanceInMeters } from '@genialtanken/contracts';
 import type { Coordinates, FuelType, Place, Station } from '@genialtanken/contracts';
-import { APPLICATION_NAME } from '../../core/application-name';
 import { FavoriteStationsResource } from '../../core/favorites/favorite-stations-resource';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
 import { FUEL_TYPE_LABELS, fuelTypeOptions } from '../../core/fuel-type-labels';
@@ -54,6 +53,7 @@ import { DataSourceCredit } from '../../ui/data-source-credit/data-source-credit
 import { FavoritesRow } from '../../ui/favorites-row/favorites-row';
 import { FilterChip } from '../../ui/filter-chip/filter-chip';
 import { Icon } from '../../ui/icon/icon';
+import { Wordmark } from '../../ui/wordmark/wordmark';
 import { InstallationHintCard } from '../../ui/installation-hint-card/installation-hint-card';
 import { LoadingState } from '../../ui/loading-state/loading-state';
 import { isSameViewportPadding } from '../../ui/map/map-viewport';
@@ -98,6 +98,7 @@ const FUEL_TYPE_OPTIONS = fuelTypeOptions('long');
     StationsMap,
     StatusBarScrim,
     KilometersPipe,
+    Wordmark,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './explore-page.html',
@@ -122,7 +123,6 @@ export class ExplorePage {
   private readonly resultSummaryElement =
     viewChild<ElementRef<HTMLElement>>('resultSummaryElement');
 
-  protected readonly applicationName = APPLICATION_NAME;
   protected readonly mainContentIdentifier = MAIN_CONTENT_IDENTIFIER;
   protected readonly fuelType = this.settings.fuelType;
   protected readonly fuelLabel = computed(() => FUEL_TYPE_LABELS[this.fuelType()].short);

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- app-icon.svg with the rounded corners of a platform tile, for the manifest icons of purpose "any". -->
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c2c2c" />
+      <stop offset="1" stop-color="#111111" />
+    </linearGradient>
+    <linearGradient id="drop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E6FF5E" />
+      <stop offset="1" stop-color="#9ADA10" />
+    </linearGradient>
+    <clipPath id="tile">
+      <rect width="1024" height="1024" rx="224" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect width="1024" height="1024" fill="url(#background)" />
+    <circle cx="512" cy="600" r="430" fill="#C8F53B" opacity="0.08" />
+    <path d="M512 160 C600 280 782 430 782 612 A270 270 0 0 1 242 612 C242 430 424 280 512 160 Z" fill="url(#drop)" />
+    <path d="M608 535 A125 125 0 1 0 637 615 L560 615" fill="none" stroke="#1d1d1d" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M800 195 Q809 250 865 260 Q809 270 800 325 Q791 270 735 260 Q791 250 800 195 Z" fill="#FFFFFF" />
+  </g>
+</svg>

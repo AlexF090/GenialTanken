@@ -129,7 +129,10 @@ export const renderWithInputs = async <T>(
 export const textOf = (element: Element | null | undefined): string =>
   (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
-/** Text as read by screen readers: content hidden with `aria-hidden` is left out. */
+/**
+ * Text as read by screen readers: content hidden with `aria-hidden` is left out, an image such
+ * as the wordmark reads as its label.
+ */
 export const accessibleTextOf = (element: Element | null | undefined): string => {
   if (element === null || element === undefined) {
     return '';
@@ -140,6 +143,9 @@ export const accessibleTextOf = (element: Element | null | undefined): string =>
   }
   for (const hiddenElement of copy.querySelectorAll('[aria-hidden="true"]')) {
     hiddenElement.remove();
+  }
+  for (const image of copy.querySelectorAll('[role="img"][aria-label]')) {
+    image.replaceWith(image.getAttribute('aria-label') ?? '');
   }
   return textOf(copy);
 };

@@ -1,7 +1,6 @@
 @use 'breakpoints';
 @use 'visually-hidden';
 @use 'materials';
-@use 'typography';
 
 // The map fills the whole window, under the status bar and the browser's bars too; sheet (phones)
 // or side panel (from 48rem) and the map controls float over it. Everything is fixed to the
@@ -54,7 +53,7 @@
 .explore-page__area-search,
 .explore-page__locate {
   grid-row: 1;
-  @include materials.floating-material;
+  @include materials.floating-material(var(--shadow-floating-control));
 }
 
 // Capsule like "Search here" in Apple Maps.
@@ -135,10 +134,13 @@
     @include visually-hidden.visually-hidden;
   }
 
-  // Large title, like the first screen of an iOS app
+  // The wordmark in place of the large title of the first screen of an iOS app
   @include breakpoints.medium-and-up {
-    padding-block-end: var(--space-2xs);
-    @include typography.large-title;
+    display: flex;
+    padding-block: var(--space-2xs) var(--space-xs);
+    color: var(--color-text);
+    font-size: var(--font-size-title-1);
+    line-height: var(--line-height-tight);
   }
 }
 

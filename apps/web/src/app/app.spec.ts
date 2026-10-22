@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
-import { configurePageTest, hostElementOf, textOf } from '../testing/render-page';
+import { accessibleTextOf, configurePageTest, hostElementOf, textOf } from '../testing/render-page';
 import type { PageTestContext } from '../testing/render-page';
 import { App } from './app';
 import { routes } from './app.routes';
@@ -82,7 +82,7 @@ describe('App', () => {
   it('opens the explore page with list and map as start page', async () => {
     const element = await navigateTo('/');
 
-    expect(textOf(element.querySelector('main h1'))).toBe('GenialTanken');
+    expect(accessibleTextOf(element.querySelector('main h1'))).toBe('GenialTanken');
     expect(element.querySelector('main app-station-list')).not.toBeNull();
     expect(element.querySelector('main app-stations-map')).not.toBeNull();
     expect(document.title).toBe('GenialTanken');
@@ -100,7 +100,7 @@ describe('App', () => {
   it('opens the settings as a dialog over the explore page', async () => {
     const element = await navigateTo('/settings');
 
-    expect(textOf(element.querySelector('main h1'))).toBe('GenialTanken');
+    expect(accessibleTextOf(element.querySelector('main h1'))).toBe('GenialTanken');
     expect(element.querySelector('main app-stations-map')).not.toBeNull();
     const dialog = element.querySelector('dialog');
     expect(dialog?.hasAttribute('open')).toBe(true);
@@ -136,7 +136,7 @@ describe('App', () => {
   it('opens a station as a card on the explore page under /stations/:id', async () => {
     const element = await navigateTo('/stations/fr-75001001');
 
-    expect(textOf(element.querySelector('main h1'))).toBe('GenialTanken');
+    expect(accessibleTextOf(element.querySelector('main h1'))).toBe('GenialTanken');
     expect(element.querySelector('main app-stations-map')).not.toBeNull();
     expect(element.querySelector('main app-station-detail-page')).not.toBeNull();
     expect(document.title).toBe('Details – GenialTanken');

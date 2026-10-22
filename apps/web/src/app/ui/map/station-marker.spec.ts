@@ -81,6 +81,15 @@ describe('createPriceTagIcon', () => {
     expect(tagClasses({})).not.toMatch(/price-tag--(low|medium|high)/);
   });
 
+  it('keeps the tint of its price level when selected, so a dear price never looks cheap', () => {
+    const tagClasses = priceTag({ priceLevel: 'high', isSelected: true }).querySelector(
+      '.price-tag'
+    )?.classList;
+
+    expect(tagClasses?.contains('price-tag--high')).toBe(true);
+    expect(tagClasses?.contains('price-tag--selected')).toBe(true);
+  });
+
   it('shows a dash for a station without a price of the selected fuel', () => {
     const element = priceTag({ priceInEuro: null });
 

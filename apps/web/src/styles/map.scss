@@ -48,9 +48,12 @@ $price-levels: low, medium, high;
 }
 
 .price-tag {
-  --price-tag-background: var(--color-surface);
+  // The background is the bottom of the gradient, so the pointer continues the fill.
+  --price-tag-background: var(--color-price-neutral-bottom);
+  --price-tag-gradient: var(--gradient-price-neutral);
   --price-tag-foreground: var(--color-text);
   --price-tag-edge: var(--color-surface);
+  --price-tag-shadow: var(--shadow-price-tag);
 
   position: relative;
   // Keeps the pointer below the digits without sliding under the map.
@@ -59,13 +62,15 @@ $price-levels: low, medium, high;
   border: var(--border-width-hairline) solid var(--price-tag-edge);
   border-radius: var(--radius-sm);
   background-color: var(--price-tag-background);
+  background-image: var(--price-tag-gradient);
   color: var(--price-tag-foreground);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--price-tag-shadow);
   white-space: nowrap;
   transform-origin: 50% calc(100% + var(--price-tag-pointer-size) / 2);
   transition:
     transform var(--duration-short) var(--easing-standard),
-    background-color var(--duration-short) var(--easing-standard);
+    background-color var(--duration-short) var(--easing-standard),
+    box-shadow var(--duration-short) var(--easing-standard);
 
   // Pointer: a rotated square sharing the board's fill and edge.
   &::after {
@@ -84,6 +89,7 @@ $price-levels: low, medium, high;
 
   &--without-price {
     --price-tag-background: var(--color-canvas);
+    --price-tag-gradient: none;
     --price-tag-foreground: var(--color-text-secondary);
     --price-tag-edge: var(--color-hairline);
   }
@@ -91,36 +97,50 @@ $price-levels: low, medium, high;
   // Tinted from cheap (green) to dear (red) within the prices shown
   @each $level in $price-levels {
     &--#{$level} {
-      --price-tag-background: var(--color-price-#{$level});
+      --price-tag-background: var(--color-price-#{$level}-bottom);
+      --price-tag-gradient: var(--gradient-price-#{$level});
       --price-tag-edge: var(--color-price-#{$level}-edge);
     }
   }
 
   // The cheapest stands out: solid green and a little larger than the others.
   &--cheapest {
-    --price-tag-background: var(--color-highlight);
+    --price-tag-background: var(--color-highlight-bottom);
+    --price-tag-gradient: var(--gradient-price-cheapest);
     --price-tag-foreground: var(--color-on-highlight);
     --price-tag-edge: var(--color-highlight-edge);
 
     transform: scale(var(--scale-marker-cheapest));
   }
 
-  // Tinted like a selected pin in Apple Maps; the surface edge keeps it apart from dark tiles.
+  // Selected: keeps the fill of its price level (lime would make any price look cheap), gets a
+  // ring with a gap and floats higher. The pointer carries the ring too.
   &--selected {
-    --price-tag-background: var(--color-action);
-    --price-tag-foreground: var(--color-on-action);
-    --price-tag-edge: var(--color-surface);
+    --price-tag-shadow: var(--shadow-price-tag-selected);
+    // Larger, so the pointer reaches out of the ring
+    --price-tag-pointer-size: var(--space-md);
 
     transform: scale(var(--scale-marker-selected));
-  }
 
-  // A selected cheapest station keeps the green as its edge.
-  &--selected.price-tag--cheapest {
-    --price-tag-edge: var(--color-highlight);
+    &::after {
+      border-right-width: var(--border-width-focus);
+      border-bottom-width: var(--border-width-focus);
+      border-color: var(--color-selection-ring);
+      box-shadow: inset calc(-1 * var(--border-width-focus-halo))
+        calc(-1 * var(--border-width-focus-halo)) 0 var(--color-selection-ring-gap);
+    }
   }
 
   .price-tag-marker:hover > & {
     --price-tag-edge: var(--color-border-control);
+  }
+
+  // Forced colors drop box shadows, so the ring becomes an outline there
+  @media (forced-colors: active) {
+    &--selected {
+      outline: var(--border-width-focus) solid Highlight;
+      outline-offset: var(--border-width-focus-halo);
+    }
   }
 
   @each $level in $price-levels {
@@ -133,12 +153,8 @@ $price-levels: low, medium, high;
     --price-tag-edge: var(--color-highlight-edge);
   }
 
-  .price-tag-marker:hover > &--selected {
-    --price-tag-edge: var(--color-surface);
-  }
-
   .price-tag-marker:focus-visible > & {
-    @include focus-ring.focus-ring($shadow: var(--shadow-floating));
+    @include focus-ring.focus-ring($shadow: var(--price-tag-shadow));
   }
 }
 
@@ -169,14 +185,15 @@ $price-levels: low, medium, high;
   align-items: stretch;
   border: var(--border-width-hairline) solid var(--color-hairline);
   border-radius: var(--radius-sm);
-  background-color: var(--color-surface);
+  background-color: var(--color-price-neutral-bottom);
+  background-image: var(--gradient-price-neutral);
   color: var(--color-text);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--shadow-price-tag);
   white-space: nowrap;
   overflow: hidden;
 
   .price-cluster-marker:focus-visible > & {
-    @include focus-ring.focus-ring($shadow: var(--shadow-floating));
+    @include focus-ring.focus-ring($shadow: var(--shadow-price-tag));
   }
 }
 
@@ -185,6 +202,7 @@ $price-levels: low, medium, high;
   align-items: center;
   padding: var(--space-2xs) var(--space-xs);
   background-color: var(--color-action);
+  background-image: var(--gradient-action);
   color: var(--color-on-action);
   font-family: var(--font-family-numerals);
   font-size: var(--font-size-subheadline);
@@ -203,12 +221,14 @@ $price-levels: low, medium, high;
 
   @each $level in $price-levels {
     .price-cluster--#{$level} & {
-      background-color: var(--color-price-#{$level});
+      background-color: var(--color-price-#{$level}-bottom);
+      background-image: var(--gradient-price-#{$level});
     }
   }
 
   .price-cluster--cheapest & {
-    background-color: var(--color-highlight);
+    background-color: var(--color-highlight-bottom);
+    background-image: var(--gradient-price-cheapest);
     color: var(--color-on-highlight);
   }
 }
