@@ -1,4 +1,4 @@
-import { apiErrorSchema, placesSchema } from '@genialtanken/contracts';
+import { apiErrorSchema, MILLISECONDS_PER_SECOND, placesSchema } from '@genialtanken/contracts';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { createTestApplication } from './support/create-test-application.js';
@@ -8,8 +8,6 @@ import type { RecordedRequest } from './support/fake-upstream.js';
 import { bastilleFeatures, PHOTON_SEARCH_PATH, photonResponse } from './support/photon-features.js';
 
 const strictApiErrorSchema = apiErrorSchema.strict();
-
-const MILLISECONDS_PER_SECOND = 1000;
 
 const UNAVAILABLE_BODY = { statusCode: 502, message: 'The place search is unavailable.' };
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { apiErrorSchema, countryCodeSchema, stationSchema, stationsSchema } from './index.js';
+import { countryCodeSchema, stationSchema, stationsSchema } from './index.js';
 
 const openingDay = [{ opening: '06:00', closing: '22:00' }];
 
@@ -71,6 +71,13 @@ describe('stationSchema', () => {
     ).toBe(false);
   });
 
+  it('rejects address coordinates outside the valid range', () => {
+    expect(
+      stationSchema.safeParse({ ...station, address: { ...station.address, longitude: 181 } })
+        .success
+    ).toBe(false);
+  });
+
   it('parses a list of stations', () => {
     expect(stationsSchema.parse([station])).toHaveLength(1);
   });
@@ -80,13 +87,5 @@ describe('stationSchema', () => {
 
     expect(jsonSchema.type).toBe('object');
     expect(jsonSchema.required).toContain('pricesInEuro');
-  });
-});
-
-describe('apiErrorSchema', () => {
-  it('accepts the error body returned by the API', () => {
-    expect(
-      apiErrorSchema.parse({ statusCode: 502, message: 'The fuel price service is unavailable.' })
-    ).toEqual({ statusCode: 502, message: 'The fuel price service is unavailable.' });
   });
 });

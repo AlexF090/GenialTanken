@@ -1,11 +1,12 @@
+import { MILLISECONDS_PER_SECOND } from '@genialtanken/contracts';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Environment } from './environment.js';
 
-/** Durations are configured in seconds and used in milliseconds; converted only here. */
-const MILLISECONDS_PER_SECOND = 1000;
-
-/** Typed, validated access to the environment; the only place that reads configuration. */
+/**
+ * Typed, validated access to the environment; the only place that reads configuration. Durations
+ * are configured in seconds and converted to milliseconds only here.
+ */
 @Injectable()
 export class ApplicationConfiguration {
   constructor(private readonly configService: ConfigService<Environment, true>) {}

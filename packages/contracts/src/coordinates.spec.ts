@@ -1,4 +1,5 @@
-import { distanceInMeters } from './distance-in-meters.js';
+import { describe, expect, it } from 'vitest';
+import { distanceInMeters, latitudeSchema, longitudeSchema } from './index.js';
 
 const PARIS_NOTRE_DAME = { latitude: 48.853, longitude: 2.3499 };
 const LONDON_TOWER_BRIDGE = { latitude: 51.5055, longitude: -0.0754 };
@@ -25,5 +26,25 @@ describe('distanceInMeters', () => {
 
     expect(Math.round(parisToLondon / 1000)).toBe(342);
     expect(distanceInMeters(LONDON_TOWER_BRIDGE, PARIS_NOTRE_DAME)).toBe(parisToLondon);
+  });
+});
+
+describe('latitudeSchema', () => {
+  it.each([-90, 0, 90])('accepts %s', latitude => {
+    expect(latitudeSchema.parse(latitude)).toBe(latitude);
+  });
+
+  it.each([-90.1, 90.1])('rejects %s', latitude => {
+    expect(latitudeSchema.safeParse(latitude).success).toBe(false);
+  });
+});
+
+describe('longitudeSchema', () => {
+  it.each([-180, 0, 180])('accepts %s', longitude => {
+    expect(longitudeSchema.parse(longitude)).toBe(longitude);
+  });
+
+  it.each([-180.1, 180.1])('rejects %s', longitude => {
+    expect(longitudeSchema.safeParse(longitude).success).toBe(false);
   });
 });

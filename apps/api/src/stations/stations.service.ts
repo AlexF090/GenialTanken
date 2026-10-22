@@ -1,9 +1,8 @@
-import { METERS_PER_KILOMETER } from '@genialtanken/contracts';
+import { distanceInMeters, METERS_PER_KILOMETER } from '@genialtanken/contracts';
 import type { Station, StationLookup, StationsQuery } from '@genialtanken/contracts';
 import { BadGatewayException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ERROR_MESSAGES } from '../common/error-messages.js';
 import { mapWithConcurrency } from '../common/map-with-concurrency.js';
-import { distanceInMeters } from '../fuel-price-providers/distance-in-meters.js';
 import { FUEL_PRICE_PROVIDERS } from '../fuel-price-providers/fuel-price-provider.js';
 import type { FuelPriceProvider } from '../fuel-price-providers/fuel-price-provider.js';
 import {

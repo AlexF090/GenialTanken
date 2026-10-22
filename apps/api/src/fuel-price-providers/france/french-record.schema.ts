@@ -1,3 +1,4 @@
+import { latitudeSchema, longitudeSchema } from '@genialtanken/contracts';
 import { z } from 'zod';
 
 const priceSchema = z.number().nullish();
@@ -11,7 +12,8 @@ export const frenchRecordSchema = z.object({
   adresse: z.string().nullish(),
   ville: z.string().nullish(),
   cp: z.string().nullish(),
-  geom: z.object({ lon: z.number(), lat: z.number() }),
+  /** Range-checked so a record with impossible coordinates is dropped, not sent to the web app. */
+  geom: z.object({ lon: longitudeSchema, lat: latitudeSchema }),
   /** JSON-encoded opening hours, see `parseFrenchOpeningHours`. */
   horaires: z.string().nullish(),
   gazole_prix: priceSchema,

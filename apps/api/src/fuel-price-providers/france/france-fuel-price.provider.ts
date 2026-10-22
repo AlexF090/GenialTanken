@@ -1,3 +1,4 @@
+import { MILLISECONDS_PER_MINUTE } from '@genialtanken/contracts';
 import type { Station, StationsQuery } from '@genialtanken/contracts';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable, Logger } from '@nestjs/common';
@@ -26,7 +27,7 @@ const MAXIMUM_PARALLEL_STATION_DETAILS_REQUESTS = 8;
  * How long a missing or failing station page is not asked again. Short, so a recovered page
  * gets its name back soon, yet a failing website does not slow down every search.
  */
-const MISSING_STATION_IDENTITY_TIME_TO_LIVE_IN_MILLISECONDS = 10 * 60 * 1000;
+const MISSING_STATION_IDENTITY_TIME_TO_LIVE_IN_MILLISECONDS = 10 * MILLISECONDS_PER_MINUTE;
 const MISSING_STATION_IDENTITY_CACHE_KEY_PREFIX = 'france-station-identity-missing:';
 
 /** French fuel prices from the government open data portal (no API key, 50,000 requests per day). */

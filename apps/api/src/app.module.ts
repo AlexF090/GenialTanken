@@ -1,4 +1,5 @@
 import { createKeyv } from '@cacheable/memory';
+import { MILLISECONDS_PER_MINUTE } from '@genialtanken/contracts';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module, StandardSchemaValidationPipe } from '@nestjs/common';
 import type { DynamicModule } from '@nestjs/common';
@@ -11,8 +12,6 @@ import { HealthModule } from './health/health.module.js';
 import { PlacesModule } from './places/places.module.js';
 import { ClientAddressThrottlerGuard } from './rate-limit/client-address-throttler.guard.js';
 import { StationsModule } from './stations/stations.module.js';
-
-const MILLISECONDS_PER_MINUTE = 60_000;
 
 @Module({})
 export class AppModule {

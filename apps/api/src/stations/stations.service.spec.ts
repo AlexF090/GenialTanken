@@ -1,3 +1,4 @@
+import { emptyOpeningTimes } from '@genialtanken/contracts';
 import type { CountryCode, Station, StationsQuery } from '@genialtanken/contracts';
 import { BadGatewayException, Logger } from '@nestjs/common';
 import type { MockInstance } from 'vitest';
@@ -11,17 +12,6 @@ const PARIS: StationsQuery = {
   longitude: 2.3522,
   radiusInKilometers: 5,
   fuel: 'e10',
-};
-
-const NO_OPENING_TIMES: Station['openingTimes'] = {
-  monday: [],
-  tuesday: [],
-  wednesday: [],
-  thursday: [],
-  friday: [],
-  saturday: [],
-  sunday: [],
-  publicHoliday: [],
 };
 
 const stationOf = (
@@ -42,7 +32,7 @@ const stationOf = (
   },
   pricesInEuro: { e5: null, e10: 1.9, superPlus: null, diesel: null, e85: null, lpg: null },
   isOpen: null,
-  openingTimes: NO_OPENING_TIMES,
+  openingTimes: emptyOpeningTimes(),
   distanceInMeters: null,
 });
 
