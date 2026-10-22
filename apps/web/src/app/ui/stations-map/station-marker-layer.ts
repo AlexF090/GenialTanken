@@ -4,6 +4,8 @@ import { priceLevelOf, priceRangeOf } from '../../core/stations/price-level';
 import { priceInEuro, stationTitle } from '../../core/stations/station-display';
 import { L } from '../map/leaflet';
 import { createClusterIcon, StationMarker } from '../map/leaflet-layers';
+import { revealMarker } from '../map/reveal-marker';
+import type { MarkerReveal } from '../map/reveal-marker';
 
 const CLUSTER_RADIUS_IN_PIXELS = 56;
 
@@ -19,7 +21,7 @@ export interface StationMarkerContext {
  * the cheapest stations change; selection only updates the existing tags.
  */
 export class StationMarkerLayer {
-  readonly clusterGroup = L.markerClusterGroup({
+  private readonly clusterGroup = L.markerClusterGroup({
     iconCreateFunction: createClusterIcon,
     showCoverageOnHover: false,
     maxClusterRadius: CLUSTER_RADIUS_IN_PIXELS,
@@ -33,6 +35,26 @@ export class StationMarkerLayer {
 
   /** `onClick` is called with the station's marker when its price tag is activated. */
   constructor(private readonly onClick: (marker: StationMarker) => void) {}
+
+  /** `onClusterClick` is called with the cluster whose icon is activated. */
+  addTo(map: L.Map, onClusterClick: (cluster: L.MarkerCluster) => void): void {
+    this.clusterGroup.addTo(map);
+    this.clusterGroup.on('clusterclick', event => {
+      const cluster: unknown = event.propagatedFrom;
+      if (cluster instanceof L.MarkerCluster) {
+        onClusterClick(cluster);
+      }
+    });
+  }
+
+  markerOf(stationIdentifier: string): StationMarker | undefined {
+    return this.markers().get(stationIdentifier);
+  }
+
+  /** Opens the marker's clusters as needed, see `revealMarker`. */
+  reveal(map: L.Map, marker: StationMarker, onShown: () => void): MarkerReveal {
+    return revealMarker(map, this.clusterGroup, marker, onShown);
+  }
 
   showStations(stations: readonly Station[], context: StationMarkerContext): void {
     const priceRange = priceRangeOf(

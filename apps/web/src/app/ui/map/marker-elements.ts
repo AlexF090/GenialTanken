@@ -33,7 +33,7 @@ export const createPriceDigits = (className: string, priceInEuro: number | null)
 };
 
 /** Visible word for the cheapest price, so it is not told by the green alone (WCAG 1.4.1). */
-export const CHEAPEST_CAPTION = 'günstigst';
+const CHEAPEST_CAPTION = 'günstigst';
 
 /** Screen readers hear `CHEAPEST_PRICE_LABEL` in the accessible name instead. */
 export const createCheapestCaption = (className: string): HTMLElement => {
@@ -45,7 +45,8 @@ export const createCheapestCaption = (className: string): HTMLElement => {
 /** Pins are drawn by their inner element in `map.scss` around the zero-sized icon. */
 export const ZERO_SIZE: L.PointTuple = [0, 0];
 /**
- * Interactive markers keep their content size (a zero-sized button would have no hit box and
- * count as invisible); `map.scss` moves them onto their point with the CSS `translate` property.
+ * Replaces Leaflet's fixed default icon size, so interactive markers keep their content size (a
+ * zero-sized button would have no hit box and count as invisible); `map.scss` moves them onto
+ * their point with the CSS `translate` property.
  */
-export const CONTENT_SIZE = undefined;
+export const NO_FIXED_SIZE = undefined;

@@ -11,7 +11,6 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
-import { pluralize } from '../../core/formatting/pluralize';
 import { TRY_AGAIN_LATER } from '../../core/http/request-failure-messages';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { describeStationsError } from '../../core/stations/stations-error-message';
@@ -80,7 +79,9 @@ export class FavoritesPage {
     if (count === 0) {
       return undefined;
     }
-    return `${pluralize(count, 'Ein Favorit ist', `${String(count)} Favoriten sind`)} gerade nicht verfügbar.`;
+    return count === 1
+      ? 'Ein Favorit ist gerade nicht verfügbar.'
+      : `${String(count)} Favoriten sind gerade nicht verfügbar.`;
   });
   protected readonly isLoading = this.favoriteStationsResource.isLoading;
   protected readonly errorMessage = computed(() => {
@@ -100,11 +101,8 @@ export class FavoritesPage {
     if (stations.length === 0 && unavailableStationIdentifiers.length === 0) {
       return describeStationsError(firstFailure.error);
     }
-    const failedFavorites = pluralize(
-      failures.length,
-      'Ein Favorit konnte',
-      `${String(failures.length)} Favoriten konnten`
-    );
+    const failedFavorites =
+      failures.length === 1 ? 'Ein Favorit konnte' : `${String(failures.length)} Favoriten konnten`;
     return `${failedFavorites} nicht geladen werden. ${TRY_AGAIN_LATER}`;
   });
 

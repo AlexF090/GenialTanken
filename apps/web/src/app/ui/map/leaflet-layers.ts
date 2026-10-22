@@ -1,22 +1,18 @@
 import { METERS_PER_KILOMETER } from '@genialtanken/contracts';
 import type { Coordinates } from '@genialtanken/contracts';
 import type { SearchCenter } from '../../core/search-center/search-center';
-import type { PriceLevel } from '../../core/stations/price-level';
 import { L } from './leaflet';
 import { createMarkerElement, ZERO_SIZE } from './marker-elements';
 import { createPriceClusterIcon, createPriceTagIcon } from './price-tag-icons';
+import type { PriceTagAppearance } from './price-tag-icons';
 
 const SELECTED_Z_INDEX_OFFSET = 2000;
 const CHEAPEST_Z_INDEX_OFFSET = 1000;
 
-export interface StationMarkerOptions {
+export interface StationMarkerOptions extends PriceTagAppearance {
   stationIdentifier: string;
   coordinates: Coordinates;
   title: string;
-  priceInEuro: number | null;
-  priceLevel?: PriceLevel;
-  isCheapest: boolean;
-  isSelected: boolean;
 }
 
 /**
@@ -25,23 +21,17 @@ export interface StationMarkerOptions {
  */
 export class StationMarker extends L.Marker {
   readonly stationIdentifier: string;
-  readonly stationPriceInEuro: number | null;
-  readonly stationPriceLevel: PriceLevel | undefined;
-  readonly isCheapestStation: boolean;
   private readonly stationTitle: string;
-  private isSelectedStation: boolean;
+  private currentAppearance: PriceTagAppearance;
 
-  constructor(options: StationMarkerOptions) {
-    super([options.coordinates.latitude, options.coordinates.longitude], {
+  constructor({ stationIdentifier, coordinates, title, ...appearance }: StationMarkerOptions) {
+    super([coordinates.latitude, coordinates.longitude], {
       keyboard: true,
       riseOnHover: true,
     });
-    this.stationIdentifier = options.stationIdentifier;
-    this.stationTitle = options.title;
-    this.stationPriceInEuro = options.priceInEuro;
-    this.stationPriceLevel = options.priceLevel;
-    this.isCheapestStation = options.isCheapest;
-    this.isSelectedStation = options.isSelected;
+    this.stationIdentifier = stationIdentifier;
+    this.stationTitle = title;
+    this.currentAppearance = appearance;
     this.applySelection();
     // Clustering removes and re-adds markers, which creates a new icon element every time.
     this.on('add', () => {
@@ -52,23 +42,21 @@ export class StationMarker extends L.Marker {
     });
   }
 
+  get appearance(): PriceTagAppearance {
+    return this.currentAppearance;
+  }
+
   setSelected(isSelected: boolean): void {
-    if (isSelected === this.isSelectedStation) {
+    if (isSelected === this.currentAppearance.isSelected) {
       return;
     }
-    this.isSelectedStation = isSelected;
+    this.currentAppearance = { ...this.currentAppearance, isSelected };
     this.applySelection();
   }
 
   private applySelection(): void {
     this.setIcon(
-      createPriceTagIcon({
-        accessibleName: this.stationTitle,
-        priceInEuro: this.stationPriceInEuro,
-        priceLevel: this.stationPriceLevel,
-        isCheapest: this.isCheapestStation,
-        isSelected: this.isSelectedStation,
-      })
+      createPriceTagIcon({ accessibleName: this.stationTitle, ...this.currentAppearance })
     );
     this.setZIndexOffset(this.zIndexOffset());
     this.applyPressedState();
@@ -76,14 +64,14 @@ export class StationMarker extends L.Marker {
 
   /** The selected tag lies on top of all others, the cheapest on top of the regular ones. */
   private zIndexOffset(): number {
-    if (this.isSelectedStation) {
+    if (this.currentAppearance.isSelected) {
       return SELECTED_Z_INDEX_OFFSET;
     }
-    return this.isCheapestStation ? CHEAPEST_Z_INDEX_OFFSET : 0;
+    return this.currentAppearance.isCheapest ? CHEAPEST_Z_INDEX_OFFSET : 0;
   }
 
   private applyPressedState(): void {
-    this.getElement()?.setAttribute('aria-pressed', String(this.isSelectedStation));
+    this.getElement()?.setAttribute('aria-pressed', String(this.currentAppearance.isSelected));
   }
 
   private clickOnSpace(event: Event): void {
@@ -100,7 +88,10 @@ type StationCluster = Pick<L.MarkerCluster, 'getChildCount' | 'getAllChildMarker
 /** Icon of a cluster of station price tags. */
 export const createClusterIcon = (cluster: StationCluster): L.DivIcon =>
   createPriceClusterIcon(
-    cluster.getAllChildMarkers().filter(marker => marker instanceof StationMarker),
+    cluster
+      .getAllChildMarkers()
+      .filter(marker => marker instanceof StationMarker)
+      .map(marker => marker.appearance),
     cluster.getChildCount()
   );
 

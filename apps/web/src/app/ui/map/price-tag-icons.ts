@@ -3,22 +3,25 @@ import { CHEAPEST_PRICE_LABEL, NO_PRICE_LABEL } from '../../core/stations/price-
 import type { PriceLevel } from '../../core/stations/price-level';
 import { L } from './leaflet';
 import {
-  CHEAPEST_CAPTION,
-  CONTENT_SIZE,
   createAccessibleName,
   createCheapestCaption,
   createMarkerElement,
   createPriceDigits,
+  NO_FIXED_SIZE,
 } from './marker-elements';
 
-export interface PriceTagIconOptions {
-  /** Usually the station title; price and highlight are appended. */
-  accessibleName: string;
+/** How the price tag of one station looks; cluster icons summarize several of them. */
+export interface PriceTagAppearance {
   priceInEuro: number | null;
   /** Tints the tag from cheap to dear; missing without a price. */
   priceLevel?: PriceLevel;
   isCheapest: boolean;
   isSelected: boolean;
+}
+
+export interface PriceTagIconOptions extends PriceTagAppearance {
+  /** Usually the station title; price and highlight are appended. */
+  accessibleName: string;
 }
 
 const priceTagAccessibleName = ({
@@ -49,23 +52,16 @@ export const createPriceTagIcon = (options: PriceTagIconOptions): L.DivIcon => {
   if (options.isCheapest) {
     tag.append(createCheapestCaption('price-tag__caption'));
   }
-  return L.divIcon({ html: tag, className: 'price-tag-marker', iconSize: CONTENT_SIZE });
+  return L.divIcon({ html: tag, className: 'price-tag-marker', iconSize: NO_FIXED_SIZE });
 };
-
-/** What a cluster icon needs to know about each of its stations. */
-export interface ClusteredStation {
-  readonly stationPriceInEuro: number | null;
-  readonly stationPriceLevel: PriceLevel | undefined;
-  readonly isCheapestStation: boolean;
-}
 
 /** Number of stations and the lowest price among them, highlighted if it is the cheapest. */
 export const createPriceClusterIcon = (
-  stations: readonly ClusteredStation[],
+  stations: readonly PriceTagAppearance[],
   stationCount: number
 ): L.DivIcon => {
   const prices = stations.flatMap(station =>
-    station.stationPriceInEuro === null ? [] : [station.stationPriceInEuro]
+    station.priceInEuro === null ? [] : [station.priceInEuro]
   );
   const minimumPrice = prices.length === 0 ? null : Math.min(...prices);
   const accessibleName =
@@ -73,11 +69,11 @@ export const createPriceClusterIcon = (
       ? `${String(stationCount)} Tankstellen, ${NO_PRICE_LABEL}`
       : `${String(stationCount)} Tankstellen, ab ${formatPrice(minimumPrice)}`;
 
-  const containsCheapest = stations.some(station => station.isCheapestStation);
+  const containsCheapest = stations.some(station => station.isCheapest);
   // Tinted like the tag of its lowest price, so a cheap area is visible before zooming in.
   const lowestPriceLevel = stations.find(
-    station => station.stationPriceInEuro === minimumPrice
-  )?.stationPriceLevel;
+    station => station.priceInEuro === minimumPrice
+  )?.priceLevel;
 
   const board = createMarkerElement('div', 'price-cluster');
   board.classList.toggle('price-cluster--cheapest', containsCheapest);
@@ -93,8 +89,8 @@ export const createPriceClusterIcon = (
     createPriceDigits('price-cluster__price', minimumPrice)
   );
   if (containsCheapest) {
-    lowestPrice.append(createMarkerElement('span', 'price-cluster__caption', CHEAPEST_CAPTION));
+    lowestPrice.append(createCheapestCaption('price-cluster__caption'));
   }
   board.append(createAccessibleName(accessibleName), count, lowestPrice);
-  return L.divIcon({ html: board, className: 'price-cluster-marker', iconSize: CONTENT_SIZE });
+  return L.divIcon({ html: board, className: 'price-cluster-marker', iconSize: NO_FIXED_SIZE });
 };

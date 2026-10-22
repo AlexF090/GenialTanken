@@ -42,6 +42,7 @@ export class SettingsPage {
       label: COLOR_SCHEME_LABELS[colorScheme],
     }));
   protected readonly radiusIdentifier = uniqueIdentifier('radius');
+  protected readonly dataSourceHeadingIdentifier = uniqueIdentifier('data-source-heading');
   protected readonly minimumRadiusInKilometers = MINIMUM_RADIUS_IN_KILOMETERS;
   protected readonly maximumRadiusInKilometers = MAXIMUM_RADIUS_IN_KILOMETERS;
   protected readonly colorScheme = this.settingsStore.colorScheme;

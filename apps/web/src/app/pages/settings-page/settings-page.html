@@ -58,8 +58,8 @@
     </fieldset>
   </form>
 
-  <section class="settings__group" aria-labelledby="data-source-heading">
-    <h2 id="data-source-heading" class="settings__title">Datenquelle</h2>
+  <section class="settings__group" [attr.aria-labelledby]="dataSourceHeadingIdentifier">
+    <h2 [id]="dataSourceHeadingIdentifier" class="settings__title">Datenquelle</h2>
     <p class="settings__text settings__card">
       Die Preise für Frankreich stammen aus den offenen Daten der französischen Regierung unter der
       Licence Ouverte 2.0:

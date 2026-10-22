@@ -33,7 +33,6 @@ import {
   visibleAreaCenter,
 } from '../map/map-viewport';
 import type { ViewportPadding } from '../map/map-viewport';
-import { revealMarker } from '../map/reveal-marker';
 import type { MarkerReveal } from '../map/reveal-marker';
 import { createTileLayer, MAXIMUM_ZOOM } from '../map/tile-layer';
 import { StationMarkerLayer } from './station-marker-layer';
@@ -112,13 +111,8 @@ export class StationsMap {
       L.control
         .zoom({ position: 'topright', zoomInTitle: 'Hineinzoomen', zoomOutTitle: 'Herauszoomen' })
         .addTo(map);
-      const clusterGroup = this.stationMarkers.clusterGroup;
-      clusterGroup.addTo(map);
-      clusterGroup.on('clusterclick', event => {
-        const cluster: unknown = event.propagatedFrom;
-        if (cluster instanceof L.MarkerCluster) {
-          this.zoomIntoCluster(map, cluster);
-        }
+      this.stationMarkers.addTo(map, cluster => {
+        this.zoomIntoCluster(map, cluster);
       });
       map.on('dragstart', () => {
         this.hasUserMovedMap = true;
@@ -159,9 +153,7 @@ export class StationsMap {
         const selectedStationIdentifier = this.selectedStationIdentifier();
         if (selectedStationIdentifier !== undefined) {
           // E.g. the sheet moved after a price tag was chosen: keep that station in the middle.
-          const selectedMarker = this.stationMarkers
-            .markersByStationIdentifier()
-            .get(selectedStationIdentifier);
+          const selectedMarker = this.stationMarkers.markerOf(selectedStationIdentifier);
           if (selectedMarker !== undefined && !this.hasUserMovedMapSinceReveal) {
             this.reveal(map, selectedMarker);
           }
@@ -272,7 +264,7 @@ export class StationsMap {
     const marker =
       selectedStationIdentifier === undefined
         ? undefined
-        : this.stationMarkers.markersByStationIdentifier().get(selectedStationIdentifier);
+        : this.stationMarkers.markerOf(selectedStationIdentifier);
     if (map !== undefined && marker !== undefined) {
       this.reveal(map, marker);
     }
@@ -288,12 +280,12 @@ export class StationsMap {
   }
 
   /** Animates map moves unless the user prefers reduced motion. */
-  private motion(): { animate: boolean } {
+  private motion(): L.ZoomPanOptions {
     return { animate: !this.prefersReducedMotion() };
   }
 
   /** Fits the search radius into the part of the map not covered by overlays. */
-  private fitSearchArea(map: L.Map, motion: { animate: boolean }): void {
+  private fitSearchArea(map: L.Map, motion: L.ZoomPanOptions): void {
     map.fitBounds(searchAreaBounds(this.center(), this.radiusInKilometers()), {
       ...toPaddingOptions(this.viewportPadding()),
       ...motion,
@@ -335,7 +327,7 @@ export class StationsMap {
   private reveal(map: L.Map, marker: StationMarker): void {
     this.markerReveal?.cancel();
     this.hasUserMovedMapSinceReveal = false;
-    this.markerReveal = revealMarker(map, this.stationMarkers.clusterGroup, marker, () => {
+    this.markerReveal = this.stationMarkers.reveal(map, marker, () => {
       map.panTo(
         centerForVisibleArea(map, marker.getLatLng(), this.viewportPadding()),
         this.motion()
