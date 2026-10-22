@@ -14,8 +14,16 @@
 .bottom-sheet__content {
   flex: 1;
   min-height: 0;
+  // `overflow-y: auto` alone turns `overflow-x` into `auto` as well, which lets phones pan the
+  // list sideways although nothing is wider than the sheet
+  overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  // `contain` only stops scroll chaining; `none` also removes the rubber-band bounce at the
+  // ends, which pulled the list away from the sheet edges
+  overscroll-behavior: none;
+  // Only vertical panning scrolls the list; the handle drags the sheet itself. Pinch zoom stays
+  // available for people who enlarge the content.
+  touch-action: pan-y pinch-zoom;
 }
 
 .bottom-sheet__handle {

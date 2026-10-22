@@ -153,4 +153,28 @@ test.describe('bottom sheet on a phone', () => {
       })
     ).toHaveAttribute('aria-pressed', 'true');
   });
+
+  test('the full sheet scrolls the list only vertically and does not bounce past its ends', async ({
+    page,
+  }) => {
+    await sheetHandle(page).focus();
+    await page.keyboard.press('End');
+    await expectSheetAt(page, 'full', 'Liste verkleinern');
+
+    // The scroll container has no role of its own; it wraps the list inside the sheet region.
+    const content = page
+      .getByRole('region', { name: 'Tankstellen', exact: true })
+      .locator('.bottom-sheet__content');
+    const overflowsSideways = (element: Element): boolean =>
+      element.scrollWidth > element.clientWidth;
+    expect(await content.evaluate(overflowsSideways)).toBe(false);
+    expect(await page.locator('html').evaluate(overflowsSideways)).toBe(false);
+    await expect(content).toHaveCSS('overflow-x', 'hidden');
+    await expect(content).toHaveCSS('overscroll-behavior-y', 'none');
+    await expect(content).toHaveCSS('touch-action', 'pan-y pinch-zoom');
+
+    await stationCard(page, rueBailleulStation).hover();
+    await page.mouse.wheel(200, 0);
+    await expect.poll(() => content.evaluate(element => element.scrollLeft)).toBe(0);
+  });
 });
