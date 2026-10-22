@@ -134,6 +134,12 @@
   --line-height-base: 1.45;
   --line-height-tight: 1.2;
   --line-height-numerals: 1;
+  // Tighter tracking for large text, like SF Pro at display sizes
+  --letter-spacing-numerals: -0.01em;
+  --letter-spacing-large-title: -0.02em;
+  // Tenth-of-a-cent digit of a price, relative to the price's own font size
+  --font-size-tenth-of-cent: 0.55em;
+  --vertical-offset-tenth-of-cent: 0.6em;
 
   // Borders and focus
   --border-width-hairline: 1px;
