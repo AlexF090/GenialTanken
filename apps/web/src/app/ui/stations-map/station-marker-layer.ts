@@ -3,17 +3,27 @@ import type { FuelType, Station } from '@genialtanken/contracts';
 import { priceLevelOf, priceRangeOf } from '../../core/stations/price-level';
 import { priceInEuro, stationTitle } from '../../core/stations/station-display';
 import { L } from '../map/leaflet';
-import { clickOnActivationKey, createClusterIcon, StationMarker } from '../map/leaflet-layers';
+import { centerForVisibleArea, toPaddingOptions, totalPaddingOf } from '../map/map-viewport';
+import type { ViewportPadding } from '../map/map-viewport';
+import { clickOnActivationKey, createClusterIcon, StationMarker } from '../map/station-marker';
 import { revealMarker } from '../map/reveal-marker';
 import type { MarkerReveal } from '../map/reveal-marker';
 import type { PriceTagAppearance } from '../map/price-tag-icons';
 
 const CLUSTER_RADIUS_IN_PIXELS = 56;
+/** A price tag stands above its map point; fitting points alone would cut off the top tags. */
+const PRICE_TAG_HEIGHT_IN_PIXELS = 40;
 
 /** A cluster icon was activated, by pointer or keyboard. */
 export interface ClusterActivation {
   cluster: L.MarkerCluster;
   isFromKeyboard: boolean;
+}
+
+/** Opening a cluster that has not finished yet. */
+export interface ClusterOpening {
+  /** Stops waiting for the cluster to open; `onOpened` is not called anymore. */
+  cancel(): void;
 }
 
 /** Stations without a price come last. */
@@ -43,10 +53,17 @@ export class StationMarkerLayer {
     spiderfyOnMaxZoom: false,
   });
   private readonly markers = signal<ReadonlyMap<string, StationMarker>>(new Map());
-  readonly markersByStationIdentifier = this.markers.asReadonly();
+  private spiderfiedCluster: L.MarkerCluster | undefined;
 
   /** `onClick` is called with the station's marker when its price tag is activated. */
-  constructor(private readonly onClick: (marker: StationMarker) => void) {}
+  constructor(private readonly onClick: (marker: StationMarker) => void) {
+    this.clusterGroup.on('spiderfied', event => {
+      this.spiderfiedCluster = event.cluster;
+    });
+    this.clusterGroup.on('unspiderfied', () => {
+      this.spiderfiedCluster = undefined;
+    });
+  }
 
   /** `onClusterClick` is called with the cluster whose icon is activated. */
   addTo(map: L.Map, onClusterClick: (activation: ClusterActivation) => void): void {
@@ -65,14 +82,72 @@ export class StationMarkerLayer {
   }
 
   /**
-   * Calls `listener` once, as soon as the group shows the clusters of the new zoom level or the
-   * fanned-out cluster. Returns a function that stops waiting.
+   * Zooms so the cluster's stations fill the part of the map not covered by overlays. When zooming
+   * cannot separate them (maximum zoom), they fan out around the centered cluster. Calls
+   * `onOpened` once the group shows them, right away for a cluster fanned out already.
    */
-  onceSettled(eventType: 'animationend' | 'spiderfied', listener: () => void): () => void {
-    this.clusterGroup.once(eventType, listener);
-    return () => {
-      this.clusterGroup.off(eventType, listener);
+  openCluster(
+    map: L.Map,
+    cluster: L.MarkerCluster,
+    padding: ViewportPadding,
+    motion: L.ZoomPanOptions,
+    onOpened: () => void
+  ): ClusterOpening {
+    const paddingForTags = { ...padding, top: padding.top + PRICE_TAG_HEIGHT_IN_PIXELS };
+    const bounds = cluster.getBounds();
+    const targetZoom = Math.min(
+      map.getBoundsZoom(bounds, false, totalPaddingOf(paddingForTags)),
+      map.getMaxZoom()
+    );
+    if (targetZoom <= map.getZoom()) {
+      return this.fanOut(map, cluster, padding, motion, onOpened);
+    }
+    // The group signals with `animationend` that its clusters match the new zoom level.
+    this.clusterGroup.once('animationend', onOpened);
+    map.fitBounds(bounds, {
+      ...toPaddingOptions(paddingForTags),
+      maxZoom: map.getMaxZoom(),
+      ...motion,
+    });
+    return {
+      cancel: () => {
+        this.clusterGroup.off('animationend', onOpened);
+      },
     };
+  }
+
+  private fanOut(
+    map: L.Map,
+    cluster: L.MarkerCluster,
+    padding: ViewportPadding,
+    motion: L.ZoomPanOptions,
+    onOpened: () => void
+  ): ClusterOpening {
+    const centerCluster = (): void => {
+      map.panTo(centerForVisibleArea(map, cluster.getLatLng(), padding), motion);
+    };
+    // `spiderfy` does nothing for a cluster fanned out already, so no event would come.
+    if (this.spiderfiedCluster === cluster) {
+      centerCluster();
+      onOpened();
+      return { cancel: () => undefined };
+    }
+    const onSpiderfied = (event: L.MarkerClusterSpiderfyEvent): void => {
+      if (event.cluster === cluster) {
+        stopWaiting();
+        onOpened();
+      }
+    };
+    const stopWaiting = (): void => {
+      this.clusterGroup.off('spiderfied', onSpiderfied);
+      map.off('zoomstart', stopWaiting);
+    };
+    this.clusterGroup.on('spiderfied', onSpiderfied);
+    // `spiderfy` also does nothing during a zoom animation, and a zoom replaces the cluster.
+    map.on('zoomstart', stopWaiting);
+    cluster.spiderfy();
+    centerCluster();
+    return { cancel: stopWaiting };
   }
 
   /**
@@ -100,6 +175,7 @@ export class StationMarkerLayer {
     return visibleParent instanceof L.Marker ? visibleParent.getElement() : undefined;
   }
 
+  /** Reads a signal, so effects calling it run again when the markers are rebuilt. */
   markerOf(stationIdentifier: string): StationMarker | undefined {
     return this.markers().get(stationIdentifier);
   }

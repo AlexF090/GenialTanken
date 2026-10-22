@@ -20,12 +20,12 @@ import type { SearchCenter } from '../../core/search-center/search-center';
 import type { ResolvedColorScheme } from '../../core/theme/color-scheme-controller';
 import { L } from '../map/leaflet';
 import { createCenterMarker, createRadiusCircle } from '../map/leaflet-layers';
-import type { StationMarker } from '../map/leaflet-layers';
+import type { StationMarker } from '../map/station-marker';
 import { destroyMap } from '../map/map-teardown';
 import {
   centerForVisibleArea,
-  EDGE_SPACING_IN_PIXELS,
   hasVisibleArea,
+  isInVisibleArea,
   isSameViewportPadding,
   NO_VIEWPORT_PADDING,
   searchAreaBounds,
@@ -36,9 +36,8 @@ import type { ViewportPadding } from '../map/map-viewport';
 import type { MarkerReveal } from '../map/reveal-marker';
 import { createTileLayer, MAXIMUM_ZOOM } from '../map/tile-layer';
 import { StationMarkerLayer } from './station-marker-layer';
+import type { ClusterOpening } from './station-marker-layer';
 
-/** A price tag stands above its map point; fitting points alone would cut off the top tags. */
-const PRICE_TAG_HEIGHT_IN_PIXELS = 40;
 /** Leaflet's default is unbounded, so a fast swipe flings the map far and for long. */
 const INERTIA_MAXIMUM_SPEED_IN_PIXELS_PER_SECOND = 1500;
 
@@ -56,11 +55,14 @@ interface PendingViewUpdate {
 @Component({
   selector: 'app-stations-map',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Covered by overlays, the price tags would take focus while hidden.
   template: `<div
     #map
     class="stations-map"
     role="region"
-    aria-label="Karte der Tankstellen"></div>`,
+    aria-label="Karte der Tankstellen"
+    [attr.inert]="isCoveredByOverlays() ? '' : null"
+    (focusin)="bringFocusedMarkerIntoView($event)"></div>`,
   styles: `
     :host {
       position: relative;
@@ -93,15 +95,18 @@ export class StationsMap {
   private readonly mapboxAccessToken = inject(CONFIGURED_MAPBOX_ACCESS_TOKEN);
   private readonly prefersReducedMotion = injectPrefersReducedMotion();
   private readonly map = signal<L.Map | undefined>(undefined);
+  protected readonly isCoveredByOverlays = signal(false);
   private readonly stationMarkers = new StationMarkerLayer(marker => {
     this.selectFromMap(marker);
   });
   private revealedStationIdentifier: string | undefined;
   private markerReveal: MarkerReveal | undefined;
-  private stopWaitingToFocusOpenedCluster: (() => void) | undefined;
+  private clusterOpening: ClusterOpening | undefined;
   private pendingViewUpdate: PendingViewUpdate | undefined;
   private hasAppliedViewUpdate = false;
-  /** Set once the user drags the map; overlay changes then no longer move the view. */
+  /** Tells the map's own moves from the user's; `moveend` clears it. */
+  private isMovingProgrammatically = false;
+  /** Set once the user moves or zooms the map; overlay and size changes then keep the view. */
   private hasUserMovedMap = false;
   /** A selected station stays centered while overlays move, until the user moves the map. */
   private hasUserMovedMapSinceReveal = false;
@@ -116,21 +121,37 @@ export class StationsMap {
         maxZoom: MAXIMUM_ZOOM,
         inertiaMaxSpeed: INERTIA_MAXIMUM_SPEED_IN_PIXELS_PER_SECOND,
       });
-      this.fitSearchArea(map, { animate: false });
+      // Every move the map did not start itself is the user's: dragging, pinching, the wheel, the
+      // zoom buttons or the arrow keys. A reveal moves the map in steps, one `moveend` apart.
+      // Registered before the first fit, whose `moveend` ends that programmatic move.
+      map.on('movestart', () => {
+        if (!this.isMovingProgrammatically && this.markerReveal?.isPending !== true) {
+          this.markUserMovement();
+        }
+      });
+      // A drag stops a running animation of the map's own; it is the user's even then.
+      map.on('dragstart', () => {
+        this.markUserMovement();
+      });
+      map.on('moveend', () => {
+        this.isMovingProgrammatically = false;
+        if (this.hasUserMovedMap) {
+          this.visibleCenterChanged.emit(visibleAreaCenter(map, this.viewportPadding()));
+        }
+      });
+      // Leaflet needs a view before layers are added; with no visible space the next update fits.
+      if (!this.fitSearchArea(map, { animate: false })) {
+        this.moveProgrammatically(() => {
+          map.fitBounds(searchAreaBounds(this.center(), this.radiusInKilometers()), {
+            animate: false,
+          });
+        });
+      }
       L.control
         .zoom({ position: 'topright', zoomInTitle: 'Hineinzoomen', zoomOutTitle: 'Herauszoomen' })
         .addTo(map);
       this.stationMarkers.addTo(map, ({ cluster, isFromKeyboard }) => {
-        this.zoomIntoCluster(map, cluster, isFromKeyboard);
-      });
-      map.on('dragstart', () => {
-        this.hasUserMovedMap = true;
-        this.hasUserMovedMapSinceReveal = true;
-      });
-      map.on('moveend', () => {
-        if (this.hasUserMovedMap) {
-          this.visibleCenterChanged.emit(visibleAreaCenter(map, this.viewportPadding()));
-        }
+        this.openCluster(map, cluster, isFromKeyboard);
       });
       observeElementResize(
         [this.host.nativeElement],
@@ -216,7 +237,6 @@ export class StationsMap {
     effect(() => {
       const map = this.map();
       const selectedStationIdentifier = this.selectedStationIdentifier();
-      const markers = this.stationMarkers.markersByStationIdentifier();
       if (map === undefined) {
         return;
       }
@@ -227,7 +247,7 @@ export class StationsMap {
         return;
       }
       // Revealed once per selection, not again whenever the markers are rebuilt.
-      const selectedMarker = markers.get(selectedStationIdentifier);
+      const selectedMarker = this.stationMarkers.markerOf(selectedStationIdentifier);
       if (
         selectedMarker === undefined ||
         selectedStationIdentifier === this.revealedStationIdentifier
@@ -242,7 +262,7 @@ export class StationsMap {
 
     destroyRef.onDestroy(() => {
       this.markerReveal?.cancel();
-      this.stopWaitingToFocusOpenedCluster?.();
+      this.clusterOpening?.cancel();
       if (this.pendingViewUpdate !== undefined) {
         cancelAnimationFrame(this.pendingViewUpdate.frame);
       }
@@ -266,6 +286,31 @@ export class StationsMap {
     if (map !== undefined && marker !== undefined) {
       this.reveal(map, marker);
     }
+  }
+
+  /**
+   * A price tag reached with the Tab key may lie under an overlay; it moves into the visible part
+   * of the map like a revealed one, so the focus is never hidden.
+   */
+  protected bringFocusedMarkerIntoView(event: FocusEvent): void {
+    const map = this.map();
+    const target = event.target;
+    if (
+      map === undefined ||
+      !(target instanceof HTMLElement) ||
+      map.getPane('markerPane')?.contains(target) !== true
+    ) {
+      return;
+    }
+    const viewportPadding = this.viewportPadding();
+    const markerPoint = L.DomUtil.getPosition(target);
+    if (isInVisibleArea(map, map.layerPointToContainerPoint(markerPoint), viewportPadding)) {
+      return;
+    }
+    const center = centerForVisibleArea(map, map.layerPointToLatLng(markerPoint), viewportPadding);
+    this.moveProgrammatically(() => {
+      map.panTo(center, this.motion());
+    });
   }
 
   private selectFromMap(marker: StationMarker): void {
@@ -309,9 +354,10 @@ export class StationsMap {
       map.invalidateSize();
       hasSizeChanged = !sizeBefore.equals(map.getSize());
     }
-    const viewportPadding = this.viewportPadding();
+    const isCoveredByOverlays = !hasVisibleArea(map, this.viewportPadding());
+    this.isCoveredByOverlays.set(isCoveredByOverlays);
     // Nothing to show behind overlays covering the whole map; the next change fits again.
-    if ((!update.hasPaddingChanged && !hasSizeChanged) || !hasVisibleArea(map, viewportPadding)) {
+    if ((!update.hasPaddingChanged && !hasSizeChanged) || isCoveredByOverlays) {
       return;
     }
     // The view set up before the overlays had their size was never meant to be seen; correct it
@@ -319,10 +365,13 @@ export class StationsMap {
     const motion = this.hasAppliedViewUpdate ? this.motion() : { animate: false };
     this.hasAppliedViewUpdate = true;
     const selectedStationIdentifier = this.selectedStationIdentifier();
-    if (selectedStationIdentifier !== undefined) {
+    const selectedMarker =
+      selectedStationIdentifier === undefined
+        ? undefined
+        : this.stationMarkers.markerOf(selectedStationIdentifier);
+    if (selectedMarker !== undefined) {
       // E.g. the sheet moved after a price tag was chosen: keep that station in the middle.
-      const selectedMarker = this.stationMarkers.markerOf(selectedStationIdentifier);
-      if (selectedMarker !== undefined && !this.hasUserMovedMapSinceReveal) {
+      if (!this.hasUserMovedMapSinceReveal) {
         this.reveal(map, selectedMarker, motion);
       }
       return;
@@ -337,72 +386,72 @@ export class StationsMap {
     return { animate: !this.prefersReducedMotion() };
   }
 
-  /** Fits the search radius into the part of the map not covered by overlays. */
-  private fitSearchArea(map: L.Map, motion: L.ZoomPanOptions): void {
-    map.fitBounds(searchAreaBounds(this.center(), this.radiusInKilometers()), {
-      ...toPaddingOptions(this.viewportPadding()),
-      ...motion,
-    });
+  private markUserMovement(): void {
+    this.hasUserMovedMap = true;
+    this.hasUserMovedMapSinceReveal = true;
+  }
+
+  private moveProgrammatically(move: () => void): void {
+    this.isMovingProgrammatically = true;
+    move();
   }
 
   /**
-   * Zooms so the cluster's stations fill the part of the map not covered by overlays. When
-   * zooming cannot separate them (maximum zoom), they fan out around the centered cluster.
+   * Fits the search radius into the part of the map not covered by overlays. Returns false
+   * without moving while the overlays leave nothing visible: fitting into no space at all would
+   * jump to the maximum zoom.
    */
-  private zoomIntoCluster(map: L.Map, cluster: L.MarkerCluster, isFromKeyboard: boolean): void {
+  private fitSearchArea(map: L.Map, motion: L.ZoomPanOptions): boolean {
     const viewportPadding = this.viewportPadding();
-    const paddingForTags = {
-      ...viewportPadding,
-      top: viewportPadding.top + PRICE_TAG_HEIGHT_IN_PIXELS,
-    };
-    const bounds = cluster.getBounds();
-    const totalPadding = L.point(
-      viewportPadding.left + viewportPadding.right + 2 * EDGE_SPACING_IN_PIXELS,
-      paddingForTags.top + paddingForTags.bottom + 2 * EDGE_SPACING_IN_PIXELS
-    );
-    const targetZoom = Math.min(map.getBoundsZoom(bounds, false, totalPadding), map.getMaxZoom());
-    const isFanningOut = targetZoom <= map.getZoom();
-    this.stopWaitingToFocusOpenedCluster?.();
-    this.stopWaitingToFocusOpenedCluster = isFromKeyboard
-      ? this.focusOnceOpened(cluster, isFanningOut ? 'spiderfied' : 'animationend')
-      : undefined;
-    if (isFanningOut) {
-      cluster.spiderfy();
-      map.panTo(centerForVisibleArea(map, cluster.getLatLng(), viewportPadding), this.motion());
-      return;
+    if (!hasVisibleArea(map, viewportPadding)) {
+      return false;
     }
-    map.fitBounds(bounds, {
-      ...toPaddingOptions(paddingForTags),
-      maxZoom: map.getMaxZoom(),
-      ...this.motion(),
+    this.moveProgrammatically(() => {
+      map.fitBounds(searchAreaBounds(this.center(), this.radiusInKilometers()), {
+        ...toPaddingOptions(viewportPadding),
+        ...motion,
+      });
     });
+    return true;
+  }
+
+  private openCluster(map: L.Map, cluster: L.MarkerCluster, isFromKeyboard: boolean): void {
+    this.clusterOpening?.cancel();
+    // The user chose the view of the cluster; size and overlay changes keep it.
+    this.markUserMovement();
+    const clusterIcon = cluster.getElement();
+    this.clusterOpening = this.stationMarkers.openCluster(
+      map,
+      cluster,
+      this.viewportPadding(),
+      this.motion(),
+      () => {
+        this.clusterOpening = undefined;
+        if (isFromKeyboard) {
+          this.focusOpenedCluster(cluster, clusterIcon);
+        }
+      }
+    );
   }
 
   /**
-   * Zooming in removes the focused cluster icon, which would drop the focus to the page. Moves it
-   * to what shows the cluster's cheapest station, or to the map, unless the user focused
+   * Opening the cluster removes the focused cluster icon, which would drop the focus to the page.
+   * Moves it to what shows the cluster's cheapest station, or to the map, unless the user focused
    * something else meanwhile.
    */
-  private focusOnceOpened(
-    cluster: L.MarkerCluster,
-    eventType: 'animationend' | 'spiderfied'
-  ): () => void {
-    const clusterIcon = cluster.getElement();
-    return this.stationMarkers.onceSettled(eventType, () => {
-      this.stopWaitingToFocusOpenedCluster = undefined;
-      const focusedElement = document.activeElement;
-      if (
-        focusedElement !== null &&
-        focusedElement !== document.body &&
-        focusedElement !== clusterIcon
-      ) {
-        return;
-      }
-      const target =
-        this.stationMarkers.elementShowingCheapestOf(cluster) ?? this.container().nativeElement;
-      // Leaflet positions the panes itself; a scrolled map container would shift them.
-      target.focus({ preventScroll: true });
-    });
+  private focusOpenedCluster(cluster: L.MarkerCluster, clusterIcon: HTMLElement | undefined): void {
+    const focusedElement = document.activeElement;
+    if (
+      focusedElement !== null &&
+      focusedElement !== document.body &&
+      focusedElement !== clusterIcon
+    ) {
+      return;
+    }
+    const target =
+      this.stationMarkers.elementShowingCheapestOf(cluster) ?? this.container().nativeElement;
+    // Leaflet positions the panes itself; a scrolled map container would shift them.
+    target.focus({ preventScroll: true });
   }
 
   /**
@@ -413,7 +462,9 @@ export class StationsMap {
     this.markerReveal?.cancel();
     this.hasUserMovedMapSinceReveal = false;
     this.markerReveal = this.stationMarkers.reveal(map, marker, () => {
-      map.panTo(centerForVisibleArea(map, marker.getLatLng(), this.viewportPadding()), motion);
+      this.moveProgrammatically(() => {
+        map.panTo(centerForVisibleArea(map, marker.getLatLng(), this.viewportPadding()), motion);
+      });
     });
   }
 }

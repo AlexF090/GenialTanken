@@ -1,10 +1,13 @@
 import { L } from './leaflet';
 import {
   centerForVisibleArea,
+  hasVisibleArea,
+  isInVisibleArea,
   isSameViewportPadding,
   NO_VIEWPORT_PADDING,
   searchAreaBounds,
   toPaddingOptions,
+  totalPaddingOf,
   visibleAreaCenter,
 } from './map-viewport';
 import type { ViewportPadding } from './map-viewport';
@@ -64,6 +67,30 @@ describe('map viewport', () => {
         paddingTopLeft: [124, 64],
         paddingBottomRight: [24, 424],
       });
+    });
+  });
+
+  describe('totalPaddingOf', () => {
+    it('sums the overlays and the edge spacing of both sides per axis', () => {
+      expect(totalPaddingOf(OVERLAYS)).toEqual(L.point(148, 488));
+    });
+  });
+
+  describe('hasVisibleArea', () => {
+    it('is false once the overlays and edge spacing leave nothing of the map', () => {
+      expect(hasVisibleArea(map, OVERLAYS)).toBe(true);
+      expect(hasVisibleArea(map, { ...OVERLAYS, bottom: 512 })).toBe(false);
+    });
+  });
+
+  describe('isInVisibleArea', () => {
+    it('accepts points between the overlays and their edge spacing only', () => {
+      expect(isInVisibleArea(map, L.point(124, 64), OVERLAYS)).toBe(true);
+      expect(isInVisibleArea(map, L.point(776, 176), OVERLAYS)).toBe(true);
+      expect(isInVisibleArea(map, L.point(123, 100), OVERLAYS)).toBe(false);
+      expect(isInVisibleArea(map, L.point(400, 177), OVERLAYS)).toBe(false);
+      expect(isInVisibleArea(map, L.point(400, 63), OVERLAYS)).toBe(false);
+      expect(isInVisibleArea(map, L.point(777, 100), OVERLAYS)).toBe(false);
     });
   });
 

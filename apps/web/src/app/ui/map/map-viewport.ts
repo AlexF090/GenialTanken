@@ -13,7 +13,7 @@ export interface ViewportPadding {
 export const NO_VIEWPORT_PADDING: ViewportPadding = { top: 0, right: 0, bottom: 0, left: 0 };
 
 /** Keeps the radius circle and revealed markers off the very edge of the visible map. */
-export const EDGE_SPACING_IN_PIXELS = 24;
+const EDGE_SPACING_IN_PIXELS = 24;
 
 export const toPaddingOptions = (
   padding: ViewportPadding
@@ -30,10 +30,32 @@ export const toPaddingOptions = (
  * space at all would send the map to its maximum zoom, e.g. behind the fully opened sheet.
  */
 export const hasVisibleArea = (map: L.Map, padding: ViewportPadding): boolean => {
+  const visibleSize = map.getSize().subtract(totalPaddingOf(padding));
+  return visibleSize.x > 0 && visibleSize.y > 0;
+};
+
+/**
+ * Horizontal and vertical space taken by overlays and edge spacing together, e.g. for
+ * `map.getBoundsZoom`, which takes the padding of both sides as one point.
+ */
+export const totalPaddingOf = (padding: ViewportPadding): L.Point =>
+  L.point(
+    padding.left + padding.right + 2 * EDGE_SPACING_IN_PIXELS,
+    padding.top + padding.bottom + 2 * EDGE_SPACING_IN_PIXELS
+  );
+
+/** Whether a point of the map container lies in the part not covered by overlays and edge spacing. */
+export const isInVisibleArea = (
+  map: L.Map,
+  containerPoint: L.Point,
+  padding: ViewportPadding
+): boolean => {
   const size = map.getSize();
   return (
-    size.x - padding.left - padding.right - 2 * EDGE_SPACING_IN_PIXELS > 0 &&
-    size.y - padding.top - padding.bottom - 2 * EDGE_SPACING_IN_PIXELS > 0
+    containerPoint.x >= padding.left + EDGE_SPACING_IN_PIXELS &&
+    containerPoint.x <= size.x - padding.right - EDGE_SPACING_IN_PIXELS &&
+    containerPoint.y >= padding.top + EDGE_SPACING_IN_PIXELS &&
+    containerPoint.y <= size.y - padding.bottom - EDGE_SPACING_IN_PIXELS
   );
 };
 
