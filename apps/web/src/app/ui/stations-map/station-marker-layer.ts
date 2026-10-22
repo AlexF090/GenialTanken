@@ -3,7 +3,7 @@ import type { FuelType, Station } from '@genialtanken/contracts';
 import { priceLevelOf, priceRangeOf } from '../../core/stations/price-level';
 import { priceInEuro, stationTitle } from '../../core/stations/station-display';
 import { L } from '../map/leaflet';
-import { createClusterIcon, StationMarker } from '../map/leaflet-layers';
+import { clickOnActivationKey, createClusterIcon, StationMarker } from '../map/leaflet-layers';
 import { revealMarker } from '../map/reveal-marker';
 import type { MarkerReveal } from '../map/reveal-marker';
 
@@ -45,6 +45,7 @@ export class StationMarkerLayer {
         onClusterClick(cluster);
       }
     });
+    this.clusterGroup.on('clusterkeydown', clickOnActivationKey);
   }
 
   markerOf(stationIdentifier: string): StationMarker | undefined {

@@ -15,10 +15,30 @@ export interface StationMarkerOptions extends PriceTagAppearance {
   title: string;
 }
 
+const ACTIVATION_KEYS: ReadonlySet<string> = new Set(['Enter', ' ']);
+
 /**
- * Keyboard-focusable price tag of one station. Leaflet gives the icon `role="button"` and a tab
- * stop; Enter triggers `click` through Leaflet, Space is added here like on native buttons.
+ * Leaflet gives interactive markers `role="button"` and a tab stop, but no key clicks them. Pass
+ * this as a Leaflet `keydown` listener so Enter and Space click the marker like a native button.
+ * The listener goes through Leaflet's event delegation, not the icon element, because Leaflet
+ * recreates icons when clustering or changing the icon. The click propagates like a pointer
+ * click, so a cluster group reports it as `clusterclick`.
  */
+export const clickOnActivationKey = (event: L.LeafletEvent): void => {
+  // Leaflet types cluster events as plain events, although they carry the keyboard event too.
+  if (!('originalEvent' in event) || !(event.originalEvent instanceof KeyboardEvent)) {
+    return;
+  }
+  const keyboardEvent = event.originalEvent;
+  const marker: unknown = event.sourceTarget;
+  if (!ACTIVATION_KEYS.has(keyboardEvent.key) || !(marker instanceof L.Marker)) {
+    return;
+  }
+  keyboardEvent.preventDefault();
+  marker.fire('click', { originalEvent: keyboardEvent }, true);
+};
+
+/** Keyboard-focusable price tag of one station, clicked with Enter or Space. */
 export class StationMarker extends L.Marker {
   readonly stationIdentifier: string;
   private readonly stationTitle: string;
@@ -36,10 +56,8 @@ export class StationMarker extends L.Marker {
     // Clustering removes and re-adds markers, which creates a new icon element every time.
     this.on('add', () => {
       this.applyPressedState();
-      this.getElement()?.addEventListener('keydown', event => {
-        this.clickOnSpace(event);
-      });
     });
+    this.on('keydown', clickOnActivationKey);
   }
 
   get appearance(): PriceTagAppearance {
@@ -72,14 +90,6 @@ export class StationMarker extends L.Marker {
 
   private applyPressedState(): void {
     this.getElement()?.setAttribute('aria-pressed', String(this.currentAppearance.isSelected));
-  }
-
-  private clickOnSpace(event: Event): void {
-    if (!(event instanceof KeyboardEvent) || event.key !== ' ') {
-      return;
-    }
-    event.preventDefault();
-    this.fire('click');
   }
 }
 

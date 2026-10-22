@@ -297,6 +297,19 @@ describe('StationsMap', () => {
       });
     });
 
+    it.each(['Enter', ' '])('zooms the cluster when %j is pressed on it', async key => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture, element } = await render([totalStation, neighborOf(totalStation, 0.001)]);
+      await fixture.whenStable();
+      fitBounds.mockClear();
+
+      const keydown = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      clusterButton(element).dispatchEvent(keydown);
+
+      expect(fitBounds).toHaveBeenCalledOnce();
+      expect(keydown.defaultPrevented).toBe(true);
+    });
+
     it('fans out a cluster that zooming cannot separate and centers it', async () => {
       const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
       const panTo = vi.spyOn(L.Map.prototype, 'panTo');

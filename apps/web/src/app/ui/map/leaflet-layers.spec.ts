@@ -192,6 +192,45 @@ describe('StationMarker', () => {
       expect(clicks).toHaveLength(1);
     });
   });
+
+  it('is clicked with the enter key like a native button', () => {
+    withMap(map => {
+      const marker = stationMarker({}).addTo(map);
+      const clicks: unknown[] = [];
+      marker.on('click', event => clicks.push(event));
+
+      marker
+        .getElement()
+        ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(clicks).toHaveLength(1);
+    });
+  });
+
+  it('stays clickable with the keyboard after its selection changed', () => {
+    withMap(map => {
+      const marker = stationMarker({}).addTo(map);
+      const clicks: unknown[] = [];
+      marker.on('click', event => clicks.push(event));
+
+      marker.setSelected(true);
+      marker.getElement()?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+
+      expect(clicks).toHaveLength(1);
+    });
+  });
+
+  it('ignores other keys', () => {
+    withMap(map => {
+      const marker = stationMarker({}).addTo(map);
+      const clicks: unknown[] = [];
+      marker.on('click', event => clicks.push(event));
+
+      marker.getElement()?.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+
+      expect(clicks).toHaveLength(0);
+    });
+  });
 });
 
 describe('createCenterMarker', () => {
