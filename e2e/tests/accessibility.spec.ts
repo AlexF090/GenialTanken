@@ -66,6 +66,30 @@ const PAGES: PageUnderTest[] = [
     },
   },
   {
+    name: 'explore with the open radius menu',
+    path: '/',
+    isReady: isExploreReady,
+    enterState: async page => {
+      await page.getByRole('button', { name: 'Radius: 5 km', exact: true }).click();
+      await expect(
+        page
+          .getByRole('menu', { name: 'Radius' })
+          .getByRole('menuitemradio', { name: '5 km', exact: true })
+      ).toBeVisible();
+    },
+  },
+  {
+    name: 'explore with the open sort menu',
+    path: '/',
+    isReady: isExploreReady,
+    enterState: async page => {
+      await page.getByRole('button', { name: 'Sortierung: Entfernung', exact: true }).click();
+      await expect(
+        page.getByRole('menu', { name: 'Sortierung' }).getByRole('menuitemradio', { name: 'Preis' })
+      ).toBeVisible();
+    },
+  },
+  {
     name: 'explore with place suggestions',
     path: '/',
     isReady: isExploreReady,
@@ -208,7 +232,13 @@ test.describe('reflow at 320 CSS pixels', () => {
   test.use({ viewport: { width: 320, height: 640 } });
 
   const pagesUnderTest = PAGES.filter(pageUnderTest =>
-    ['explore', 'explore with favorites', 'favorites', 'settings'].includes(pageUnderTest.name)
+    [
+      'explore',
+      'explore with favorites',
+      'explore with place suggestions',
+      'favorites',
+      'settings',
+    ].includes(pageUnderTest.name)
   );
 
   for (const pageUnderTest of pagesUnderTest) {
@@ -216,6 +246,7 @@ test.describe('reflow at 320 CSS pixels', () => {
       await pageUnderTest.prepare?.(page);
       await page.goto(pageUnderTest.path);
       await pageUnderTest.isReady(page);
+      await pageUnderTest.enterState?.(page);
 
       const overflow = await page.evaluate(() => {
         const scrollingElement = document.scrollingElement ?? document.documentElement;

@@ -17,6 +17,7 @@ import {
   stationRowButton,
   stationCard,
   stationCards,
+  stationList,
   stationsMap,
   test,
   useOwnPosition,
@@ -141,7 +142,17 @@ const refreshedStationSchema = z.looseObject({
   pricesInEuro: z.record(z.string(), z.number().nullable()),
 });
 
-const sortOptions = (page: Page) => page.getByRole('group', { name: 'Sortierung', exact: true });
+/** Opens the sort menu through its chip in the filter row and chooses an order. */
+const chooseSortOrder = async (page: Page, order: 'Entfernung' | 'Preis'): Promise<void> => {
+  await page.getByRole('button', { name: /^Sortierung: / }).click();
+  await page
+    .getByRole('menu', { name: 'Sortierung', exact: true })
+    .getByRole('menuitemradio', { name: order, exact: true })
+    .click();
+  await expect(
+    page.getByRole('button', { name: `Sortierung: ${order}`, exact: true })
+  ).toBeVisible();
+};
 
 test.describe('explore page', () => {
   test('starts at the Eiffel Tower without asking for the own position', async ({ page }) => {
@@ -275,13 +286,12 @@ test.describe('explore page', () => {
       await useOwnPosition(page);
       await expect(stationCards(page)).toHaveCount(4);
 
-      const byDistance = sortOptions(page).getByRole('radio', { name: 'Entfernung', exact: true });
-      const byPrice = sortOptions(page).getByRole('radio', { name: 'Preis', exact: true });
-      await expect(byDistance).toBeChecked();
+      await expect(
+        page.getByRole('button', { name: 'Sortierung: Entfernung', exact: true })
+      ).toBeVisible();
       await expect(stationCards(page)).toContainText(['2,680 €', '2,391 €', '2,250 €', '2,250 €']);
 
-      await byPrice.check();
-      await expect(byDistance).not.toBeChecked();
+      await chooseSortOrder(page, 'Preis');
       // Equal prices keep their distance order.
       await expect(stationCards(page)).toContainText([
         boulevardDeLHopitalStation.title,
@@ -290,7 +300,7 @@ test.describe('explore page', () => {
         rueBailleulStation.title,
       ]);
 
-      await byDistance.check();
+      await chooseSortOrder(page, 'Entfernung');
       await expect(stationCards(page)).toContainText([
         rueBailleulStation.title,
         quaiDeLaRapeeStation.title,
@@ -470,14 +480,24 @@ test.describe('explore page', () => {
       const searchField = page.getByRole('combobox', { name: 'Ort suchen' });
       await expect(searchField).toHaveAttribute('placeholder', 'Position auf Karte');
       await searchField.pressSequentially('Bastille');
-      const suggestions = page.getByRole('listbox', { name: 'Orte' }).getByRole('option');
+      // In the side panel instead of the list, below the field
+      const suggestions = page
+        .getByRole('region', { name: 'Tankstellen', exact: true })
+        .getByRole('listbox', { name: 'Orte' })
+        .getByRole('option');
       await expect(suggestions.first()).toContainText('Bastille');
+      await expect(stationList(page)).toBeHidden();
       await suggestions.first().click();
+      await expect(stationList(page)).toBeVisible();
 
       await expect(resultSummary(page)).toContainText('um Bastille');
       await expect(searchField).toHaveValue('Bastille');
 
+      // Like on iOS, clearing the field starts a new search; "Abbrechen" returns to the list.
       await page.getByRole('button', { name: 'Suche löschen' }).click();
+      await expect(searchField).toBeFocused();
+      await expect(searchField).toHaveValue('');
+      await page.getByRole('button', { name: 'Abbrechen', exact: true }).click();
       await expect(resultSummary(page)).toContainText('um die Kartenmitte');
       await expect(searchField).toHaveValue('');
     });

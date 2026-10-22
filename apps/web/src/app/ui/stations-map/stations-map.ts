@@ -148,7 +148,11 @@ export class StationsMap {
         });
       }
       L.control
-        .zoom({ position: 'topright', zoomInTitle: 'Hineinzoomen', zoomOutTitle: 'Herauszoomen' })
+        .zoom({
+          position: 'bottomright',
+          zoomInTitle: 'Hineinzoomen',
+          zoomOutTitle: 'Herauszoomen',
+        })
         .addTo(map);
       this.stationMarkers.addTo(map, ({ cluster, isFromKeyboard }) => {
         this.openCluster(map, cluster, isFromKeyboard);

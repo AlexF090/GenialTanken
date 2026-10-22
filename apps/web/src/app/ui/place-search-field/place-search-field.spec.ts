@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { Place } from '@genialtanken/contracts';
@@ -6,26 +7,35 @@ import { getButton, hostElementOf, textOf } from '../../../testing/render-page';
 import { PlaceSearchField } from './place-search-field';
 
 @Component({
-  imports: [PlaceSearchField],
+  imports: [NgTemplateOutlet, PlaceSearchField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-place-search-field
+      #field
       placeholder="Position auf Karte"
+      hint="Ort oder Adresse eingeben."
       [(query)]="query"
       [suggestions]="suggestions()"
       [statusMessage]="statusMessage()"
+      [isCancelable]="isCancelable()"
+      (searchStarted)="startCount = startCount + 1"
+      (canceled)="cancelCount = cancelCount + 1"
       (placeSelected)="selectedPlaces.push($event)"
-      (cleared)="clearCount = clearCount + 1">
-      <button type="button" placeSearchAccessory>5 km</button>
-    </app-place-search-field>
+      (cleared)="clearCount = clearCount + 1" />
+    <section aria-label="Ergebnisse">
+      <ng-container [ngTemplateOutlet]="field.suggestionsTemplate()" />
+    </section>
   `,
 })
 class PlaceSearchFieldHost {
   readonly query = signal('');
   readonly suggestions = signal<readonly Place[]>([]);
   readonly statusMessage = signal<string | undefined>(undefined);
+  readonly isCancelable = signal(false);
   readonly selectedPlaces: Place[] = [];
   clearCount = 0;
+  startCount = 0;
+  cancelCount = 0;
 }
 
 const render = async () => {
@@ -42,7 +52,7 @@ const render = async () => {
   };
   const options = () => [...element.querySelectorAll<HTMLElement>('[role="option"]')];
   const listbox = () => element.querySelector('[role="listbox"]');
-  const isListShown = () => listbox()?.parentElement?.hidden === false;
+  const isListShown = () => listbox()?.hasAttribute('hidden') === false;
   const type = async (value: string) => {
     combobox().focus();
     combobox().value = value;
@@ -71,14 +81,34 @@ describe('PlaceSearchField', () => {
     document.body.replaceChildren();
   });
 
-  it('is a named search combobox with the placeholder and the accessory', async () => {
+  it('is a named search combobox with the placeholder', async () => {
     const { element, combobox } = await render();
 
     expect(element.querySelector('[role="search"]')).not.toBeNull();
     expect(combobox().getAttribute('aria-label')).toBe('Ort suchen');
     expect(combobox().placeholder).toBe('Position auf Karte');
     expect(combobox().getAttribute('aria-expanded')).toBe('false');
-    expect(getButton(element, '5 km')).toBeDefined();
+  });
+
+  it('renders the hidden listbox where the host puts the suggestions', async () => {
+    const { element, combobox, listbox, isListShown } = await render();
+
+    expect(listbox()?.closest('section[aria-label="Ergebnisse"]')).not.toBeNull();
+    expect(listbox()?.closest('[role="search"]')).toBeNull();
+    expect(combobox().getAttribute('aria-controls')).toBe(listbox()?.id);
+    expect(isListShown()).toBe(false);
+    expect(textOf(element.querySelector('.place-search-field__hint'))).toBe(
+      'Ort oder Adresse eingeben.'
+    );
+  });
+
+  it('reports the start of a search when the field is focused', async () => {
+    const { fixture, combobox, host } = await render();
+
+    combobox().focus();
+    await fixture.whenStable();
+
+    expect(host.startCount).toBe(1);
   });
 
   it('reports typed text and lists the suggestions with name and description', async () => {
@@ -183,5 +213,35 @@ describe('PlaceSearchField', () => {
     expect(combobox().value).toBe('');
     expect(host.clearCount).toBe(1);
     expect(document.activeElement).toBe(combobox());
+  });
+
+  it('offers "Abbrechen" only when cancelable and leaves the field with it', async () => {
+    const { element, fixture, combobox, isListShown, type, host } = await render();
+    expect(element.querySelector('.place-search-field__cancel')).toBeNull();
+    host.isCancelable.set(true);
+    await type('Bast');
+    host.suggestions.set([bastillePlace]);
+    await fixture.whenStable();
+
+    getButton(element, 'Abbrechen').click();
+    await fixture.whenStable();
+
+    expect(host.cancelCount).toBe(1);
+    expect(isListShown()).toBe(false);
+    expect(document.activeElement).not.toBe(combobox());
+  });
+
+  it('cancels with Escape when cancelable, even with the suggestions open', async () => {
+    const { fixture, combobox, isListShown, type, press, host } = await render();
+    host.isCancelable.set(true);
+    await type('Bast');
+    host.suggestions.set([bastillePlace]);
+    await fixture.whenStable();
+
+    await press('Escape');
+
+    expect(host.cancelCount).toBe(1);
+    expect(isListShown()).toBe(false);
+    expect(document.activeElement).not.toBe(combobox());
   });
 });

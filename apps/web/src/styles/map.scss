@@ -319,7 +319,8 @@ app-stations-map {
   }
 }
 
-// Phones zoom with two fingers, like Apple Maps; the buttons would crowd the search field.
+// Phones zoom with two fingers, like Apple Maps; the buttons would crowd the sheet. Larger windows
+// show them at the bottom right, like Apple Maps on the Mac, clear of the locate button.
 app-stations-map .leaflet-control-zoom {
   @include breakpoints.compact {
     display: none;

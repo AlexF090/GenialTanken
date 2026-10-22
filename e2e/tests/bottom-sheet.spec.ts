@@ -8,6 +8,7 @@ import {
   expectNoAccessibilityViolations,
   resultSummary,
   rueBailleulStation,
+  settingsButton,
   sheetHandle,
   stationRowButton,
   stationCard,
@@ -186,6 +187,77 @@ test.describe('bottom sheet on a phone', () => {
       })
     ).toHaveAttribute('aria-pressed', 'true');
   });
+
+  test('the place search opens the sheet fully and "Abbrechen" returns it', async ({ page }) => {
+    await expectSheetAt(page, 'half', 'Liste vergrößern');
+    const searchField = page.getByRole('combobox', { name: 'Ort suchen' });
+
+    await searchField.pressSequentially('Bastille');
+
+    await expect(sheetHandle(page)).toHaveAccessibleName('Liste verkleinern');
+    const suggestions = sheet(page).getByRole('listbox', { name: 'Orte' }).getByRole('option');
+    await expect(suggestions.first()).toContainText('Bastille');
+    await expectShownOnScreen(page, suggestions.first());
+    await expect(stationList(page)).toBeHidden();
+
+    await sheet(page).getByRole('button', { name: 'Abbrechen', exact: true }).click();
+
+    await expectSheetAt(page, 'half', 'Liste vergrößern');
+    await expect(searchField).toHaveValue('');
+    await expect(searchField).not.toBeFocused();
+  });
+
+  test('choosing a place lowers the sheet to half over the stations around it', async ({
+    page,
+  }) => {
+    const searchField = page.getByRole('combobox', { name: 'Ort suchen' });
+    await searchField.pressSequentially('Bastille');
+    await sheet(page).getByRole('option').first().click();
+
+    await expect(resultSummary(page)).toContainText('um Bastille');
+    await expectSheetAt(page, 'half', 'Liste vergrößern');
+  });
+
+  test('Escape leaves the search like "Abbrechen"', async ({ page }) => {
+    await sheetHandle(page).focus();
+    await page.keyboard.press('Home');
+    await expectSheetAt(page, 'peek', 'Liste vergrößern');
+    const searchField = page.getByRole('combobox', { name: 'Ort suchen' });
+
+    await searchField.focus();
+    await expect(sheetHandle(page)).toHaveAccessibleName('Liste verkleinern');
+    await page.keyboard.press('Escape');
+
+    await expectSheetAt(page, 'peek', 'Liste vergrößern');
+  });
+
+  for (const width of [320, 393]) {
+    test.describe(`at ${String(width)} CSS pixels`, () => {
+      test.use({ viewport: { width, height: 640 } });
+
+      test('keeps the search field and the settings button in one row', async ({ page }) => {
+        const settings = settingsButton(page);
+        const settingsBox = await settings.boundingBox();
+        expect(settingsBox?.height).toBeGreaterThanOrEqual(44);
+        expect(settingsBox?.width).toBeGreaterThanOrEqual(44);
+        // Measured in one frame, as the sheet may still be sliding into place
+        const row = await page.getByRole('combobox', { name: 'Ort suchen' }).evaluate(
+          (field, settingsElement) => {
+            const middle = (rectangle: DOMRect): number => rectangle.top + rectangle.height / 2;
+            const fieldRectangle = field.getBoundingClientRect();
+            const settingsRectangle = settingsElement.getBoundingClientRect();
+            return {
+              middleDistance: Math.abs(middle(fieldRectangle) - middle(settingsRectangle)),
+              settingsRight: settingsRectangle.right,
+            };
+          },
+          await settings.elementHandle()
+        );
+        expect(row.middleDistance).toBeLessThanOrEqual(1);
+        expect(row.settingsRight).toBeLessThanOrEqual(width);
+      });
+    });
+  }
 
   test.describe('on a short screen, where the four stations overflow the full sheet', () => {
     test.use({ viewport: { width: 412, height: 500 } });

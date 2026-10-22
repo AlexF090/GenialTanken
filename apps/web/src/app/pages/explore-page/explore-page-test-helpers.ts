@@ -11,6 +11,10 @@ export const selectedStationTitles = (element: HTMLElement): string[] =>
     textOf(title)
   );
 
+/** The line with the number of stations; the place search announces in a status of its own. */
+export const resultSummaryElement = (element: HTMLElement): HTMLElement | null =>
+  element.querySelector('main app-bottom-sheet .explore-page__summary[role="status"]');
+
 export const placeSearchInput = (element: HTMLElement): HTMLInputElement => {
   const input = element.querySelector<HTMLInputElement>('input[role="combobox"]');
   if (input === null) {

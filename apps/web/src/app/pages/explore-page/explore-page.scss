@@ -4,8 +4,8 @@
 @use 'typography';
 
 // The map fills the whole window, under the status bar and the browser's bars too; sheet (phones)
-// or side panel (from 48rem) and the search float over it. Everything is fixed to the window,
-// so the document never scrolls and no `100dvh` jumps while the browser's bars come and go.
+// or side panel (from 48rem) and the map controls float over it. Everything is fixed to the
+// window, so the document never scrolls and no `100dvh` jumps while the browser's bars come and go.
 :host {
   position: fixed;
   inset: 0;
@@ -18,31 +18,28 @@
   inset: 0;
 }
 
-// Floats over the top of the map. Below the sheet: a fully opened sheet covers it, like the
-// map controls of Apple Maps. From 48rem it stands in the map area right of the side panel.
-.explore-page__search {
+// Over the top of the map, below the status bar scrim: the locate button on the right, "In diesem
+// Bereich suchen" centered and notices below them, like the map controls of Apple Maps. From
+// 48rem they stand in the map area right of the side panel.
+.explore-page__map-controls {
   position: absolute;
-  z-index: var(--layer-map-search);
-  display: flex;
-  flex-direction: column;
+  z-index: var(--layer-map-controls);
+  display: grid;
+  grid-template-columns: var(--layout-touch-target) minmax(0, 1fr) var(--layout-touch-target);
   gap: var(--space-xs);
+  align-items: start;
   pointer-events: none;
 
   @include breakpoints.compact {
-    inset: calc(var(--safe-area-top) + var(--space-xs)) var(--space-xs) auto;
+    inset: calc(var(--safe-area-top) + var(--space-sm))
+      calc(var(--safe-area-right) + var(--space-xs)) auto
+      calc(var(--safe-area-left) + var(--space-xs));
   }
 
   @include breakpoints.medium-and-up {
-    --explore-search-left: calc(
-      var(--safe-area-left) + 2 * var(--layout-panel-inset) + var(--layout-panel-width)
-    );
-
-    top: calc(var(--safe-area-top) + var(--layout-panel-inset));
-    left: var(--explore-search-left);
-    width: min(
-      var(--layout-search-width-maximum),
-      100% - var(--explore-search-left) - var(--safe-area-right) - var(--layout-panel-inset)
-    );
+    inset: calc(var(--safe-area-top) + var(--layout-panel-inset))
+      calc(var(--safe-area-right) + var(--layout-panel-inset)) auto
+      calc(var(--safe-area-left) + 2 * var(--layout-panel-inset) + var(--layout-panel-width));
   }
 
   > * {
@@ -50,33 +47,23 @@
   }
 }
 
-.explore-page__search--covered {
+.explore-page__map-controls--covered {
   visibility: hidden;
 }
 
-.explore-page__search-bar {
-  display: flex;
-  gap: var(--space-xs);
-  align-items: center;
-}
-
-.explore-page__place-search {
-  flex: 1;
-  min-width: 0;
-}
-
-// Both float over the map.
 .explore-page__area-search,
 .explore-page__locate {
+  grid-row: 1;
   @include materials.floating-material;
 }
 
-// Capsule below the search field, like "Search here" in Apple Maps.
+// Capsule like "Search here" in Apple Maps.
 .explore-page__area-search {
-  align-self: center;
+  grid-column: 2;
+  justify-self: center;
   min-height: var(--layout-touch-target);
   margin: 0;
-  padding: 0 var(--space-md);
+  padding: var(--space-2xs) var(--space-md);
   border: 0;
   border-radius: var(--radius-pill);
   color: var(--color-action-text);
@@ -94,20 +81,10 @@
   }
 }
 
-// Inside the search capsule, set off by a hairline like a second segment.
-.explore-page__radius {
-  flex: none;
-  padding-inline: var(--space-sm) var(--space-xs);
-  border-left: var(--border-width-hairline) solid var(--color-hairline);
-  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
-  color: var(--color-action-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  white-space: nowrap;
-}
-
 // Map button like the location button of Apple Maps; filled while centered on the own position.
 .explore-page__locate {
+  grid-column: 3;
+
   &[aria-busy='true'] {
     cursor: progress;
     opacity: var(--opacity-disabled);
@@ -119,8 +96,10 @@
   color: var(--color-on-action);
 }
 
-.explore-page__refresh {
-  margin-inline-start: auto;
+.explore-page__toast {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: min(100%, var(--layout-search-width-maximum));
 }
 
 // From 48rem a glass card floating over the map, inset from the window edges; on phones the
@@ -139,9 +118,10 @@
 .explore-page__header {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  padding: 0 var(--space-md) var(--space-sm);
+  gap: var(--space-xs);
+  padding: 0 var(--space-md) var(--space-xs);
   border-bottom: var(--border-width-hairline) solid var(--color-hairline);
+  container-type: inline-size;
 }
 
 // Stays in the accessibility tree while empty, so the notice is announced, but takes no gap.
@@ -162,32 +142,49 @@
   }
 }
 
-.explore-page__toolbar {
+// Never wraps: the field gives way, so the settings button stays next to it down to 320px.
+.explore-page__search-row {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
   gap: var(--space-xs);
+  align-items: center;
 }
 
-// Tinted capsule like an iOS pull-down button; opens the fuel menu.
-.explore-page__fuel {
-  flex: none;
-  padding-inline: var(--space-sm) var(--space-xs);
-  border-radius: var(--radius-pill);
-  background-color: var(--color-action-tint);
-  color: var(--color-action-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-tight);
+.explore-page__place-search {
+  flex: 1;
 }
 
-.explore-page__chevron {
-  font-size: var(--icon-size-sm);
+// One row that scrolls sideways when the chips do not fit, padded so focus rings are not cut
+// off. In narrow sheets, or with large text (the query is in rem), the chips wrap instead, so
+// nothing hides beyond the edge (1.4.10 Reflow).
+.explore-page__filters {
+  display: flex;
+  gap: var(--space-xs);
+  margin: calc(-1 * var(--space-xs)) calc(-1 * var(--space-md));
+  padding: var(--space-xs) var(--space-md);
+  overflow-x: auto;
+  scroll-padding-inline: var(--space-md);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+
+  @container (width < 22rem) {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
 }
 
-.explore-page__summary {
+// The summary is a whole sentence of varying length; "Aktualisieren" stays at the end of its row
+// instead of trailing it, so a wrapped summary never strands the button.
+.explore-page__summary-line {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+  justify-content: space-between;
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
+}
+
+.explore-page__refresh {
+  font-weight: var(--font-weight-medium);
 }
 
 .explore-page__credit {

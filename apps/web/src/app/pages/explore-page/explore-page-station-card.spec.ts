@@ -16,6 +16,7 @@ import { STATIONS_URL, stationsUrl, stationUrl } from '../../../testing/api-urls
 import {
   childComponent,
   EIFFEL_TOWER_E5_URL,
+  resultSummaryElement,
   selectedStationTitles,
 } from './explore-page-test-helpers';
 
@@ -100,7 +101,7 @@ describe('ExplorePage with a station card', () => {
     await context.settle();
     await harness.fixture.whenStable();
 
-    const summary = element.querySelector('main app-bottom-sheet [role="status"]');
+    const summary = resultSummaryElement(element);
     expect(document.activeElement).toBe(summary);
     expect(textOf(summary)).toBe(
       'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.'
@@ -152,9 +153,7 @@ describe('ExplorePage with a station card', () => {
     context.httpTesting.expectOne(stationsUrl(essoStation.address)).flush([essoStation]);
     await context.settle();
 
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
-      '1 Tankstelle im Umkreis von 5 km um Esso'
-    );
+    expect(textOf(resultSummaryElement(element))).toBe('1 Tankstelle im Umkreis von 5 km um Esso');
     context.httpTesting.expectNone(request => request.url === STATIONS_URL);
   });
 });

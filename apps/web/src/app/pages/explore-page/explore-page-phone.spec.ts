@@ -21,15 +21,20 @@ import {
   totalStation,
   unbrandedStation,
 } from '../../../testing/station-fixtures';
+import { bastillePlace } from '../../../testing/place-fixtures';
+import { placesUrl, stationsUrl } from '../../../testing/api-urls';
 import { ExplorePage } from './explore-page';
+import { PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS } from './place-search';
 import { childComponent, EIFFEL_TOWER_E5_URL, placeSearchInput } from './explore-page-test-helpers';
 
 describe('ExplorePage on a phone', () => {
   let context: PageTestContext;
 
   afterEach(() => {
+    vi.useRealTimers();
     context.httpTesting.verify();
     vi.restoreAllMocks();
+    document.body.replaceChildren();
   });
 
   beforeEach(() => {
@@ -94,15 +99,99 @@ describe('ExplorePage on a phone', () => {
     );
   });
 
-  it('moves the sheet aside while a place is typed', async () => {
-    const { fixture, element } = await renderWithStations();
-    const input = placeSearchInput(element);
+  /** Focus only reaches elements in the document. */
+  const startSearch = async (element: HTMLElement) => {
+    document.body.append(element);
+    placeSearchInput(element).focus();
+    await context.settle();
+  };
 
-    input.value = 'Bas';
+  const isListShown = (element: HTMLElement): boolean =>
+    element.querySelector('app-station-list')?.closest('[hidden]') === null;
+
+  it('opens the sheet fully and shows the search instead of the list when the field is focused', async () => {
+    const { fixture, element } = await renderWithStations();
+
+    await startSearch(element);
+
+    expect(childComponent(fixture, BottomSheet).snapPosition()).toBe('full');
+    expect(isListShown(element)).toBe(false);
+    const listbox = element.querySelector('[role="listbox"]');
+    expect(listbox?.closest('.bottom-sheet__content')).not.toBeNull();
+    expect(listbox?.closest('[hidden]')).not.toBeNull();
+    expect(textOf(element.querySelector('.place-search-field__hint'))).toBe(
+      'Ort, Adresse oder Postleitzahl in Frankreich eingeben.'
+    );
+    expect(element.querySelector('app-bottom-sheet a[aria-label="Einstellungen"]')).toBeNull();
+    expect(getButton(element, 'Abbrechen')).toBeDefined();
+  });
+
+  it.each(['Abbrechen', 'Escape'] as const)(
+    'returns to the previous position and the search center on %s',
+    async action => {
+      const { fixture, element } = await renderWithStations();
+      const sheet = childComponent(fixture, BottomSheet);
+      sheet.snapPosition.set('peek');
+      await context.settle();
+      await startSearch(element);
+      const input = placeSearchInput(element);
+      input.value = 'Bas';
+      input.dispatchEvent(new Event('input'));
+      await context.settle();
+
+      if (action === 'Abbrechen') {
+        getButton(element, 'Abbrechen').click();
+      } else {
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      }
+      await context.settle();
+
+      expect(sheet.snapPosition()).toBe('peek');
+      expect(input.value).toBe('');
+      expect(document.activeElement).not.toBe(input);
+      expect(isListShown(element)).toBe(true);
+      expect(
+        element.querySelector('app-bottom-sheet a[aria-label="Einstellungen"]')
+      ).not.toBeNull();
+    }
+  );
+
+  it('lowers the sheet to half when a place is chosen', async () => {
+    const { fixture, element } = await renderWithStations();
+    vi.useFakeTimers();
+    await startSearch(element);
+    const input = placeSearchInput(element);
+    input.value = 'Bastille';
     input.dispatchEvent(new Event('input'));
     await context.settle();
+    await vi.advanceTimersByTimeAsync(PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS);
+    await context.settle();
+    context.httpTesting.expectOne(placesUrl('Bastille')).flush([bastillePlace]);
+    await context.settle();
 
-    expect(childComponent(fixture, BottomSheet).snapPosition()).toBe('peek');
+    element.querySelector<HTMLElement>('[role="option"]')?.click();
+    await context.settle();
+
+    expect(childComponent(fixture, BottomSheet).snapPosition()).toBe('half');
+    expect(isListShown(element)).toBe(true);
+    context.httpTesting
+      .expectOne(stationsUrl({ latitude: 48.8532, longitude: 2.3692 }))
+      .flush([carrefourStation]);
+    await context.settle();
+    vi.useRealTimers();
+  });
+
+  it('hides the map controls while the fully opened sheet covers them', async () => {
+    const { fixture, element } = await renderWithStations();
+    const controls = element.querySelector('.explore-page__map-controls');
+
+    childComponent(fixture, BottomSheet).snapPosition.set('full');
+    await context.settle();
+    expect(controls?.classList).toContain('explore-page__map-controls--covered');
+
+    childComponent(fixture, BottomSheet).snapPosition.set('half');
+    await context.settle();
+    expect(controls?.classList).not.toContain('explore-page__map-controls--covered');
   });
 
   it('keeps the status bar legible with a decorative scrim over the map', async () => {

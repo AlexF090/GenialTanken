@@ -34,6 +34,8 @@ export interface PlaceSearch {
   choose(place: Place): void;
   /** Keeps the stations around the same point, just without the place name. */
   clear(): void;
+  /** Drops the typed text: the field shows the search center again. */
+  cancel(): void;
 }
 
 /**
@@ -45,10 +47,11 @@ export const injectPlaceSearch = (): PlaceSearch => {
   const searchCenter = inject(SearchCenterStore);
   const center = searchCenter.center;
 
-  const query = linkedSignal(() => {
+  const centerQuery = (): string => {
     const currentCenter = center();
     return currentCenter.source === 'place' ? currentCenter.label : '';
-  });
+  };
+  const query = linkedSignal(centerQuery);
   /** Only typed text is searched, not the name of a place that was just chosen. */
   const isTyping = signal(false);
   const queryAfterTypingPause = debounced(
@@ -89,6 +92,10 @@ export const injectPlaceSearch = (): PlaceSearch => {
       if (center().source === 'place') {
         searchCenter.useMapArea(center());
       }
+    },
+    cancel: () => {
+      isTyping.set(false);
+      query.set(centerQuery());
     },
   };
 };

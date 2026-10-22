@@ -26,6 +26,7 @@ import {
   childComponent,
   EIFFEL_TOWER_E5_URL,
   placeSearchInput,
+  resultSummaryElement,
   selectedStationTitles,
 } from './explore-page-test-helpers';
 
@@ -87,7 +88,7 @@ describe('ExplorePage', () => {
   it('summarizes the result with count, radius and search center', async () => {
     const { element } = await renderWithStations();
 
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+    expect(textOf(resultSummaryElement(element))).toBe(
       '3 Tankstellen im Umkreis von 5 km um Eiffelturm, Paris'
     );
   });
@@ -98,7 +99,7 @@ describe('ExplorePage', () => {
     context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
     await context.settle();
 
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+    expect(textOf(resultSummaryElement(element))).toBe(
       '1 Tankstelle im Umkreis von 5 km um Eiffelturm, Paris'
     );
   });
@@ -137,11 +138,12 @@ describe('ExplorePage', () => {
     expect(TestBed.inject(SettingsStore).fuelType()).toBe('diesel');
   });
 
-  it('offers the radius steps in a menu inside the search field', async () => {
+  it('offers the radius steps in a menu of the filter row', async () => {
     const { element } = await renderWithStations();
 
     const radiusButton = getButton(element, 'Radius: 5 km');
-    expect(radiusButton.closest('[role="search"]')).not.toBeNull();
+    expect(radiusButton.closest('[role="search"]')).toBeNull();
+    expect(radiusButton.closest('app-bottom-sheet')).not.toBeNull();
     radiusButton.click();
     await context.settle();
     const items = [
@@ -193,6 +195,9 @@ describe('ExplorePage', () => {
 
     const option = element.querySelector<HTMLElement>('[role="option"]');
     expect(textOf(option)).toBe('Place de la Bastille, 75011 Paris, Frankreich');
+    // In the panel instead of the list, like on phones
+    expect(option?.closest('.bottom-sheet__content')).not.toBeNull();
+    expect(element.querySelector('app-station-list')?.closest('[hidden]')).not.toBeNull();
     option?.click();
     await context.settle();
 
@@ -202,7 +207,8 @@ describe('ExplorePage', () => {
     await context.settle();
     expect(input.value).toBe('Place de la Bastille');
     expect(element.querySelector('[role="option"]')).toBeNull();
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+    expect(element.querySelector('app-station-list')?.closest('[hidden]')).toBeNull();
+    expect(textOf(resultSummaryElement(element))).toBe(
       '1 Tankstelle im Umkreis von 5 km um Place de la Bastille'
     );
     await waitForTypingPause();
@@ -252,7 +258,7 @@ describe('ExplorePage', () => {
 
     context.httpTesting.expectNone(() => true);
     expect(placeSearchInput(element).value).toBe('');
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+    expect(textOf(resultSummaryElement(element))).toBe(
       '1 Tankstelle im Umkreis von 5 km um die Kartenmitte'
     );
   });
@@ -266,20 +272,20 @@ describe('ExplorePage', () => {
 
   it('switches between distance order and ascending price', async () => {
     const { element } = await renderWithStations();
-    const radio = (name: string): HTMLInputElement => {
-      const input = [...element.querySelectorAll('fieldset label')]
-        .find(label => textOf(label) === name)
-        ?.querySelector('input');
-      if (input === null || input === undefined) {
-        throw new Error(`No radio named ${name}`);
-      }
-      return input;
+    const chooseOrder = async (chipName: string, optionName: string) => {
+      getButton(element, chipName).click();
+      await context.settle();
+      const option = [
+        ...element.querySelectorAll<HTMLElement>(
+          '[role="menu"][aria-label="Sortierung"] [role="menuitemradio"]'
+        ),
+      ].find(item => textOf(item) === optionName);
+      option?.click();
+      await context.settle();
     };
-    expect(textOf(element.querySelector('fieldset legend'))).toBe('Sortierung');
-    expect(radio('Entfernung').checked).toBe(true);
+    expect(getButton(element, 'Sortierung: Entfernung').getAttribute('aria-haspopup')).toBe('menu');
 
-    radio('Preis').click();
-    await context.settle();
+    await chooseOrder('Sortierung: Entfernung', 'Preis');
 
     expect(stationTitles(element)).toEqual([
       '40 Avenue de Flandre',
@@ -287,8 +293,8 @@ describe('ExplorePage', () => {
       'TotalEnergies',
     ]);
 
-    radio('Entfernung').click();
-    await context.settle();
+    expect(getButton(element, 'Sortierung: Preis')).toBeDefined();
+    await chooseOrder('Sortierung: Preis', 'Entfernung');
 
     expect(stationTitles(element)).toEqual([
       'TotalEnergies',
@@ -328,10 +334,13 @@ describe('ExplorePage', () => {
     expect(getButton(element, 'Kraftstoff: Diesel')).toBeDefined();
   });
 
-  it('requests fresh prices once on "Aktualisieren"', async () => {
+  it('requests fresh prices once on "Aktualisieren" next to the result summary', async () => {
     const { element } = await renderWithStations();
+    const refreshButton = getButton(element, 'Aktualisieren');
+    expect(refreshButton.parentElement).toBe(resultSummaryElement(element)?.parentElement);
+    expect(refreshButton.closest('[role="status"]')).toBeNull();
 
-    getButton(element, 'Aktualisieren').click();
+    refreshButton.click();
     await context.settle();
 
     const requests = context.httpTesting.match(() => true);
@@ -387,7 +396,7 @@ describe('ExplorePage', () => {
       .flush([carrefourStation]);
     await context.settle();
     expect(stationTitles(element)).toEqual(['Carrefour Market']);
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+    expect(textOf(resultSummaryElement(element))).toBe(
       '1 Tankstelle im Umkreis von 5 km um Dein Standort'
     );
     expect(locateButton.getAttribute('aria-busy')).toBe('false');
@@ -480,7 +489,7 @@ describe('ExplorePage', () => {
     await context.settle();
     expect(areaSearchButton()).toBeUndefined();
     expect(placeSearchInput(element).placeholder).toBe('Position auf Karte');
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+    expect(textOf(resultSummaryElement(element))).toBe(
       '1 Tankstelle im Umkreis von 5 km um die Kartenmitte'
     );
   });

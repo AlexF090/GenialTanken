@@ -192,6 +192,25 @@ select {
   }
 }
 
+// Plain text button in the tint, like "Cancel" next to an iOS search bar; at least as tall as a
+// touch target.
+.text-button {
+  flex: none;
+  min-height: var(--layout-touch-target);
+  margin: 0;
+  padding: 0 var(--space-2xs);
+  border: 0;
+  background: none;
+  color: var(--color-action-text);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+
+  &:hover {
+    color: var(--color-action-text-hover);
+  }
+}
+
 // Round button with only an icon; the accessible name comes from `aria-label`.
 .icon-button {
   display: inline-flex;

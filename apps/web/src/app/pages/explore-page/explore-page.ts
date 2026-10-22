@@ -12,6 +12,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { distanceInMeters } from '@genialtanken/contracts';
 import type { Coordinates, FuelType, Place, Station } from '@genialtanken/contracts';
@@ -33,6 +34,7 @@ import { injectOpenedStationIdentifier, stationRoute } from '../../core/navigati
 import { InstallationHint } from '../../core/installation/installation-hint';
 import { observeElementBounds } from '../../core/layout/observe-element-bounds';
 import { Viewport } from '../../core/layout/viewport';
+import { injectKeyboardInset } from '../../core/layout/visual-viewport';
 import { NetworkStatus } from '../../core/network/network-status';
 import { shouldOfferAreaSearch } from '../../core/search-center/area-search';
 import type { SearchCenter } from '../../core/search-center/search-center';
@@ -41,6 +43,7 @@ import { radiusStepsIncluding } from '../../core/settings/radius-steps';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { NearbyStationsStore } from '../../core/stations/nearby-stations-store';
 import { OpenedStationStore } from '../../core/stations/opened-station-store';
+import { SORT_ORDER_LABELS, SORT_ORDER_OPTIONS } from '../../core/stations/sort-order-options';
 import { sortStations } from '../../core/stations/sort-stations';
 import { stationTitle } from '../../core/stations/station-display';
 import type { SortOrder } from '../../core/stations/sort-stations';
@@ -49,14 +52,13 @@ import { BottomSheet } from '../../ui/bottom-sheet/bottom-sheet';
 import type { SnapPosition } from '../../ui/bottom-sheet/bottom-sheet-snap';
 import { DataSourceCredit } from '../../ui/data-source-credit/data-source-credit';
 import { FavoritesRow } from '../../ui/favorites-row/favorites-row';
+import { FilterChip } from '../../ui/filter-chip/filter-chip';
 import { Icon } from '../../ui/icon/icon';
 import { InstallationHintCard } from '../../ui/installation-hint-card/installation-hint-card';
 import { LoadingState } from '../../ui/loading-state/loading-state';
 import { isSameViewportPadding } from '../../ui/map/map-viewport';
 import type { ViewportPadding } from '../../ui/map/map-viewport';
 import { PlaceSearchField } from '../../ui/place-search-field/place-search-field';
-import { SelectMenu } from '../../ui/select-menu/select-menu';
-import { SortOrderControl } from '../../ui/sort-order-control/sort-order-control';
 import { StatusBarScrim } from '../../ui/status-bar-scrim/status-bar-scrim';
 import { StationList } from '../../ui/station-list/station-list';
 import { StationsMap } from '../../ui/stations-map/stations-map';
@@ -84,14 +86,14 @@ const FUEL_TYPE_OPTIONS = fuelTypeOptions('long');
     BottomSheet,
     DataSourceCredit,
     FavoritesRow,
+    FilterChip,
     Icon,
     InstallationHintCard,
     LoadingState,
+    NgTemplateOutlet,
     PlaceSearchField,
     RouterLink,
     RouterOutlet,
-    SelectMenu,
-    SortOrderControl,
     StationList,
     StationsMap,
     StatusBarScrim,
@@ -113,7 +115,7 @@ export class ExplorePage {
   private readonly stationList = viewChild(StationList);
   private readonly favoritesRow = viewChild(FavoritesRow);
   private readonly settingsLink = viewChild<ElementRef<HTMLElement>>('settingsLink');
-  private readonly searchOverlay = viewChild.required<ElementRef<HTMLElement>>('searchOverlay');
+  private readonly mapControls = viewChild.required<ElementRef<HTMLElement>>('mapControls');
   private readonly panel = viewChild.required<string, ElementRef<HTMLElement>>('panel', {
     read: ElementRef<HTMLElement>,
   });
@@ -168,6 +170,8 @@ export class ExplorePage {
   protected readonly colorScheme = inject(ColorSchemeController).resolvedScheme;
 
   protected readonly sortOrder = signal<SortOrder>('distance');
+  protected readonly sortOrderOptions = SORT_ORDER_OPTIONS;
+  protected readonly sortOrderLabel = computed(() => SORT_ORDER_LABELS[this.sortOrder()]);
   protected readonly stations = computed(() =>
     sortStations(this.nearbyStations.stations(), this.sortOrder(), this.fuelType())
   );
@@ -244,18 +248,23 @@ export class ExplorePage {
 
   protected readonly snapPosition = signal<SnapPosition>('half');
   private readonly sheetHeightInPixels = signal(0);
-  protected readonly isSearchCoveredBySheet = computed(
+  /**
+   * While the field of the place search is in use, its suggestions replace the list, like in
+   * Apple Maps; on phones the sheet opens fully above the keyboard.
+   */
+  protected readonly isSearching = signal(false);
+  /** Where the sheet returns to when the search is canceled. */
+  private snapPositionBeforeSearch: SnapPosition = 'half';
+  protected readonly areMapControlsCovered = computed(
     () => this.isCompactViewport() && this.snapPosition() === 'full'
   );
-  private readonly searchOverlayBounds = observeElementBounds(
-    () => this.searchOverlay().nativeElement
-  );
+  private readonly mapControlsBounds = observeElementBounds(() => this.mapControls().nativeElement);
   private readonly panelBounds = observeElementBounds(() => this.panel().nativeElement);
   protected readonly mapViewportPadding = computed<ViewportPadding>(
     () =>
       mapViewportPaddingFor({
         isCompactViewport: this.isCompactViewport(),
-        searchBottom: this.searchOverlayBounds().bottom,
+        mapControlsBottom: this.mapControlsBounds().bottom,
         sheetHeight: this.sheetHeightInPixels(),
         panelRight: this.panelBounds().right,
       }),
@@ -266,6 +275,7 @@ export class ExplorePage {
   protected readonly installationOffer = this.installationHint.offer;
 
   constructor() {
+    injectKeyboardInset();
     injectSheetFollowsCard({
       openedCard: this.openedCard,
       bottomSheet: this.bottomSheet,
@@ -339,16 +349,39 @@ export class ExplorePage {
     });
   }
 
-  /** On phones the sheet steps aside while typing, so the suggestions stay visible. */
-  protected searchPlaces(query: string): void {
-    this.placeSearch.search(query);
+  protected startSearch(): void {
+    if (this.isSearching()) {
+      return;
+    }
+    this.isSearching.set(true);
+    this.snapPositionBeforeSearch = this.snapPosition();
     if (this.isCompactViewport()) {
-      this.snapPosition.set('peek');
+      this.snapPosition.set('full');
     }
   }
 
+  protected searchPlaces(query: string): void {
+    this.startSearch();
+    this.placeSearch.search(query);
+  }
+
+  /** "Abbrechen" or Escape: the field shows the search center again and the sheet goes back. */
+  protected cancelSearch(): void {
+    this.placeSearch.cancel();
+    this.endSearch(this.snapPositionBeforeSearch);
+  }
+
+  /** The sheet steps down to half, so the map shows the stations around the place. */
   protected choosePlace(place: Place): void {
     this.placeSearch.choose(place);
+    this.endSearch('half');
+  }
+
+  private endSearch(snapPosition: SnapPosition): void {
+    this.isSearching.set(false);
+    if (this.isCompactViewport()) {
+      this.snapPosition.set(snapPosition);
+    }
   }
 
   protected clearPlace(): void {

@@ -1,11 +1,11 @@
 import { mapViewportPaddingFor } from './map-viewport-padding';
 
 describe('mapViewportPaddingFor', () => {
-  it('keeps a phone map clear of the search on top and the sheet at the bottom', () => {
+  it('keeps a phone map clear of the map controls on top and the sheet at the bottom', () => {
     expect(
       mapViewportPaddingFor({
         isCompactViewport: true,
-        searchBottom: 115,
+        mapControlsBottom: 115,
         sheetHeight: 380,
         panelRight: 0,
       })
@@ -16,7 +16,7 @@ describe('mapViewportPaddingFor', () => {
     expect(
       mapViewportPaddingFor({
         isCompactViewport: false,
-        searchBottom: 76,
+        mapControlsBottom: 76,
         sheetHeight: 0,
         panelRight: 432,
       })
@@ -27,7 +27,7 @@ describe('mapViewportPaddingFor', () => {
     expect(
       mapViewportPaddingFor({
         isCompactViewport: true,
-        searchBottom: 60,
+        mapControlsBottom: 60,
         sheetHeight: 120,
         panelRight: 390,
       }).left
@@ -38,7 +38,7 @@ describe('mapViewportPaddingFor', () => {
     expect(
       mapViewportPaddingFor({
         isCompactViewport: false,
-        searchBottom: -4,
+        mapControlsBottom: -4,
         sheetHeight: 0,
         panelRight: -1,
       })

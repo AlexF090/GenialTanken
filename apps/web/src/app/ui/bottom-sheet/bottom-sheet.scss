@@ -80,10 +80,15 @@
     }
   }
 
-  // Keeps the end of the list and focused rows scrollable into the visible part of the sheet
+  // Keeps the end of the list and focused rows scrollable into the visible part of the sheet,
+  // above an on-screen keyboard too
   .bottom-sheet__content {
-    padding-block-end: var(--bottom-sheet-settled-offset, 0);
-    scroll-padding-block-end: var(--bottom-sheet-settled-offset, 0);
+    --bottom-sheet-covered-end: calc(
+      var(--bottom-sheet-settled-offset, 0px) + var(--layout-keyboard-inset)
+    );
+
+    padding-block-end: var(--bottom-sheet-covered-end);
+    scroll-padding-block-end: var(--bottom-sheet-covered-end);
   }
 
   .bottom-sheet--dragging {
@@ -111,5 +116,11 @@
 
   .bottom-sheet__header {
     padding-block-start: var(--space-md);
+  }
+
+  // A tablet's on-screen keyboard covers the lower part of the panel.
+  .bottom-sheet__content {
+    padding-block-end: var(--layout-keyboard-inset);
+    scroll-padding-block-end: var(--layout-keyboard-inset);
   }
 }

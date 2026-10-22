@@ -115,6 +115,10 @@
   --color-segmented-track: light-dark(rgb(118 118 128 / 12%), rgb(118 118 128 / 24%));
   --color-segmented-thumb: light-dark(#ffffff, #555558);
   --color-menu-highlight: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 7%));
+  // Grey fill of the search bar and the filter chips in the sheet (iOS tertiary fill). Text on it
+  // over the sheet: light 14.8, dark 12.8; secondary text light 8.0, dark 8.4. Tinted text falls
+  // below 7:1 on it in dark mode, so labels on it use the text colors
+  --color-search-field: var(--color-segmented-track);
 
   // Spacing
   --space-3xs: 0.125rem;
@@ -218,17 +222,20 @@
   --layout-dialog-width-maximum: 32rem;
   // A favorite in the horizontal row of the explore sheet
   --layout-favorite-card-width: 9.5rem;
+  // Height of the on-screen keyboard over the window, written by `injectKeyboardInset()`
+  // (`core/layout/visual-viewport.ts`); 0 where the browser resizes the layout for it instead.
+  --layout-keyboard-inset: 0px;
   --safe-area-top: env(safe-area-inset-top, 0);
   --safe-area-right: env(safe-area-inset-right, 0);
   --safe-area-bottom: env(safe-area-inset-bottom, 0);
   --safe-area-left: env(safe-area-inset-left, 0);
 
   // Stacking: above Leaflet panes and controls (max. 1000). From bottom to top: the status bar
-  // scrim and the search over the map, the sheet (a fully opened one covers the search), the
-  // page header, app-wide notices (new version), the skip link.
+  // scrim and the map controls (locate, area search), the sheet (a fully opened one covers the
+  // map controls), the page header, app-wide notices (new version), the skip link.
   --layer-chrome: 1100;
   --layer-status-bar-scrim: calc(var(--layer-chrome) - 3);
-  --layer-map-search: calc(var(--layer-chrome) - 2);
+  --layer-map-controls: calc(var(--layer-chrome) - 2);
   --layer-sheet: calc(var(--layer-chrome) - 1);
   --layer-notice: calc(var(--layer-chrome) + 1);
   --layer-skip-link: calc(var(--layer-chrome) + 2);
