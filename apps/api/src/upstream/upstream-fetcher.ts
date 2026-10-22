@@ -12,6 +12,10 @@ export interface UpstreamRequest {
   headers?: Record<string, string>;
   /** How long a successful answer stays cached; defaults to `CACHE_TIME_TO_LIVE_IN_SECONDS`. */
   cacheTimeToLiveInMilliseconds?: number;
+  /** Covers the body as well; defaults to `UPSTREAM_TIMEOUT_IN_MILLISECONDS`. */
+  timeoutInMilliseconds?: number;
+  /** For large answers the caller keeps itself, which would only crowd out other cache entries. */
+  bypassesCache?: boolean;
   /** Lets the caller give up early; see `requestUpstream`. */
   signal?: AbortSignal;
 }
@@ -82,12 +86,14 @@ export class UpstreamFetcher {
       url,
       headers = {},
       cacheTimeToLiveInMilliseconds = this.configuration.cacheTimeToLiveInMilliseconds,
+      bypassesCache = false,
+      timeoutInMilliseconds = this.configuration.upstreamTimeoutInMilliseconds,
       signal,
     }: UpstreamRequest,
     { accept, cacheNamespace, read }: BodyFormat<Body>
   ): Promise<Body | undefined> {
     const cacheKey = toCacheKey(cacheNamespace, url.toString());
-    const cached = await this.cache.get<Body>(cacheKey);
+    const cached = bypassesCache ? undefined : await this.cache.get<Body>(cacheKey);
     if (cached !== undefined) {
       return cached;
     }
@@ -95,7 +101,7 @@ export class UpstreamFetcher {
     const response = await requestUpstream(url, {
       accept,
       headers,
-      timeoutInMilliseconds: this.configuration.upstreamTimeoutInMilliseconds,
+      timeoutInMilliseconds,
       signal,
     });
     if (response === undefined) {
@@ -108,7 +114,9 @@ export class UpstreamFetcher {
       throw error instanceof UpstreamError ? error : toUpstreamError(url, error, signal);
     }
 
-    await this.cache.set(cacheKey, body, cacheTimeToLiveInMilliseconds);
+    if (!bypassesCache) {
+      await this.cache.set(cacheKey, body, cacheTimeToLiveInMilliseconds);
+    }
     return body;
   }
 }

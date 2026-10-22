@@ -63,6 +63,27 @@ describe('UpstreamFetcher', () => {
     expect(requestedPaths).toEqual(['/answer']);
   });
 
+  it('neither reads nor fills the cache for a request that bypasses it', async () => {
+    const fetcher = createFetcher();
+    const url = new URL(`${baseUrl}/answer`);
+
+    await fetcher.fetchJson({ url, schema: answerSchema, bypassesCache: true });
+    await fetcher.fetchJson({ url, schema: answerSchema });
+    const answer = await fetcher.fetchJson({ url, schema: answerSchema, bypassesCache: true });
+
+    expect(answer).toEqual({ answer: 42 });
+    expect(requestedPaths).toEqual(['/answer', '/answer', '/answer']);
+  });
+
+  it('gives up after the timeout of the request instead of the default one', async () => {
+    const request = createFetcher().fetchText({
+      url: new URL(`${baseUrl}/slow-body`),
+      timeoutInMilliseconds: 10,
+    });
+
+    await expect(request).rejects.toThrow(new UpstreamError('GET /slow-body timed out'));
+  });
+
   it('caches the text and the JSON answer of the same URL apart', async () => {
     const fetcher = createFetcher();
     const url = new URL(`${baseUrl}/answer`);
