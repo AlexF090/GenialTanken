@@ -3,13 +3,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Cache } from 'cache-manager';
 import type { z } from 'zod';
 import { toCacheKey } from '../common/cache-key.js';
-import type { CacheNamespace } from '../common/cache-key.js';
 import { ApplicationConfiguration } from '../configuration/application-configuration.js';
 import { NOT_FOUND_STATUS, requestUpstream, toUpstreamError } from './request-upstream.js';
 import { UpstreamError } from './upstream-error.js';
-
-/** Requests one caller may run at once against a data source, to stay polite to it. */
-export const MAXIMUM_PARALLEL_UPSTREAM_REQUESTS = 8;
 
 export interface UpstreamRequest {
   url: URL;
@@ -26,7 +22,7 @@ export interface UpstreamJsonRequest<Schema extends z.ZodType> extends UpstreamR
 
 interface BodyFormat<Body> {
   accept: string;
-  cacheNamespace: CacheNamespace;
+  cacheNamespace: string;
   read: (response: Response) => Promise<Body>;
 }
 

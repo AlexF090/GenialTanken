@@ -3,16 +3,18 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Cache } from 'cache-manager';
 import { toCacheKey } from '../../common/cache-key.js';
-import { mapWithConcurrency } from '../../common/map-with-concurrency.js';
-import { ApplicationConfiguration } from '../../configuration/application-configuration.js';
-import { UpstreamAbortedError, UpstreamError } from '../../upstream/upstream-error.js';
 import {
   MAXIMUM_PARALLEL_UPSTREAM_REQUESTS,
-  UpstreamFetcher,
-} from '../../upstream/upstream-fetcher.js';
+  mapWithConcurrency,
+} from '../../common/map-with-concurrency.js';
+import { ApplicationConfiguration } from '../../configuration/application-configuration.js';
+import { UpstreamAbortedError, UpstreamError } from '../../upstream/upstream-error.js';
+import { UpstreamFetcher } from '../../upstream/upstream-fetcher.js';
 import { frenchStationPagePath } from './french-upstream-paths.js';
 import { parseFrenchStationIdentity } from './parse-french-station-identity.js';
 import type { FrenchStationIdentity } from './parse-french-station-identity.js';
+
+const MISSING_STATION_IDENTITY_CACHE_NAMESPACE = 'france-missing-station-identity';
 
 /**
  * How long a missing or failing station page is not asked again. Short, so a recovered page
@@ -68,7 +70,7 @@ export class FrenchStationIdentityLookup {
       return undefined;
     }
     const missingIdentityCacheKey = toCacheKey(
-      'france-missing-station-identity',
+      MISSING_STATION_IDENTITY_CACHE_NAMESPACE,
       String(localIdentifier)
     );
     if ((await this.cache.get<boolean>(missingIdentityCacheKey)) === true) {

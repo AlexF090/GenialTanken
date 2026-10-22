@@ -1,3 +1,6 @@
+/** Requests one caller may run at once against a data source, to stay polite to it. */
+export const MAXIMUM_PARALLEL_UPSTREAM_REQUESTS = 8;
+
 /**
  * Maps items with an async function, running at most `limit` calls at once, e.g. to keep the
  * number of parallel requests to a data source polite. Keeps the order of the items.

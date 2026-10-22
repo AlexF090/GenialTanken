@@ -35,7 +35,7 @@ describe('Startup configuration', () => {
     ['PROXY_SHARED_SECRET', 'shorter-than-32-characters'],
   ])('fails with a message naming %s when it is invalid', async (variable, value) => {
     await expect(createTestApplication({ [variable]: value })).rejects.toThrow(
-      new RegExp(`Config validation error: ${variable}`)
+      new RegExp(`Configuration validation error: ${variable}`)
     );
   });
 });

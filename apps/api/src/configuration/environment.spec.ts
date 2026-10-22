@@ -22,7 +22,7 @@ describe('environmentSchema', () => {
 describe('parseEnvironment', () => {
   it('names every invalid variable', () => {
     expect(() => parseEnvironment({ PORT: 'eighty', CACHE_MAXIMUM_ENTRIES: '0' })).toThrow(
-      /^Config validation error: PORT: .+\nCACHE_MAXIMUM_ENTRIES: .+$/
+      /^Configuration validation error: PORT: .+\nCACHE_MAXIMUM_ENTRIES: .+$/
     );
   });
 

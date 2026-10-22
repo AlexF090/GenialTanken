@@ -3,7 +3,7 @@ import {
   FRENCH_RECORDS_PATH,
   frenchStationPagePath,
 } from '../src/fuel-price-providers/france/french-upstream-paths.js';
-import { MAXIMUM_PARALLEL_UPSTREAM_REQUESTS } from '../src/upstream/upstream-fetcher.js';
+import { MAXIMUM_PARALLEL_UPSTREAM_REQUESTS } from '../src/common/map-with-concurrency.js';
 import { useTestApplication } from './support/create-test-application.js';
 import { useFakeUpstream } from './support/fake-upstream.js';
 import {

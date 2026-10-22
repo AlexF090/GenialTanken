@@ -81,7 +81,7 @@ export const parseEnvironment = (variables: EnvironmentVariables): Environment =
   const result = environmentSchema.safeParse(variables);
   if (!result.success) {
     throw new Error(
-      `Config validation error: ${result.error.issues.map(describeIssue).join('\n')}`
+      `Configuration validation error: ${result.error.issues.map(describeIssue).join('\n')}`
     );
   }
   return result.data;
