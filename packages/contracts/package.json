@@ -1,6 +1,6 @@
 {
   "name": "@genialtanken/contracts",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "license": "UNLICENSED",
   "description": "Shared zod schemas and types for the GenialTanken web app and API",
