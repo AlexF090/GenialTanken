@@ -69,3 +69,20 @@ export const environmentSchema = z.object({
 });
 
 export type Environment = z.infer<typeof environmentSchema>;
+
+/** Raw variables as found in `process.env`. */
+export type EnvironmentVariables = Readonly<Record<string, string | undefined>>;
+
+const describeIssue = ({ path, message }: z.core.$ZodIssue): string =>
+  path.length === 0 ? message : `${path.map(String).join('.')}: ${message}`;
+
+/** Throws an error naming every invalid variable, so the application fails fast on bad values. */
+export const parseEnvironment = (variables: EnvironmentVariables): Environment => {
+  const result = environmentSchema.safeParse(variables);
+  if (!result.success) {
+    throw new Error(
+      `Config validation error: ${result.error.issues.map(describeIssue).join('\n')}`
+    );
+  }
+  return result.data;
+};

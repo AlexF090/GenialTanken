@@ -8,6 +8,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ApiErrorFilter } from './common/api-error.filter.js';
 import { ApplicationConfiguration } from './configuration/application-configuration.js';
 import { ConfigurationModule } from './configuration/configuration.module.js';
+import type { EnvironmentVariables } from './configuration/environment.js';
 import { HealthModule } from './health/health.module.js';
 import { PlacesModule } from './places/places.module.js';
 import { ClientAddressThrottlerGuard } from './rate-limit/client-address-throttler.guard.js';
@@ -15,21 +16,21 @@ import { StationsModule } from './stations/stations.module.js';
 
 @Module({})
 export class AppModule {
-  /** Builds the module from the current environment; call it after the environment is set. */
-  static forRoot(): DynamicModule {
+  /** Tests pass their own variables instead of changing `process.env`. */
+  static forRoot(variables: EnvironmentVariables = process.env): DynamicModule {
     return {
       module: AppModule,
       imports: [
-        ConfigurationModule.forRoot(),
+        ConfigurationModule.forRoot(variables),
         CacheModule.registerAsync({
           isGlobal: true,
           inject: [ApplicationConfiguration],
           // The default Keyv store is an unbounded Map; the LRU store caps the memory use.
           useFactory: (configuration: ApplicationConfiguration) => {
-            const ttl = configuration.cacheTimeToLiveInMilliseconds;
+            const timeToLive = configuration.cacheTimeToLiveInMilliseconds;
             return {
-              ttl,
-              stores: [createKeyv({ ttl, lruSize: configuration.cacheMaximumEntries })],
+              ttl: timeToLive,
+              stores: [createKeyv({ ttl: timeToLive, lruSize: configuration.cacheMaximumEntries })],
             };
           },
         }),

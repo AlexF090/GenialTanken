@@ -1,5 +1,3 @@
-export const PHOTON_SEARCH_PATH = '/api';
-
 /** Photon answer for "bastille" (recorded, shortened): a duplicate, a nameless French address and a Dutch street included. */
 export const bastilleFeatures = [
   {

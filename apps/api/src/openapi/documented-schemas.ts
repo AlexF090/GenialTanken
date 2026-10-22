@@ -17,3 +17,13 @@ export const documentedStationLookupSchema = stationLookupSchema
 export const documentedPlaceSchema = placeSchema.meta({ id: 'Place' });
 
 export const documentedApiErrorSchema = apiErrorSchema.meta({ id: 'ApiError' });
+
+/** Body of `GET /health`, which checks liveness only and therefore lists no indicators. */
+export const documentedHealthCheckSchema = z
+  .object({
+    status: z.literal('ok'),
+    info: z.record(z.string(), z.unknown()),
+    error: z.record(z.string(), z.unknown()),
+    details: z.record(z.string(), z.unknown()),
+  })
+  .meta({ id: 'HealthCheck' });

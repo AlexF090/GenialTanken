@@ -1,8 +1,8 @@
 import { UpstreamAbortedError, UpstreamError } from './upstream-error.js';
 
-const NOT_FOUND_STATUS = 404;
+export const NOT_FOUND_STATUS = 404;
 
-export const describeUpstreamFailure = (error: unknown): string => {
+const describeUpstreamFailure = (error: unknown): string => {
   if (error instanceof DOMException && error.name === 'TimeoutError') {
     return 'timed out';
   }

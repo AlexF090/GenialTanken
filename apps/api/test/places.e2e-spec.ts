@@ -1,36 +1,15 @@
-import { apiErrorSchema, MILLISECONDS_PER_SECOND, placesSchema } from '@genialtanken/contracts';
-import type { NestExpressApplication } from '@nestjs/platform-express';
-import request from 'supertest';
-import { createTestApplication } from './support/create-test-application.js';
-import type { EnvironmentOverrides } from './support/create-test-application.js';
-import { FakeUpstream } from './support/fake-upstream.js';
-import type { RecordedRequest } from './support/fake-upstream.js';
-import { bastilleFeatures, PHOTON_SEARCH_PATH, photonResponse } from './support/photon-features.js';
+import { MILLISECONDS_PER_SECOND, placesSchema } from '@genialtanken/contracts';
+import { ERROR_MESSAGES } from '../src/common/error-messages.js';
+import { PHOTON_SEARCH_PATH } from '../src/places/photon/photon-client.js';
+import { strictApiErrorSchema } from './support/api-errors.js';
+import { useTestApplication } from './support/create-test-application.js';
+import { searchParametersOf, useFakeUpstream } from './support/fake-upstream.js';
+import { bastilleFeatures, photonResponse } from './support/photon-features.js';
 
-const strictApiErrorSchema = apiErrorSchema.strict();
+const UNAVAILABLE_BODY = { statusCode: 502, message: ERROR_MESSAGES.placeSearchUnavailable };
 
-const UNAVAILABLE_BODY = { statusCode: 502, message: 'The place search is unavailable.' };
-
-const searchParametersOf = (recordedRequest: RecordedRequest | undefined): URLSearchParams =>
-  new URL(recordedRequest?.url ?? '/', 'http://fake-upstream').searchParams;
-
-let photon: FakeUpstream;
-let application: NestExpressApplication | undefined;
-
-const startApplication = async (overrides: EnvironmentOverrides = {}) => {
-  application = await createTestApplication({ PHOTON_BASE_URL: photon.baseUrl, ...overrides });
-  return request(application.getHttpServer());
-};
-
-beforeEach(async () => {
-  photon = await FakeUpstream.start();
-});
-
-afterEach(async () => {
-  await application?.close();
-  application = undefined;
-  await photon.stop();
-});
+const photon = useFakeUpstream();
+const startApplication = useTestApplication(() => ({ PHOTON_BASE_URL: photon.baseUrl }));
 
 describe('GET /api/places', () => {
   it('maps places in France once each, in upstream order', async () => {

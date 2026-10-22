@@ -1,55 +1,52 @@
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
+import request from 'supertest';
 import { AppModule } from '../../src/app.module.js';
 import { configureApplication } from '../../src/configure-application.js';
-
-/** Variables to set for the application; `undefined` removes a variable. */
-export type EnvironmentOverrides = Record<string, string | undefined>;
-
-const applyEnvironment = (overrides: EnvironmentOverrides): (() => void) => {
-  const originalEnvironment = { ...process.env };
-  for (const [name, value] of Object.entries(overrides)) {
-    if (value === undefined) {
-      Reflect.deleteProperty(process.env, name);
-    } else {
-      process.env[name] = value;
-    }
-  }
-
-  return () => {
-    for (const name of Object.keys(process.env)) {
-      if (!(name in originalEnvironment)) {
-        Reflect.deleteProperty(process.env, name);
-      }
-    }
-    Object.assign(process.env, originalEnvironment);
-  };
-};
+import type { EnvironmentVariables } from '../../src/configuration/environment.js';
 
 /**
- * Boots the real application the same way `main.ts` does, configured through the environment.
- * French station names are only looked up when the overrides name a station details server.
+ * Boots the real application the same way `main.ts` does, configured by the given variables
+ * instead of `process.env`. French station names are only looked up when the variables name a
+ * station details server.
  */
 export const createTestApplication = async (
-  overrides: EnvironmentOverrides
+  variables: EnvironmentVariables
 ): Promise<NestExpressApplication> => {
-  const restoreEnvironment = applyEnvironment({
-    // A closed local port: tests never reach the real website, and names stay missing unless a
-    // test points this at a fake.
-    FRANCE_STATION_DETAILS_BASE_URL: 'http://127.0.0.1:9',
-    ...overrides,
+  const testingModule = await Test.createTestingModule({
+    imports: [
+      AppModule.forRoot({
+        // A closed local port: tests never reach the real website, and names stay missing unless
+        // a test points this at a fake.
+        FRANCE_STATION_DETAILS_BASE_URL: 'http://127.0.0.1:9',
+        ...variables,
+      }),
+    ],
+  }).compile();
+  const application = testingModule.createNestApplication<NestExpressApplication>({
+    logger: false,
   });
-  try {
-    const testingModule = await Test.createTestingModule({
-      imports: [AppModule.forRoot()],
-    }).compile();
-    const application = testingModule.createNestApplication<NestExpressApplication>({
-      logger: false,
-    });
-    configureApplication(application);
-    await application.init();
-    return application;
-  } finally {
-    restoreEnvironment();
-  }
+  configureApplication(application);
+  await application.init();
+  return application;
+};
+
+export type TestApi = ReturnType<typeof request>;
+
+/**
+ * Starts the application for a test and closes it afterwards. `defaultVariables` is read at
+ * start, so it can name fake upstreams started in `beforeEach`.
+ */
+export const useTestApplication = (
+  defaultVariables: () => EnvironmentVariables = () => ({})
+): ((variables?: EnvironmentVariables) => Promise<TestApi>) => {
+  let application: NestExpressApplication | undefined;
+  afterEach(async () => {
+    await application?.close();
+    application = undefined;
+  });
+  return async (variables = {}) => {
+    application = await createTestApplication({ ...defaultVariables(), ...variables });
+    return request(application.getHttpServer());
+  };
 };

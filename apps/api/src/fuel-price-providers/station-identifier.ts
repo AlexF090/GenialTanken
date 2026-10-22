@@ -2,8 +2,6 @@ import { STATION_IDENTIFIER_PATTERN, type CountryCode } from '@genialtanken/cont
 import { z } from 'zod';
 import { ERROR_MESSAGES } from '../common/error-messages.js';
 
-export { STATION_IDENTIFIER_PATTERN };
-
 export const stationIdentifierSchema = z
   .string()
   .regex(STATION_IDENTIFIER_PATTERN, ERROR_MESSAGES.invalidStationIdentifier);

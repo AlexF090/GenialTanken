@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /** Feature of a Photon (komoot) search answer; only the fields the place search reads. */
-export const photonFeatureSchema = z.object({
+const photonFeatureSchema = z.object({
   type: z.literal('Feature'),
   properties: z.looseObject({
     /** `N` (node), `W` (way) or `R` (relation). */

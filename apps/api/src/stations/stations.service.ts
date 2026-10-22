@@ -1,8 +1,10 @@
 import { distanceInMeters, METERS_PER_KILOMETER } from '@genialtanken/contracts';
 import type { Station, StationLookup, StationsQuery } from '@genialtanken/contracts';
-import { BadGatewayException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { describeError } from '../common/describe-error.js';
 import { ERROR_MESSAGES } from '../common/error-messages.js';
 import { mapWithConcurrency } from '../common/map-with-concurrency.js';
+import { UpstreamUnavailableError } from '../common/upstream-unavailable-error.js';
 import { FUEL_PRICE_PROVIDERS } from '../fuel-price-providers/fuel-price-provider.js';
 import type { FuelPriceProvider } from '../fuel-price-providers/fuel-price-provider.js';
 import {
@@ -10,11 +12,9 @@ import {
   toCountryPrefix,
 } from '../fuel-price-providers/station-identifier.js';
 import { UpstreamError } from '../upstream/upstream-error.js';
+import { MAXIMUM_PARALLEL_UPSTREAM_REQUESTS } from '../upstream/upstream-fetcher.js';
 
 export const MAXIMUM_STATIONS_PER_RESPONSE = 100;
-
-/** Lookups running at once for one bulk request, to stay polite to the upstream sources. */
-const MAXIMUM_PARALLEL_STATION_LOOKUPS = 8;
 
 interface StationAtDistance {
   station: Station;
@@ -61,7 +61,7 @@ export class StationsService {
       this.logProviderFailure(this.providers[index], result.reason);
     });
     if (succeededProviders === 0) {
-      throw new BadGatewayException(ERROR_MESSAGES.upstreamUnavailable);
+      throw new UpstreamUnavailableError(ERROR_MESSAGES.upstreamUnavailable);
     }
 
     const position = { latitude: query.latitude, longitude: query.longitude };
@@ -83,34 +83,26 @@ export class StationsService {
 
   /** Expects an identifier matching `STATION_IDENTIFIER_PATTERN`. */
   async findStationByIdentifier(identifier: string): Promise<Station> {
-    const { provider, localIdentifier } = this.routeIdentifier(identifier);
-    if (provider === undefined) {
-      throw new NotFoundException(ERROR_MESSAGES.stationNotFound);
+    const outcome = await this.lookUpStation(identifier);
+    switch (outcome.kind) {
+      case 'found':
+        return outcome.station;
+      case 'unavailable':
+        throw new NotFoundException(ERROR_MESSAGES.stationNotFound);
+      case 'failed':
+        throw new UpstreamUnavailableError(ERROR_MESSAGES.upstreamUnavailable);
     }
-
-    let station: Station | null;
-    try {
-      station = await provider.findStationByIdentifier(localIdentifier);
-    } catch (error) {
-      this.logProviderFailure(provider, error);
-      throw new BadGatewayException(ERROR_MESSAGES.upstreamUnavailable);
-    }
-    if (station === null) {
-      throw new NotFoundException(ERROR_MESSAGES.stationNotFound);
-    }
-    return station;
   }
 
   /**
-   * Several stations at once, e.g. the favorites, in the requested order without repetitions.
-   * Partial when some lookups fail; only when every lookup fails does it respond with 502.
-   * Expects identifiers matching `STATION_IDENTIFIER_PATTERN`.
+   * Several stations at once, e.g. the favorites, in the requested order. Partial when some
+   * lookups fail; only when every lookup fails does it respond with 502. Expects unique
+   * identifiers matching `STATION_IDENTIFIER_PATTERN`, as `stationLookupQuerySchema` yields them.
    */
   async findStationsByIdentifiers(identifiers: readonly string[]): Promise<StationLookup> {
-    const uniqueIdentifiers = [...new Set(identifiers)];
     const outcomes = await mapWithConcurrency(
-      uniqueIdentifiers,
-      MAXIMUM_PARALLEL_STATION_LOOKUPS,
+      identifiers,
+      MAXIMUM_PARALLEL_UPSTREAM_REQUESTS,
       identifier => this.lookUpStation(identifier)
     );
 
@@ -132,7 +124,7 @@ export class StationsService {
       lookup.failedIdentifiers.length > 0 &&
       lookup.failedIdentifiers.length === outcomes.length
     ) {
-      throw new BadGatewayException(ERROR_MESSAGES.upstreamUnavailable);
+      throw new UpstreamUnavailableError(ERROR_MESSAGES.upstreamUnavailable);
     }
     return lookup;
   }
@@ -166,9 +158,6 @@ export class StationsService {
       this.logger.warn(`Fuel price provider ${country} failed: ${reason.message}`);
       return;
     }
-    this.logger.error(
-      `Fuel price provider ${country} failed unexpectedly`,
-      reason instanceof Error ? reason.stack : String(reason)
-    );
+    this.logger.error(`Fuel price provider ${country} failed unexpectedly`, describeError(reason));
   }
 }
