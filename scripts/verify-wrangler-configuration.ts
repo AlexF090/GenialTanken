@@ -12,37 +12,60 @@ import { readFileSync } from 'node:fs';
 
 const EXPECTED_WORKER_NAME = 'genialtanken';
 
+/** Index just after the string literal that starts at `start`, honoring backslash escapes. */
+function endOfStringLiteral(text: string, start: number): number {
+  let index = start + 1;
+  while (index < text.length && text.charAt(index) !== '"') {
+    index += text.charAt(index) === '\\' ? 2 : 1;
+  }
+  return index + 1;
+}
+
 /** Removes `//` and block comments outside of strings, because URLs inside strings contain `//`. */
 export function stripJsonComments(text: string): string {
   let withoutComments = '';
-  let isInString = false;
-  for (let index = 0; index < text.length; index += 1) {
+  let index = 0;
+  while (index < text.length) {
     const character = text.charAt(index);
     const nextCharacter = text.charAt(index + 1);
-    if (isInString) {
-      withoutComments += character;
-      if (character === '\\') {
-        withoutComments += nextCharacter;
-        index += 1;
-      } else if (character === '"') {
-        isInString = false;
-      }
-      continue;
-    }
     if (character === '"') {
-      isInString = true;
-      withoutComments += character;
+      const end = endOfStringLiteral(text, index);
+      withoutComments += text.slice(index, end);
+      index = end;
     } else if (character === '/' && nextCharacter === '/') {
-      while (index < text.length && text.charAt(index) !== '\n') index += 1;
+      const end = text.indexOf('\n', index);
       withoutComments += '\n';
+      index = end === -1 ? text.length : end + 1;
     } else if (character === '/' && nextCharacter === '*') {
       const end = text.indexOf('*/', index + 2);
-      index = end === -1 ? text.length : end + 1;
+      index = end === -1 ? text.length : end + 2;
     } else {
       withoutComments += character;
+      index += 1;
     }
   }
   return withoutComments;
+}
+
+/** Removes commas before `}` or `]` outside of strings; expects text without comments. */
+export function stripTrailingCommas(text: string): string {
+  let withoutTrailingCommas = '';
+  let index = 0;
+  while (index < text.length) {
+    const character = text.charAt(index);
+    if (character === '"') {
+      const end = endOfStringLiteral(text, index);
+      withoutTrailingCommas += text.slice(index, end);
+      index = end;
+      continue;
+    }
+    const isTrailingComma = character === ',' && /^\s*[}\]]/.test(text.slice(index + 1));
+    if (!isTrailingComma) {
+      withoutTrailingCommas += character;
+    }
+    index += 1;
+  }
+  return withoutTrailingCommas;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -51,7 +74,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** Returns one message per problem; an empty list means the configuration may be deployed. */
 export function findWranglerConfigurationProblems(text: string): string[] {
-  const withoutTrailingCommas = stripJsonComments(text).replace(/,(\s*[}\]])/g, '$1');
+  const withoutTrailingCommas = stripTrailingCommas(stripJsonComments(text));
   let configuration: unknown;
   try {
     configuration = JSON.parse(withoutTrailingCommas);

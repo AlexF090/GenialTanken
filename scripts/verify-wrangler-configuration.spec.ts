@@ -33,6 +33,20 @@ describe('findWranglerConfigurationProblems', () => {
     expect(findWranglerConfigurationProblems('{ "name": "genialtanken", }')).toEqual([]);
   });
 
+  it('accepts trailing commas before comments', () => {
+    const text = '{ "name": "genialtanken", // trailing\n "vars": [1, /* last */ ], }';
+
+    expect(findWranglerConfigurationProblems(text)).toEqual([]);
+  });
+
+  it('keeps commas before closing brackets inside strings', () => {
+    const text = '{ "name": "genialtanken,}", "quote": "a \\", ]" }';
+
+    expect(findWranglerConfigurationProblems(text)).toEqual([
+      "Unexpected Worker name 'genialtanken,}' in wrangler.jsonc.",
+    ]);
+  });
+
   it('rejects a top-level build section', () => {
     const text = '{ "name": "genialtanken", "build": { "command": "curl evil" } }';
 
