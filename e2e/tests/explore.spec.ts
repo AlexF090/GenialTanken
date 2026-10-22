@@ -312,6 +312,49 @@ test.describe('explore page', () => {
       await expect(marker).toHaveAttribute('aria-pressed', 'true');
     });
 
+    test('Enter on a focused price tag selects its station', async ({ page }) => {
+      const marker = stationsMap(page).getByRole('button', {
+        name: `${rueBailleulStation.title}, 2,540 €, günstigster Preis`,
+        exact: true,
+      });
+      const listButton = stationRowButton(
+        stationCard(page, rueBailleulStation),
+        rueBailleulStation
+      );
+      await expect(marker).toHaveAttribute('aria-pressed', 'false');
+
+      await marker.focus();
+      await page.keyboard.press('Enter');
+
+      await expect(marker).toHaveAttribute('aria-pressed', 'true');
+      await expect(listButton).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    test('Enter on a focused cluster zooms into it and focuses its cheapest station', async ({
+      page,
+    }) => {
+      await chooseFuel(page, 'Diesel');
+      await openExplore(page);
+      await useOwnPosition(page);
+
+      const map = stationsMap(page);
+      // At the zoom level of a 5 km radius the stations south-east of the center form a cluster.
+      const cluster = map.getByRole('button', { name: '3 Tankstellen, ab 2,250 €', exact: true });
+      // Of the two stations at 2,250 € the nearer one comes first.
+      const cheapestMarker = map.getByRole('button', {
+        name: `${boulevardDeLHopitalStation.title}, 2,250 €, günstigster Preis`,
+        exact: true,
+      });
+      await expect(cheapestMarker).toHaveCount(0);
+
+      await cluster.focus();
+      await page.keyboard.press('Enter');
+
+      await expect(cluster).toHaveCount(0);
+      await expect(cheapestMarker).toBeFocused();
+      await expect(cheapestMarker).toHaveAttribute('aria-pressed', 'false');
+    });
+
     test('choosing a row opens the cluster of its station and keeps it selected', async ({
       page,
     }) => {
