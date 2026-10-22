@@ -29,7 +29,7 @@
   float: none;
   padding: 0 var(--space-md);
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-tight);
 }
@@ -104,7 +104,7 @@
 .settings__range-limit {
   flex: none;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
 }
 
 .settings__text {
@@ -113,7 +113,7 @@
 
 .settings__card {
   padding: var(--space-sm) var(--space-md);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
 }
 
 // The link inside inherits weight and wrapping; its colors are the global link colors.

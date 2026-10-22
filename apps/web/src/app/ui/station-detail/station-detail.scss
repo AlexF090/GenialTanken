@@ -1,17 +1,18 @@
 @use 'focus-ring';
 
-// Quiet station facts around one loud element: the price board led by the user's fuel.
+// A place card of Apple Maps: name and close button, a row of equal actions, then quiet station
+// facts around one loud element, the price of the user's fuel.
 .station-detail {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xl);
+  gap: var(--space-lg);
 }
 
 .station-detail__heading {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: var(--space-md);
+  gap: var(--space-xs);
 }
 
 .station-detail__identity {
@@ -22,71 +23,74 @@
   min-width: 0;
 }
 
-.station-detail__actions {
-  display: flex;
-  flex: none;
-  align-items: center;
-}
-
 .station-detail__title {
   // Focused by the card when it opens, as a starting point; not an interactive control.
   &:focus {
     @include focus-ring.no-focus-ring;
   }
 
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-title-1);
   line-height: var(--line-height-tight);
   overflow-wrap: anywhere;
-  text-wrap: balance;
-}
-
-.station-detail__address {
-  color: var(--color-text-secondary);
+  text-wrap: pretty;
 }
 
 .station-detail__subtitle {
-  color: var(--color-text);
-  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-subheadline);
 }
 
-.station-detail__address {
-  display: flex;
-  flex-direction: column;
-  font-size: var(--font-size-sm);
-  font-style: normal;
+// Equal tiles side by side, however many the browser offers
+.station-detail__actions {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: var(--space-xs);
 }
 
 .station-detail__section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
 }
 
 .station-detail__section-title {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-title-3);
+}
+
+.station-detail__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
 }
 
 .station-detail__open-status {
   font-weight: var(--font-weight-medium);
 }
 
-// Price board: hairline rows on the surface, label left and price right like on a price pylon
+.station-detail__address {
+  display: flex;
+  flex-direction: column;
+  font-style: normal;
+}
+
+// Price board: hairline rows, label left and price right like on a price pylon
 .price-board {
   border-top: var(--border-width-hairline) solid var(--color-hairline);
-  background-color: var(--color-surface);
   list-style: none;
 }
 
 .price-board__row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-sm) var(--space-md);
+  gap: var(--space-2xs) var(--space-md);
+  padding: var(--space-sm) var(--space-2xs);
   border-bottom: var(--border-width-hairline) solid var(--color-hairline);
 
   &--selected {
-    padding-block: var(--space-lg);
+    padding-block: var(--space-md);
   }
 }
 
@@ -97,24 +101,21 @@
 }
 
 .price-board__label {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
 
   .price-board__row--selected & {
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-title-2);
     font-weight: var(--font-weight-bold);
   }
 }
 
 .price-board__marker {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
 }
 
 .price-board__price {
   flex-shrink: 0;
-}
-
-.station-detail__route {
-  align-self: flex-start;
+  margin-inline-start: auto;
 }

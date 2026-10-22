@@ -1,7 +1,7 @@
 <ng-template #closeButton>
   <button
     type="button"
-    class="icon-button icon-button--circled"
+    class="icon-button icon-button--circled station-card__close"
     aria-label="Schließen"
     (click)="close()">
     <span class="icon-button__circle"><app-icon name="close" /></span>
@@ -15,11 +15,11 @@
       [fuelType]="fuelType()"
       [isFavorite]="isFavorite()"
       [today]="today()"
-      (favoriteToggled)="toggleFavorite()">
+      [canShare]="canShare"
+      (favoriteToggled)="toggleFavorite()"
+      (shareRequested)="share(station)">
       <ng-container ngProjectAs="[stationDetailActions]" [ngTemplateOutlet]="closeButton" />
     </app-station-detail>
-    <!-- The Licence Ouverte requires the credit wherever French prices show; France is the only country for now. -->
-    <app-data-source-credit />
   } @else {
     <div class="station-card__pending">
       <app-loading-state [isLoading]="isLoading()" label="Tankstelle wird geladen …" />

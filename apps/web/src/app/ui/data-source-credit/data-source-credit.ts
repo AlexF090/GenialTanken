@@ -23,7 +23,7 @@ import { ExternalLink } from '../external-link/external-link';
 
     .data-source-credit {
       color: var(--color-text-secondary);
-      font-size: var(--font-size-xs);
+      font-size: var(--font-size-caption-1);
     }
   `,
 })

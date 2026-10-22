@@ -28,7 +28,7 @@
 }
 
 .place-search-field__cancel {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-body);
 }
 
 .place-search-field__icon {
@@ -46,7 +46,7 @@
   border: 0;
   background: none;
   // 1rem at least: iOS zooms into smaller inputs on focus.
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-body);
   text-overflow: ellipsis;
   appearance: none;
 
@@ -123,7 +123,7 @@
 .place-search-field__option-description {
   overflow: hidden;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -132,5 +132,5 @@
 .place-search-field__hint {
   padding: var(--space-sm) var(--space-md);
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
 }

@@ -15,3 +15,9 @@
   justify-content: space-between;
   gap: var(--space-md);
 }
+
+// The circle lines up with the card's corner; the touch target around it stays whole.
+.station-card__close {
+  margin-block-start: calc((var(--space-xl) - var(--layout-touch-target)) / 2);
+  margin-inline-end: calc((var(--space-xl) - var(--layout-touch-target)) / 2);
+}

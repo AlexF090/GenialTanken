@@ -28,11 +28,11 @@
   align-items: flex-start;
   gap: var(--space-2xs);
   min-width: 0;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
 }
 
 .installation-hint__heading {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-body);
 }
 
 .installation-hint__install {

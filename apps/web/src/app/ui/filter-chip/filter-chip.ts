@@ -35,7 +35,7 @@ import { SelectMenu } from '../select-menu/select-menu';
       border-radius: var(--radius-pill);
       background-color: var(--color-search-field);
       color: var(--color-text);
-      font-size: var(--font-size-sm);
+      font-size: var(--font-size-subheadline);
       font-weight: var(--font-weight-medium);
       line-height: var(--line-height-tight);
       white-space: nowrap;

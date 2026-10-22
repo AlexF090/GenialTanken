@@ -104,6 +104,19 @@ describe('injectSheetFollowsCard', () => {
     expect(snapPosition()).toBe('half');
   });
 
+  it('lowers a full sheet to half for a station card, not for the favorites', () => {
+    const { show, showCard, snapPosition } = setUp({ isCompactViewport: true });
+    snapPosition.set('full');
+
+    showCard({ kind: 'favorites' });
+
+    expect(snapPosition()).toBe('full');
+
+    show('fr-1');
+
+    expect(snapPosition()).toBe('half');
+  });
+
   it('leaves the side panel alone on a wide screen', () => {
     const { show, snapPosition } = setUp({ isCompactViewport: false });
 

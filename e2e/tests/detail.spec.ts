@@ -11,6 +11,12 @@ import {
   test,
 } from '../fixtures.ts';
 
+declare global {
+  interface Window {
+    sharedData?: ShareData[];
+  }
+}
+
 test.describe('station card', () => {
   test('shows address, opening times and every fuel price of a station', async ({ page }) => {
     await page.goto(`/stations/${quaiDeLaRapeeStation.id}`);
@@ -28,8 +34,11 @@ test.describe('station card', () => {
     await expect(
       details.getByRole('heading', { level: 2, name: quaiDeLaRapeeStation.title })
     ).toBeVisible();
-    // Without a name the street is the title, so the address below adds only the city.
-    await expect(details.locator('address')).toHaveText(quaiDeLaRapeeStation.cityLine);
+    // Without a name the street is the title, so the city names the place below it.
+    await expect(details.locator('h2 + p')).toHaveText(quaiDeLaRapeeStation.cityLine);
+    await expect(details.getByRole('region', { name: 'Adresse' }).locator('address')).toHaveText(
+      `${quaiDeLaRapeeStation.title} ${quaiDeLaRapeeStation.cityLine}`
+    );
 
     const openingTimes = details.getByRole('region', { name: 'Öffnungszeiten' });
     // French open data has no live open state, so none is claimed.
@@ -148,5 +157,42 @@ test.describe('station card', () => {
       'Die Tankstelle konnte in unserer Datenbank nicht gefunden werden.'
     );
     await expect(page.getByRole('article')).toHaveCount(0);
+  });
+
+  test('shares the name, address and link of the card where the browser can share', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.sharedData = [];
+      Object.defineProperty(navigator, 'share', {
+        value: (data: ShareData) => {
+          window.sharedData?.push(data);
+          return Promise.resolve();
+        },
+      });
+    });
+    await page.goto(`/stations/${quaiDeLaRapeeStation.id}`);
+
+    await page.getByRole('article').getByRole('button', { name: 'Teilen', exact: true }).click();
+
+    await expect
+      .poll(() => page.evaluate(() => window.sharedData))
+      .toEqual([
+        {
+          title: quaiDeLaRapeeStation.title,
+          text: `${quaiDeLaRapeeStation.title}, ${quaiDeLaRapeeStation.cityLine}`,
+          url: new URL(`/stations/${quaiDeLaRapeeStation.id}`, page.url()).href,
+        },
+      ]);
+  });
+
+  test('offers no share button where the browser cannot share', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'share', { value: undefined });
+    });
+    await page.goto(`/stations/${quaiDeLaRapeeStation.id}`);
+
+    await expect(page.getByRole('region', { name: 'Preise' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Teilen', exact: true })).toHaveCount(0);
   });
 });

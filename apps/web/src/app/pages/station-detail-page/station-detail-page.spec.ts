@@ -16,6 +16,9 @@ import { StationDetailPage } from './station-detail-page';
 import { stationUrl } from '../../../testing/api-urls';
 import { storedFavorites } from '../../../testing/fake-storage';
 import { SETTINGS_STORAGE_KEY } from '../../core/settings/settings-store';
+import { Logger } from '../../core/logging/logger';
+import { SHARE } from '../../core/sharing/share';
+import type { Share } from '../../core/sharing/share';
 
 @Component({ template: '' })
 class EmptyPage {}
@@ -192,5 +195,68 @@ describe('StationDetailPage', () => {
 
     expect(getButton(element, 'Schließen')).toBeDefined();
     context.httpTesting.expectOne(stationUrl('fr-75001001'));
+  });
+
+  describe('sharing', () => {
+    const renderLoadedStation = async (share: Share | undefined) => {
+      TestBed.resetTestingModule();
+      context = configurePageTest({
+        routes: [{ path: '', component: EmptyPage }],
+        providers: [{ provide: SHARE, useValue: share }],
+      });
+      const logged = vi.spyOn(TestBed.inject(Logger), 'error').mockImplementation(() => undefined);
+      const { element } = await renderStation(totalStation.id);
+      context.httpTesting.expectOne(stationUrl('fr-75001001')).flush(withoutDistance(totalStation));
+      await context.settle();
+      return { element, logged };
+    };
+
+    const shareButtonOf = (element: HTMLElement): HTMLButtonElement | undefined =>
+      [...element.querySelectorAll('button')].find(button => textOf(button) === 'Teilen');
+
+    it('offers no share button without a share sheet', async () => {
+      const { element } = await renderLoadedStation(undefined);
+
+      expect(shareButtonOf(element)).toBeUndefined();
+    });
+
+    it('shares name, address and the link of the card', async () => {
+      const share = vi.fn<Share>().mockResolvedValue(undefined);
+      const { element, logged } = await renderLoadedStation(share);
+
+      shareButtonOf(element)?.click();
+      await context.settle();
+
+      expect(share).toHaveBeenCalledOnce();
+      const [data] = share.mock.calls[0] ?? [];
+      expect(data?.title).toBe('TotalEnergies');
+      expect(data?.text).toBe('12 Rue de Rivoli, 75001 Paris');
+      expect(new URL(data?.url ?? '').pathname).toBe('/stations/fr-75001001');
+      expect(logged).not.toHaveBeenCalled();
+    });
+
+    it('ignores a closed share sheet', async () => {
+      const share = vi
+        .fn<Share>()
+        .mockRejectedValue(new DOMException('Share canceled', 'AbortError'));
+      const { element, logged } = await renderLoadedStation(share);
+
+      shareButtonOf(element)?.click();
+      await context.settle();
+
+      expect(share).toHaveBeenCalledOnce();
+      expect(logged).not.toHaveBeenCalled();
+    });
+
+    it('logs any other failure', async () => {
+      const failure = new DOMException('Not allowed', 'NotAllowedError');
+      const share = vi.fn<Share>().mockRejectedValue(failure);
+      const { element, logged } = await renderLoadedStation(share);
+
+      shareButtonOf(element)?.click();
+      await context.settle();
+
+      expect(logged).toHaveBeenCalledExactlyOnceWith('Sharing the station failed.', failure);
+    });
   });
 });

@@ -12,6 +12,7 @@ import {
   totalStation,
   unbrandedStation,
   withoutDistance,
+  withPrices,
 } from '../../../testing/station-fixtures';
 import { StationList } from './station-list';
 
@@ -106,12 +107,46 @@ describe('StationList', () => {
     expect(linkOf(items[1])?.getAttribute('href')).toBe('/stations/fr%2F12%2034');
   });
 
-  it('offers a route to each station', async () => {
+  it('leaves the route to the card of the station', async () => {
     const { element } = await render({ stations: [totalStation, carrefourStation] });
 
+    expect(element.querySelector('select')).toBeNull();
+  });
+
+  it('puts the distance before the address in the secondary line', async () => {
+    const { items } = await render({ stations: [totalStation] });
+
+    expect(textOf(items[0]?.querySelector('.station-row__secondary'))).toBe(
+      '0,85 km, · 12 Rue de Rivoli, 75001 Paris'
+    );
+    expect(accessibleTextOf(items[0]?.querySelector('.station-row__secondary'))).toBe(
+      '0,85 km, 12 Rue de Rivoli, 75001 Paris'
+    );
+  });
+
+  it('tints the price tiles by their level, the cheapest solid green', async () => {
+    const { items } = await render({
+      stations: [
+        withPrices(totalStation, { e5: 1.7 }),
+        withPrices(carrefourStation, { e5: 1.8 }),
+        withPrices(essoStation, { e5: 1.9 }),
+        withPrices(unbrandedStation, { e5: null }),
+      ],
+      cheapestStationIdentifiers: new Set([totalStation.id]),
+    });
+
     expect(
-      [...element.querySelectorAll('select')].map(select => select.getAttribute('aria-label'))
-    ).toEqual(['Route zu TotalEnergies', 'Route zu Carrefour Market']);
+      items.map(item =>
+        [...(item.querySelector('.station-row__price')?.classList ?? [])].filter(name =>
+          name.startsWith('station-row__price--')
+        )
+      )
+    ).toEqual([
+      ['station-row__price--cheapest'],
+      ['station-row__price--medium'],
+      ['station-row__price--high'],
+      ['station-row__price--without-price'],
+    ]);
   });
 
   it('labels the cheapest stations in words', async () => {
@@ -122,6 +157,9 @@ describe('StationList', () => {
 
     expect(accessibleTextOf(items[0])).not.toContain('Günstigster Preis');
     expect(accessibleTextOf(items[1])).toContain('Günstigster Preis');
+    expect(
+      textOf(items[1]?.querySelector('[aria-hidden="true"].station-row__cheapest-label'))
+    ).toBe('günstigst');
   });
 
   it('marks favorites and reports star toggles with the station id', async () => {
@@ -155,6 +193,19 @@ describe('StationList', () => {
 
     expect(linkOf(items[0])?.getAttribute('href')).toBe('/stations/fr-75001001');
     expect(element.querySelector('a[aria-label^="Details:"]')).toBeNull();
+  });
+
+  it('offers the favorite star and the details as the only link in a selecting row', async () => {
+    const { items } = await render({ stations: [totalStation], selectsOnMap: true });
+    const row = items[0];
+    if (row === undefined) {
+      throw new Error('Expected one station');
+    }
+
+    expect([...row.querySelectorAll('a')].map(link => link.getAttribute('aria-label'))).toEqual([
+      'Details: TotalEnergies',
+    ]);
+    expect(getButton(row, 'Favorit: TotalEnergies')).toBeTruthy();
   });
 
   it('selects a station with its row and opens the details with a separate link', async () => {

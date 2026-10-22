@@ -12,37 +12,57 @@ import { RouterLink } from '@angular/router';
 import type { FuelType, Station } from '@genialtanken/contracts';
 import { formatDistance } from '../../core/formatting/number-format';
 import { stationRoute } from '../../core/navigation/station-route';
-import { CHEAPEST_PRICE_STANDALONE_LABEL } from '../../core/stations/price-labels';
+import {
+  CHEAPEST_PRICE_SHORT_LABEL,
+  CHEAPEST_PRICE_STANDALONE_LABEL,
+} from '../../core/stations/price-labels';
+import { priceLevelOf, priceRangeOf } from '../../core/stations/price-level';
+import type { PriceLevel, PriceRange } from '../../core/stations/price-level';
 import {
   addressLinesBelowTitle,
-  navigationDestinationOf,
   priceInEuro,
   stationTitle,
 } from '../../core/stations/station-display';
-import type { NavigationDestination } from '../../core/navigation-apps/navigation-apps';
 import { FavoriteButton } from '../favorite-button/favorite-button';
 import { Icon } from '../icon/icon';
 import { Price } from '../price/price';
-import { RouteButton } from '../route-button/route-button';
 
 interface StationListItem {
   stationIdentifier: string;
-  destination: NavigationDestination;
   title: string;
   addressLine: string;
   priceInEuro: number | null;
+  /** Tints the price tile like the station's price tag on the map. */
+  priceTint: PriceTint;
   distance: string | undefined;
   isFavorite: boolean;
   isCheapest: boolean;
   isSelected: boolean;
 }
 
+/** The cheapest price is solid green, every other price tinted by its level. */
+type PriceTint = PriceLevel | 'cheapest' | 'without-price';
+
 const NO_STATION_IDENTIFIERS: ReadonlySet<string> = new Set();
 
-/** Price board of stations: one hairline-separated row per station, the price loudest. */
+const priceTintOf = (
+  price: number | null,
+  priceRange: PriceRange | undefined,
+  isCheapest: boolean
+): PriceTint => {
+  if (price === null || priceRange === undefined) {
+    return 'without-price';
+  }
+  return isCheapest ? 'cheapest' : priceLevelOf(price, priceRange);
+};
+
+/**
+ * Stations as an iOS list: per row a price tile tinted like the price tags on the map, the
+ * station with distance and address, and its actions.
+ */
 @Component({
   selector: 'app-station-list',
-  imports: [RouterLink, Price, FavoriteButton, Icon, RouteButton],
+  imports: [RouterLink, Price, FavoriteButton, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './station-list.html',
   styleUrl: './station-list.scss',
@@ -63,21 +83,28 @@ export class StationList {
 
   protected readonly stationRoute = stationRoute;
   protected readonly cheapestPriceLabel = CHEAPEST_PRICE_STANDALONE_LABEL;
+  protected readonly cheapestPriceShortLabel = CHEAPEST_PRICE_SHORT_LABEL;
 
-  protected readonly items = computed<StationListItem[]>(() =>
-    this.stations().map(station => ({
-      stationIdentifier: station.id,
-      destination: navigationDestinationOf(station),
-      title: stationTitle(station),
-      addressLine: addressLinesBelowTitle(station).join(', '),
-      priceInEuro: priceInEuro(station, this.fuelType()),
-      distance:
-        station.distanceInMeters === null ? undefined : formatDistance(station.distanceInMeters),
-      isFavorite: this.favoriteStationIdentifiers().has(station.id),
-      isCheapest: this.cheapestStationIdentifiers().has(station.id),
-      isSelected: station.id === this.selectedStationIdentifier(),
-    }))
-  );
+  protected readonly items = computed<StationListItem[]>(() => {
+    const fuelType = this.fuelType();
+    const priceRange = priceRangeOf(this.stations().map(station => priceInEuro(station, fuelType)));
+    return this.stations().map(station => {
+      const price = priceInEuro(station, fuelType);
+      const isCheapest = this.cheapestStationIdentifiers().has(station.id);
+      return {
+        stationIdentifier: station.id,
+        title: stationTitle(station),
+        addressLine: addressLinesBelowTitle(station).join(', '),
+        priceInEuro: price,
+        priceTint: priceTintOf(price, priceRange, isCheapest),
+        distance:
+          station.distanceInMeters === null ? undefined : formatDistance(station.distanceInMeters),
+        isFavorite: this.favoriteStationIdentifiers().has(station.id),
+        isCheapest,
+        isSelected: station.id === this.selectedStationIdentifier(),
+      };
+    });
+  });
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 

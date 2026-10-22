@@ -1,4 +1,5 @@
 import { formatPriceParts } from '../../core/formatting/number-format';
+import { CHEAPEST_PRICE_SHORT_LABEL } from '../../core/stations/price-labels';
 import type { L } from './leaflet';
 
 // Marker content is built from DOM nodes with `textContent`: station names and place labels come
@@ -32,12 +33,9 @@ export const createPriceDigits = (className: string, priceInEuro: number | null)
   return digits;
 };
 
-/** Visible word for the cheapest price, so it is not told by the green alone (WCAG 1.4.1). */
-const CHEAPEST_CAPTION = 'günstigst';
-
 /** Screen readers hear `CHEAPEST_PRICE_LABEL` in the accessible name instead. */
 export const createCheapestCaption = (className: string): HTMLElement => {
-  const caption = createMarkerElement('span', className, CHEAPEST_CAPTION);
+  const caption = createMarkerElement('span', className, CHEAPEST_PRICE_SHORT_LABEL);
   caption.setAttribute('aria-hidden', 'true');
   return caption;
 };

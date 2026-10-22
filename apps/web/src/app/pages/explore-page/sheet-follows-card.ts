@@ -49,9 +49,9 @@ export interface SheetFollowsCardOptions {
 }
 
 /**
- * Opening a card shows it from its top and lifts a peeking sheet; closing it returns to the list
- * where it was, with the station of a station card still selected and focused. Call it in an
- * injection context.
+ * Opening a card shows it from its top, a station card at half and the favorites at least at
+ * half; closing it returns to the list where it was, with the station of a station card still
+ * selected and focused. Call it in an injection context.
  */
 export const injectSheetFollowsCard = (options: SheetFollowsCardOptions): void => {
   assertInInjectionContext(injectSheetFollowsCard);
@@ -73,7 +73,9 @@ export const injectSheetFollowsCard = (options: SheetFollowsCardOptions): void =
           listScrollPosition = bottomSheet?.scrollPosition() ?? 0;
         }
         bottomSheet?.restoreScrollPosition(0);
-        if (isCompactViewport() && options.snapPosition() === 'peek') {
+        // A station card opens at half like a place card in Apple Maps, so the map keeps showing
+        // the station; the favorites only lift a peeking sheet.
+        if (isCompactViewport() && (card.kind === 'station' || options.snapPosition() === 'peek')) {
           options.snapPosition.set('half');
         }
         return;

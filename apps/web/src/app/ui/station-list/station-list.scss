@@ -1,73 +1,92 @@
 @use 'focus-ring';
 
-// An iOS list: rows separated by a hairline inset from the leading edge, prices aligned on the
-// right.
+// The levels of `PriceLevel` (`src/app/core/stations/price-level.ts`), cheap to dear, tinted like
+// the price tags on the map (`styles/map.scss`)
+$price-levels: low, medium, high;
+
+// An iOS list: the price tile leads, separators are inset to the text like in Apple Maps.
 .station-list {
+  container: station-list / inline-size;
   list-style: none;
 }
 
 .station-row {
   position: relative;
   display: grid;
-  // Actions top right, price bottom right where the eye ends the row. The price stays first in
-  // the markup, so screen readers hear it right after the station.
-  grid-template-areas:
-    'details actions'
-    'details price';
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: var(--space-md);
-  row-gap: var(--space-2xs);
+  grid-template-areas: 'price details actions';
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-xs) var(--space-sm);
   padding: var(--space-sm) var(--space-md);
-  background: linear-gradient(var(--color-hairline), var(--color-hairline)) no-repeat right bottom /
-    calc(100% - var(--space-md)) var(--border-width-hairline);
   transition: background-color var(--duration-short) var(--easing-standard);
+
+  // Separator from the start of the text to the trailing edge
+  &::before {
+    content: '';
+    grid-row: 1;
+    grid-column: details / -1;
+    align-self: end;
+    height: var(--border-width-hairline);
+    margin-block-end: calc(-1 * var(--space-sm));
+    margin-inline-end: calc(-1 * var(--space-md));
+    background-color: var(--color-hairline);
+  }
 
   &:hover {
     background-color: var(--color-menu-highlight);
   }
 
-  // Marker bar of the station shown on the map
-  &--selected {
+  // The station shown on the map: tinted like a selected row in iOS
+  &--selected,
+  &--selected:hover {
     background-color: var(--color-action-tint);
+  }
+}
+
+// Large text (or a narrow window) leaves no room beside the tile: the station moves below it.
+@container station-list (width < 19rem) {
+  .station-row {
+    grid-template-areas:
+      'price actions'
+      'details details';
+    grid-template-columns: minmax(0, 1fr) auto;
 
     &::before {
-      content: '';
-      position: absolute;
-      inset-block: 0;
-      inset-inline-start: 0;
-      width: var(--space-2xs);
-      background-color: var(--color-action);
+      grid-row: 2;
+      grid-column: 1 / -1;
     }
+  }
+
+  .station-row__price {
+    justify-self: start;
   }
 }
 
 .station-row__details {
   display: flex;
   flex-direction: column;
+  gap: var(--space-3xs);
   grid-area: details;
   min-width: 0;
 }
 
 .station-row__title {
   display: block;
-  max-width: 100%;
   margin: 0;
   padding: 0;
   border: 0;
   background: none;
-  overflow: hidden;
   font-family: inherit;
   text-align: start;
   cursor: pointer;
   color: var(--color-text);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   text-decoration: none;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 
-  // The whole row opens the details; the actions sit above this layer
+  // The whole row is the control; the actions sit above this layer.
   &::after {
     content: '';
     position: absolute;
@@ -88,46 +107,58 @@
   }
 }
 
-.station-row__line {
+.station-row__secondary {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-// Below the name, smaller like a footnote: the title already says which station it is.
-.station-row__address {
-  font-size: var(--font-size-footnote);
+  font-size: var(--font-size-subheadline);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
 }
 
 .station-row__distance {
-  color: var(--color-text);
-  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
+// Price tile: tinted from cheap to dear within the prices shown. The color only repeats what the
+// price says; the cheapest is solid green and named in words.
 .station-row__price {
+  --price-tile-background: var(--color-canvas);
+  --price-tile-foreground: var(--color-text);
+
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3xs);
   grid-area: price;
-  align-items: flex-end;
-  align-self: end;
-  justify-self: end;
-  min-width: var(--layout-price-column-width);
-  padding: var(--space-2xs) var(--space-xs);
-  border: var(--border-width-hairline) solid transparent;
-  border-radius: var(--radius-sm);
-  color: var(--color-text);
-}
+  min-inline-size: var(--layout-price-tile-width);
+  min-block-size: var(--layout-touch-target);
+  padding: var(--space-xs);
+  border-radius: var(--radius-md);
+  background-color: var(--price-tile-background);
+  color: var(--price-tile-foreground);
 
-// The green is reserved for the cheapest price and always comes with its label
-.station-row--cheapest .station-row__price {
-  border-color: var(--color-highlight-edge);
-  background-color: var(--color-highlight);
-  color: var(--color-on-highlight);
+  @each $level in $price-levels {
+    &--#{$level} {
+      --price-tile-background: var(--color-price-#{$level});
+    }
+  }
+
+  &--cheapest {
+    --price-tile-background: var(--color-highlight);
+    --price-tile-foreground: var(--color-on-highlight);
+  }
+
+  &--without-price {
+    --price-tile-foreground: var(--color-text-secondary);
+  }
 }
 
 .station-row__cheapest-label {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-tight);
+  font-size: var(--font-size-caption-1);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-numerals);
+  text-align: center;
 }
 
 .station-row__actions {
@@ -135,9 +166,6 @@
   z-index: 1;
   display: flex;
   grid-area: actions;
-  justify-self: end;
-  align-self: start;
-  // Optically aligns the icons with the title and keeps the touch targets from padding the row
-  margin-block-start: calc(-1 * var(--space-xs));
+  // Aligns the icons with the padding of the row while keeping their 44px touch targets
   margin-inline-end: calc((var(--icon-size-md) - var(--layout-touch-target)) / 2);
 }

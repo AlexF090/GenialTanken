@@ -19,7 +19,7 @@ $narrow-width: 20rem;
 }
 
 .favorites-row__heading {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-title-3);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
 }
@@ -86,7 +86,7 @@ $narrow-width: 20rem;
 .favorites-row__title {
   display: -webkit-box;
   overflow: hidden;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-tight);
   overflow-wrap: anywhere;

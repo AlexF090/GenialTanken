@@ -1,15 +1,17 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import {
   eiffelTower,
   expect,
   expectColorScheme,
   expectNoAccessibilityViolations,
+  favoriteButton,
   favoritesRow,
   quaiDeLaRapeeStation,
   resultSummary,
   rueBailleulStation,
   seedFavorites,
   stationCard,
+  stationCards,
   test,
 } from '../fixtures.ts';
 
@@ -255,4 +257,145 @@ test.describe('reflow at 320 CSS pixels', () => {
       expect(overflow).toBeLessThanOrEqual(0);
     });
   }
+});
+
+interface Box {
+  name: string;
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+/** Pairs of boxes that cover each other, e.g. a price tile under the station name. */
+const overlappingPairs = (boxes: Box[]): string[] =>
+  boxes.flatMap((box, index) =>
+    boxes
+      .slice(index + 1)
+      .filter(
+        other =>
+          box.left < other.right - 1 &&
+          other.left < box.right - 1 &&
+          box.top < other.bottom - 1 &&
+          other.top < box.bottom - 1
+      )
+      .map(other => `${box.name} / ${other.name}`)
+  );
+
+/** Elements whose text is cut off instead of wrapping. */
+const clippedElements = (page: Page, selector: string): Promise<string[]> =>
+  page
+    .locator(selector)
+    .evaluateAll(elements =>
+      elements
+        .filter(element => element.scrollWidth > element.clientWidth + 1)
+        .map(element => element.textContent.trim())
+    );
+
+const boxesOf = (page: Page, selectors: string[]): Promise<Box[][]> =>
+  page.evaluate(
+    names =>
+      names.map(selector =>
+        [...document.querySelectorAll(selector)].map(element => {
+          const { left, top, right, bottom } = element.getBoundingClientRect();
+          return { name: selector, left, top, right, bottom };
+        })
+      ),
+    selectors
+  );
+
+const horizontalOverflow = (page: Page): Promise<number> =>
+  page.evaluate(() => {
+    const scrollingElement = document.scrollingElement ?? document.documentElement;
+    return scrollingElement.scrollWidth - scrollingElement.clientWidth;
+  });
+
+test.describe('text at 200 %', () => {
+  // 1.4.4 Resize Text on a phone: like the largest text sizes of Dynamic Type
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  const enlargeText = (page: Page) =>
+    page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+
+  test('list rows keep price, station and actions apart without cutting text', async ({ page }) => {
+    await seedFavorites(page, [rueBailleulStation.id, quaiDeLaRapeeStation.id]);
+    await page.goto('/favorites');
+    await expect(stationCard(page, quaiDeLaRapeeStation)).toContainText('kein Preis');
+    await enlargeText(page);
+
+    for (const row of await stationCards(page).all()) {
+      const boxes = await row.evaluate(element =>
+        ['.station-row__price', '.station-row__details', '.station-row__actions'].map(selector => {
+          const part = element.querySelector(selector);
+          const { left, top, right, bottom } = (part ?? element).getBoundingClientRect();
+          return { name: selector, left, top, right, bottom };
+        })
+      );
+      expect(overlappingPairs(boxes)).toEqual([]);
+    }
+    expect(await clippedElements(page, '.station-row__title, .station-row__secondary')).toEqual([]);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+  });
+
+  test('the station card keeps its heading and actions apart without cutting text', async ({
+    page,
+  }) => {
+    await page.goto(`/stations/${quaiDeLaRapeeStation.id}`);
+    await expect(page.getByRole('region', { name: 'Preise' })).toContainText('2,391 €');
+    await enlargeText(page);
+
+    const [heading = [], actions = []] = await boxesOf(page, [
+      '.station-detail__heading > *',
+      '.station-detail__actions > *',
+    ]);
+    expect(overlappingPairs(heading)).toEqual([]);
+    expect(overlappingPairs(actions)).toEqual([]);
+    expect(
+      await clippedElements(
+        page,
+        'article h2, article h3, .action-tile__label, .price-board__row, .opening-times, address'
+      )
+    ).toEqual([]);
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+  });
+});
+
+test.describe('touch targets', () => {
+  // 2.5.5 Target Size (AAA): at least 44 × 44 CSS pixels
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  const expectTouchTarget = async (target: Locator): Promise<void> => {
+    const box = await target.boundingBox();
+    expect(box?.width).toBeGreaterThanOrEqual(44);
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+  };
+
+  test('every control of a list row is at least 44 pixels', async ({ page }) => {
+    await page.goto('/');
+    await isExploreReady(page);
+    const row = stationCard(page, rueBailleulStation);
+
+    // The station's button stretches over the whole row.
+    await expectTouchTarget(row);
+    await expectTouchTarget(favoriteButton(row, rueBailleulStation));
+    await expectTouchTarget(
+      row.getByRole('link', { name: `Details: ${rueBailleulStation.title}` })
+    );
+  });
+
+  test('every action of the station card is at least 44 pixels', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'share', { value: () => Promise.resolve() });
+    });
+    await page.goto(`/stations/${quaiDeLaRapeeStation.id}`);
+    const card = page.getByRole('article');
+    await expect(card.getByRole('region', { name: 'Preise' })).toBeVisible();
+
+    await expectTouchTarget(page.getByRole('button', { name: 'Schließen', exact: true }));
+    await expectTouchTarget(
+      card.getByRole('combobox', { name: `Route zu ${quaiDeLaRapeeStation.title}`, exact: true })
+    );
+    await expectTouchTarget(favoriteButton(card, quaiDeLaRapeeStation));
+    await expectTouchTarget(card.getByRole('button', { name: 'Teilen', exact: true }));
+  });
 });

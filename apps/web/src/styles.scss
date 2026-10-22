@@ -21,6 +21,16 @@ html {
   background-color: var(--color-surface);
 }
 
+// Dynamic Type: on iOS the root font follows the text size chosen in the system settings, so every
+// `rem` grows with it. Only on touch devices (`-webkit-touch-callout` is iOS only): on macOS the
+// system body style is 13px and would shrink the whole app.
+@supports (font: -apple-system-body) and (-webkit-touch-callout: none) {
+  html {
+    font: -apple-system-body;
+    font-family: var(--font-family-ui);
+  }
+}
+
 html,
 body {
   margin: 0;
@@ -29,7 +39,7 @@ body {
 
 body {
   font-family: var(--font-family-ui);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-body);
   line-height: var(--line-height-base);
   color: var(--color-text);
   background-color: var(--color-canvas);
@@ -53,6 +63,11 @@ fieldset {
   padding: 0;
 }
 
+// Prose stays readable in wide panels (1.4.8 AAA: at most 80 characters per line)
+p {
+  max-inline-size: 80ch;
+}
+
 h1,
 h2,
 h3,
@@ -60,6 +75,9 @@ h4 {
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   text-wrap: balance;
+  // Long German compounds such as "Öffnungszeiten" still fit at large text sizes.
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 
 a {
@@ -160,7 +178,7 @@ select {
   border-radius: var(--radius-sm);
   background-color: var(--color-action);
   color: var(--color-on-action);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-tight);
   text-decoration: none;
@@ -244,7 +262,7 @@ select {
   // inside) is smaller than the touch target around it.
   &--circled {
     color: var(--color-text-secondary);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-body);
   }
 
   &__circle {
@@ -256,6 +274,53 @@ select {
     border-radius: var(--radius-round);
     background-color: var(--color-segmented-track);
   }
+}
+
+// Action of a place card in Apple Maps: an equal-width tile with the icon above its label.
+// Tinted on the opaque tint (7.7 light, 7.3 dark); `--primary` is filled with the tint.
+.action-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  align-items: center;
+  justify-content: center;
+  min-width: var(--layout-touch-target);
+  min-height: var(--layout-action-tile-height);
+  margin: 0;
+  padding: var(--space-xs) var(--space-2xs);
+  border: 0;
+  border-radius: var(--radius-md);
+  background-color: var(--color-action-tint);
+  color: var(--color-action-text);
+  font-size: var(--icon-size-md);
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background-color var(--duration-short) var(--easing-standard),
+    color var(--duration-short) var(--easing-standard);
+
+  &:hover {
+    color: var(--color-action-text-hover);
+  }
+
+  &--primary {
+    background-color: var(--color-action);
+    color: var(--color-on-action);
+
+    &:hover {
+      background-color: var(--color-action-hover);
+      color: var(--color-on-action);
+    }
+  }
+}
+
+.action-tile__label {
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 // Toast: tapping anywhere on it closes it. The close button stretches over the whole toast, so

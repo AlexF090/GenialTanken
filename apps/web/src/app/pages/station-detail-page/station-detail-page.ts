@@ -4,6 +4,7 @@ import {
   Component,
   computed,
   DestroyRef,
+  DOCUMENT,
   effect,
   inject,
   input,
@@ -11,6 +12,7 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
+import type { Station } from '@genialtanken/contracts';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
 import { NetworkStatus, reloadWhenReconnected } from '../../core/network/network-status';
 import { OpenedStationStore } from '../../core/stations/opened-station-store';
@@ -18,7 +20,10 @@ import { SettingsStore } from '../../core/settings/settings-store';
 import { describeStationsError } from '../../core/stations/stations-error-message';
 import { StationsApi } from '../../core/stations/stations-api';
 import { CURRENT_DATE } from '../../core/time/current-date';
-import { DataSourceCredit } from '../../ui/data-source-credit/data-source-credit';
+import { Logger } from '../../core/logging/logger';
+import { stationRoute } from '../../core/navigation/station-route';
+import { isShareCanceled, SHARE } from '../../core/sharing/share';
+import { addressLinesOf, stationTitle } from '../../core/stations/station-display';
 import { Icon } from '../../ui/icon/icon';
 import { LoadingState } from '../../ui/loading-state/loading-state';
 import { StationDetail } from '../../ui/station-detail/station-detail';
@@ -30,7 +35,7 @@ import { resourceValueOr } from '../../core/resource-value-or';
  */
 @Component({
   selector: 'app-station-detail-page',
-  imports: [StationDetail, LoadingState, DataSourceCredit, Icon, NgTemplateOutlet],
+  imports: [StationDetail, LoadingState, Icon, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './station-detail-page.html',
   styleUrl: './station-detail-page.scss',
@@ -47,6 +52,9 @@ export class StationDetailPage {
   private readonly favorites = inject(FavoritesStore);
   private readonly stationResource = inject(StationsApi).stationByIdentifier(() => this.id());
   private readonly isOnline = inject(NetworkStatus).isOnline;
+  private readonly shareSheet = inject(SHARE);
+  private readonly document = inject(DOCUMENT);
+  private readonly logger = inject(Logger);
 
   protected readonly station = computed(() => resourceValueOr(this.stationResource, undefined));
   protected readonly fuelType = inject(SettingsStore).fuelType;
@@ -59,6 +67,7 @@ export class StationDetailPage {
       : describeStationsError(error, { isOnline: this.isOnline() });
   });
   protected readonly isFavorite = computed(() => this.favorites.isFavorite(this.id()));
+  protected readonly canShare = this.shareSheet !== undefined;
 
   constructor() {
     reloadWhenReconnected(this.stationResource);
@@ -92,6 +101,29 @@ export class StationDetailPage {
 
   protected toggleFavorite(): void {
     this.favorites.toggle(this.id());
+  }
+
+  /** Shares name, address and the link of this card through the system share sheet. */
+  protected share(station: Station): void {
+    void this.shareStation(station);
+  }
+
+  private async shareStation(station: Station): Promise<void> {
+    if (this.shareSheet === undefined) {
+      return;
+    }
+    const path = this.router.serializeUrl(this.router.createUrlTree(stationRoute(station.id)));
+    try {
+      await this.shareSheet({
+        title: stationTitle(station),
+        text: addressLinesOf(station).join(', '),
+        url: new URL(path, this.document.baseURI).href,
+      });
+    } catch (error) {
+      if (!isShareCanceled(error)) {
+        this.logger.error('Sharing the station failed.', error);
+      }
+    }
   }
 
   protected close(): void {

@@ -53,7 +53,7 @@ import { PageHeader } from '../../ui/page-header/page-header';
     }
 
     .not-found__message {
-      font-size: var(--font-size-xl);
+      font-size: var(--font-size-title-2);
       font-weight: var(--font-weight-medium);
     }
   `,

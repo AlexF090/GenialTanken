@@ -49,6 +49,11 @@ interface OpeningDay {
     </ul>
   `,
   styles: `
+    :host {
+      display: block;
+      container-type: inline-size;
+    }
+
     .opening-times {
       display: grid;
       grid-template-columns: max-content minmax(0, 1fr);
@@ -85,6 +90,14 @@ interface OpeningDay {
           width: var(--space-2xs);
           background-color: var(--color-action);
         }
+      }
+    }
+
+    // Large text leaves no room beside the day: the hours move below it.
+    @container (width < 18rem) {
+      .opening-times,
+      .opening-times__day {
+        grid-template-columns: minmax(0, 1fr);
       }
     }
   `,

@@ -3,7 +3,6 @@
     <li
       class="station-row"
       [class.station-row--selected]="item.isSelected"
-      [class.station-row--cheapest]="item.isCheapest"
       [attr.data-station-identifier]="item.stationIdentifier">
       <div class="station-row__details">
         @if (selectsOnMap()) {
@@ -23,19 +22,31 @@
             >{{ item.title }}</a
           >
         }
-        <span class="station-row__line station-row__address">{{ item.addressLine }}</span>
-        @if (item.distance) {
-          <span class="station-row__line station-row__distance">{{ item.distance }}</span>
-        }
+        <span class="station-row__secondary">
+          @if (item.distance) {
+            <span class="station-row__distance"
+              >{{ item.distance }}<span class="visually-hidden">,</span
+              ><span aria-hidden="true">&nbsp;·</span></span
+            >&ngsp;
+          }
+          {{ item.addressLine }}
+        </span>
       </div>
-      <div class="station-row__price">
-        @if (item.isCheapest) {
-          <span class="station-row__cheapest-label">{{ cheapestPriceLabel }}</span>
-        }
+      <!-- After the station in reading order, so screen readers hear the price right after its name; shown first. -->
+      <div class="station-row__price" [class]="'station-row__price--' + item.priceTint">
         <app-price size="list" [priceInEuro]="item.priceInEuro" />
+        @if (item.isCheapest) {
+          <span class="visually-hidden">{{ cheapestPriceLabel }}</span>
+          <span class="station-row__cheapest-label" aria-hidden="true">{{
+            cheapestPriceShortLabel
+          }}</span>
+        }
       </div>
       <div class="station-row__actions">
-        <app-route-button [destination]="item.destination" />
+        <app-favorite-button
+          [stationName]="item.title"
+          [isFavorite]="item.isFavorite"
+          (toggled)="favoriteToggled.emit(item.stationIdentifier)" />
         @if (selectsOnMap()) {
           <a
             class="icon-button icon-button--row-action"
@@ -44,10 +55,6 @@
             <app-icon name="info" />
           </a>
         }
-        <app-favorite-button
-          [stationName]="item.title"
-          [isFavorite]="item.isFavorite"
-          (toggled)="favoriteToggled.emit(item.stationIdentifier)" />
       </div>
     </li>
   }
