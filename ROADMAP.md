@@ -76,6 +76,7 @@ Umsetzung:
 - CORS im BFF zusätzlich auf die Worker-Domain (`genialtanken.alexf090.workers.dev`) beschränkt (zweite Verteidigungslinie für direkte Aufrufe)
 - Health-Endpoint als Render-Healthcheck
 - Cold Start (ca. 1 Minute nach 15 Minuten Inaktivität): Frontend zeigt Ladezustand beim ersten Request
+- Entscheidung Cold Start: Ein Cron-Trigger im bestehenden Cloudflare Worker (kostenlos, keine GitHub-Actions-Minuten) ruft alle 10 Minuten mit zufälliger Verzögerung bis 4 Minuten `/health` auf, aber nur von 6 bis 24 Uhr deutscher Zeit. So bleiben es etwa 560 der 750 freien Render-Instanzstunden im Monat; nachts darf die API schlafen. Zusätzlich weckt die Web-App die API beim Start über `GET /api/wake-up`, während noch der Standort abgefragt wird. Ein bezahlter Render-Plan ohne Schlaf bleibt ausgeschlossen.
 
 ## Warum dieser Stack
 

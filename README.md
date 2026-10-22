@@ -183,7 +183,7 @@ Locally `pnpm preview:web` reads both from `apps/web/.dev.vars` (git-ignored).
 All services run on free tiers:
 
 - **Web:** Cloudflare Worker `genialtanken` with static assets, deployed by GitHub Actions after CI passed: production on `main` (https://genialtanken.alexf090.workers.dev), a preview version per pull request that is ready for review (`https://pr-<number>-genialtanken.alexf090.workers.dev`). CI skips draft pull requests, so open them as drafts and mark them ready when final. The Worker serves the single-page app and forwards `/api/*` to the API (`run_worker_first`).
-- **API:** Render free web service built from `apps/api/Dockerfile` ([render.yaml](render.yaml)); deploys after the GitHub checks of the commit passed. The free tier sleeps after 15 minutes without traffic; the first request can take about a minute, which the web app announces.
+- **API:** Render free web service built from `apps/api/Dockerfile` ([render.yaml](render.yaml)); deploys after the GitHub checks of the commit passed. The free tier sleeps after 15 minutes without traffic and then needs about a minute to start. A cron trigger of the Worker calls `/health` every 10 minutes from 06:00 to midnight Berlin time (about 560 of the 750 free instance hours a month), and the web app calls `/api/wake-up` on start; a request during a cold start shows a hint.
 
 Runbook for settings, secrets, deploys and releases: [docs/deployment.md](docs/deployment.md).
 
