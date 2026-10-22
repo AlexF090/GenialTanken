@@ -3,6 +3,7 @@ import { SettingsStore } from '../../core/settings/settings-store';
 import { FakeStorage, storedSettings } from '../../../testing/fake-storage';
 import { configurePageTest, getRadio, renderComponent, textOf } from '../../../testing/render-page';
 import type { PageTestContext } from '../../../testing/render-page';
+import { Router } from '@angular/router';
 import { SettingsPage } from './settings-page';
 import { SETTINGS_STORAGE_KEY } from '../../core/settings/settings-store';
 
@@ -75,12 +76,12 @@ describe('SettingsPage', () => {
   it('orders the sections fuel, radius, appearance and data source without any button', async () => {
     context = configurePageTest();
     const { element } = await renderComponent(SettingsPage);
-    const main = element.querySelector('main');
+    const content = element.querySelector('.settings');
 
     expect(
-      [...(main?.querySelectorAll('legend, label[for], h2') ?? [])].map(title => textOf(title))
+      [...(content?.querySelectorAll('legend, label[for], h2') ?? [])].map(title => textOf(title))
     ).toEqual(['Kraftstoff', 'Radius: 5 km', 'Darstellung', 'Datenquelle']);
-    expect(main?.querySelectorAll('button')).toHaveLength(0);
+    expect(content?.querySelectorAll('button')).toHaveLength(0);
   });
 
   it('offers system, light and dark appearance with system selected', async () => {
@@ -134,7 +135,7 @@ describe('SettingsPage', () => {
     context = configurePageTest();
     const { element } = await renderComponent(SettingsPage);
 
-    const link = element.querySelector('main section a');
+    const link = element.querySelector('section a');
     expect(textOf(link)).toBe('prix-carburants.gouv.fr (öffnet in neuem Tab)');
     expect(link?.getAttribute('href')).toBe(
       'https://www.prix-carburants.gouv.fr/rubrique/opendata/'
@@ -154,5 +155,31 @@ describe('SettingsPage', () => {
     expect(getRadio(element, 'E10').checked).toBe(true);
     expect(radiusSlider(element).value).toBe('20');
     expect(textOf(radiusLabel(element))).toBe('Radius: 20 km');
+  });
+
+  it('opens as a modal dialog titled "Einstellungen" without a landmark of its own', async () => {
+    context = configurePageTest();
+    const { fixture, element } = await renderComponent(SettingsPage);
+    await fixture.whenStable();
+
+    const dialog = element.querySelector('dialog');
+    expect(dialog?.hasAttribute('open')).toBe(true);
+    expect(textOf(dialog?.querySelector(`#${dialog.getAttribute('aria-labelledby') ?? ''}`))).toBe(
+      'Einstellungen'
+    );
+    expect(element.querySelector('main, h1, header')).toBeNull();
+  });
+
+  it('returns to the explore page when it closes', async () => {
+    context = configurePageTest({ routes: [{ path: 'settings', children: [] }] });
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/settings');
+    const { fixture, element } = await renderComponent(SettingsPage);
+    await fixture.whenStable();
+
+    element.querySelector('dialog')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await fixture.whenStable();
+
+    expect(router.url).toBe('/');
   });
 });

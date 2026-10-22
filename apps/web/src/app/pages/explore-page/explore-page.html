@@ -59,7 +59,7 @@
     label="Tankstellen"
     [(snapPosition)]="snapPosition"
     (heightChanged)="updateSheetHeight($event)">
-    <div class="explore-page__header" bottomSheetHeader [hidden]="isStationCardOpen()">
+    <div class="explore-page__header" bottomSheetHeader [hidden]="isCardOpen()">
       <h1 class="explore-page__title" translate="no">{{ applicationName }}</h1>
 
       <div class="explore-page__toolbar">
@@ -80,6 +80,13 @@
           (click)="refresh()">
           <app-icon name="refresh" />
         </button>
+        <a
+          #settingsLink
+          class="icon-button icon-button--circled"
+          aria-label="Einstellungen"
+          [routerLink]="settingsRoute">
+          <span class="icon-button__circle"><app-icon name="settings-outline" /></span>
+        </a>
       </div>
 
       <!-- The only place that names an empty result, so it is shown and announced once. -->
@@ -100,8 +107,9 @@
     </div>
 
     <router-outlet />
-    <!-- Hidden, not removed, while a station card is open: the list keeps its state. -->
-    <div [hidden]="isStationCardOpen()">
+    <!-- Hidden, not removed, while a card is open: the list keeps its state. -->
+    <div [hidden]="isCardOpen()">
+      <app-favorites-row [stations]="favoriteStationsNearby()" [fuelType]="fuelType()" />
       <app-station-list
         [stations]="stations()"
         [fuelType]="fuelType()"

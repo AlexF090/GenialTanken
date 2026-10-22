@@ -4,6 +4,8 @@
 // iOS settings: inset grouped lists on the grouped background, small section headers above
 // them, a checkmark on the chosen row.
 .settings {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-xl);
 }
 

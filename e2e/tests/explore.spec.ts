@@ -10,6 +10,7 @@ import {
   openExplore,
   openSettings,
   pageHeading,
+  settingsDialog,
   quaiDeLaRapeeStation,
   resultSummary,
   rueBailleulStation,
@@ -225,7 +226,7 @@ test.describe('explore page', () => {
     await openExplore(page);
     await stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation).click();
     await openSettings(page);
-    await expect(page.getByText('Radius: 5 km')).toBeVisible();
+    await expect(settingsDialog(page).getByText('Radius: 5 km')).toBeVisible();
 
     expect(errors).toEqual([]);
   });

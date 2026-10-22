@@ -1,8 +1,10 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import {
   chooseFuel,
   expect,
   favoriteButton,
+  favoritesHeading,
+  favoritesRow,
   mainNavigation,
   openExplore,
   pageHeading,
@@ -11,6 +13,7 @@ import {
   seedFavorites,
   stationCard,
   stationCards,
+  stationsMap,
   storedFavoriteIdentifiers,
   test,
   useOwnPosition,
@@ -19,15 +22,19 @@ import {
 const openFavorites = (page: Page): Promise<void> =>
   mainNavigation(page).getByRole('link', { name: 'Favoriten', exact: true }).click();
 
+const emptyStateHeading = (page: Page): Locator =>
+  page.getByRole('heading', { level: 3, name: 'Keine Favoriten gespeichert' });
+
 test.describe('favorites', () => {
-  test('shows an empty state that leads to the explore page', async ({ page }) => {
+  test('shows an empty state over the map that leads to the explore page', async ({ page }) => {
     await page.goto('/favorites');
 
-    await expect(pageHeading(page, 'Favoriten')).toBeVisible();
-    await expect(
-      page.getByRole('heading', { level: 2, name: 'Keine Favoriten gespeichert' })
-    ).toBeVisible();
+    await expect(page).toHaveTitle('Favoriten – GenialTanken');
+    await expect(favoritesHeading(page)).toBeFocused();
+    await expect(stationsMap(page)).toBeVisible();
+    await expect(emptyStateHeading(page)).toBeVisible();
     await expect(stationCards(page)).toHaveCount(0);
+    await expect(favoritesRow(page)).toHaveCount(0);
 
     await page.getByRole('link', { name: 'Tankstellen erkunden', exact: true }).click();
 
@@ -35,16 +42,23 @@ test.describe('favorites', () => {
     await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
   });
 
-  test('a station starred in the list is listed on /favorites, survives a reload and can be removed', async ({
+  test('a station starred in the list joins the favorites row and the list, survives a reload and can be removed', async ({
     page,
   }) => {
     await page.goto('/');
+    await expect(favoritesRow(page)).toHaveCount(0);
     const listStar = favoriteButton(stationCard(page, rueBailleulStation), rueBailleulStation);
     await listStar.click();
     await expect(listStar).toHaveAttribute('aria-pressed', 'true');
     await expect.poll(() => storedFavoriteIdentifiers(page)).toEqual([rueBailleulStation.id]);
 
-    await openFavorites(page);
+    await expect(
+      favoritesRow(page).getByRole('link', { name: rueBailleulStation.title })
+    ).toContainText('2,540 €');
+    await favoritesRow(page).getByRole('link', { name: 'Alle Favoriten', exact: true }).click();
+    await expect(page).toHaveURL('/favorites');
+    await expect(favoritesHeading(page)).toBeFocused();
+    await expect(stationsMap(page)).toBeVisible();
     await expect(stationCards(page)).toHaveCount(1);
     const favoriteCard = stationCard(page, rueBailleulStation);
     await expect(favoriteCard).toContainText('2,540 €');
@@ -57,10 +71,41 @@ test.describe('favorites', () => {
     await expect(favoriteStar).toHaveAttribute('aria-pressed', 'true');
 
     await favoriteStar.click();
-    await expect(
-      page.getByRole('heading', { level: 2, name: 'Keine Favoriten gespeichert' })
-    ).toBeVisible();
+    await expect(emptyStateHeading(page)).toBeVisible();
     await expect.poll(() => storedFavoriteIdentifiers(page)).toEqual([]);
+  });
+
+  test('a favorite in the row opens its card; back returns to the list with "Alle" focused', async ({
+    page,
+  }) => {
+    await seedFavorites(page, [rueBailleulStation.id]);
+    await page.goto('/');
+
+    await favoritesRow(page).getByRole('link', { name: 'Alle Favoriten', exact: true }).click();
+    await expect(favoritesHeading(page)).toBeFocused();
+    await page.getByRole('button', { name: 'Zurück', exact: true }).click();
+
+    await expect(page).toHaveURL('/');
+    await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
+    await expect(
+      favoritesRow(page).getByRole('link', { name: 'Alle Favoriten', exact: true })
+    ).toBeFocused();
+
+    await favoritesRow(page).getByRole('link', { name: rueBailleulStation.title }).click();
+    await expect(page).toHaveURL(`/stations/${rueBailleulStation.id}`);
+    await expect(
+      page.getByRole('article').getByRole('heading', { level: 2, name: rueBailleulStation.title })
+    ).toBeVisible();
+  });
+
+  test('Escape closes the favorites and returns to the list', async ({ page }) => {
+    await page.goto('/favorites');
+    await expect(favoritesHeading(page)).toBeFocused();
+
+    await page.keyboard.press('Escape');
+
+    await expect(page).toHaveURL('/');
+    await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
   });
 
   test('unstarring one of several favorites removes it from the list immediately', async ({
@@ -131,18 +176,12 @@ test.describe('favorites', () => {
     await expect(page.getByRole('status').filter({ hasText: 'nicht verfügbar' })).toHaveText(
       'Ein Favorit ist gerade nicht verfügbar.'
     );
-    await expect(
-      page.getByRole('heading', { level: 2, name: 'Keine Favoriten gespeichert' })
-    ).toBeHidden();
+    await expect(emptyStateHeading(page)).toBeHidden();
     expect(await storedFavoriteIdentifiers(page)).toEqual(['fr-99999999']);
 
     await page.getByRole('button', { name: 'Nicht verfügbare Favoriten entfernen' }).click();
 
-    const emptyStateHeading = page.getByRole('heading', {
-      level: 2,
-      name: 'Keine Favoriten gespeichert',
-    });
-    await expect(emptyStateHeading).toBeFocused();
+    await expect(emptyStateHeading(page)).toBeFocused();
     await expect.poll(() => storedFavoriteIdentifiers(page)).toEqual([]);
   });
 });

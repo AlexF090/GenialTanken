@@ -60,6 +60,7 @@ describe('App', () => {
     expect(target?.getAttribute('tabindex')).toBe('-1');
     expect(target?.querySelector('main')).not.toBeNull();
     expect(target?.querySelector('nav')).toBeNull();
+    context.httpTesting.match(() => true);
   });
 
   it('moves focus to the content without leaving the page when the skip link is used', async () => {
@@ -70,6 +71,7 @@ describe('App', () => {
 
     expect(document.activeElement?.id).toBe('main-content');
     expect(TestBed.inject(Router).url).toBe('/favorites');
+    context.httpTesting.match(() => true);
   });
 
   it.each(['/', '/favorites', '/settings', '/stations/fr-75001001', '/unknown'])(
@@ -83,15 +85,16 @@ describe('App', () => {
     }
   );
 
-  it.each(['/favorites', '/settings', '/unknown'])(
-    'renders exactly one page header on %s',
-    async url => {
-      const element = await navigateTo(url);
+  it.each([
+    ['/unknown', 1],
+    ['/favorites', 0],
+    ['/settings', 0],
+  ])('renders a page header only on pages without the map: %s', async (url, headerCount) => {
+    const element = await navigateTo(url);
 
-      expect(element.querySelectorAll('header')).toHaveLength(1);
-      context.httpTesting.match(() => true);
-    }
-  );
+    expect(element.querySelectorAll('header')).toHaveLength(headerCount);
+    context.httpTesting.match(() => true);
+  });
 
   it('opens the explore page with list and map as start page', async () => {
     const element = await navigateTo('/');
@@ -111,12 +114,43 @@ describe('App', () => {
     context.httpTesting.expectOne(request => request.url === STATIONS_URL);
   });
 
-  it('reaches the settings through the navigation', async () => {
+  it('opens the settings as a dialog over the explore page', async () => {
     const element = await navigateTo('/settings');
 
     expect(navigationLink(element, 'Einstellungen').getAttribute('aria-current')).toBe('page');
     expect(navigationLink(element, 'Erkunden').getAttribute('aria-current')).toBeNull();
-    expect(textOf(element.querySelector('h1'))).toBe('Einstellungen');
+    expect(textOf(element.querySelector('main h1'))).toBe('GenialTanken');
+    expect(element.querySelector('main app-stations-map')).not.toBeNull();
+    const dialog = element.querySelector('dialog');
+    expect(dialog?.hasAttribute('open')).toBe(true);
+    expect(textOf(dialog?.querySelector('h2'))).toBe('Einstellungen');
+    expect(document.title).toBe('Einstellungen – GenialTanken');
+    context.httpTesting.expectOne(request => request.url === STATIONS_URL);
+  });
+
+  it('returns to the list when the settings close and focuses the settings button', async () => {
+    const element = await navigateTo('/settings');
+    context.httpTesting.expectOne(request => request.url === STATIONS_URL);
+
+    element.querySelector('dialog')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await context.settle();
+
+    expect(TestBed.inject(Router).url).toBe('/');
+    expect(element.querySelector('dialog')).toBeNull();
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Einstellungen');
+    expect(document.activeElement?.closest('app-bottom-sheet')).not.toBeNull();
+  });
+
+  it('opens the favorites in the sheet of the explore page instead of the list', async () => {
+    const element = await navigateTo('/favorites');
+
+    expect(navigationLink(element, 'Favoriten').getAttribute('aria-current')).toBe('page');
+    expect(element.querySelector('main app-stations-map')).not.toBeNull();
+    expect(element.querySelector('main app-bottom-sheet app-favorites-page')).not.toBeNull();
+    expect(element.querySelector('app-station-list')?.parentElement?.hidden).toBe(true);
+    expect(textOf(element.querySelector('app-favorites-page h2'))).toBe('Favoriten');
+    expect(document.title).toBe('Favoriten – GenialTanken');
+    context.httpTesting.expectOne(request => request.url === STATIONS_URL);
   });
 
   it('opens a station as a card on the explore page under /stations/:id', async () => {
@@ -172,7 +206,7 @@ describe('App', () => {
     });
 
     it('keeps an empty status region until a new version is ready', async () => {
-      const element = await navigateTo('/settings');
+      const element = await navigateTo('/unknown');
 
       expect(notices(element).getAttribute('role')).toBe('status');
       expect(textOf(notices(element))).toBe('');
@@ -180,7 +214,7 @@ describe('App', () => {
 
     it('offers a reload once a new version is ready and keeps it open', async () => {
       vi.useFakeTimers();
-      const element = await navigateTo('/settings');
+      const element = await navigateTo('/unknown');
 
       serviceWorkerUpdate.announceReadyVersion();
       await context.settle();
@@ -192,7 +226,7 @@ describe('App', () => {
     });
 
     it('activates the new version and reloads on request', async () => {
-      const element = await navigateTo('/settings');
+      const element = await navigateTo('/unknown');
       serviceWorkerUpdate.announceReadyVersion();
       await context.settle();
 

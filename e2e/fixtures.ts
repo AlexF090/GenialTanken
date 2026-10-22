@@ -167,9 +167,39 @@ export const sheetHandle = (page: Page): Locator =>
     .getByRole('region', { name: 'Tankstellen', exact: true })
     .getByRole('button', { name: /^Liste (vergrößern|verkleinern)$/ });
 
-/** Opens the explore page through the navigation, keeping the app state of the current visit. */
+/** The settings open as a modal dialog over the explore page. */
+export const settingsDialog = (page: Page): Locator =>
+  page.getByRole('dialog', { name: 'Einstellungen', exact: true });
+
+/** Title of the list of all favorites. */
+export const favoritesHeading = (page: Page): Locator =>
+  favoritesList(page).getByRole('heading', { level: 2, name: 'Favoriten', exact: true });
+
+/** All favorites, shown in the explore sheet instead of the stations; it has a back button. */
+export const favoritesList = (page: Page): Locator =>
+  page
+    .getByRole('region', { name: 'Favoriten', exact: true })
+    .filter({ has: page.getByRole('button', { name: 'Zurück', exact: true }) });
+
+/** The favorites row above the stations in the explore sheet; it links to all favorites. */
+export const favoritesRow = (page: Page): Locator =>
+  page
+    .getByRole('region', { name: 'Favoriten', exact: true })
+    .filter({ has: page.getByRole('link', { name: 'Alle Favoriten', exact: true }) });
+
+/**
+ * Opens the explore page, keeping the app state of the current visit: closes the settings dialog
+ * (it makes the navigation behind it inert), otherwise uses the navigation.
+ */
 export const openExplore = async (page: Page): Promise<void> => {
-  await mainNavigation(page).getByRole('link', { name: 'Erkunden', exact: true }).click();
+  const dialog = settingsDialog(page);
+  if (await dialog.isVisible()) {
+    await dialog.getByRole('button', { name: 'Schließen', exact: true }).click();
+    await expect(dialog).toBeHidden();
+  } else {
+    await mainNavigation(page).getByRole('link', { name: 'Erkunden', exact: true }).click();
+  }
+  await expect(page).toHaveURL('/');
   await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
 };
 
@@ -186,13 +216,15 @@ export const useOwnPosition = async (
 };
 
 /**
- * Opens the settings through the navigation. The router attaches the page before its first
- * change detection binds the form, so the test waits for the bound radius label (its first
+ * Opens the settings dialog through the navigation. The router attaches the page before its
+ * first change detection binds the form, so the test waits for the bound radius label (its first
  * binding) before interacting; otherwise the input is ignored (Angular error NG0950).
  */
 export const openSettings = async (page: Page): Promise<void> => {
   await mainNavigation(page).getByRole('link', { name: 'Einstellungen', exact: true }).click();
-  await expect(page.getByRole('slider', { name: /^Radius: \d+ km$/ })).toBeVisible();
+  await expect(
+    settingsDialog(page).getByRole('slider', { name: /^Radius: \d+ km$/ })
+  ).toBeVisible();
 };
 
 export const fuelOptions = (page: Page): Locator =>

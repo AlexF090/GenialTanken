@@ -16,10 +16,11 @@ import {
   carrefourStation,
   totalStation,
   unbrandedStation,
+  withoutDistance,
 } from '../../../testing/station-fixtures';
 import { ExplorePage } from './explore-page';
 import { PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS } from './place-search';
-import { PLACES_URL, placesUrl, stationsUrl } from '../../../testing/api-urls';
+import { PLACES_URL, placesUrl, stationLookupUrl, stationsUrl } from '../../../testing/api-urls';
 import { SETTINGS_STORAGE_KEY } from '../../core/settings/settings-store';
 import {
   childComponent,
@@ -423,6 +424,37 @@ describe('ExplorePage', () => {
     expect(getButton(element, 'Favorit: Carrefour Market').getAttribute('aria-pressed')).toBe(
       'true'
     );
+    context.httpTesting.expectOne(stationLookupUrl('fr-75005002')).flush({
+      stations: [withoutDistance(carrefourStation)],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [],
+    });
+    await context.settle();
+
+    const favorites = element.querySelector('app-favorites-row section');
+    expect(textOf(favorites?.querySelector('h2'))).toBe('Favoriten');
+    expect(textOf(favorites?.querySelector('li a'))).toContain('Carrefour Market');
+    expect(favorites?.querySelector('li a')?.getAttribute('href')).toBe('/stations/fr-75005002');
+  });
+
+  it('places the favorites above the list and opens the settings from the sheet header', async () => {
+    TestBed.resetTestingModule();
+    context = configurePageTest({ storage: new FakeStorage({ favoriteIDs: '["fr-75001001"]' }) });
+    const { element } = await renderWithStations();
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001')).flush({
+      stations: [withoutDistance(totalStation)],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [],
+    });
+    await context.settle();
+
+    const favorites = element.querySelector('app-favorites-row section');
+    const list = element.querySelector('app-station-list');
+    expect(favorites?.compareDocumentPosition(list as Node)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // The distance is measured from the search center, like in the list.
+    expect(textOf(favorites?.querySelector('li a'))).toMatch(/km$/);
+    const settingsLink = element.querySelector('app-bottom-sheet a[aria-label="Einstellungen"]');
+    expect(settingsLink?.getAttribute('href')).toBe('/settings');
   });
 
   it('offers a search in the area the map was moved to and searches there', async () => {

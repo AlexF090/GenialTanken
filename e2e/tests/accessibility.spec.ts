@@ -4,6 +4,7 @@ import {
   eiffelTower,
   expect,
   expectColorScheme,
+  favoritesRow,
   quaiDeLaRapeeStation,
   resultSummary,
   rueBailleulStation,
@@ -81,11 +82,22 @@ const PAGES: PageUnderTest[] = [
     },
   },
   {
+    name: 'explore with favorites',
+    path: '/',
+    prepare: page => seedFavorites(page, [rueBailleulStation.id, quaiDeLaRapeeStation.id]),
+    isReady: async page => {
+      await isExploreReady(page);
+      await expect(
+        favoritesRow(page).getByRole('link', { name: rueBailleulStation.title })
+      ).toContainText('2,540 €');
+    },
+  },
+  {
     name: 'empty favorites',
     path: '/favorites',
     isReady: page =>
       expect(
-        page.getByRole('heading', { level: 2, name: 'Keine Favoriten gespeichert' })
+        page.getByRole('heading', { level: 3, name: 'Keine Favoriten gespeichert' })
       ).toBeVisible(),
   },
   {
@@ -100,7 +112,14 @@ const PAGES: PageUnderTest[] = [
   {
     name: 'settings',
     path: '/settings',
-    isReady: page => expect(page.getByRole('slider', { name: 'Radius: 5 km' })).toBeVisible(),
+    // The dialog slides in; axe must not measure contrast halfway.
+    isReady: async page => {
+      await expect(page.getByRole('slider', { name: 'Radius: 5 km' })).toBeVisible();
+      await expect(page.getByRole('dialog')).toHaveJSProperty('open', true);
+      await page.waitForFunction(() =>
+        document.getAnimations().every(animation => animation.playState !== 'running')
+      );
+    },
   },
   {
     name: 'opened station card',
@@ -186,7 +205,7 @@ const DISPLAY_PREFERENCES: DisplayPreference[] = [
 ];
 
 const PAGES_UNDER_DISPLAY_PREFERENCES = PAGES.filter(pageUnderTest =>
-  ['explore', 'opened station card'].includes(pageUnderTest.name)
+  ['explore', 'opened station card', 'settings', 'favorites'].includes(pageUnderTest.name)
 );
 
 for (const preference of DISPLAY_PREFERENCES) {
@@ -204,7 +223,7 @@ test.describe('reflow at 320 CSS pixels', () => {
   test.use({ viewport: { width: 320, height: 640 } });
 
   const pagesUnderTest = PAGES.filter(pageUnderTest =>
-    ['explore', 'favorites', 'settings'].includes(pageUnderTest.name)
+    ['explore', 'explore with favorites', 'favorites', 'settings'].includes(pageUnderTest.name)
   );
 
   for (const pageUnderTest of pagesUnderTest) {

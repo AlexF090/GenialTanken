@@ -1,7 +1,7 @@
 import {
   chooseFuel,
   expect,
-  pageHeading,
+  favoritesHeading,
   quaiDeLaRapeeStation,
   rueBailleulStation,
   seedFavorites,
@@ -120,7 +120,8 @@ test.describe('station card', () => {
 
     await page.goBack();
     await expect(page).toHaveURL('/favorites');
-    await expect(pageHeading(page, 'Favoriten')).toBeVisible();
+    await expect(favoritesHeading(page)).toBeVisible();
+    await expect(stationsMap(page)).toBeVisible();
   });
 
   test('credits the French price data', async ({ page }) => {

@@ -157,7 +157,7 @@ export const getButton = (container: HTMLElement, name: RegExp | string): HTMLBu
 
 /** Titles of the station list's rows, in their order. */
 export const stationTitles = (container: HTMLElement): string[] =>
-  [...container.querySelectorAll('main li .station-row__title')].map(title => textOf(title));
+  [...container.querySelectorAll('li .station-row__title')].map(title => textOf(title));
 
 /** The radio button whose label reads `name`. */
 export const getRadio = (container: HTMLElement, name: string): HTMLInputElement => {

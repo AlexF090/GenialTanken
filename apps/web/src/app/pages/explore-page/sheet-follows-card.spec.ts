@@ -5,7 +5,7 @@ import { MATCH_MEDIA } from '../../core/layout/media-query';
 import type { SnapPosition } from '../../ui/bottom-sheet/bottom-sheet-snap';
 import { FakeMatchMedia } from '../../../testing/fake-match-media';
 import { injectSheetFollowsCard } from './sheet-follows-card';
-import type { ScrollableSheet, StationFocusTarget } from './sheet-follows-card';
+import type { ScrollableSheet, SheetCard, StationFocusTarget } from './sheet-follows-card';
 
 class FakeSheet implements ScrollableSheet {
   position = 0;
@@ -46,38 +46,43 @@ const setUp = (
       },
     ],
   });
-  const openedStationIdentifier = signal<string | undefined>(undefined);
+  const openedCard = signal<SheetCard | undefined>(undefined);
   const sheet = new FakeSheet();
   const stationList = new FakeStationList(options.listedStationIdentifiers ?? ['fr-1', 'fr-2']);
   const snapPosition = signal<SnapPosition>('peek');
   const selectedInList: string[] = [];
-  let fallbackFocusCount = 0;
+  const fallbackFocusCards: SheetCard[] = [];
   TestBed.runInInjectionContext(() => {
     injectSheetFollowsCard({
-      openedStationIdentifier,
+      openedCard,
       bottomSheet: signal(sheet),
       stationList: signal(stationList),
       snapPosition,
       selectInList: stationIdentifier => {
         selectedInList.push(stationIdentifier);
       },
-      focusInsteadOfStation: () => {
-        fallbackFocusCount += 1;
+      focusInsteadOfRow: closedCard => {
+        fallbackFocusCards.push(closedCard);
       },
     });
   });
   TestBed.tick();
-  const show = (stationIdentifier: string | undefined): void => {
-    openedStationIdentifier.set(stationIdentifier);
+  const showCard = (card: SheetCard | undefined): void => {
+    openedCard.set(card);
     TestBed.tick();
+  };
+  const show = (stationIdentifier: string | undefined): void => {
+    showCard(stationIdentifier === undefined ? undefined : { kind: 'station', stationIdentifier });
   };
   return {
     show,
+    showCard,
     sheet,
     stationList,
     snapPosition,
     selectedInList,
-    fallbackFocusCount: () => fallbackFocusCount,
+    fallbackFocusCount: () => fallbackFocusCards.length,
+    fallbackFocusCards,
   };
 };
 
@@ -140,5 +145,41 @@ describe('injectSheetFollowsCard', () => {
 
     expect(stationList.focusedStationIdentifiers).toEqual([]);
     expect(fallbackFocusCount()).toBe(1);
+  });
+
+  it('returns from the favorites to the list where it was and focuses elsewhere', () => {
+    const { showCard, sheet, selectedInList, stationList, fallbackFocusCards } = setUp();
+    sheet.position = 240;
+    showCard({ kind: 'favorites' });
+    expect(sheet.position).toBe(0);
+
+    showCard(undefined);
+
+    expect(sheet.position).toBe(240);
+    expect(selectedInList).toEqual([]);
+    expect(stationList.focusedStationIdentifiers).toEqual([]);
+    expect(fallbackFocusCards).toEqual([{ kind: 'favorites' }]);
+  });
+
+  it('keeps the list position when a favorite opens its station card', () => {
+    const { show, showCard, sheet, selectedInList } = setUp();
+    sheet.position = 240;
+    showCard({ kind: 'favorites' });
+    show('fr-2');
+
+    show(undefined);
+
+    expect(sheet.position).toBe(240);
+    expect(selectedInList).toEqual(['fr-2']);
+  });
+
+  it('ignores a new but equal card', () => {
+    const { showCard, sheet } = setUp();
+    showCard({ kind: 'favorites' });
+    sheet.position = 80;
+
+    showCard({ kind: 'favorites' });
+
+    expect(sheet.position).toBe(80);
   });
 });

@@ -219,6 +219,23 @@ select {
       color: var(--color-action-text-hover);
     }
   }
+
+  // Grey round button like the close button of an iOS sheet: the circle (`.icon-button__circle`
+  // inside) is smaller than the touch target around it.
+  &--circled {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-md);
+  }
+
+  &__circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--space-xl);
+    height: var(--space-xl);
+    border-radius: var(--radius-round);
+    background-color: var(--color-segmented-track);
+  }
 }
 
 // Toast: tapping anywhere on it closes it. The close button stretches over the whole toast, so

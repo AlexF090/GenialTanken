@@ -11,6 +11,8 @@ import {
   openSettings,
   pageHeading,
   resultSummary,
+  settingsDialog,
+  stationsMap,
   rueBailleulStation,
   stationCard,
   stationCards,
@@ -39,7 +41,7 @@ test.describe('settings', () => {
   }) => {
     await page.goto('/settings');
 
-    await expect(pageHeading(page, 'Einstellungen')).toBeVisible();
+    await expect(settingsDialog(page)).toBeVisible();
     await expect(fuelOptions(page).getByRole('radio')).toHaveCount(FUEL_OPTION_LABELS.length);
     for (const fuel of FUEL_OPTION_LABELS) {
       await expect(fuelOptions(page).getByRole('radio', { name: fuel, exact: true })).toBeChecked({
@@ -60,8 +62,52 @@ test.describe('settings', () => {
     }
 
     await expect(page.getByRole('heading', { level: 2, name: 'Datenquelle' })).toBeVisible();
-    // Changes apply immediately, so there is nothing to submit.
-    await expect(page.getByRole('main').getByRole('button')).toHaveCount(0);
+    // Changes apply immediately, so there is nothing to submit; the only button closes.
+    await expect(settingsDialog(page).getByRole('button')).toHaveAccessibleName('Schließen');
+  });
+
+  test('the button in the sheet header opens the settings as a dialog over the map', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const settingsButton = page
+      .getByRole('region', { name: 'Tankstellen', exact: true })
+      .getByRole('link', { name: 'Einstellungen', exact: true });
+
+    await settingsButton.click();
+
+    await expect(page).toHaveURL('/settings');
+    await expect(page).toHaveTitle('Einstellungen – GenialTanken');
+    const dialog = settingsDialog(page);
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Schließen', exact: true })).toBeFocused();
+    await expect(stationsMap(page)).toBeVisible();
+
+    await dialog.getByRole('button', { name: 'Schließen', exact: true }).click();
+
+    await expect(page).toHaveURL('/');
+    await expect(dialog).toBeHidden();
+    await expect(settingsButton).toBeFocused();
+  });
+
+  test('a deep link opens the dialog over the map; Escape returns to the list', async ({
+    page,
+  }) => {
+    await page.goto('/settings');
+    const dialog = settingsDialog(page);
+    await expect(dialog.getByRole('slider', { name: 'Radius: 5 km' })).toBeVisible();
+    await expect(stationsMap(page)).toBeVisible();
+
+    await page.keyboard.press('Escape');
+
+    await expect(page).toHaveURL('/');
+    await expect(dialog).toBeHidden();
+    await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
+    await expect(
+      page
+        .getByRole('region', { name: 'Tankstellen', exact: true })
+        .getByRole('link', { name: 'Einstellungen', exact: true })
+    ).toBeFocused();
   });
 
   test('changes apply immediately and survive a reload', async ({ page }) => {

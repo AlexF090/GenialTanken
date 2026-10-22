@@ -206,6 +206,10 @@
   --layout-search-width-maximum: 28rem;
   --layout-menu-width-minimum: 12rem;
   --layout-map-minimum-height: 20rem;
+  // A dialog such as the settings: page sheet on phones, centered card from 48rem
+  --layout-dialog-width-maximum: 32rem;
+  // A favorite in the horizontal row of the explore sheet
+  --layout-favorite-card-width: 9.5rem;
   --safe-area-top: env(safe-area-inset-top, 0);
   --safe-area-right: env(safe-area-inset-right, 0);
   --safe-area-bottom: env(safe-area-inset-bottom, 0);

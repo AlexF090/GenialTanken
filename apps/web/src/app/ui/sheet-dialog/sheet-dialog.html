@@ -1,0 +1,19 @@
+<dialog
+  #dialog
+  class="sheet-dialog"
+  [attr.aria-labelledby]="titleIdentifier"
+  (close)="announceClosed()">
+  <div class="sheet-dialog__header">
+    <h2 class="sheet-dialog__title" [id]="titleIdentifier">{{ title() }}</h2>
+    <button
+      type="button"
+      class="icon-button icon-button--circled"
+      aria-label="Schließen"
+      (click)="close()">
+      <span class="icon-button__circle"><app-icon name="close" /></span>
+    </button>
+  </div>
+  <div class="sheet-dialog__content">
+    <ng-content />
+  </div>
+</dialog>

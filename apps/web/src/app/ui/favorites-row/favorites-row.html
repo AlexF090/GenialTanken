@@ -1,0 +1,31 @@
+@if (cards().length > 0) {
+  <section class="favorites-row" [attr.aria-labelledby]="headingIdentifier">
+    <div class="favorites-row__header">
+      <h2 class="favorites-row__heading" [id]="headingIdentifier">Favoriten</h2>
+      <a
+        #allLink
+        class="favorites-row__all"
+        aria-label="Alle Favoriten"
+        [routerLink]="favoritesRoute"
+        >Alle</a
+      >
+    </div>
+    <ul class="favorites-row__list" role="list">
+      @for (card of cards(); track card.stationIdentifier) {
+        <li class="favorites-row__item">
+          <a class="favorites-row__card" [routerLink]="card.route">
+            <span class="favorites-row__title" translate="no">{{ card.title }}</span
+            >&ngsp;
+            <app-price
+              class="favorites-row__price"
+              size="list"
+              [priceInEuro]="card.priceInEuro" />&ngsp;
+            @if (card.distance) {
+              <span class="favorites-row__distance">{{ card.distance }}</span>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+  </section>
+}

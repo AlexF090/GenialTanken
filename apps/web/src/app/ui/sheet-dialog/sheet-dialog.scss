@@ -1,0 +1,89 @@
+@use 'breakpoints';
+
+// iOS page sheet on phones: it rises from the bottom and leaves a strip of the map visible at the
+// top, so it reads as a layer over the app rather than a new page. From 48rem a centered card.
+// The grouped background (canvas) lets the inset groups of its content stand out; it is opaque,
+// so it needs no fallback for reduced transparency or more contrast.
+.sheet-dialog {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: var(--border-width-hairline) solid var(--color-hairline);
+  background-color: var(--color-canvas);
+  box-shadow: var(--shadow-floating);
+  color: var(--color-text);
+
+  &:not([open]) {
+    display: none;
+  }
+
+  @include breakpoints.compact {
+    inset: calc(var(--safe-area-top) + var(--space-md)) 0 0;
+    height: auto;
+    max-height: none;
+    border-bottom: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    transition:
+      transform var(--duration-medium) var(--easing-standard),
+      display var(--duration-medium) allow-discrete,
+      overlay var(--duration-medium) allow-discrete;
+
+    @starting-style {
+      transform: translateY(100%);
+    }
+  }
+
+  @include breakpoints.medium-and-up {
+    width: min(var(--layout-dialog-width-maximum), 100% - 2 * var(--space-lg));
+    max-height: calc(100dvh - 2 * var(--space-xl));
+    margin: auto;
+    border-radius: var(--radius-lg);
+    transition:
+      opacity var(--duration-short) var(--easing-standard),
+      transform var(--duration-short) var(--easing-standard);
+
+    @starting-style {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+
+  &::backdrop {
+    background-color: var(--color-scrim);
+    transition: opacity var(--duration-medium) var(--easing-standard);
+
+    @starting-style {
+      opacity: 0;
+    }
+  }
+}
+
+.sheet-dialog__header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-md);
+}
+
+.sheet-dialog__title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.sheet-dialog__content {
+  flex: 1;
+  min-height: 0;
+  padding: 0 var(--space-md) calc(var(--safe-area-bottom) + var(--space-lg));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}

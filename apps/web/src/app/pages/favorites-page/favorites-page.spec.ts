@@ -1,3 +1,5 @@
+import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { FakeStorage, storedFavorites } from '../../../testing/fake-storage';
 import {
   configurePageTest,
@@ -9,6 +11,7 @@ import {
 import type { PageTestContext } from '../../../testing/render-page';
 import { carrefourStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
 import { stationLookupUrl } from '../../../testing/api-urls';
+import { FavoriteStationsResource } from '../../core/favorites/favorite-stations-resource';
 import { FavoritesPage } from './favorites-page';
 
 const BAD_GATEWAY = { status: 502, statusText: 'Bad Gateway' };
@@ -27,9 +30,10 @@ describe('FavoritesPage', () => {
     const { element } = await renderComponent(FavoritesPage);
     await context.settle();
 
-    expect(textOf(element.querySelector('header h1'))).toBe('Favoriten');
-    expect(textOf(element.querySelector('main h2'))).toBe('Keine Favoriten gespeichert');
-    const exploreLink = [...element.querySelectorAll('main a')].find(
+    expect(textOf(element.querySelector('section h2'))).toBe('Favoriten');
+    expect(element.querySelector('main, h1')).toBeNull();
+    expect(textOf(element.querySelector('section h3'))).toBe('Keine Favoriten gespeichert');
+    const exploreLink = [...element.querySelectorAll('a')].find(
       link => textOf(link) === 'Tankstellen erkunden'
     );
     expect(exploreLink?.getAttribute('href')).toBe('/');
@@ -85,21 +89,21 @@ describe('FavoritesPage', () => {
     const { element } = await renderWithTwoFavorites();
 
     expect(stationTitles(element)).toEqual(['TotalEnergies', 'Carrefour Market']);
-    expect(textOf(element.querySelector('main'))).not.toContain('km');
+    expect(textOf(element.querySelector('app-station-list'))).not.toContain('km');
   });
 
   it('credits the French open data of the listed prices', async () => {
     const { element } = await renderWithTwoFavorites();
 
-    expect(
-      textOf(element.querySelector('main a[href="https://www.prix-carburants.gouv.fr/"]'))
-    ).toBe('Preisdaten: prix-carburants.gouv.fr (öffnet in neuem Tab)');
+    expect(textOf(element.querySelector('a[href="https://www.prix-carburants.gouv.fr/"]'))).toBe(
+      'Preisdaten: prix-carburants.gouv.fr (öffnet in neuem Tab)'
+    );
   });
 
   it('neither highlights a cheapest favorite nor offers the map action', async () => {
     const { element } = await renderWithTwoFavorites();
 
-    expect(textOf(element.querySelector('main'))).not.toContain('Günstigster Preis');
+    expect(textOf(element)).not.toContain('Günstigster Preis');
     expect(() => getButton(element, 'Auf Karte zeigen: TotalEnergies')).toThrow();
   });
 
@@ -115,7 +119,7 @@ describe('FavoritesPage', () => {
     getButton(element, 'Favorit: Carrefour Market').click();
     await context.settle();
 
-    expect(textOf(element.querySelector('main h2'))).toBe('Keine Favoriten gespeichert');
+    expect(textOf(element.querySelector('h3'))).toBe('Keine Favoriten gespeichert');
     expect(storedFavorites(context.storage)).toBe('[]');
   });
 
@@ -133,7 +137,7 @@ describe('FavoritesPage', () => {
     await context.settle();
 
     expect(stationTitles(element)).toEqual(['TotalEnergies']);
-    expect(textOf(element.querySelector('main p[role="status"]'))).toBe(
+    expect(textOf(element.querySelector('p[role="status"]'))).toBe(
       'Ein Favorit ist gerade nicht verfügbar.'
     );
     expect(storedFavorites(context.storage)).toBe('["fr-75001001","fr-99000001"]');
@@ -152,7 +156,7 @@ describe('FavoritesPage', () => {
     });
     await context.settle();
 
-    expect(textOf(element.querySelector('main p[role="status"]'))).toBe(
+    expect(textOf(element.querySelector('p[role="status"]'))).toBe(
       '2 Favoriten sind gerade nicht verfügbar.'
     );
 
@@ -160,9 +164,9 @@ describe('FavoritesPage', () => {
     await context.settle();
 
     expect(storedFavorites(context.storage)).toBe('["fr-75001001"]');
-    expect(element.querySelector('main p[role="status"]')).toBeNull();
+    expect(element.querySelector('p[role="status"]')).toBeNull();
     expect(stationTitles(element)).toEqual(['TotalEnergies']);
-    expect(textOf(document.activeElement)).toBe('Gespeicherte Tankstellen');
+    expect(textOf(document.activeElement)).toBe('Favoriten');
   });
 
   it('moves the focus to the empty state when the last favorites are removed', async () => {
@@ -215,5 +219,47 @@ describe('FavoritesPage', () => {
       'Die Preisdaten sind gerade nicht erreichbar. Bitte versuche es später erneut.'
     );
     expect(storedFavorites(context.storage)).toBe('["fr-75001001"]');
+  });
+
+  it('starts at its title and goes back to the list with the back button or Escape', async () => {
+    context = configurePageTest({ routes: [{ path: 'favorites', children: [] }] });
+    const router = TestBed.inject(Router);
+    await router.navigateByUrl('/favorites');
+    const { fixture, element } = await renderComponent(FavoritesPage);
+    await fixture.whenStable();
+
+    expect(textOf(document.activeElement)).toBe('Favoriten');
+
+    getButton(element, 'Zurück').click();
+    await fixture.whenStable();
+    expect(router.url).toBe('/');
+
+    await router.navigateByUrl('/favorites');
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await fixture.whenStable();
+    expect(router.url).toBe('/');
+  });
+
+  it('refreshes the prices already loaded elsewhere when it opens', async () => {
+    context = configurePageTest({ storage: new FakeStorage({ favoriteIDs: '["fr-75001001"]' }) });
+    const favoriteStations = TestBed.inject(FavoriteStationsResource);
+    await context.settle();
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001')).flush({
+      stations: [withoutDistance(totalStation)],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [],
+    });
+    await context.settle();
+    expect(favoriteStations.stations()).toHaveLength(1);
+
+    const { element } = await renderComponent(FavoritesPage);
+    await context.settle();
+
+    expect(stationTitles(element)).toEqual(['TotalEnergies']);
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001')).flush({
+      stations: [withoutDistance(totalStation)],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [],
+    });
   });
 });
