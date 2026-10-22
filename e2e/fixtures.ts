@@ -200,17 +200,21 @@ export const settingsButton = (page: Page): Locator =>
  * Returns to the list of the explore page the way a user does, keeping the app state of the
  * current visit: closes the settings dialog, the favorites or a station's card, or follows the
  * link of the 404 page. There is no navigation bar; the sheet is the app.
+ *
+ * The URL decides what is open, not a visibility check: right after `page.goto` the lazy route
+ * may not have rendered yet, and `isVisible()` does not wait for it. The clicks below do.
  */
 export const openExplore = async (page: Page): Promise<void> => {
-  const dialog = settingsDialog(page);
-  if (await dialog.isVisible()) {
+  const pathname = new URL(page.url()).pathname;
+  if (pathname === '/settings') {
+    const dialog = settingsDialog(page);
     await dialog.getByRole('button', { name: 'Schließen', exact: true }).click();
     await expect(dialog).toBeHidden();
-  } else if (await favoritesList(page).isVisible()) {
+  } else if (pathname === '/favorites') {
     await favoritesList(page).getByRole('button', { name: 'Zurück', exact: true }).click();
-  } else if (await openedStationCard(page).isVisible()) {
+  } else if (pathname.startsWith('/stations/')) {
     await openedStationCard(page).getByRole('button', { name: 'Schließen', exact: true }).click();
-  } else if (new URL(page.url()).pathname !== '/') {
+  } else if (pathname !== '/') {
     await page.getByRole('link', { name: 'Zur Karte', exact: true }).click();
   }
   await expect(page).toHaveURL('/');
