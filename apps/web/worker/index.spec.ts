@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from './index.ts';
-import type { StaticAssetsBinding, WorkerEnvironment } from './index.ts';
+import type { ExecutionContext, StaticAssetsBinding, WorkerEnvironment } from './index.ts';
 
 const API_ORIGIN = 'https://genialtanken-api.onrender.com';
 const WORKER_ORIGIN = 'https://genialtanken.alexf090.workers.dev';
@@ -62,4 +62,28 @@ describe('worker', () => {
       expect(apiFetch).not.toHaveBeenCalled();
     }
   );
+
+  it('wakes the API through the cron trigger within the awake hours', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const pending: Promise<unknown>[] = [];
+    const context: ExecutionContext = { waitUntil: promise => pending.push(promise) };
+
+    worker.scheduled(
+      { scheduledTime: Date.parse('2026-07-15T10:00:00Z') },
+      createEnvironment(assetsFetch),
+      context
+    );
+    await vi.runAllTimersAsync();
+    await Promise.all(pending);
+    vi.useRealTimers();
+
+    expect(pending).toHaveLength(1);
+    expect(apiFetch).toHaveBeenCalledTimes(1);
+    const [healthCheck] = apiFetch.mock.calls[0] ?? [];
+    if (!(healthCheck instanceof Request)) {
+      throw new Error('Expected the worker to send a Request.');
+    }
+    expect(healthCheck.url).toBe(`${API_ORIGIN}/health`);
+  });
 });
