@@ -4,7 +4,7 @@ import { createCache } from 'cache-manager';
 import { z } from 'zod';
 import { ApplicationConfiguration } from '../configuration/application-configuration.js';
 import { parseEnvironment } from '../configuration/environment.js';
-import { UpstreamError } from './upstream-error.js';
+import { UpstreamAbortedError, UpstreamError } from './upstream-error.js';
 import { UpstreamFetcher } from './upstream-fetcher.js';
 
 let server: Server;
@@ -16,6 +16,11 @@ beforeAll(async () => {
     requestedPaths.push(request.url ?? '/');
     if (request.url === '/missing') {
       response.writeHead(404).end();
+      return;
+    }
+    if (request.url === '/slow-body') {
+      response.writeHead(200, { 'Content-Type': 'text/plain' }).write('first part, ');
+      setTimeout(() => response.end('second part'), 50);
       return;
     }
     response.writeHead(200, { 'Content-Type': 'application/json' }).end('{"answer":42}');
@@ -85,6 +90,25 @@ describe('UpstreamFetcher', () => {
     await expect(
       createFetcher().fetchText({ url: new URL(`${baseUrl}/missing`) })
     ).resolves.toBeUndefined();
+  });
+
+  it('fails with an UpstreamAbortedError and caches nothing when the caller aborts while the body is read', async () => {
+    const fetcher = createFetcher();
+    const url = new URL(`${baseUrl}/slow-body`);
+    const controller = new AbortController();
+    const originalFetch = globalThis.fetch;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async (...parameters) => {
+      const response = await originalFetch(...parameters);
+      controller.abort();
+      return response;
+    });
+
+    const abortedRequest = fetcher.fetchText({ url, signal: controller.signal });
+
+    await expect(abortedRequest).rejects.toBeInstanceOf(UpstreamAbortedError);
+    fetchSpy.mockRestore();
+    await expect(fetcher.fetchText({ url })).resolves.toBe('first part, second part');
+    expect(requestedPaths).toEqual(['/slow-body', '/slow-body']);
   });
 
   it('fails for a JSON answer that does not match the schema', async () => {

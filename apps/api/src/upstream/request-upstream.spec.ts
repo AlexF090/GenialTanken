@@ -42,6 +42,7 @@ describe('requestUpstream', () => {
     controller.abort();
 
     await expect(request).rejects.toBeInstanceOf(UpstreamAbortedError);
+    await expect(request).rejects.not.toBeInstanceOf(UpstreamError);
   });
 
   it('treats a caller signal that timed out as aborted by the caller', async () => {

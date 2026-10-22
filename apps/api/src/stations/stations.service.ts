@@ -3,10 +3,8 @@ import type { Station, StationLookup, StationsQuery } from '@genialtanken/contra
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { describeError } from '../common/describe-error.js';
 import { ERROR_MESSAGES } from '../common/error-messages.js';
-import {
-  MAXIMUM_PARALLEL_UPSTREAM_REQUESTS,
-  mapWithConcurrency,
-} from '../common/map-with-concurrency.js';
+import { mapWithConcurrency } from '../common/map-with-concurrency.js';
+import { MAXIMUM_PARALLEL_UPSTREAM_REQUESTS } from '../upstream/maximum-parallel-upstream-requests.js';
 import { UpstreamUnavailableError } from '../common/upstream-unavailable-error.js';
 import { FUEL_PRICE_PROVIDERS } from '../fuel-price-providers/fuel-price-provider.js';
 import type { FuelPriceProvider } from '../fuel-price-providers/fuel-price-provider.js';

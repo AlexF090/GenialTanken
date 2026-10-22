@@ -38,6 +38,27 @@ describe('GET /api/places', () => {
     ]);
   });
 
+  it('drops a feature with impossible coordinates and keeps the others', async () => {
+    const [bastille] = bastilleFeatures;
+    const outOfRange = {
+      ...bastille,
+      properties: { ...bastille?.properties, osm_id: 1, name: 'Nowhere' },
+      geometry: { type: 'Point', coordinates: [2.3691871, 148.8536788] },
+    };
+    photon.respondTo(PHOTON_SEARCH_PATH, {
+      status: 200,
+      body: photonResponse([outOfRange, ...bastilleFeatures]),
+    });
+    const api = await startApplication();
+
+    const response = await api.get('/api/places').query({ query: 'bastille' }).expect(200);
+
+    expect(placesSchema.parse(response.body).map(place => place.id)).toEqual([
+      'N1584432760',
+      'N206670863',
+    ]);
+  });
+
   it('asks Photon for twice the limit in German, restricted to France', async () => {
     photon.respondTo(PHOTON_SEARCH_PATH, { status: 200, body: photonResponse([]) });
     const api = await startApplication();

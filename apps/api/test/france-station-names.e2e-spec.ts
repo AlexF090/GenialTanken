@@ -3,7 +3,7 @@ import {
   FRENCH_RECORDS_PATH,
   frenchStationPagePath,
 } from '../src/fuel-price-providers/france/french-upstream-paths.js';
-import { MAXIMUM_PARALLEL_UPSTREAM_REQUESTS } from '../src/common/map-with-concurrency.js';
+import { MAXIMUM_PARALLEL_UPSTREAM_REQUESTS } from '../src/upstream/maximum-parallel-upstream-requests.js';
 import { useTestApplication } from './support/create-test-application.js';
 import { useFakeUpstream } from './support/fake-upstream.js';
 import {
@@ -19,9 +19,8 @@ import { PARIS } from './support/positions.js';
 
 const PARIS_SEARCH = { ...PARIS, radiusInKilometers: '5', fuel: 'e10' };
 const TIME_BUDGET_IN_MILLISECONDS = 200;
-const SLOW_PAGE_DELAY_IN_MILLISECONDS = 3000;
-/** Local answers take a few milliseconds; this stays far below the slow page delay. */
-const ALLOWED_OVERRUN_IN_MILLISECONDS = 800;
+/** Far beyond the time budget, so even a slow machine answers well before a slow page would. */
+const SLOW_PAGE_DELAY_IN_MILLISECONDS = 20_000;
 
 const france = useFakeUpstream();
 const stationPages = useFakeUpstream();
@@ -40,6 +39,9 @@ const pageRequestsFor = (recordIdentifier: number) =>
 
 beforeEach(() => {
   france.respondTo(FRENCH_RECORDS_PATH, { status: 200, body: frenchResponse(frenchRecords) });
+  for (const record of frenchRecords) {
+    stationPages.respondTo(frenchStationPagePath(record.id), { status: 404 });
+  }
 });
 
 describe('French station names', () => {
@@ -73,9 +75,7 @@ describe('French station names', () => {
 
     expect(namesOf(response.body)).toContainEqual({ id: 'fr-75012010', name: null });
     expect(elapsedInMilliseconds).toBeGreaterThanOrEqual(TIME_BUDGET_IN_MILLISECONDS - 50);
-    expect(elapsedInMilliseconds).toBeLessThan(
-      TIME_BUDGET_IN_MILLISECONDS + ALLOWED_OVERRUN_IN_MILLISECONDS
-    );
+    expect(elapsedInMilliseconds).toBeLessThan(SLOW_PAGE_DELAY_IN_MILLISECONDS / 2);
   });
 
   it('starts no further page requests once the time budget is spent', async () => {

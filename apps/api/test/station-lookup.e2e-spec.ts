@@ -120,6 +120,26 @@ describe('GET /api/stations/by-identifiers', () => {
     expect(france.requests).toHaveLength(1);
   });
 
+  it('looks up a repeated identifier once and lists its station once', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, {
+      status: 200,
+      body: frenchResponse([rapeeRecord]),
+    });
+    const api = await startApplication();
+
+    const response = await api
+      .get(LOOKUP_PATH)
+      .query({ identifiers: `${RAPEE_IDENTIFIER},${RAPEE_IDENTIFIER}` })
+      .expect(200);
+
+    expect(stationLookupSchema.parse(response.body)).toEqual({
+      stations: [{ ...EXPECTED_RAPEE_STATION, distanceInMeters: null }],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [],
+    });
+    expect(france.requests).toHaveLength(1);
+  });
+
   it('lists the identifiers of a failing provider as failed and still answers', async () => {
     france.respondTo(FRENCH_RECORDS_PATH, { status: 500 });
     const api = await startApplication();

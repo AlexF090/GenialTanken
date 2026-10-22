@@ -2,8 +2,8 @@ import { MILLISECONDS_PER_SECOND } from '@genialtanken/contracts';
 import type { Environment } from './environment.js';
 
 /**
- * Typed access to the validated environment; the only place that reads configuration. Durations
- * are configured in seconds and converted to milliseconds only here.
+ * Typed access to the validated environment; the only place that reads configuration.
+ * Environment variables carry their unit in the name; every duration getter returns milliseconds.
  */
 export class ApplicationConfiguration {
   constructor(private readonly environment: Environment) {}

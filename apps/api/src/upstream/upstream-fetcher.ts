@@ -17,6 +17,10 @@ export interface UpstreamRequest {
 }
 
 export interface UpstreamJsonRequest<Schema extends z.ZodType> extends UpstreamRequest {
+  /**
+   * The cache is keyed by URL only and holds the parsed answer, so every request for one URL must
+   * pass the same schema; a different schema would get the answer parsed by the first one.
+   */
   schema: Schema;
 }
 
@@ -34,7 +38,7 @@ const TEXT_FORMAT: BodyFormat<string> = {
 
 /**
  * GETs data sources with timeout and caching per URL. Failures are never cached and surface as
- * `UpstreamError`.
+ * `UpstreamError`; an abort through the caller's signal surfaces as `UpstreamAbortedError`.
  */
 @Injectable()
 export class UpstreamFetcher {

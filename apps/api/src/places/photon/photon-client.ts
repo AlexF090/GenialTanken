@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { APPLICATION_VERSION } from '../../common/application-version.js';
 import { ApplicationConfiguration } from '../../configuration/application-configuration.js';
 import { UpstreamFetcher } from '../../upstream/upstream-fetcher.js';
-import { photonResponseSchema } from './photon-response.schema.js';
+import { parsePhotonFeatures, photonResponseSchema } from './photon-response.schema.js';
 import type { PhotonFeature } from './photon-response.schema.js';
 
 export const PHOTON_SEARCH_PATH = '/api';
@@ -28,7 +28,10 @@ export class PhotonClient {
     this.userAgent = `GenialTanken/${applicationVersion} (+${CONTACT_URL})`;
   }
 
-  /** At most `limit` features in or near metropolitan France; fails with an `UpstreamError`. */
+  /**
+   * At most `limit` features in or near metropolitan France, without malformed ones; fails with
+   * an `UpstreamError`.
+   */
   async searchFeatures(query: string, limit: number): Promise<PhotonFeature[]> {
     const url = new URL(`${this.configuration.photonBaseUrl}${PHOTON_SEARCH_PATH}`);
     url.search = new URLSearchParams({
@@ -43,6 +46,6 @@ export class PhotonClient {
       headers: { 'User-Agent': this.userAgent },
       cacheTimeToLiveInMilliseconds: this.configuration.placesCacheTimeToLiveInMilliseconds,
     });
-    return response.features;
+    return parsePhotonFeatures(response.features);
   }
 }

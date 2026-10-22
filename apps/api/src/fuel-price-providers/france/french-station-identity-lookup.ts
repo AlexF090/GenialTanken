@@ -3,10 +3,8 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Cache } from 'cache-manager';
 import { toCacheKey } from '../../common/cache-key.js';
-import {
-  MAXIMUM_PARALLEL_UPSTREAM_REQUESTS,
-  mapWithConcurrency,
-} from '../../common/map-with-concurrency.js';
+import { mapWithConcurrency } from '../../common/map-with-concurrency.js';
+import { MAXIMUM_PARALLEL_UPSTREAM_REQUESTS } from '../../upstream/maximum-parallel-upstream-requests.js';
 import { ApplicationConfiguration } from '../../configuration/application-configuration.js';
 import { UpstreamAbortedError, UpstreamError } from '../../upstream/upstream-error.js';
 import { UpstreamFetcher } from '../../upstream/upstream-fetcher.js';
@@ -90,7 +88,7 @@ export class FrenchStationIdentityLookup {
       }
       this.logger.debug(`No page for French station ${String(localIdentifier)}`);
     } catch (error) {
-      if (!(error instanceof UpstreamError)) {
+      if (!(error instanceof UpstreamError || error instanceof UpstreamAbortedError)) {
         throw error;
       }
       this.logger.debug(`No name for French station ${String(localIdentifier)}: ${error.message}`);
