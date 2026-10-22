@@ -89,12 +89,13 @@ describe('GET /api/wake-up', () => {
     expect(upstream.requests).toHaveLength(0);
   });
 
-  it('does not count towards the rate limit', async () => {
+  it('is rate limited like every other api route', async () => {
     const api = await startApplication({ RATE_LIMIT_REQUESTS_PER_MINUTE: '1' });
 
     await api.get('/api/wake-up').expect(204);
-    await api.get('/api/wake-up').expect(204);
-    await api.get('/api/stations').query(PARIS).expect(200);
+    const response = await api.get('/api/wake-up').expect(429);
+
+    expect(strictApiErrorSchema.parse(response.body).statusCode).toBe(429);
   });
 });
 

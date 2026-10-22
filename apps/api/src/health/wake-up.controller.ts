@@ -1,14 +1,13 @@
 import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiNoContentResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { SkipThrottle } from '@nestjs/throttler';
 
 /**
  * The free Render instance sleeps without traffic. The web app calls this on start, through the
  * Worker's `/api` proxy, so the API wakes up while the browser still asks for the location.
- * Unthrottled, so it never uses up the rate limit of the first stations search.
+ * Rate limited like every other route: one call per app start leaves the rest of the limit to the
+ * searches.
  */
 @ApiTags('health')
-@SkipThrottle()
 @Controller('wake-up')
 export class WakeUpController {
   @Get()
