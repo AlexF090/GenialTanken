@@ -9,7 +9,7 @@ test.describe('page not found', () => {
 
       await expect(page).toHaveTitle('Seite nicht gefunden – GenialTanken');
       await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
-      await expect(page.getByRole('heading', { level: 2, name: 'ERROR 404' })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 2, name: 'Fehler 404' })).toBeVisible();
       await expect(page.getByText('Diese Seite existiert nicht', { exact: true })).toBeVisible();
       await expect(page.getByRole('navigation', { name: 'Hauptnavigation' })).toBeVisible();
 

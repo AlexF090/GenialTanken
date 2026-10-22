@@ -60,7 +60,7 @@ const PAGES: PageUnderTest[] = [
     name: 'not found',
     path: '/does-not-exist',
     isReady: page =>
-      expect(page.getByRole('heading', { level: 2, name: 'ERROR 404' })).toBeVisible(),
+      expect(page.getByRole('heading', { level: 2, name: 'Fehler 404' })).toBeVisible(),
   },
 ];
 
