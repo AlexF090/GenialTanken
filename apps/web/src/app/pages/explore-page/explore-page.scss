@@ -81,6 +81,12 @@
   min-width: 0;
 }
 
+// Both float over the map.
+.explore-page__area-search,
+.explore-page__locate {
+  @include materials.floating-material;
+}
+
 // Capsule below the search field, like "Search here" in Apple Maps.
 .explore-page__area-search {
   align-self: center;
@@ -89,7 +95,6 @@
   padding: 0 var(--space-md);
   border: 0;
   border-radius: var(--radius-pill);
-  @include materials.floating-material;
   color: var(--color-action-text);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
@@ -119,8 +124,6 @@
 
 // Map button like the location button of Apple Maps; filled while centered on the own position.
 .explore-page__locate {
-  @include materials.floating-material;
-
   &[aria-busy='true'] {
     cursor: progress;
     opacity: var(--opacity-disabled);
@@ -179,7 +182,7 @@
   flex: none;
   padding-inline: var(--space-sm) var(--space-xs);
   border-radius: var(--radius-pill);
-  background-color: color-mix(in srgb, var(--color-action) 14%, transparent);
+  background-color: var(--color-action-tint);
   color: var(--color-action-text);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);

@@ -35,7 +35,7 @@ $price-levels: low, medium, high;
 
   // The ring is drawn by the board inside, so it follows the selection scale.
   &:focus-visible {
-    outline: none;
+    @include focus-ring.no-focus-ring;
   }
 }
 
@@ -138,7 +138,7 @@ $price-levels: low, medium, high;
   }
 
   .price-tag-marker:focus-visible > & {
-    @include focus-ring.focus-ring;
+    @include focus-ring.focus-ring($shadow: var(--shadow-floating));
   }
 }
 
@@ -176,7 +176,7 @@ $price-levels: low, medium, high;
   overflow: hidden;
 
   .price-cluster-marker:focus-visible > & {
-    @include focus-ring.focus-ring;
+    @include focus-ring.focus-ring($shadow: var(--shadow-floating));
   }
 }
 
@@ -342,10 +342,11 @@ app-stations-map .leaflet-control-zoom {
   }
 }
 
-// OpenStreetMap requires a visible attribution; it stays legible on every tile color.
+// OpenStreetMap requires a visible attribution; nearly opaque, so its small text keeps 7:1 on
+// every tile color.
 .leaflet-container .leaflet-control-attribution {
   padding: 0 var(--space-2xs);
-  background-color: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  background-color: color-mix(in srgb, var(--color-surface) 94%, transparent);
   color: var(--color-text-secondary);
   font-size: var(--font-size-xs);
 

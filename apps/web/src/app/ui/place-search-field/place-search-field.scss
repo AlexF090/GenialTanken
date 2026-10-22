@@ -19,7 +19,7 @@
   @include materials.floating-material;
 
   &:focus-within {
-    @include focus-ring.focus-ring;
+    @include focus-ring.focus-ring($shadow: var(--shadow-floating));
   }
 }
 
@@ -42,8 +42,9 @@
   text-overflow: ellipsis;
   appearance: none;
 
+  // The capsule around it draws the ring.
   &:focus {
-    outline: none;
+    @include focus-ring.no-focus-ring;
   }
 
   &::placeholder {
@@ -67,9 +68,7 @@
   max-height: 50vh;
   overflow-y: auto;
   border-radius: var(--radius-menu);
-  background: var(--material-menu);
-  box-shadow: var(--shadow-menu);
-  backdrop-filter: var(--material-blur);
+  @include materials.floating-material(var(--shadow-menu));
 
   &[hidden] {
     display: none;

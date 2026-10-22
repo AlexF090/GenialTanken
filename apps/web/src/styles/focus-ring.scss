@@ -2,13 +2,38 @@
 // pseudo-element use the mixin (`src/styles` is an include path):
 //   @use 'focus-ring';
 //   .control:has(:focus-visible) { @include focus-ring.focus-ring; }
-// A negative offset draws it inside, where an outer ring would be clipped.
-@mixin focus-ring($offset: var(--focus-offset)) {
+// Two tones (2.4.13 Focus Appearance): the tinted outline between two halos in the surface
+// color, so it stays visible on glass, map tiles and tinted controls alike. The halo is a
+// `box-shadow` reaching past the outline; the outline covers its middle. `$offset` must not be
+// negative; `inset-focus-ring` draws the ring inside. `$shadow` keeps an element's own shadow
+// below the halo. Floating materials pick the halo up through `--focus-ring-halo` (registered as
+// not inherited in `styles.scss`), because their own shadow outranks the global rule.
+@mixin focus-ring($offset: var(--focus-offset), $shadow: null) {
+  --focus-ring-halo: 0 0 0
+    calc(#{$offset} + var(--border-width-focus) + var(--border-width-focus-halo))
+    var(--color-focus-ring-halo);
+
   outline: var(--border-width-focus) solid var(--color-focus-ring);
   outline-offset: $offset;
+
+  @if $shadow {
+    box-shadow: var(--focus-ring-halo), $shadow;
+  } @else {
+    box-shadow: var(--focus-ring-halo);
+  }
 }
 
-// Inside the element, e.g. for list rows whose container clips overflow
+// Inside the element, e.g. for list rows whose container clips overflow; the halo lies inside
+// the ring.
 @mixin inset-focus-ring {
-  @include focus-ring(calc(-1 * var(--border-width-focus)));
+  outline: var(--border-width-focus) solid var(--color-focus-ring);
+  outline-offset: calc(-1 * var(--border-width-focus));
+  box-shadow: inset 0 0 0 calc(var(--border-width-focus) + var(--border-width-focus-halo))
+    var(--color-focus-ring-halo);
+}
+
+// For elements whose ring is drawn elsewhere or that are focused only as a starting point
+@mixin no-focus-ring {
+  outline: none;
+  box-shadow: none;
 }

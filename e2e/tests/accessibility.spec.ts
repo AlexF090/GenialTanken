@@ -12,7 +12,8 @@ import {
   test,
 } from '../fixtures.ts';
 
-const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+// `wcag2aaa` adds the enhanced contrast rule (1.4.6).
+const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag2aaa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 interface PageUnderTest {
   name: string;
@@ -126,9 +127,9 @@ const expectNoViolations = async (page: Page): Promise<void> => {
   ).toEqual([]);
 };
 
-const checkEveryPage = (): void => {
-  for (const pageUnderTest of PAGES) {
-    test(`${pageUnderTest.name} has no WCAG 2.2 AA violations`, async ({ page }) => {
+const checkPages = (pagesUnderTest: PageUnderTest[]): void => {
+  for (const pageUnderTest of pagesUnderTest) {
+    test(`${pageUnderTest.name} has no WCAG 2.2 AAA violations`, async ({ page }) => {
       await pageUnderTest.prepare?.(page);
       await page.goto(pageUnderTest.path);
       await pageUnderTest.isReady(page);
@@ -137,6 +138,10 @@ const checkEveryPage = (): void => {
       await expectNoViolations(page);
     });
   }
+};
+
+const checkEveryPage = (): void => {
+  checkPages(PAGES);
 };
 
 test.describe('accessibility', () => {
@@ -154,4 +159,65 @@ test.describe('accessibility in dark mode', () => {
   });
 
   checkEveryPage();
+});
+
+interface DisplayPreference {
+  name: string;
+  /** Emulates the preference before the page loads. */
+  emulate: (page: Page) => Promise<void>;
+}
+
+// Both turn the translucent materials opaque; the main surfaces cover what changes.
+const DISPLAY_PREFERENCES: DisplayPreference[] = [
+  {
+    name: 'more contrast',
+    emulate: page => page.emulateMedia({ contrast: 'more' }),
+  },
+  {
+    name: 'reduced transparency',
+    // Playwright has no option for it yet; Chromium emulates it through the DevTools protocol.
+    emulate: async page => {
+      const session = await page.context().newCDPSession(page);
+      await session.send('Emulation.setEmulatedMedia', {
+        features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }],
+      });
+    },
+  },
+];
+
+const PAGES_UNDER_DISPLAY_PREFERENCES = PAGES.filter(pageUnderTest =>
+  ['explore', 'opened station card'].includes(pageUnderTest.name)
+);
+
+for (const preference of DISPLAY_PREFERENCES) {
+  test.describe(`accessibility with ${preference.name}`, () => {
+    test.beforeEach(async ({ page }) => {
+      await preference.emulate(page);
+    });
+
+    checkPages(PAGES_UNDER_DISPLAY_PREFERENCES);
+  });
+}
+
+test.describe('reflow at 320 CSS pixels', () => {
+  // 1.4.10 Reflow: content fits a 320 pixel wide viewport without horizontal scrolling.
+  test.use({ viewport: { width: 320, height: 640 } });
+
+  const pagesUnderTest = PAGES.filter(pageUnderTest =>
+    ['explore', 'favorites', 'settings'].includes(pageUnderTest.name)
+  );
+
+  for (const pageUnderTest of pagesUnderTest) {
+    test(`${pageUnderTest.name} does not scroll horizontally`, async ({ page }) => {
+      await pageUnderTest.prepare?.(page);
+      await page.goto(pageUnderTest.path);
+      await pageUnderTest.isReady(page);
+
+      const overflow = await page.evaluate(() => {
+        const scrollingElement = document.scrollingElement ?? document.documentElement;
+        return scrollingElement.scrollWidth - scrollingElement.clientWidth;
+      });
+      expect(overflow).toBeLessThanOrEqual(0);
+    });
+  }
 });

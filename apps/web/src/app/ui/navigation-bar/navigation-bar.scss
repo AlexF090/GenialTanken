@@ -1,4 +1,5 @@
 @use 'breakpoints';
+@use 'focus-ring';
 
 // Compact: iOS tab bar with the items side by side. Medium and up: sidebar rail with the items
 // stacked from the top. Both are a translucent material over the content. The active item is
@@ -81,8 +82,8 @@
   }
 
   &:focus-visible {
+    @include focus-ring.inset-focus-ring;
     outline-color: var(--color-focus-ring-on-chrome);
-    outline-offset: calc(-1 * var(--border-width-focus));
   }
 
   &--active {

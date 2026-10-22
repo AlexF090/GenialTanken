@@ -1,7 +1,10 @@
 // Design tokens after Apple's Human Interface Guidelines: system colors and font, translucent
 // materials over the map, soft corners.
 // Every color token carries its light and dark value via `light-dark()`, resolved against the
-// `color-scheme` set below. Contrast ratios (WCAG 2.2) are recorded next to the pairs that matter.
+// `color-scheme` set below. Contrast ratios (WCAG 2.2) are recorded next to the pairs that matter:
+// text keeps 7:1 (1.4.6 AAA), non-text such as focus rings and control borders 3:1 (1.4.11).
+// Translucent materials count with their worst backdrop: light ones over black, dark ones over
+// white.
 
 // Color scheme: `index.html` and `ColorSchemeController` set `data-color-scheme` on <html>.
 // Without the attribute (script blocked or not yet run) the operating system decides.
@@ -26,39 +29,51 @@
   --color-canvas: light-dark(#f2f2f7, #000000);
   --color-surface: light-dark(#ffffff, #1c1c1e);
 
-  // Text (label / secondary label): light 15.2 / 17.0 and dark 21.0 / 17.0 on canvas / surface
+  // Text (label / secondary label): light 15.2 / 17.0 and dark 21.0 / 17.0 on canvas / surface;
+  // at least 13.4 (light) and 11.4 (dark) on every material and highlight
   --color-text: light-dark(#1c1c1e, #ffffff);
-  // Darker than the iOS secondary label so small text keeps 4.5:1: light 4.7 / 5.2, dark 9.5 / 7.7
-  --color-text-secondary: light-dark(#6c6c70, #aeaeb2);
+  // Darker (light) and lighter (dark) than the iOS secondary label so small text keeps 7:1:
+  // light 8.3 / 9.2, dark 13.8 / 11.2 on canvas / surface; at least 7.3 (light) and 7.5 (dark) on
+  // materials and the menu highlight over them
+  --color-text-secondary: light-dark(#47474c, #d1d1d6);
 
-  // Tab bar and other bars: a translucent material over the content. Inactive items: light 5.0,
-  // dark 5.9 on the opaque bar. Also the browser UI color: keep the `theme-color` meta elements
-  // in `index.html` in sync.
-  --color-chrome: light-dark(rgb(249 249 249 / 94%), rgb(29 29 29 / 94%));
+  // Tab bar and other bars: a translucent material over the content. Inactive items: light 8.0,
+  // dark 9.9, active ones light 8.0, dark 7.9 on the bar over its worst backdrop. Also the browser
+  // UI color: keep the `theme-color` meta elements in `index.html` in sync.
+  --color-chrome: light-dark(rgb(249 249 249 / 96%), rgb(29 29 29 / 96%));
+  --color-chrome-opaque: light-dark(#f9f9f9, #1d1d1d);
   --color-on-chrome: var(--color-action-text);
-  --color-on-chrome-secondary: light-dark(#6c6c70, #98989f);
+  --color-on-chrome-secondary: var(--color-text-secondary);
 
-  // Tint (iOS blue, darkened for text contrast). Filled actions: white text 5.8, dark 7.4
-  --color-action: light-dark(#0062cc, #409cff);
-  --color-action-hover: light-dark(#0052ab, #66b0ff);
+  // Tint (iOS blue, darkened in light and lightened in dark mode for text contrast). Filled
+  // actions: text on it light 9.2 (hover 11.2), dark 10.9 (hover 13.2)
+  --color-action: light-dark(#00449a, #85bfff);
+  --color-action-hover: light-dark(#00387f, #a8d1ff);
   --color-on-action: light-dark(#ffffff, #000000);
-  // Links and plain buttons: light 5.8 / 5.2, dark 6.0 / 7.4 on surface / canvas
+  // Links and plain buttons: light 9.2 / 8.2, dark 8.8 / 10.9 on surface / canvas; at least 7.5
+  // (light) and 7.3 (dark) on materials
   --color-action-text: var(--color-action);
   --color-action-text-hover: var(--color-action-hover);
+  // Opaque tint behind tinted capsules and the selected row: tint on it light 7.7, dark 7.3;
+  // secondary text light 7.8, dark 9.1
+  --color-action-tint: color-mix(in srgb, var(--color-action) 10%, var(--color-surface));
 
-  // Focus ring (non-text, ≥ 3:1): the tint
+  // Focus ring (non-text, ≥ 3:1): the tint, against surface / canvas light 9.2 / 8.2, dark
+  // 8.8 / 10.9. The halo in the surface color on both sides of it keeps it visible on any
+  // backdrop, e.g. map tiles in the tint's own hue.
   --color-focus-ring: var(--color-action);
   --color-focus-ring-on-chrome: var(--color-focus-ring);
+  --color-focus-ring-halo: var(--color-surface);
 
-  // Reserved for the cheapest price only, like a green price in Apple Maps: text on it light 5.2,
+  // Reserved for the cheapest price only, like a green price in Apple Maps: text on it light 7.2,
   // dark 10.4; the edge separates it from white surfaces
-  --color-highlight: light-dark(#1e7d36, #30d158);
+  --color-highlight: light-dark(#15652a, #30d158);
   --color-on-highlight: light-dark(#ffffff, #000000);
   --color-highlight-edge: var(--color-highlight);
 
   // Price levels on the map, cheap to dear: a tint with a colored edge. Text on the tints: light
-  // 14.4 / 14.7 / 13.3, dark 13.5 / 13.4 / 15.5. Edges against the surface: light 5.2 / 4.3 / 6.2,
-  // dark 8.4 / 9.5 / 6.0. Color only repeats what the price says.
+  // 14.4 / 14.7 / 13.3, dark 13.5 / 13.4 / 15.5. Edges against the surface: light 7.2 / 4.3 / 8.4,
+  // dark 8.4 / 9.5 / 7.6. Color only repeats what the price says.
   --color-price-low: light-dark(#d9f2df, #12351d);
   --color-price-low-edge: var(--color-highlight);
   --color-price-medium: light-dark(#fdedc8, #3d2c08);
@@ -66,8 +81,8 @@
   --color-price-high: light-dark(#fddcd8, #421616);
   --color-price-high-edge: var(--color-error);
 
-  // Errors: light 5.3 / 6.2, dark 5.8 / 6.0 on error surface / surface
-  --color-error: light-dark(#c4001a, #ff6961);
+  // Errors: light 7.1 / 8.4, dark 7.2 / 7.6 on error surface / surface
+  --color-error: light-dark(#a00016, #ff8c85);
   --color-error-surface: light-dark(#fde8ea, #3a1416);
 
   // Lines: separators between rows (decorative), control borders mark inputs (≥ 3:1;
@@ -75,24 +90,28 @@
   --color-hairline: light-dark(#c6c6c8, #38383a);
   --color-border-control: light-dark(#848489, #8e8e93);
 
-  // Map: the own position is the blue dot known from Apple Maps
+  // Map: the own position is the blue dot known from Apple Maps (decorative, carries no text)
   --color-own-position: #007aff;
 
   // The only shadow color; used by `--shadow-floating`
   --color-shadow: light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 50%));
   --color-scrim: light-dark(rgb(0 0 0 / 20%), rgb(0 0 0 / 48%));
 
-  // Materials: translucent, blurred layers floating above the map and the content
-  --material-menu: light-dark(rgb(255 255 255 / 90%), rgb(44 44 46 / 90%));
-  // Nearly opaque, so the list stays readable over busy map tiles
-  --material-sheet: light-dark(rgb(255 255 255 / 92%), rgb(28 28 30 / 92%));
+  // Materials: translucent, blurred layers floating above the map and the content. Nearly
+  // opaque, so text keeps 7:1 over any backdrop. `--material-edge` is a hairline that only the
+  // opaque fallback below draws.
+  --material-menu: light-dark(rgb(255 255 255 / 95%), rgb(32 32 34 / 95%));
+  --material-sheet: light-dark(rgb(255 255 255 / 96%), rgb(28 28 30 / 97%));
   // Bars on the grouped background, e.g. the page header with its large title
-  --material-bar: light-dark(rgb(242 242 247 / 92%), rgb(0 0 0 / 92%));
+  --material-bar: light-dark(rgb(242 242 247 / 96%), rgb(0 0 0 / 96%));
   --material-blur: blur(20px) saturate(180%);
-  // Segmented control: grey track, raised thumb for the chosen segment (the label marks it too)
+  --material-edge: transparent;
+  --material-edge-shadow: 0 0 0 var(--border-width-hairline) var(--material-edge);
+  // Segmented control: grey track, raised thumb for the chosen segment (the bold label and the
+  // shadow mark it too). Text on the thumb: light 17.0, dark 7.4
   --color-segmented-track: light-dark(rgb(118 118 128 / 12%), rgb(118 118 128 / 24%));
-  --color-segmented-thumb: light-dark(#ffffff, #636366);
-  --color-menu-highlight: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 10%));
+  --color-segmented-thumb: light-dark(#ffffff, #555558);
+  --color-menu-highlight: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 7%));
 
   // Spacing
   --space-3xs: 0.125rem;
@@ -131,7 +150,8 @@
   --font-weight-medium: 500;
   --font-weight-bold: 600;
   --font-weight-price: 600;
-  --line-height-base: 1.45;
+  // 1.5 for body text (1.4.8 AAA)
+  --line-height-base: 1.5;
   --line-height-tight: 1.2;
   --line-height-numerals: 1;
   // Tighter tracking for large text, like SF Pro at display sizes
@@ -145,6 +165,7 @@
   --border-width-hairline: 1px;
   --border-width-thin: 1px;
   --border-width-focus: 3px;
+  --border-width-focus-halo: 2px;
   // Outlines drawn on the map, e.g. the search radius
   --border-width-map-outline: 1.5px;
   --focus-offset: 2px;
@@ -207,4 +228,38 @@
   // Map price tags: the cheapest a little larger than the others, the selected one the largest
   --scale-marker-cheapest: 1.1;
   --scale-marker-selected: 1.15;
+}
+
+// Opaque materials where translucency hurts legibility or is not drawn: on request of the user
+// (reduced transparency, more contrast) and without `backdrop-filter`. A hairline takes over the
+// separation the blur gave.
+@mixin opaque-materials {
+  --color-chrome: var(--color-chrome-opaque);
+  --material-menu: var(--color-surface);
+  --material-sheet: var(--color-surface);
+  --material-bar: var(--color-canvas);
+  --material-blur: none;
+  --material-edge: var(--color-border-control);
+}
+
+:root {
+  @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+    @include opaque-materials;
+  }
+
+  @supports not (backdrop-filter: blur(1px)) {
+    @include opaque-materials;
+  }
+
+  // Windows high contrast: system colors replace every token; the edge stays visible.
+  @media (forced-colors: active) {
+    --color-chrome: Canvas;
+    --material-menu: Canvas;
+    --material-sheet: Canvas;
+    --material-bar: Canvas;
+    --material-blur: none;
+    --material-edge: CanvasText;
+    --color-focus-ring: Highlight;
+    --color-focus-ring-halo: Canvas;
+  }
 }

@@ -89,6 +89,12 @@ select {
   color: var(--color-text);
 }
 
+// Set by the focus ring on the focused element only; its children must not repeat the halo.
+@property --focus-ring-halo {
+  syntax: '*';
+  inherits: false;
+}
+
 :focus-visible {
   @include focus-ring.focus-ring;
 }
@@ -112,7 +118,7 @@ select {
 
   // Only when shown: the floating shadow would otherwise peek into the viewport.
   &:focus-visible {
-    box-shadow: var(--shadow-floating);
+    @include focus-ring.focus-ring($shadow: var(--shadow-floating));
     transform: none;
   }
 }

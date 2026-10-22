@@ -28,7 +28,7 @@
 
   // Marker bar of the station shown on the map
   &--selected {
-    background-color: color-mix(in srgb, var(--color-action) 10%, transparent);
+    background-color: var(--color-action-tint);
 
     &::before {
       content: '';
@@ -80,7 +80,7 @@
   }
 
   &:focus-visible {
-    outline: none;
+    @include focus-ring.no-focus-ring;
 
     &::after {
       @include focus-ring.inset-focus-ring;
