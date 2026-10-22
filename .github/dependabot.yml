@@ -74,7 +74,7 @@ updates:
           - globals
 
   - package-ecosystem: github-actions
-    # Covers .github/workflows and the composite action in .github/actions.
+    # Covers .github/workflows and the composite actions in .github/actions.
     directories:
       - /
       - /.github/actions/*
@@ -90,6 +90,15 @@ updates:
 
   - package-ecosystem: docker
     directory: /apps/api
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: chore
+      include: scope
+
+  - package-ecosystem: devcontainers
+    directory: /
     schedule:
       interval: weekly
       day: monday

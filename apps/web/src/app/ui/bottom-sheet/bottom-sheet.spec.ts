@@ -4,9 +4,10 @@ import { By } from '@angular/platform-browser';
 import { COMPACT_MEDIA_QUERY } from '../../core/layout/breakpoints';
 import { MATCH_MEDIA } from '../../core/layout/media-query';
 import { FakeMatchMedia } from '../../../testing/fake-match-media';
-import { textOf } from '../../../testing/render-page';
+import { hostElementOf, textOf } from '../../../testing/render-page';
 import { BottomSheet } from './bottom-sheet';
 import type { SnapPosition } from './bottom-sheet-snap';
+import { FakeResizeObserver } from '../../../testing/fake-resize-observer';
 
 @Component({
   imports: [BottomSheet],
@@ -26,27 +27,6 @@ class BottomSheetHost {
   readonly heights: number[] = [];
 }
 
-/** Lets the test report element sizes that jsdom cannot lay out. */
-class FakeResizeObserver {
-  static latest: FakeResizeObserver | undefined;
-
-  constructor(private readonly callback: () => void) {
-    FakeResizeObserver.latest = this;
-  }
-
-  observe(): void {
-    // Sizes are reported through `resize`
-  }
-
-  disconnect(): void {
-    // Nothing to release
-  }
-
-  resize(): void {
-    this.callback();
-  }
-}
-
 const render = async ({ isCompact }: { isCompact: boolean }) => {
   vi.stubGlobal('ResizeObserver', FakeResizeObserver);
   TestBed.configureTestingModule({
@@ -59,7 +39,7 @@ const render = async ({ isCompact }: { isCompact: boolean }) => {
   });
   const fixture = TestBed.createComponent(BottomSheetHost);
   await fixture.whenStable();
-  const element = fixture.nativeElement as HTMLElement;
+  const element = hostElementOf(fixture);
   const handle = element.querySelector('button');
   if (handle === null) {
     throw new Error('BottomSheet rendered no handle');

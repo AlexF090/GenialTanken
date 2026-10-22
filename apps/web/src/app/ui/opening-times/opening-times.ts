@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { OpeningTimes as StationOpeningTimes } from '@genialtanken/contracts';
-import { weekdayOf } from './weekday-of';
+import { weekdayOf } from '../../core/time/weekday-of';
 
 const DAY_LABELS: Record<keyof StationOpeningTimes, string> = {
   monday: 'Montag',
@@ -92,7 +92,7 @@ interface OpeningDay {
 export class OpeningTimes {
   readonly openingTimes = input.required<StationOpeningTimes>();
   /** Marks the matching weekday; the public holiday row is never marked. */
-  readonly today = input<Date>(new Date());
+  readonly today = input.required<Date>();
 
   protected readonly openingDays = computed<OpeningDay[]>(() => {
     const today = weekdayOf(this.today());

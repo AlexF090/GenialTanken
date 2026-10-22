@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { latitudeSchema, longitudeSchema } from './coordinates.js';
 import { countryCodeSchema } from './station.js';
 
 export const MINIMUM_PLACE_QUERY_LENGTH = 3;
@@ -23,8 +24,8 @@ export const placeSchema = z.object({
   /** Secondary line in German, e.g. `75011 Paris, Frankreich`. */
   description: z.string(),
   country: countryCodeSchema,
-  latitude: z.number().min(-90).max(90),
-  longitude: z.number().min(-180).max(180),
+  latitude: latitudeSchema,
+  longitude: longitudeSchema,
 });
 
 export const placesSchema = z.array(placeSchema);

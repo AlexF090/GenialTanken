@@ -101,3 +101,19 @@ export const withoutDistance = (station: Station): Station => ({
   ...station,
   distanceInMeters: null,
 });
+
+/** A copy with some prices replaced, optionally as another station. */
+export const withPrices = (
+  station: Station,
+  pricesInEuro: Partial<Station['pricesInEuro']>,
+  identifier: string = station.id
+): Station => ({
+  ...station,
+  id: identifier,
+  pricesInEuro: { ...station.pricesInEuro, ...pricesInEuro },
+});
+
+export const withDistance = (station: Station, distanceInMeters: number | null): Station => ({
+  ...station,
+  distanceInMeters,
+});

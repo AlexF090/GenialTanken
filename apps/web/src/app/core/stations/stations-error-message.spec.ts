@@ -1,11 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { UnexpectedResponseError } from '../http/unexpected-response-error';
 import { StationSourceUnavailableError } from './station-source-unavailable-error';
-import {
-  describeStationsError,
-  isNotFoundError,
-  STATION_NOT_FOUND_MESSAGE,
-} from './stations-error-message';
+import { describeStationsError, STATION_NOT_FOUND_MESSAGE } from './stations-error-message';
 
 const DEFAULT_MESSAGE =
   'Die Tankstellen konnten nicht geladen werden. Bitte versuche es später erneut.';
@@ -66,19 +62,5 @@ describe('describeStationsError', () => {
     },
   ])('describes $description', ({ error, message }) => {
     expect(describeStationsError(error)).toBe(message);
-  });
-});
-
-describe('isNotFoundError', () => {
-  it('recognizes a 404 response', () => {
-    expect(isNotFoundError(new HttpErrorResponse({ status: 404 }))).toBe(true);
-  });
-
-  it.each<{ description: string; error: unknown }>([
-    { description: 'another status', error: new HttpErrorResponse({ status: 500 }) },
-    { description: 'an error that is no HTTP error', error: new Error('Not Found') },
-    { description: 'no error', error: undefined },
-  ])('rejects $description', ({ error }) => {
-    expect(isNotFoundError(error)).toBe(false);
   });
 });

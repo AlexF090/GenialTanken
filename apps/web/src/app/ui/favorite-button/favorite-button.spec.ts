@@ -1,12 +1,12 @@
-import { TestBed } from '@angular/core/testing';
+import { renderWithInputs } from '../../../testing/render-page';
 import { FavoriteButton } from './favorite-button';
 
 const render = async (isFavorite: boolean) => {
-  const fixture = TestBed.createComponent(FavoriteButton);
-  fixture.componentRef.setInput('stationName', 'Aral Tankstelle');
-  fixture.componentRef.setInput('isFavorite', isFavorite);
-  await fixture.whenStable();
-  const button = (fixture.nativeElement as HTMLElement).querySelector('button');
+  const { fixture, element } = await renderWithInputs(FavoriteButton, {
+    stationName: 'Aral Tankstelle',
+    isFavorite,
+  });
+  const button = element.querySelector('button');
   if (button === null) {
     throw new Error('FavoriteButton rendered no button');
   }

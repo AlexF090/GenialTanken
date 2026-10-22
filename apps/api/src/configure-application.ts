@@ -3,7 +3,7 @@ import { SwaggerModule } from '@nestjs/swagger';
 import { ApplicationConfiguration } from './configuration/application-configuration.js';
 import { createOpenApiDocument } from './openapi/create-openapi-document.js';
 
-export const API_PREFIX = 'api';
+const API_PREFIX = 'api';
 const TRUSTED_PROXY_HOPS = 1;
 
 /** HTTP setup shared by `main.ts` and the end-to-end tests. */

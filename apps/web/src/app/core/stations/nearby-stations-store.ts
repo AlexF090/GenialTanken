@@ -6,6 +6,7 @@ import { cheapestStationIdentifiers } from './cheapest-station-identifiers';
 import { describeStationsError } from './stations-error-message';
 import { StationsApi } from './stations-api';
 import type { StationsSearch } from './stations-api';
+import { resourceValueOr } from '../resource-value-or';
 
 const isSameSearch = (first: StationsSearch, second: StationsSearch): boolean =>
   isSamePosition(first, second) &&
@@ -37,9 +38,7 @@ export class NearbyStationsStore {
   );
   private readonly stationsResource = inject(StationsApi).stationsAround(this.search);
 
-  readonly stations = computed(() =>
-    this.stationsResource.hasValue() ? this.stationsResource.value() : []
-  );
+  readonly stations = computed(() => resourceValueOr(this.stationsResource, []));
   readonly hasLoaded = computed(() => this.stationsResource.hasValue());
   readonly isLoading = computed(
     () => this.stationsResource.isLoading() || this.searchCenter.isLocating()

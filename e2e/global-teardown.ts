@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { MOCK_UPSTREAM_PORT, UNEXPECTED_REQUESTS_PATH } from './mock-upstream-endpoints.js';
+import { MOCK_UPSTREAM_PORT, UNEXPECTED_REQUESTS_PATH } from './mock-upstream-endpoints.ts';
 
 const unexpectedUpstreamRequestsSchema = z.array(z.string());
 

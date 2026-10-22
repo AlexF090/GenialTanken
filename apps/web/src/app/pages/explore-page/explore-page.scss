@@ -1,5 +1,7 @@
 @use 'breakpoints';
 @use 'visually-hidden';
+@use 'materials';
+@use 'typography';
 
 // Full-height page: the map fills it, the station panel floats over it (phones) or stands next
 // to it (from 48rem). The page has no page header, so it absorbs the top safe area itself.
@@ -40,7 +42,7 @@
 // Floats over the top of the map. Below the sheet: a fully opened sheet covers it, like the
 // map controls of Apple Maps.
 .explore-page__search {
-  z-index: calc(var(--layer-chrome) - 2);
+  z-index: var(--layer-map-search);
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
@@ -55,7 +57,7 @@
     grid-row: 1;
     grid-column: 2;
     align-self: start;
-    width: min(28rem, 100% - 2 * var(--space-md));
+    width: min(var(--layout-search-width-maximum), 100% - 2 * var(--space-md));
     margin: calc(var(--safe-area-top) + var(--space-md)) var(--space-md);
   }
 
@@ -87,12 +89,10 @@
   padding: 0 var(--space-md);
   border: 0;
   border-radius: var(--radius-pill);
-  background: var(--material-menu);
+  @include materials.floating-material;
   color: var(--color-action-text);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
-  box-shadow: var(--shadow-floating);
-  backdrop-filter: var(--material-blur);
   cursor: pointer;
   touch-action: manipulation;
   transition:
@@ -119,13 +119,11 @@
 
 // Map button like the location button of Apple Maps; filled while centered on the own position.
 .explore-page__locate {
-  background: var(--material-menu);
-  box-shadow: var(--shadow-floating);
-  backdrop-filter: var(--material-blur);
+  @include materials.floating-material;
 
   &[aria-busy='true'] {
     cursor: progress;
-    opacity: 0.6;
+    opacity: var(--opacity-disabled);
   }
 }
 
@@ -165,9 +163,7 @@
   // Large title, like the first screen of an iOS app
   @include breakpoints.medium-and-up {
     padding-block-end: var(--space-2xs);
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-bold);
-    letter-spacing: -0.02em;
+    @include typography.large-title;
   }
 }
 
@@ -197,10 +193,6 @@
 .explore-page__summary {
   color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
-}
-
-.explore-page__empty {
-  margin: var(--space-md);
 }
 
 .explore-page__credit {

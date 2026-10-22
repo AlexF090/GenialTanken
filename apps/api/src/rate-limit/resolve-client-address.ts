@@ -1,9 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
 import { isIP } from 'node:net';
-import { CLIENT_ADDRESS_HEADER, PROXY_SECRET_HEADER } from '@genialtanken/contracts';
-
-// The Worker sets these headers; the names live in contracts so both sides agree.
-export { CLIENT_ADDRESS_HEADER, PROXY_SECRET_HEADER };
 
 type HeaderValue = string | string[] | undefined;
 

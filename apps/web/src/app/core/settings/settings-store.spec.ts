@@ -1,9 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import type { MockInstance } from 'vitest';
-import { FakeStorage } from '../../../testing/fake-storage';
+import { FakeStorage, storedSettings } from '../../../testing/fake-storage';
 import { BROWSER_STORAGE } from '../browser-storage';
 import { Logger } from '../logging/logger';
-import { SettingsStore } from './settings-store';
+import { SETTINGS_STORAGE_KEY, SettingsStore } from './settings-store';
 
 interface CreatedStore {
   store: SettingsStore;
@@ -18,6 +18,10 @@ const createStore = (storage: Storage): CreatedStore => {
 };
 
 describe('SettingsStore', () => {
+  it('persists under the key the inline script of index.html reads', () => {
+    expect(SETTINGS_STORAGE_KEY).toBe('genialtanken.settings');
+  });
+
   it('starts with E5 and a 5 km radius when nothing is stored', () => {
     const { store } = createStore(new FakeStorage());
 
@@ -28,7 +32,7 @@ describe('SettingsStore', () => {
   it('restores the stored fuel type and radius', () => {
     const { store } = createStore(
       new FakeStorage({
-        'genialtanken.settings': '{"fuelType":"diesel","radiusInKilometers":12}',
+        [SETTINGS_STORAGE_KEY]: '{"fuelType":"diesel","radiusInKilometers":12}',
       })
     );
 
@@ -44,7 +48,7 @@ describe('SettingsStore', () => {
 
     expect(store.fuelType()).toBe('e10');
     expect(store.radiusInKilometers()).toBe(20);
-    expect(storage.getItem('genialtanken.settings')).toBe(
+    expect(storedSettings(storage)).toBe(
       '{"fuelType":"e10","radiusInKilometers":20,"colorScheme":"system"}'
     );
   });
@@ -57,7 +61,7 @@ describe('SettingsStore', () => {
 
   it('restores and persists the color scheme without touching the other settings', () => {
     const storage = new FakeStorage({
-      'genialtanken.settings': '{"fuelType":"diesel","radiusInKilometers":12,"colorScheme":"dark"}',
+      [SETTINGS_STORAGE_KEY]: '{"fuelType":"diesel","radiusInKilometers":12,"colorScheme":"dark"}',
     });
     const { store } = createStore(storage);
 
@@ -70,14 +74,14 @@ describe('SettingsStore', () => {
       radiusInKilometers: 12,
       colorScheme: 'light',
     });
-    expect(storage.getItem('genialtanken.settings')).toBe(
+    expect(storedSettings(storage)).toBe(
       '{"fuelType":"diesel","radiusInKilometers":12,"colorScheme":"light"}'
     );
   });
 
   it('keeps settings stored before the color scheme existed without a warning', () => {
     const { store, warn } = createStore(
-      new FakeStorage({ 'genialtanken.settings': '{"fuelType":"diesel","radiusInKilometers":12}' })
+      new FakeStorage({ [SETTINGS_STORAGE_KEY]: '{"fuelType":"diesel","radiusInKilometers":12}' })
     );
 
     expect(warn).not.toHaveBeenCalled();
@@ -88,7 +92,7 @@ describe('SettingsStore', () => {
   it('ignores an unknown stored color scheme and keeps the other settings', () => {
     const { store, warn } = createStore(
       new FakeStorage({
-        'genialtanken.settings':
+        [SETTINGS_STORAGE_KEY]:
           '{"fuelType":"diesel","radiusInKilometers":12,"colorScheme":"sepia"}',
       })
     );
@@ -111,7 +115,7 @@ describe('SettingsStore', () => {
   });
 
   it('falls back to the defaults for corrupt stored settings and says why', () => {
-    const { store, warn } = createStore(new FakeStorage({ 'genialtanken.settings': '{not json' }));
+    const { store, warn } = createStore(new FakeStorage({ [SETTINGS_STORAGE_KEY]: '{not json' }));
 
     expect(warn).toHaveBeenCalledExactlyOnceWith(
       'Stored settings are not valid JSON; using the default settings instead.',
@@ -122,7 +126,7 @@ describe('SettingsStore', () => {
   });
 
   it('falls back to the defaults when the stored settings are not an object', () => {
-    const { store, warn } = createStore(new FakeStorage({ 'genialtanken.settings': '[1,2]' }));
+    const { store, warn } = createStore(new FakeStorage({ [SETTINGS_STORAGE_KEY]: '[1,2]' }));
 
     expect(warn).toHaveBeenCalledOnce();
     expect(warn.mock.calls[0]?.[0]).toBe(
@@ -135,7 +139,7 @@ describe('SettingsStore', () => {
   it('ignores an unknown fuel type and an out-of-range radius', () => {
     const { store, warn } = createStore(
       new FakeStorage({
-        'genialtanken.settings': '{"fuelType":"kerosene","radiusInKilometers":80}',
+        [SETTINGS_STORAGE_KEY]: '{"fuelType":"kerosene","radiusInKilometers":80}',
       })
     );
 
@@ -150,7 +154,7 @@ describe('SettingsStore', () => {
   it('keeps the valid part of partially invalid stored settings', () => {
     const { store } = createStore(
       new FakeStorage({
-        'genialtanken.settings': '{"fuelType":"diesel","radiusInKilometers":"far"}',
+        [SETTINGS_STORAGE_KEY]: '{"fuelType":"diesel","radiusInKilometers":"far"}',
       })
     );
 

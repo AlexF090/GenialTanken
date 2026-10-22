@@ -1,8 +1,8 @@
 import { UpstreamAbortedError, UpstreamError } from './upstream-error.js';
 
-const NOT_FOUND_STATUS = 404;
+export const NOT_FOUND_STATUS = 404;
 
-export const describeUpstreamFailure = (error: unknown): string => {
+const describeUpstreamFailure = (error: unknown): string => {
   if (error instanceof DOMException && error.name === 'TimeoutError') {
     return 'timed out';
   }
@@ -20,7 +20,7 @@ export const toUpstreamError = (
   url: URL,
   error: unknown,
   callerSignal: AbortSignal | undefined
-): UpstreamError => {
+): UpstreamError | UpstreamAbortedError => {
   if (callerSignal?.aborted === true) {
     return new UpstreamAbortedError(`GET ${url.pathname} was aborted by the caller`);
   }
@@ -37,7 +37,7 @@ export interface UpstreamRequestOptions {
 
 /**
  * GETs a data source with a timeout. Resolves to `undefined` on 404; every other failure throws
- * an `UpstreamError`.
+ * an `UpstreamError`, except an abort through the caller's signal.
  */
 export const requestUpstream = async (
   url: URL,

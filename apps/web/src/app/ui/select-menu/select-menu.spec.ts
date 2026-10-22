@@ -1,10 +1,10 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { textOf } from '../../../testing/render-page';
+import { hostElementOf, textOf } from '../../../testing/render-page';
 import { SelectMenu, targetIndexForKey } from './select-menu';
-import type { SelectMenuOption } from './select-menu';
+import type { LabeledOption } from '../../core/labeled-option';
 
-const SIZES: readonly SelectMenuOption<string>[] = [
+const SIZES: readonly LabeledOption<string>[] = [
   { value: 'small', label: 'Klein' },
   { value: 'medium', label: 'Mittel' },
   { value: 'large', label: 'Groß' },
@@ -27,9 +27,9 @@ class SelectMenuHost {
 
 const render = async () => {
   const fixture = TestBed.createComponent(SelectMenuHost);
-  document.body.append(fixture.nativeElement as HTMLElement);
+  document.body.append(hostElementOf(fixture));
   await fixture.whenStable();
-  const element = fixture.nativeElement as HTMLElement;
+  const element = hostElementOf(fixture);
   const trigger = (): HTMLButtonElement => {
     const button = element.querySelector<HTMLButtonElement>('button[aria-haspopup="menu"]');
     if (button === null) {

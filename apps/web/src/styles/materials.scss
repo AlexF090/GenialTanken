@@ -1,0 +1,9 @@
+// Translucent, blurred layer floating above the map and the content (`src/styles` is an include
+// path):
+//   @use 'materials';
+//   .search-field { @include materials.floating-material; }
+@mixin floating-material($shadow: var(--shadow-floating), $material: var(--material-menu)) {
+  background: $material;
+  box-shadow: $shadow;
+  backdrop-filter: var(--material-blur);
+}

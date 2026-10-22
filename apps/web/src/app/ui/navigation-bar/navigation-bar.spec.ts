@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { textOf } from '../../../testing/render-page';
+import { hostElementOf, textOf } from '../../../testing/render-page';
 import { NavigationBar } from './navigation-bar';
 
 @Component({ template: '' })
@@ -21,7 +21,7 @@ const render = async (url: string) => {
   const fixture = TestBed.createComponent(NavigationBar);
   await TestBed.inject(Router).navigateByUrl(url);
   await fixture.whenStable();
-  return fixture.nativeElement as HTMLElement;
+  return hostElementOf(fixture);
 };
 
 const linkNamed = (element: HTMLElement, name: string): HTMLAnchorElement => {

@@ -1,4 +1,6 @@
 @use 'breakpoints';
+@use 'focus-ring';
+@use 'materials';
 
 :host {
   display: block;
@@ -14,8 +16,15 @@
 .bottom-sheet__content {
   flex: 1;
   min-height: 0;
+  // `overflow-y: auto` alone turns `overflow-x` into `auto` as well, which lets phones pan the
+  // list sideways although nothing is wider than the sheet
+  overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  // `contain` only stops scroll chaining; `none` also removes the rubber-band bounce at the
+  // ends, which pulled the list away from the sheet edges
+  overscroll-behavior: none;
+  // No `touch-action: pan-y` here: it would also stop a pinch-zoomed page from panning sideways
+  // over the list, and `overflow-x: hidden` already keeps the list itself from moving sideways.
 }
 
 .bottom-sheet__handle {
@@ -38,14 +47,13 @@
   }
 
   &:focus-visible {
-    outline-offset: calc(-1 * var(--border-width-focus));
+    @include focus-ring.inset-focus-ring;
   }
 }
 
-// The iOS grabber: 36 × 5 points
 .bottom-sheet__grip {
-  width: 2.25rem;
-  height: 0.3125rem;
+  width: var(--layout-grabber-width);
+  height: var(--layout-grabber-height);
   border-radius: var(--radius-pill);
   background-color: var(--color-border-control);
 }
@@ -59,12 +67,10 @@
     top: calc(var(--safe-area-top) + var(--space-xl));
     bottom: calc(var(--layout-navigation-height) + var(--safe-area-bottom));
     // Below the navigation, which covers the part of the sheet that slid down
-    z-index: calc(var(--layer-chrome) - 1);
+    z-index: var(--layer-sheet);
     padding-inline: var(--safe-area-left) var(--safe-area-right);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    background-color: var(--material-sheet);
-    box-shadow: var(--shadow-floating);
-    backdrop-filter: var(--material-blur);
+    @include materials.floating-material($material: var(--material-sheet));
     transform: translateY(var(--bottom-sheet-offset, 0));
 
     &--animated {
@@ -80,12 +86,6 @@
 
   .bottom-sheet--dragging {
     user-select: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bottom-sheet--animated {
-    transition: none;
   }
 }
 

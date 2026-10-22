@@ -1,12 +1,16 @@
 # GenialTanken
 
+[![CI](https://github.com/AlexF090/GenialTanken/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/AlexF090/GenialTanken/actions/workflows/ci.yml?query=branch%3Amain)
+[![Latest release](https://img.shields.io/github/v/release/AlexF090/GenialTanken)](https://github.com/AlexF090/GenialTanken/releases/latest)
+[![Live demo](https://img.shields.io/badge/demo-live-brightgreen)](https://genialtanken.alexf090.workers.dev)
+
 ![GenialTanken on a desktop browser and a phone in dark mode: gas stations in Paris with diesel prices as a list and as price tags on a map](docs/images/product-hero.jpg)
 
 Live: https://genialtanken.alexf090.workers.dev
 
 Find the cheapest fuel nearby: current prices of the gas stations around you as a list or on a map, filtered by fuel type and radius (up to 30 km).
 
-GenialTanken started as a React capstone project and is being rebuilt as a full-stack showcase with Angular and NestJS. See [ROADMAP.md](ROADMAP.md) for decisions and next steps.
+GenialTanken started as a React capstone project and is being rebuilt with Angular and NestJS. See [ROADMAP.md](ROADMAP.md) for decisions and next steps.
 
 ## Screenshots
 
@@ -18,13 +22,30 @@ The images show the live app with real prices. To regenerate them, run `node e2e
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    browser["Browser<br/>Angular 22 app"]
+    worker["Cloudflare Worker<br/>static assets + /api proxy"]
+    api["NestJS 12 API on Render<br/>backend-for-frontend"]
+    openData["French open data API<br/>data.economie.gouv.fr"]
+    stationPages["French station pages<br/>prix-carburants.gouv.fr"]
+    photon["Photon geocoder<br/>photon.komoot.io"]
+
+    browser -->|"pages, /api/*"| worker
+    worker -->|"/api/*"| api
+    api -->|prices| openData
+    api -->|"station names"| stationPages
+    api -->|"place search"| photon
 ```
-apps/web            Angular 22 single-page app (standalone, zoneless, signals)
-apps/web/worker     Cloudflare Worker serving the app as static assets and proxying /api to the API
-apps/api            NestJS 12 backend-for-frontend (BFF)
-packages/contracts  zod schemas and types shared by web and API (@genialtanken/contracts)
-e2e                 Playwright browser tests against web + API + mocked upstream
-```
+
+| Path                 | Content                                                                 |
+| -------------------- | ----------------------------------------------------------------------- |
+| `apps/web`           | Angular single-page app (standalone, zoneless, signals)                 |
+| `apps/web/worker`    | Cloudflare Worker serving the app and proxying `/api` to the API        |
+| `apps/api`           | NestJS backend-for-frontend (BFF)                                       |
+| `packages/contracts` | zod schemas and types shared by web and API (`@genialtanken/contracts`) |
+| `e2e`                | Playwright browser tests against web, API and a mocked upstream         |
+| `scripts`            | Repository scripts: app icon generation, wrangler configuration check   |
 
 The browser only talks to the BFF. The BFF queries all enabled **fuel price providers** in parallel, merges their stations into one format, sorts them by exact distance and caches the upstream responses in a size-limited in-memory cache (least recently used entries are evicted):
 
@@ -43,25 +64,25 @@ Only current prices are served; there is no price history. French data is publis
 ## Tech stack
 
 - **Web:** Angular 22, signals and `httpResource`, Signal Forms, Leaflet + markercluster, SCSS with design tokens, Vitest
-- **API:** NestJS 12 (ESM), native Standard Schema validation with zod 4, `@nestjs/config`, cache-manager with an LRU store (`@cacheable/memory`), throttler, Swagger, Terminus, Vitest + Supertest
+- **API:** NestJS 12 (ESM), native Standard Schema validation with zod 4, environment validated by a zod schema at startup, cache-manager with an LRU store (`@cacheable/memory`), throttler, Swagger, Terminus, Vitest + Supertest
 - **Shared:** TypeScript 6 strict, zod 4 contracts
-- **Tooling:** pnpm 12 workspaces, ESLint (typescript-eslint strict, angular-eslint incl. template accessibility), Prettier, lefthook Git hooks, Playwright, devcontainer
+- **Tooling:** pnpm 12 workspaces, ESLint (typescript-eslint strict, angular-eslint including template accessibility), Prettier, lefthook Git hooks, Playwright, dev container
 - **Delivery:** GitHub Actions, Cloudflare Workers with static assets (web), Render free web service from Docker (API), Dependabot
 
 ## Running locally
 
 The French data source needs no API key, so the app works out of the box.
 
-### Option A: VS Code devcontainer (recommended)
+### Option A: VS Code dev container (recommended)
 
 1. Start Docker (Docker Desktop or OrbStack).
 2. Open the repository in VS Code and choose **Reopen in Container**. The first build installs Node 26, pnpm and all dependencies.
 3. In the VS Code terminal run `pnpm dev:container` (plain `pnpm dev` binds to `localhost` inside the container and is not reachable through the published port).
 4. Open http://localhost:4200.
 
-The container reuses your Claude Code setup from the host: `~/.claude` (login, settings, skills) is bind-mounted, `~/.claude.json` is copied in once as a seed, and `~/Developer/dotfiles` plus `~/.agents` are mounted at their host paths so the symlinks in `~/.claude` resolve. Plugins get their own Docker volume (`genialtanken-claude-plugins`) and are installed on every start from the plugins enabled in `~/.claude/settings.json`. Your shell history (`~/.zsh_history`) is bind-mounted from the host. The GitHub CLI keeps its login in its own Docker volume (`genialtanken-gh-config`): run `gh auth login` once after the first start, and the login survives rebuilds (delete the volume to reset it). Mounts only change when the container is rebuilt (**Dev Containers: Rebuild Container**).
+The container optionally mounts personal tooling from the host: the Claude Code configuration (`~/.claude`, `~/.claude.json` as a one-time seed), dotfiles (`~/Developer/dotfiles`, `~/.agents`) and the shell history (`~/.zsh_history`). It works without them: `.devcontainer/check-claude-config.sh` creates empty placeholders on the host when they are missing. The GitHub CLI keeps its login in a Docker volume (`genialtanken-gh-config`), so `gh auth login` is needed only once. Mounts change only when the container is rebuilt (**Dev Containers: Rebuild Container**).
 
-### Option B: devcontainer from the command line
+### Option B: dev container from the command line
 
 ```bash
 devcontainer up --workspace-folder .
@@ -83,7 +104,7 @@ pnpm dev
 
 `pnpm install` installs [lefthook](https://lefthook.dev/) hooks (`lefthook.yml`): before a commit, Prettier and ESLint check the staged files; before a push, `pnpm typecheck` and `pnpm test` run. Skip them once with `LEFTHOOK=0 git commit …`.
 
-In the devcontainer the hooks are installed for the Linux binary. Committing from the macOS host on the same checkout may then fail; run `pnpm install` on the host as well, or use `LEFTHOOK=0`.
+In the dev container the hooks are installed for the Linux binary. Committing from the macOS host on the same checkout may then fail; run `pnpm install` on the host as well, or use `LEFTHOOK=0`.
 
 ### Local URLs
 
@@ -93,7 +114,7 @@ In the devcontainer the hooks are installed for the Linux binary. Committing fro
 | http://localhost:3000/api/docs | OpenAPI (Swagger)                   |
 | http://localhost:3000/health   | Health check                        |
 
-The browser asks for your location. Outside France the list stays empty; to try it anyway, allow location access and use the browser's developer tools to override the location (e.g. Paris 48.8566, 2.3522).
+Every visit starts centered on the Eiffel Tower in Paris. The app asks for your location only when you press the locate button ("Meinen Standort verwenden"); outside France, search for a French place instead.
 
 ## Scripts
 
@@ -101,15 +122,16 @@ The browser asks for your location. Outside France the list stays empty; to try 
 | ------------------------------- | ----------------------------------------------------------------------------------- |
 | `pnpm dev`                      | Start web and API in watch mode                                                     |
 | `pnpm build`                    | Build contracts, API and web                                                        |
-| `pnpm test`                     | Unit tests of all packages                                                          |
+| `pnpm test`                     | Unit tests of all packages and of `scripts/`                                        |
 | `pnpm --filter api test:e2e`    | API end-to-end tests (Supertest, fake upstreams)                                    |
 | `pnpm --filter web test:worker` | Unit tests of the Cloudflare Worker (Vitest)                                        |
 | `pnpm test:e2e`                 | Browser end-to-end tests (Playwright)                                               |
 | `pnpm preview:web`              | Build web, serve it with the Worker via `wrangler dev` (needs `apps/web/.dev.vars`) |
 | `pnpm deploy:web`               | Build web and `wrangler deploy` it (manual; CI normally deploys)                    |
 | `pnpm lint`                     | ESLint for the whole repository                                                     |
-| `pnpm typecheck`                | TypeScript checks of all packages                                                   |
+| `pnpm typecheck`                | TypeScript checks of all packages and of `scripts/`                                 |
 | `pnpm format:check`             | Prettier check (`format:write` to fix)                                              |
+| `pnpm generate:app-icons`       | Render the SVG sources in `apps/web/icon-source` into the PNG icons and favicon     |
 
 ## Configuration
 
@@ -163,11 +185,15 @@ All services run on free tiers:
 - **Web:** Cloudflare Worker `genialtanken` with static assets, deployed by GitHub Actions after CI passed: production on `main` (https://genialtanken.alexf090.workers.dev), a preview version per pull request that is ready for review (`https://pr-<number>-genialtanken.alexf090.workers.dev`). CI skips draft pull requests, so open them as drafts and mark them ready when final. The Worker serves the single-page app and forwards `/api/*` to the API (`run_worker_first`).
 - **API:** Render free web service built from `apps/api/Dockerfile` ([render.yaml](render.yaml)); deploys after the GitHub checks of the commit passed. The free tier sleeps after 15 minutes without traffic; the first request can take about a minute, which the web app announces.
 
-Step-by-step setup, including the release of a new version: [docs/deployment.md](docs/deployment.md).
+Runbook for settings, secrets, deploys and releases: [docs/deployment.md](docs/deployment.md).
 
 ## Versions
 
-Releases are automatic: after CI passed on `main`, [semantic-release](https://semantic-release.gitbook.io/) derives the next version from the squash commit, which carries the pull request title (`fix` → patch, `feat` → minor, `!` → major). It bumps every `package.json`, updates [CHANGELOG.md](CHANGELOG.md), tags `v<version>` and publishes a [GitHub release](https://github.com/AlexF090/GenialTanken/releases). Pull request titles must therefore follow [Conventional Commits](https://www.conventionalcommits.org/); a check enforces it.
+Releases are automatic: after CI passed on `main`, [semantic-release](https://semantic-release.gitbook.io/) derives the next version from the squash commit, which carries the pull request title (`fix` → patch, `feat` → minor, `!` → major). It bumps every `package.json`, writes `CHANGELOG.md`, tags `v<version>` and publishes the release notes on [GitHub Releases](https://github.com/AlexF090/GenialTanken/releases). Pull request titles must therefore follow [Conventional Commits](https://www.conventionalcommits.org/); a check enforces it.
 
 - **1.0.0** – original React capstone (tag `v1.0.0`)
 - **2.0.0** – Angular + NestJS rebuild (tag `v2.0.0`)
+
+## License
+
+Copyright (c) 2026 Alex F. All rights reserved. The source is published for reference; see [LICENSE](LICENSE). Contribution guidelines: [CONTRIBUTING.md](CONTRIBUTING.md). Security issues: [SECURITY.md](SECURITY.md).

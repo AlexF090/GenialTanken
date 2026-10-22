@@ -1,12 +1,6 @@
-import type { OpeningTimes } from '@genialtanken/contracts';
+import { emptyOpeningTimes } from '@genialtanken/contracts';
+import type { OpeningInterval, OpeningTimes, Weekday } from '@genialtanken/contracts';
 import { z } from 'zod';
-
-type Weekday = Exclude<keyof OpeningTimes, 'publicHoliday'>;
-
-interface OpeningInterval {
-  opening: string;
-  closing: string;
-}
 
 const WEEKDAYS_BY_FRENCH_DAY_NUMBER: Readonly<Record<string, Weekday>> = {
   '1': 'monday',
@@ -34,17 +28,6 @@ const daySchema = z.object({
 const openingHoursSchema = z.object({
   '@automate-24-24': z.string().optional(),
   jour: z.unknown().optional(),
-});
-
-const emptyOpeningTimes = (): OpeningTimes => ({
-  monday: [],
-  tuesday: [],
-  wednesday: [],
-  thursday: [],
-  friday: [],
-  saturday: [],
-  sunday: [],
-  publicHoliday: [],
 });
 
 const toTime = (frenchTime: string): string | null => {

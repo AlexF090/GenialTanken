@@ -1,5 +1,6 @@
 import type { MockInstance } from 'vitest';
-import { L, MAXIMUM_ZOOM } from './leaflet-layers';
+import { L } from './leaflet';
+import { MAXIMUM_ZOOM } from './tile-layer';
 import { revealMarker } from './reveal-marker';
 
 const MAP_CENTER: L.LatLngTuple = [48.86, 2.34];

@@ -11,6 +11,7 @@ import type { Place } from '@genialtanken/contracts';
 import { PlacesApi } from '../../core/places/places-api';
 import { describePlacesError } from '../../core/places/places-error-message';
 import { SearchCenterStore } from '../../core/search-center/search-center-store';
+import { resourceValueOr } from '../../core/resource-value-or';
 
 /** Waiting for a typing pause keeps the place search from firing on every keystroke. */
 export const PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS = 300;
@@ -55,7 +56,7 @@ export const injectPlaceSearch = (): PlaceSearch => {
     waitForTypingPause
   );
   const placesResource = inject(PlacesApi).placesMatching(() =>
-    queryAfterTypingPause.hasValue() ? queryAfterTypingPause.value() : undefined
+    resourceValueOr(queryAfterTypingPause, undefined)
   );
 
   return {

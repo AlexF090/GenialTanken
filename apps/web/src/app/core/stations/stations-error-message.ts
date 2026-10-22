@@ -1,45 +1,38 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { HTTP_STATUS } from '../http/http-status';
+import { TOO_MANY_REQUESTS_MESSAGE, TRY_AGAIN_LATER } from '../http/request-failure-messages';
 import { UnexpectedResponseError } from '../http/unexpected-response-error';
 import { StationSourceUnavailableError } from './station-source-unavailable-error';
 
 export const STATION_NOT_FOUND_MESSAGE =
   'Die Tankstelle konnte in unserer Datenbank nicht gefunden werden.';
 
-const HTTP_STATUS_NOT_FOUND = 404;
-const HTTP_STATUS_TOO_MANY_REQUESTS = 429;
-const HTTP_STATUS_BAD_GATEWAY = 502;
-const HTTP_STATUS_SERVICE_UNAVAILABLE = 503;
-const HTTP_STATUS_GATEWAY_TIMEOUT = 504;
-
-const PRICES_UNAVAILABLE_MESSAGE =
-  'Die Preisdaten sind gerade nicht erreichbar. Bitte versuche es später erneut.';
-
-export const isNotFoundError = (error: unknown): boolean =>
-  error instanceof HttpErrorResponse && error.status === HTTP_STATUS_NOT_FOUND;
+const PRICES_UNAVAILABLE_MESSAGE = `Die Preisdaten sind gerade nicht erreichbar. ${TRY_AGAIN_LATER}`;
+const STATIONS_NOT_LOADED_MESSAGE = `Die Tankstellen konnten nicht geladen werden. ${TRY_AGAIN_LATER}`;
 
 /** Single place that turns failures of the stations API into user-facing German messages. */
 export const describeStationsError = (error: unknown): string => {
   if (error instanceof UnexpectedResponseError) {
-    return 'Der Server hat unerwartete Daten geliefert. Bitte versuche es später erneut.';
+    return `Der Server hat unerwartete Daten geliefert. ${TRY_AGAIN_LATER}`;
   }
   if (error instanceof StationSourceUnavailableError) {
     return PRICES_UNAVAILABLE_MESSAGE;
   }
   if (!(error instanceof HttpErrorResponse)) {
-    return 'Die Tankstellen konnten nicht geladen werden. Bitte versuche es später erneut.';
+    return STATIONS_NOT_LOADED_MESSAGE;
   }
   switch (error.status) {
-    case 0:
+    case HTTP_STATUS.networkFailure:
       return 'Der Server ist nicht erreichbar. Bitte prüfe deine Internetverbindung.';
-    case HTTP_STATUS_NOT_FOUND:
+    case HTTP_STATUS.notFound:
       return STATION_NOT_FOUND_MESSAGE;
-    case HTTP_STATUS_TOO_MANY_REQUESTS:
-      return 'Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.';
-    case HTTP_STATUS_BAD_GATEWAY:
-    case HTTP_STATUS_SERVICE_UNAVAILABLE:
-    case HTTP_STATUS_GATEWAY_TIMEOUT:
+    case HTTP_STATUS.tooManyRequests:
+      return TOO_MANY_REQUESTS_MESSAGE;
+    case HTTP_STATUS.badGateway:
+    case HTTP_STATUS.serviceUnavailable:
+    case HTTP_STATUS.gatewayTimeout:
       return PRICES_UNAVAILABLE_MESSAGE;
     default:
-      return 'Die Tankstellen konnten nicht geladen werden. Bitte versuche es später erneut.';
+      return STATIONS_NOT_LOADED_MESSAGE;
   }
 };

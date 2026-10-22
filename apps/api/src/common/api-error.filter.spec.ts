@@ -3,6 +3,7 @@ import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-hos
 import type { MockInstance } from 'vitest';
 import { ApiErrorFilter } from './api-error.filter.js';
 import { ERROR_MESSAGES } from './error-messages.js';
+import { UpstreamUnavailableError } from './upstream-unavailable-error.js';
 
 interface SentResponse {
   statusCode?: number;
@@ -55,6 +56,14 @@ describe('ApiErrorFilter', () => {
       statusCode: 400,
       message: 'latitude is required; fuel is unknown',
     });
+  });
+
+  it('answers 502 with the message of an unavailable upstream', () => {
+    expect(respondTo(new UpstreamUnavailableError(ERROR_MESSAGES.placeSearchUnavailable))).toEqual({
+      statusCode: 502,
+      body: { statusCode: 502, message: ERROR_MESSAGES.placeSearchUnavailable },
+    });
+    expect(loggedError).not.toHaveBeenCalled();
   });
 
   it('hides the details of an unexpected error and logs it', () => {

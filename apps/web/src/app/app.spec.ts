@@ -1,9 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { configurePageTest, textOf } from '../testing/render-page';
+import { configurePageTest, hostElementOf, textOf } from '../testing/render-page';
 import type { PageTestContext } from '../testing/render-page';
 import { App } from './app';
 import { routes } from './app.routes';
+import { STATIONS_URL, stationUrl } from '../testing/api-urls';
 
 describe('App', () => {
   let context: PageTestContext;
@@ -12,7 +13,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     await TestBed.inject(Router).navigateByUrl(url);
     await context.settle();
-    return fixture.nativeElement as HTMLElement;
+    return hostElementOf(fixture);
   };
 
   const navigationLink = (element: HTMLElement, name: string): HTMLAnchorElement => {
@@ -44,7 +45,7 @@ describe('App', () => {
     ]);
     expect(navigationLink(element, 'Erkunden').getAttribute('aria-current')).toBe('page');
     expect(navigationLink(element, 'Einstellungen').getAttribute('aria-current')).toBeNull();
-    context.httpTesting.expectOne(request => request.url === '/api/stations');
+    context.httpTesting.expectOne(request => request.url === STATIONS_URL);
   });
 
   it('offers a skip link to the content as the first focusable element', async () => {
@@ -96,7 +97,7 @@ describe('App', () => {
     expect(element.querySelector('main app-station-list')).not.toBeNull();
     expect(element.querySelector('main app-stations-map')).not.toBeNull();
     expect(document.title).toBe('GenialTanken');
-    context.httpTesting.expectOne(request => request.url === '/api/stations');
+    context.httpTesting.expectOne(request => request.url === STATIONS_URL);
   });
 
   it('redirects the former map page to the explore page', async () => {
@@ -104,7 +105,7 @@ describe('App', () => {
 
     expect(TestBed.inject(Router).url).toBe('/');
     expect(navigationLink(element, 'Erkunden').getAttribute('aria-current')).toBe('page');
-    context.httpTesting.expectOne(request => request.url === '/api/stations');
+    context.httpTesting.expectOne(request => request.url === STATIONS_URL);
   });
 
   it('reaches the settings through the navigation', async () => {
@@ -122,8 +123,8 @@ describe('App', () => {
     expect(element.querySelector('main app-stations-map')).not.toBeNull();
     expect(element.querySelector('main app-station-detail-page')).not.toBeNull();
     expect(document.title).toBe('Details – GenialTanken');
-    context.httpTesting.expectOne('/api/stations/fr-75001001');
-    context.httpTesting.expectOne(request => request.url === '/api/stations');
+    context.httpTesting.expectOne(stationUrl('fr-75001001'));
+    context.httpTesting.expectOne(request => request.url === STATIONS_URL);
   });
 
   it.each(['/unknown', '/unknown/deep/route', '/stations'])(
@@ -131,7 +132,7 @@ describe('App', () => {
     async url => {
       const element = await navigateTo(url);
 
-      expect(textOf(element.querySelector('main h2'))).toBe('ERROR 404');
+      expect(textOf(element.querySelector('main h2'))).toBe('Fehler 404');
       expect(element.querySelector('main')?.textContent).toContain('Diese Seite existiert nicht');
       expect(textOf(element.querySelector('main a[href="/"]'))).toBe('Zur Startseite');
       expect(element.querySelector('nav')).not.toBeNull();

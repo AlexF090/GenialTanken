@@ -9,10 +9,11 @@ import {
   ColorSchemeController,
   PREFERS_DARK_COLOR_SCHEME_MEDIA_QUERY,
 } from './color-scheme-controller';
+import { SETTINGS_STORAGE_KEY } from '../settings/settings-store';
 
 const storedColorScheme = (colorScheme: string): FakeStorage =>
   new FakeStorage({
-    'genialtanken.settings': JSON.stringify({
+    [SETTINGS_STORAGE_KEY]: JSON.stringify({
       fuelType: 'e5',
       radiusInKilometers: 5,
       colorScheme,

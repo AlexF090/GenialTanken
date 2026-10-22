@@ -2,6 +2,10 @@
 // their styles live here instead of in the map components.
 @use 'breakpoints';
 @use 'typography';
+@use 'focus-ring';
+
+// The levels of `PriceLevel` (`src/app/core/stations/price-level.ts`), cheap to dear
+$price-levels: low, medium, high;
 
 .leaflet-container {
   // Shared by the markers and the labels above them.
@@ -85,7 +89,7 @@
   }
 
   // Tinted from cheap (green) to dear (red) within the prices shown
-  @each $level in low, medium, high {
+  @each $level in $price-levels {
     &--#{$level} {
       --price-tag-background: var(--color-price-#{$level});
       --price-tag-edge: var(--color-price-#{$level}-edge);
@@ -98,7 +102,7 @@
     --price-tag-foreground: var(--color-on-highlight);
     --price-tag-edge: var(--color-highlight-edge);
 
-    transform: scale(1.1);
+    transform: scale(var(--scale-marker-cheapest));
   }
 
   // Tinted like a selected pin in Apple Maps; the surface edge keeps it apart from dark tiles.
@@ -107,7 +111,7 @@
     --price-tag-foreground: var(--color-on-action);
     --price-tag-edge: var(--color-surface);
 
-    transform: scale(1.15);
+    transform: scale(var(--scale-marker-selected));
   }
 
   // A selected cheapest station keeps the green as its edge.
@@ -119,7 +123,7 @@
     --price-tag-edge: var(--color-border-control);
   }
 
-  @each $level in low, medium, high {
+  @each $level in $price-levels {
     .price-tag-marker:hover > &--#{$level} {
       --price-tag-edge: var(--color-price-#{$level}-edge);
     }
@@ -134,8 +138,7 @@
   }
 
   .price-tag-marker:focus-visible > & {
-    outline: var(--border-width-focus) solid var(--color-focus-ring);
-    outline-offset: var(--focus-offset);
+    @include focus-ring.focus-ring;
   }
 }
 
@@ -173,8 +176,7 @@
   overflow: hidden;
 
   .price-cluster-marker:focus-visible > & {
-    outline: var(--border-width-focus) solid var(--color-focus-ring);
-    outline-offset: var(--focus-offset);
+    @include focus-ring.focus-ring;
   }
 }
 
@@ -192,19 +194,18 @@
 
 .price-cluster__lowest-price {
   display: grid;
-
-  @each $level in low, medium, high {
-    .price-cluster--#{$level} & {
-      background-color: var(--color-price-#{$level});
-    }
-  }
-
   grid-template-columns: auto auto;
   align-items: baseline;
   align-content: center;
   column-gap: var(--space-3xs);
   row-gap: var(--space-3xs);
   padding: var(--space-2xs) var(--space-xs);
+
+  @each $level in $price-levels {
+    .price-cluster--#{$level} & {
+      background-color: var(--color-price-#{$level});
+    }
+  }
 
   .price-cluster--cheapest & {
     background-color: var(--color-highlight);

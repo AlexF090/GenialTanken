@@ -10,12 +10,19 @@
   font-weight: var(--font-weight-price);
   font-variant-numeric: tabular-nums lining-nums;
   line-height: var(--line-height-numerals);
-  letter-spacing: -0.01em;
+  letter-spacing: var(--letter-spacing-numerals);
 
   sup {
     // Keeps the raised digit from stretching the line box
     line-height: 0;
-    font-size: 0.55em;
-    vertical-align: 0.6em;
+    font-size: var(--font-size-tenth-of-cent);
+    vertical-align: var(--vertical-offset-tenth-of-cent);
   }
+}
+
+// Large title of the first screen of an iOS app or a page
+@mixin large-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-large-title);
 }

@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import type { Type } from '@angular/core';
+import type { EnvironmentProviders, InputSignalWithTransform, Provider, Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { ComponentFixture } from '@angular/core/testing';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
@@ -65,14 +65,55 @@ export const configurePageTest = (
   };
 };
 
-export const renderComponent = async <T>(
-  component: Type<T>
-): Promise<{ fixture: ComponentFixture<T>; element: HTMLElement }> => {
+interface RenderedComponent<T> {
+  fixture: ComponentFixture<T>;
+  element: HTMLElement;
+}
+
+/** The fixture's host element, typed. */
+export const hostElementOf = (fixture: ComponentFixture<unknown>): HTMLElement => {
+  const element: unknown = fixture.nativeElement;
+  if (!(element instanceof HTMLElement)) {
+    throw new Error('The component fixture has no HTML host element');
+  }
+  return element;
+};
+
+export const renderComponent = async <T>(component: Type<T>): Promise<RenderedComponent<T>> => {
   const fixture = TestBed.createComponent(component);
   // `whenStable` would wait for the page's open requests, which the test flushes later.
   TestBed.tick();
   await Promise.resolve();
-  return { fixture, element: fixture.nativeElement as HTMLElement };
+  return { fixture, element: hostElementOf(fixture) };
+};
+
+/** Values for the component's signal inputs, keyed by input name. */
+type InputValues<T> = {
+  [
+    Name in keyof T as T[Name] extends InputSignalWithTransform<unknown, unknown> ? Name : never
+  ]?: T[Name] extends InputSignalWithTransform<unknown, infer Value> ? Value : never;
+};
+
+/**
+ * Renders a presentational component with the given inputs and waits until it is stable. Inputs
+ * given as `undefined` keep their default.
+ */
+export const renderWithInputs = async <T>(
+  component: Type<T>,
+  inputs: InputValues<T>,
+  providers: (Provider | EnvironmentProviders)[] = []
+): Promise<RenderedComponent<T>> => {
+  if (providers.length > 0) {
+    TestBed.configureTestingModule({ providers });
+  }
+  const fixture = TestBed.createComponent(component);
+  for (const [name, value] of Object.entries(inputs)) {
+    if (value !== undefined) {
+      fixture.componentRef.setInput(name, value);
+    }
+  }
+  await fixture.whenStable();
+  return { fixture, element: hostElementOf(fixture) };
 };
 
 /** Visible text with collapsed whitespace, e.g. for comparing headings and messages. */
@@ -103,4 +144,20 @@ export const getButton = (container: HTMLElement, name: RegExp | string): HTMLBu
     throw new Error(`No button named ${String(name)} found`);
   }
   return button;
+};
+
+/** Titles of the station list's rows, in their order. */
+export const stationTitles = (container: HTMLElement): string[] =>
+  [...container.querySelectorAll('main li .station-row__title')].map(title => textOf(title));
+
+/** The radio button whose label reads `name`. */
+export const getRadio = (container: HTMLElement, name: string): HTMLInputElement => {
+  const label = [...container.querySelectorAll('label')].find(
+    candidate => textOf(candidate) === name
+  );
+  const radio = label?.querySelector('input[type="radio"]');
+  if (!(radio instanceof HTMLInputElement)) {
+    throw new Error(`No radio button labelled "${name}" found`);
+  }
+  return radio;
 };

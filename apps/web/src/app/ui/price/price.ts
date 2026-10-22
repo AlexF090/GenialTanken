@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { formatPrice, formatPriceParts } from '../../core/formatting/number-format';
+import { NO_PRICE_LABEL } from '../../core/stations/price-labels';
 
 /** `hero` on the detail page, `list` in the station list, `tag` on map markers and popups. */
 export type PriceSize = 'hero' | 'list' | 'tag';
@@ -24,7 +25,8 @@ export type PriceSize = 'hero' | 'list' | 'tag';
         >{{ parts.leadingDigits }}<sup>{{ parts.tenthOfCent }}</sup> €</span
       >
     } @else {
-      <span class="visually-hidden">kein Preis</span><span aria-hidden="true">–</span>
+      <span class="visually-hidden">{{ noPriceLabel }}</span
+      ><span aria-hidden="true">–</span>
     }
   `,
   styleUrl: './price.scss',
@@ -32,6 +34,8 @@ export type PriceSize = 'hero' | 'list' | 'tag';
 export class Price {
   readonly priceInEuro = input.required<number | null>();
   readonly size = input<PriceSize>('list');
+
+  protected readonly noPriceLabel = NO_PRICE_LABEL;
 
   protected readonly plainPrice = computed(() => {
     const price = this.priceInEuro();

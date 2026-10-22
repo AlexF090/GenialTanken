@@ -1,5 +1,5 @@
 import { DefaultUrlSerializer } from '@angular/router';
-import { stationIdentifierIn } from './station-card-route';
+import { stationIdentifierIn, stationRoute } from './station-route';
 
 const parse = (url: string) => new DefaultUrlSerializer().parse(url);
 
@@ -21,5 +21,11 @@ describe('stationIdentifierIn', () => {
 
   it('finds none without a URL', () => {
     expect(stationIdentifierIn(undefined)).toBeUndefined();
+  });
+});
+
+describe('stationRoute', () => {
+  it('opens the card of the station', () => {
+    expect(stationRoute('fr-75001001')).toEqual(['/stations', 'fr-75001001']);
   });
 });

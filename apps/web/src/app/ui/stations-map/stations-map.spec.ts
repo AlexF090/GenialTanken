@@ -1,7 +1,6 @@
-import { TestBed } from '@angular/core/testing';
 import type { Station } from '@genialtanken/contracts';
 import { DEFAULT_SEARCH_CENTER } from '../../core/search-center/search-center';
-import type { Coordinates } from '../../core/geolocation/coordinates';
+import type { Coordinates } from '@genialtanken/contracts';
 import type { SearchCenter } from '../../core/search-center/search-center';
 import {
   essoStation,
@@ -9,8 +8,9 @@ import {
   totalStation,
   unbrandedStation,
 } from '../../../testing/station-fixtures';
-import { accessibleTextOf, textOf } from '../../../testing/render-page';
-import { L } from '../map/leaflet-layers';
+import { accessibleTextOf, renderWithInputs, textOf } from '../../../testing/render-page';
+import { FakeResizeObserver } from '../../../testing/fake-resize-observer';
+import { L } from '../map/leaflet';
 import { StationsMap } from './stations-map';
 
 interface RenderOptions {
@@ -24,29 +24,47 @@ interface RenderOptions {
 const offsetFromPanTarget = (map: L.Map, target: L.LatLng, point: L.LatLngLiteral): L.Point =>
   map.project(point, map.getZoom()).subtract(map.project(target, map.getZoom())).round();
 
+/** Leaflet keeps no list of its maps; an init hook collects the one the component creates. */
+const createdMaps: L.Map[] = [];
+L.Map.addInitHook(function (this: L.Map) {
+  createdMaps.push(this);
+});
+
 const render = async (stations: readonly Station[], options: RenderOptions = {}) => {
+  createdMaps.length = 0;
   // jsdom has no layout; Leaflet needs a map size to decide which markers are visible.
   if (options.hasSize ?? true) {
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(800);
     vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(600);
   }
-  const fixture = TestBed.createComponent(StationsMap);
-  fixture.componentRef.setInput('stations', stations);
-  fixture.componentRef.setInput('fuelType', 'e5');
-  fixture.componentRef.setInput('center', options.center ?? DEFAULT_SEARCH_CENTER);
-  fixture.componentRef.setInput('radiusInKilometers', 5);
-  fixture.componentRef.setInput('selectedStationIdentifier', options.selectedStationIdentifier);
-  if (options.cheapestStationIdentifiers !== undefined) {
-    fixture.componentRef.setInput('cheapestStationIdentifiers', options.cheapestStationIdentifiers);
-  }
-  await fixture.whenStable();
-  const element = fixture.nativeElement as HTMLElement;
+  const { fixture, element } = await renderWithInputs(StationsMap, {
+    stations,
+    fuelType: 'e5',
+    center: options.center ?? DEFAULT_SEARCH_CENTER,
+    radiusInKilometers: 5,
+    selectedStationIdentifier: options.selectedStationIdentifier,
+    cheapestStationIdentifiers: options.cheapestStationIdentifiers,
+  });
   const stationSelections: string[] = [];
   fixture.componentInstance.stationSelected.subscribe(stationIdentifier =>
     stationSelections.push(stationIdentifier)
   );
-  return { fixture, element, stationSelections };
+  const visibleCenters: Coordinates[] = [];
+  fixture.componentInstance.visibleCenterChanged.subscribe(center => visibleCenters.push(center));
+  const [map] = createdMaps;
+  if (!(map instanceof L.Map)) {
+    throw new Error('The component created no map');
+  }
+  return { fixture, element, map, stationSelections, visibleCenters };
 };
+
+/** The map applies overlay and size changes together, once per animation frame. */
+const nextAnimationFrame = (): Promise<void> =>
+  new Promise(resolve => {
+    requestAnimationFrame(() => {
+      resolve();
+    });
+  });
 
 /** Station price tags are toggle buttons; zoom controls and clusters are plain buttons. */
 const markerButtons = (element: HTMLElement): HTMLElement[] => [
@@ -123,11 +141,11 @@ describe('StationsMap', () => {
     expect(stationSelections).toEqual([carrefourStation.id]);
   });
 
-  it('reports the station whose price tag is activated with the keyboard', async () => {
+  it.each(['Enter', ' '])('reports the station whose price tag gets %j pressed', async key => {
     const { element, stationSelections } = await render([totalStation]);
 
     markerButton(element, 'TotalEnergies, 1,859 €').dispatchEvent(
-      new KeyboardEvent('keydown', { key: ' ', bubbles: true })
+      new KeyboardEvent('keydown', { key, bubbles: true })
     );
 
     expect(stationSelections).toEqual([totalStation.id]);
@@ -196,14 +214,14 @@ describe('StationsMap', () => {
 
     it('centers the price tag in the part of the map left visible by the overlays', async () => {
       const panTo = vi.spyOn(L.Map.prototype, 'panTo');
-      const { fixture } = await render([totalStation, carrefourStation]);
+      const { fixture, map } = await render([totalStation, carrefourStation]);
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
+      await nextAnimationFrame();
 
       fixture.componentRef.setInput('selectedStationIdentifier', totalStation.id);
       await fixture.whenStable();
 
-      const map = panTo.mock.contexts.at(-1) as L.Map;
       const panTarget = panTo.mock.calls.at(-1)?.[0];
       if (panTarget === undefined) {
         throw new Error('The map did not pan');
@@ -247,20 +265,54 @@ describe('StationsMap', () => {
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
 
+      await nextAnimationFrame();
+
       expect(panTo).toHaveBeenCalledOnce();
+    });
+
+    it('brings a focused price tag out from under the overlays', async () => {
+      const panTo = vi.spyOn(L.Map.prototype, 'panTo');
+      const { fixture, element, map } = await render([totalStation]);
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+      await nextAnimationFrame();
+      // The price tag in the middle of the map, behind the sheet.
+      map.setView(totalPosition, map.getZoom(), { animate: false });
+      panTo.mockClear();
+
+      markerButton(element, 'TotalEnergies, 1,859 €').focus();
+
+      expect(panTo).toHaveBeenCalledOnce();
+      const panTarget = panTo.mock.calls[0]?.[0];
+      if (panTarget === undefined) {
+        throw new Error('The map did not pan');
+      }
+      expect(offsetFromPanTarget(map, L.latLng(panTarget), totalPosition)).toEqual(
+        L.point(0, -200)
+      );
+    });
+
+    it('leaves the view alone when a visible price tag is focused', async () => {
+      const panTo = vi.spyOn(L.Map.prototype, 'panTo');
+      const { element } = await render([totalStation]);
+      panTo.mockClear();
+
+      markerButton(element, 'TotalEnergies, 1,859 €').focus();
+
+      expect(panTo).not.toHaveBeenCalled();
     });
 
     it('leaves the view alone when the overlays move after the user moved the map', async () => {
       const panTo = vi.spyOn(L.Map.prototype, 'panTo');
-      const { fixture } = await render([totalStation], {
+      const { fixture, map } = await render([totalStation], {
         selectedStationIdentifier: totalStation.id,
       });
-      const map = panTo.mock.contexts.at(-1) as L.Map;
       panTo.mockClear();
 
       map.fire('dragstart');
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
+      await nextAnimationFrame();
 
       expect(panTo).not.toHaveBeenCalled();
     });
@@ -289,6 +341,7 @@ describe('StationsMap', () => {
       const { fixture, element } = await render([totalStation, neighborOf(totalStation, 0.001)]);
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
+      await nextAnimationFrame();
       fitBounds.mockClear();
 
       clusterButton(element).click();
@@ -301,12 +354,126 @@ describe('StationsMap', () => {
       });
     });
 
+    it.each(['Enter', ' '])('zooms the cluster when %j is pressed on it', async key => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture, element } = await render([totalStation, neighborOf(totalStation, 0.001)]);
+      await fixture.whenStable();
+      fitBounds.mockClear();
+
+      const keydown = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      clusterButton(element).dispatchEvent(keydown);
+
+      expect(fitBounds).toHaveBeenCalledOnce();
+      expect(keydown.defaultPrevented).toBe(true);
+    });
+
+    describe('moving the focus out of the opened cluster', () => {
+      const pressEnter = (target: HTMLElement): void => {
+        target.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+        );
+      };
+      const cheaperNeighborOfTotal: Station = {
+        ...carrefourStation,
+        address: { ...carrefourStation.address, ...totalStation.address, latitude: 48.861 },
+      };
+
+      const equallyExpensiveNeighborOfTotal: Station = {
+        ...cheaperNeighborOfTotal,
+        pricesInEuro: totalStation.pricesInEuro,
+      };
+
+      it('focuses the price tag of the cheapest station once the map zoomed in', async () => {
+        const { fixture, element } = await render([totalStation, cheaperNeighborOfTotal]);
+        const cluster = clusterButton(element);
+        cluster.focus();
+
+        pressEnter(cluster);
+        await fixture.whenStable();
+
+        await vi.waitFor(() => {
+          expect(accessibleTextOf(document.activeElement)).toBe('Carrefour Market, 1,839 €');
+        });
+      });
+
+      it('focuses the price tag of the cheapest station once the cluster fanned out', async () => {
+        const { fixture, element, map } = await render([
+          totalStation,
+          { ...cheaperNeighborOfTotal, address: { ...totalStation.address } },
+        ]);
+        vi.spyOn(map, 'getMaxZoom').mockReturnValue(map.getZoom());
+        const cluster = clusterButton(element);
+        cluster.focus();
+
+        pressEnter(cluster);
+        await fixture.whenStable();
+
+        await vi.waitFor(() => {
+          expect(accessibleTextOf(document.activeElement)).toBe('Carrefour Market, 1,839 €');
+        });
+      });
+
+      it('focuses the price tag of the cheapest station of a cluster fanned out already', async () => {
+        const { fixture, element, map } = await render([
+          totalStation,
+          { ...cheaperNeighborOfTotal, address: { ...totalStation.address } },
+        ]);
+        vi.spyOn(map, 'getMaxZoom').mockReturnValue(map.getZoom());
+        const cluster = clusterButton(element);
+        cluster.click();
+        await vi.waitFor(() => {
+          expect(markerNames(element)).toContain('Carrefour Market, 1,839 €');
+          expect(element.querySelector('.leaflet-cluster-anim')).toBeNull();
+        });
+        cluster.focus();
+
+        pressEnter(cluster);
+        await fixture.whenStable();
+
+        await vi.waitFor(() => {
+          expect(accessibleTextOf(document.activeElement)).toBe('Carrefour Market, 1,839 €');
+        });
+      });
+
+      it.each([
+        ['TotalEnergies, 1,859 €', [totalStation, equallyExpensiveNeighborOfTotal]],
+        ['Carrefour Market, 1,859 €', [equallyExpensiveNeighborOfTotal, totalStation]],
+      ])('of equally cheap stations focuses the first one shown: %s', async (name, stations) => {
+        const { fixture, element } = await render(stations);
+        const cluster = clusterButton(element);
+        cluster.focus();
+
+        pressEnter(cluster);
+        await fixture.whenStable();
+
+        await vi.waitFor(() => {
+          expect(accessibleTextOf(document.activeElement)).toBe(name);
+        });
+      });
+
+      it('leaves the focus alone when the cluster is clicked', async () => {
+        const { fixture, element } = await render([totalStation, cheaperNeighborOfTotal]);
+        const cluster = clusterButton(element);
+        cluster.focus();
+
+        cluster.click();
+        await fixture.whenStable();
+
+        // The focus would move once the cluster group ends its zoom animation.
+        await vi.waitFor(() => {
+          expect(markerNames(element)).toContain('Carrefour Market, 1,839 €');
+          expect(element.querySelector('.leaflet-cluster-anim')).toBeNull();
+        });
+        await nextAnimationFrame();
+        expect(markerButtons(element)).not.toContain(document.activeElement);
+      });
+    });
+
     it('fans out a cluster that zooming cannot separate and centers it', async () => {
       const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
       const panTo = vi.spyOn(L.Map.prototype, 'panTo');
       const spiderfy = vi.spyOn(L.MarkerCluster.prototype, 'spiderfy');
-      const { fixture, element } = await render([totalStation, neighborOf(totalStation, 0)]);
-      const map = fitBounds.mock.contexts[0] as L.Map;
+      const { fixture, element, map } = await render([totalStation, neighborOf(totalStation, 0)]);
       // As if the map were at its maximum zoom already
       vi.spyOn(map, 'getMaxZoom').mockReturnValue(map.getZoom());
       await fixture.whenStable();
@@ -322,13 +489,7 @@ describe('StationsMap', () => {
 
   describe('after the user moved the map', () => {
     it('reports the center of the visible map once the user moved it', async () => {
-      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
-      const { fixture } = await render([]);
-      const map = fitBounds.mock.contexts[0] as L.Map;
-      const visibleCenters: Coordinates[] = [];
-      fixture.componentInstance.visibleCenterChanged.subscribe(center =>
-        visibleCenters.push(center)
-      );
+      const { map, visibleCenters } = await render([]);
 
       map.fire('moveend');
       expect(visibleCenters).toEqual([]);
@@ -338,6 +499,40 @@ describe('StationsMap', () => {
 
       expect(visibleCenters.at(-1)?.latitude).toBeCloseTo(48.87, 3);
       expect(visibleCenters.at(-1)?.longitude).toBeCloseTo(2.33, 3);
+    });
+
+    it('reports the center of the visible map once the user zoomed it', async () => {
+      const { element, visibleCenters } = await render([]);
+
+      element.querySelector<HTMLElement>('.leaflet-control-zoom-in')?.click();
+
+      expect(visibleCenters).toHaveLength(1);
+    });
+
+    it('reports the center of the visible map once the user moved it with the keyboard', async () => {
+      const { element, visibleCenters } = await render([]);
+      const container = element.querySelector<HTMLElement>('.stations-map');
+      container?.focus();
+
+      container?.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', keyCode: 39, bubbles: true })
+      );
+
+      await vi.waitFor(() => {
+        expect(visibleCenters).toHaveLength(1);
+      });
+    });
+
+    it('does not report its own moves to the search area', async () => {
+      const { fixture, visibleCenters } = await render([]);
+
+      fixture.componentRef.setInput('viewportPadding', { top: 0, right: 0, bottom: 400, left: 0 });
+      await fixture.whenStable();
+      await nextAnimationFrame();
+      fixture.componentRef.setInput('radiusInKilometers', 10);
+      await fixture.whenStable();
+
+      expect(visibleCenters).toEqual([]);
     });
 
     it('stays where it is when the search moves to the visible area', async () => {
@@ -360,6 +555,83 @@ describe('StationsMap', () => {
     });
   });
 
+  describe('when the map changes its size', () => {
+    beforeEach(() => {
+      vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    const resizeMap = (widthInPixels: number): void => {
+      vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(widthInPixels);
+      if (FakeResizeObserver.latest === undefined) {
+        throw new Error('The map observes no size');
+      }
+      FakeResizeObserver.latest.resize();
+    };
+
+    it('applies a new size and new overlays in the same frame with one fit', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const invalidateSize = vi.spyOn(L.Map.prototype, 'invalidateSize');
+      const { fixture } = await render([]);
+      fitBounds.mockClear();
+      invalidateSize.mockClear();
+
+      resizeMap(1000);
+      fixture.componentRef.setInput('viewportPadding', { top: 80, right: 0, bottom: 0, left: 0 });
+      await fixture.whenStable();
+      await nextAnimationFrame();
+
+      expect(invalidateSize).toHaveBeenCalledOnce();
+      expect(fitBounds).toHaveBeenCalledOnce();
+      expect(invalidateSize.mock.invocationCallOrder[0]).toBeLessThan(
+        fitBounds.mock.invocationCallOrder[0] ?? 0
+      );
+      expect(fitBounds.mock.calls[0]?.[1]).toMatchObject({ paddingTopLeft: [24, 104] });
+    });
+
+    it('fits the search area into the resized map', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      await render([]);
+      fitBounds.mockClear();
+
+      resizeMap(1000);
+      await nextAnimationFrame();
+
+      expect(fitBounds).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the zoom the user chose when the size changes', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { element } = await render([]);
+      element.querySelector<HTMLElement>('.leaflet-control-zoom-in')?.click();
+      fitBounds.mockClear();
+
+      resizeMap(1000);
+      await nextAnimationFrame();
+
+      expect(fitBounds).not.toHaveBeenCalled();
+    });
+
+    it('only adapts to the new size after the user moved the map', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const invalidateSize = vi.spyOn(L.Map.prototype, 'invalidateSize');
+      const { map } = await render([]);
+      fitBounds.mockClear();
+      invalidateSize.mockClear();
+
+      map.fire('dragstart');
+      resizeMap(1000);
+      await nextAnimationFrame();
+
+      expect(invalidateSize).toHaveBeenCalledOnce();
+      expect(map.getSize()).toEqual(L.point(1000, 600));
+      expect(fitBounds).not.toHaveBeenCalled();
+    });
+  });
+
   describe('when the overlays covering the map change', () => {
     const coveredByBottomSheet = { top: 0, right: 0, bottom: 400, left: 0 };
 
@@ -371,19 +643,134 @@ describe('StationsMap', () => {
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
 
+      await nextAnimationFrame();
+
       expect(fitBounds).toHaveBeenCalledOnce();
       expect(fitBounds.mock.calls[0]?.[1]).toMatchObject({ paddingBottomRight: [24, 424] });
     });
 
-    it('keeps the view the user moved the map to', async () => {
+    it('fits once when the overlays report their sizes one after the other', async () => {
       const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
       const { fixture } = await render([]);
-      const map = fitBounds.mock.contexts[0] as L.Map;
+      fitBounds.mockClear();
+
+      fixture.componentRef.setInput('viewportPadding', { top: 80, right: 0, bottom: 0, left: 0 });
+      await fixture.whenStable();
+      fixture.componentRef.setInput('viewportPadding', { top: 80, right: 0, bottom: 400, left: 0 });
+      await fixture.whenStable();
+      await nextAnimationFrame();
+
+      expect(fitBounds).toHaveBeenCalledOnce();
+      expect(fitBounds.mock.calls[0]?.[1]).toMatchObject({
+        paddingTopLeft: [24, 104],
+        paddingBottomRight: [24, 424],
+      });
+    });
+
+    it('leaves the view alone while the overlays cover the whole map', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture, map } = await render([]);
+      const zoomBefore = map.getZoom();
+      fitBounds.mockClear();
+
+      // The fully opened sheet and the search field leave nothing of the 600 px high map.
+      fixture.componentRef.setInput('viewportPadding', { top: 80, right: 0, bottom: 560, left: 0 });
+      await fixture.whenStable();
+      await nextAnimationFrame();
+
+      expect(fitBounds).not.toHaveBeenCalled();
+      expect(map.getZoom()).toBe(zoomBefore);
+
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+
+      await nextAnimationFrame();
+
+      expect(fitBounds).toHaveBeenCalledOnce();
+    });
+
+    it('corrects the first view without an animation and animates later changes', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture } = await render([]);
+      fitBounds.mockClear();
+
+      fixture.componentRef.setInput('viewportPadding', { top: 80, right: 0, bottom: 0, left: 0 });
+      await fixture.whenStable();
+      await nextAnimationFrame();
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+      await nextAnimationFrame();
+
+      expect(fitBounds.mock.calls.map(call => call[1]?.animate)).toEqual([false, true]);
+    });
+
+    it('waits for visible space before fitting a new search area', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture, map } = await render([]);
+      fixture.componentRef.setInput('viewportPadding', { top: 80, right: 0, bottom: 560, left: 0 });
+      await fixture.whenStable();
+      await nextAnimationFrame();
+      const zoomBefore = map.getZoom();
+      fitBounds.mockClear();
+
+      fixture.componentRef.setInput('center', {
+        latitude: 48.86,
+        longitude: 2.34,
+        label: 'Dein Standort',
+        source: 'own-position',
+      });
+      await fixture.whenStable();
+
+      expect(fitBounds).not.toHaveBeenCalled();
+      expect(map.getZoom()).toBe(zoomBefore);
+
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+      await nextAnimationFrame();
+
+      expect(fitBounds).toHaveBeenCalledOnce();
+    });
+
+    it('takes the map out of the focus order while the overlays cover all of it', async () => {
+      const { fixture, element } = await render([totalStation]);
+      const container = element.querySelector('.stations-map');
+
+      fixture.componentRef.setInput('viewportPadding', { top: 80, right: 0, bottom: 560, left: 0 });
+      await fixture.whenStable();
+      await nextAnimationFrame();
+      await fixture.whenStable();
+      expect(container?.hasAttribute('inert')).toBe(true);
+
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+      await nextAnimationFrame();
+      await fixture.whenStable();
+      expect(container?.hasAttribute('inert')).toBe(false);
+    });
+
+    it('fits the search area while the selected station has no price tag', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture } = await render([totalStation], {
+        selectedStationIdentifier: 'fr-not-in-the-results',
+      });
+      fitBounds.mockClear();
+
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+      await nextAnimationFrame();
+
+      expect(fitBounds).toHaveBeenCalledOnce();
+    });
+
+    it('keeps the view the user moved the map to', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture, map } = await render([]);
       fitBounds.mockClear();
 
       map.fire('dragstart');
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
+      await nextAnimationFrame();
 
       expect(fitBounds).not.toHaveBeenCalled();
     });
@@ -398,14 +785,14 @@ describe('StationsMap', () => {
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
 
+      await nextAnimationFrame();
+
       expect(fitBounds).not.toHaveBeenCalled();
     });
   });
 
   it('bounds how far a fast swipe flings the map', async () => {
-    const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
-    await render([]);
-    const map = fitBounds.mock.contexts[0] as L.Map;
+    const { map } = await render([]);
 
     expect(map.options.inertiaMaxSpeed).toBe(1500);
   });
@@ -416,9 +803,7 @@ describe('StationsMap', () => {
     });
 
     it('lets no running zoom animation touch the removed map', async () => {
-      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
-      const { fixture } = await render([totalStation]);
-      const map = fitBounds.mock.contexts[0] as L.Map;
+      const { fixture, map } = await render([totalStation]);
       vi.useFakeTimers();
       // jsdom lacks CSS 3D transforms, so `setZoom` never animates there. Start the animation with
       // the step Leaflet runs one frame after an animated `setZoom`; it schedules the 250 ms

@@ -1,8 +1,11 @@
+import { emptyOpeningTimes } from '@genialtanken/contracts';
 import type { CountryCode, Station, StationsQuery } from '@genialtanken/contracts';
-import { BadGatewayException, Logger } from '@nestjs/common';
+import { Logger, NotFoundException } from '@nestjs/common';
 import type { MockInstance } from 'vitest';
 import { ERROR_MESSAGES } from '../common/error-messages.js';
+import { UpstreamUnavailableError } from '../common/upstream-unavailable-error.js';
 import type { FuelPriceProvider } from '../fuel-price-providers/fuel-price-provider.js';
+import { toStationIdentifier } from '../fuel-price-providers/station-identifier.js';
 import { UpstreamError } from '../upstream/upstream-error.js';
 import { StationsService } from './stations.service.js';
 
@@ -13,23 +16,12 @@ const PARIS: StationsQuery = {
   fuel: 'e10',
 };
 
-const NO_OPENING_TIMES: Station['openingTimes'] = {
-  monday: [],
-  tuesday: [],
-  wednesday: [],
-  thursday: [],
-  friday: [],
-  saturday: [],
-  sunday: [],
-  publicHoliday: [],
-};
-
 const stationOf = (
   country: CountryCode,
   localIdentifier: string,
   position = { latitude: 48.85, longitude: 2.36 }
 ): Station => ({
-  id: `${country.toLowerCase()}-${localIdentifier}`,
+  id: toStationIdentifier(country, localIdentifier),
   country,
   name: null,
   brand: null,
@@ -42,7 +34,7 @@ const stationOf = (
   },
   pricesInEuro: { e5: null, e10: 1.9, superPlus: null, diesel: null, e85: null, lpg: null },
   isOpen: null,
-  openingTimes: NO_OPENING_TIMES,
+  openingTimes: emptyOpeningTimes(),
   distanceInMeters: null,
 });
 
@@ -130,8 +122,9 @@ describe('StationsService.findStationsAround', () => {
 
     const search = service.findStationsAround(PARIS);
 
-    await expect(search).rejects.toThrow(BadGatewayException);
-    await expect(search).rejects.toThrow(ERROR_MESSAGES.upstreamUnavailable);
+    await expect(search).rejects.toThrow(
+      new UpstreamUnavailableError(ERROR_MESSAGES.upstreamUnavailable)
+    );
   });
 });
 
@@ -197,27 +190,13 @@ describe('StationsService.findStationsByIdentifiers', () => {
     expect(lookup.stations.map(station => station.id)).toEqual(['fr-slow', 'fr-fast']);
   });
 
-  it('looks up a repeated identifier once and lists it once', async () => {
-    const france = knowing('FR', '1');
-    const service = new StationsService([france]);
-
-    const lookup = await service.findStationsByIdentifiers(['fr-1', 'fr-404', 'fr-1', 'fr-404']);
-
-    expect(france.requestedIdentifiers).toEqual(['1', '404']);
-    expect(lookup).toEqual({
-      stations: [stationOf('FR', '1')],
-      unavailableIdentifiers: ['fr-404'],
-      failedIdentifiers: [],
-    });
-  });
-
   it('responds with 502 when every lookup fails', async () => {
     const service = new StationsService([
       fakeProvider('FR', { findStationByIdentifier: failingWith(new TypeError('a bug')) }),
     ]);
 
     await expect(service.findStationsByIdentifiers(['fr-1', 'fr-2'])).rejects.toThrow(
-      BadGatewayException
+      new UpstreamUnavailableError(ERROR_MESSAGES.upstreamUnavailable)
     );
   });
 
@@ -233,5 +212,34 @@ describe('StationsService.findStationsByIdentifiers', () => {
       unavailableIdentifiers: ['it-a'],
       failedIdentifiers: ['fr-1'],
     });
+  });
+});
+
+describe('StationsService.findStationByIdentifier', () => {
+  it('returns the station of the provider of the country prefix', async () => {
+    const france = knowing('FR', '1');
+    const service = new StationsService([france]);
+
+    await expect(service.findStationByIdentifier('fr-1')).resolves.toEqual(stationOf('FR', '1'));
+    expect(france.requestedIdentifiers).toEqual(['1']);
+  });
+
+  it.each(['fr-404', 'it-1'])('responds with 404 for the unknown station %s', async identifier => {
+    const service = new StationsService([knowing('FR', '1')]);
+
+    await expect(service.findStationByIdentifier(identifier)).rejects.toThrow(
+      new NotFoundException(ERROR_MESSAGES.stationNotFound)
+    );
+  });
+
+  it('responds with 502 when the provider fails', async () => {
+    const service = new StationsService([
+      fakeProvider('FR', { findStationByIdentifier: failingWith(new UpstreamError('timeout')) }),
+    ]);
+
+    await expect(service.findStationByIdentifier('fr-1')).rejects.toThrow(
+      new UpstreamUnavailableError(ERROR_MESSAGES.upstreamUnavailable)
+    );
+    expect(loggedWarning).toHaveBeenCalledWith('Fuel price provider FR failed: timeout');
   });
 });

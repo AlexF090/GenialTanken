@@ -1,4 +1,4 @@
-import type { Coordinates } from '../geolocation/coordinates';
+import type { Coordinates } from '@genialtanken/contracts';
 
 export interface NavigationDestination extends Coordinates {
   name: string;

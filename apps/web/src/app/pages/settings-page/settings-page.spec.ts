@@ -1,20 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { SettingsStore } from '../../core/settings/settings-store';
-import { FakeStorage } from '../../../testing/fake-storage';
-import { configurePageTest, renderComponent, textOf } from '../../../testing/render-page';
+import { FakeStorage, storedSettings } from '../../../testing/fake-storage';
+import { configurePageTest, getRadio, renderComponent, textOf } from '../../../testing/render-page';
 import type { PageTestContext } from '../../../testing/render-page';
 import { SettingsPage } from './settings-page';
-
-const radioNamed = (element: HTMLElement, name: string): HTMLInputElement => {
-  const label = [...element.querySelectorAll('label')].find(
-    candidate => textOf(candidate) === name
-  );
-  const radio = label?.querySelector('input[type="radio"]');
-  if (!(radio instanceof HTMLInputElement)) {
-    throw new Error(`No radio button labelled "${name}" found`);
-  }
-  return radio;
-};
+import { SETTINGS_STORAGE_KEY } from '../../core/settings/settings-store';
 
 const radiusSlider = (element: HTMLElement): HTMLInputElement => {
   const slider = element.querySelector('input[type="range"]');
@@ -24,8 +14,16 @@ const radiusSlider = (element: HTMLElement): HTMLInputElement => {
   return slider;
 };
 
+/** The label the slider is associated with, as screen readers name it. */
+const radiusLabel = (element: HTMLElement): HTMLLabelElement | undefined =>
+  radiusSlider(element).labels?.[0];
+
 describe('SettingsPage', () => {
   let context: PageTestContext;
+
+  afterEach(() => {
+    context.httpTesting.verify();
+  });
 
   it('offers every fuel type with E5 selected and a 5 km radius', async () => {
     context = configurePageTest();
@@ -37,9 +35,9 @@ describe('SettingsPage', () => {
         textOf(label)
       )
     ).toEqual(['E5', 'E10', 'Super Plus', 'Diesel', 'E85', 'LPG']);
-    expect(radioNamed(element, 'E5').checked).toBe(true);
-    expect(radioNamed(element, 'E10').checked).toBe(false);
-    expect(textOf(element.querySelector('label[for="radius"]'))).toBe('Radius: 5 km');
+    expect(getRadio(element, 'E5').checked).toBe(true);
+    expect(getRadio(element, 'E10').checked).toBe(false);
+    expect(textOf(radiusLabel(element))).toBe('Radius: 5 km');
     expect(radiusSlider(element).value).toBe('5');
     expect(radiusSlider(element).min).toBe('1');
     expect(radiusSlider(element).max).toBe('30');
@@ -49,11 +47,11 @@ describe('SettingsPage', () => {
     context = configurePageTest();
     const { element } = await renderComponent(SettingsPage);
 
-    radioNamed(element, 'Diesel').click();
+    getRadio(element, 'Diesel').click();
     await context.settle();
 
     expect(TestBed.inject(SettingsStore).fuelType()).toBe('diesel');
-    expect(context.storage.getItem('genialtanken.settings')).toBe(
+    expect(storedSettings(context.storage)).toBe(
       '{"fuelType":"diesel","radiusInKilometers":5,"colorScheme":"system"}'
     );
   });
@@ -67,9 +65,9 @@ describe('SettingsPage', () => {
     slider.dispatchEvent(new Event('input'));
     await context.settle();
 
-    expect(textOf(element.querySelector('label[for="radius"]'))).toBe('Radius: 15 km');
+    expect(textOf(radiusLabel(element))).toBe('Radius: 15 km');
     expect(TestBed.inject(SettingsStore).radiusInKilometers()).toBe(15);
-    expect(context.storage.getItem('genialtanken.settings')).toBe(
+    expect(storedSettings(context.storage)).toBe(
       '{"fuelType":"e5","radiusInKilometers":15,"colorScheme":"system"}'
     );
   });
@@ -80,9 +78,7 @@ describe('SettingsPage', () => {
     const main = element.querySelector('main');
 
     expect(
-      [...(main?.querySelectorAll('legend, label[for="radius"], h2') ?? [])].map(title =>
-        textOf(title)
-      )
+      [...(main?.querySelectorAll('legend, label[for], h2') ?? [])].map(title => textOf(title))
     ).toEqual(['Kraftstoff', 'Radius: 5 km', 'Darstellung', 'Datenquelle']);
     expect(main?.querySelectorAll('button')).toHaveLength(0);
   });
@@ -99,19 +95,19 @@ describe('SettingsPage', () => {
       'Hell',
       'Dunkel',
     ]);
-    expect(radioNamed(element, 'System').checked).toBe(true);
+    expect(getRadio(element, 'System').checked).toBe(true);
   });
 
   it('applies and persists a new appearance immediately', async () => {
     context = configurePageTest();
     const { element } = await renderComponent(SettingsPage);
 
-    radioNamed(element, 'Dunkel').click();
+    getRadio(element, 'Dunkel').click();
     await context.settle();
 
     expect(TestBed.inject(SettingsStore).colorScheme()).toBe('dark');
-    expect(radioNamed(element, 'Dunkel').checked).toBe(true);
-    expect(context.storage.getItem('genialtanken.settings')).toBe(
+    expect(getRadio(element, 'Dunkel').checked).toBe(true);
+    expect(storedSettings(context.storage)).toBe(
       '{"fuelType":"e5","radiusInKilometers":5,"colorScheme":"dark"}'
     );
   });
@@ -123,7 +119,7 @@ describe('SettingsPage', () => {
 
     settingsStore.update({ colorScheme: 'light' });
     await context.settle();
-    radioNamed(element, 'Diesel').click();
+    getRadio(element, 'Diesel').click();
     await context.settle();
 
     expect(settingsStore.settings()).toEqual({
@@ -131,7 +127,7 @@ describe('SettingsPage', () => {
       radiusInKilometers: 5,
       colorScheme: 'light',
     });
-    expect(radioNamed(element, 'Hell').checked).toBe(true);
+    expect(getRadio(element, 'Hell').checked).toBe(true);
   });
 
   it('credits the data source with a link that opens in a new tab', async () => {
@@ -150,13 +146,13 @@ describe('SettingsPage', () => {
   it('restores the persisted settings', async () => {
     context = configurePageTest({
       storage: new FakeStorage({
-        'genialtanken.settings': '{"fuelType":"e10","radiusInKilometers":20}',
+        [SETTINGS_STORAGE_KEY]: '{"fuelType":"e10","radiusInKilometers":20}',
       }),
     });
     const { element } = await renderComponent(SettingsPage);
 
-    expect(radioNamed(element, 'E10').checked).toBe(true);
+    expect(getRadio(element, 'E10').checked).toBe(true);
     expect(radiusSlider(element).value).toBe('20');
-    expect(textOf(element.querySelector('label[for="radius"]'))).toBe('Radius: 20 km');
+    expect(textOf(radiusLabel(element))).toBe('Radius: 20 km');
   });
 });

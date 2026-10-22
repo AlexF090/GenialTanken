@@ -1,8 +1,4 @@
-/** A point on earth in decimal degrees (WGS 84), e.g. the user's position or a map center. */
-export interface Coordinates {
-  latitude: number;
-  longitude: number;
-}
+import type { Coordinates } from '@genialtanken/contracts';
 
 export const isSamePosition = (
   first: Coordinates | undefined,

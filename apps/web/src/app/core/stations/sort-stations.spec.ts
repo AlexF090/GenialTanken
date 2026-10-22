@@ -3,23 +3,10 @@ import {
   carrefourStation,
   totalStation,
   unbrandedStation,
+  withDistance,
+  withPrices,
 } from '../../../testing/station-fixtures';
 import { sortStations } from './sort-stations';
-
-const withPrices = (
-  station: Station,
-  pricesInEuro: Partial<Station['pricesInEuro']>,
-  identifier: string = station.id
-): Station => ({
-  ...station,
-  id: identifier,
-  pricesInEuro: { ...station.pricesInEuro, ...pricesInEuro },
-});
-
-const withDistance = (station: Station, distanceInMeters: number | null): Station => ({
-  ...station,
-  distanceInMeters,
-});
 
 const identifiersOf = (stations: readonly Station[]): string[] =>
   stations.map(station => station.id);

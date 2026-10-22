@@ -30,12 +30,13 @@ describe('Startup configuration', () => {
     ['WEB_ORIGIN', 'genialtanken'],
     ['PORT', 'eighty'],
     ['UPSTREAM_TIMEOUT_IN_MILLISECONDS', 'soon'],
+    ['UPSTREAM_TIMEOUT_IN_MILLISECONDS', '2147483648'],
     ['CACHE_TIME_TO_LIVE_IN_SECONDS', '-1'],
     ['RATE_LIMIT_REQUESTS_PER_MINUTE', '0'],
     ['PROXY_SHARED_SECRET', 'shorter-than-32-characters'],
   ])('fails with a message naming %s when it is invalid', async (variable, value) => {
     await expect(createTestApplication({ [variable]: value })).rejects.toThrow(
-      new RegExp(`Config validation error: ${variable}`)
+      new RegExp(`Configuration validation error: ${variable}`)
     );
   });
 });

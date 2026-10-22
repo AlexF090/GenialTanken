@@ -1,13 +1,15 @@
 import {
   chooseFuel,
   expect,
+  pageHeading,
   quaiDeLaRapeeStation,
   rueBailleulStation,
+  seedFavorites,
   stationCard,
   stationRowButton,
   stationsMap,
   test,
-} from '../fixtures.js';
+} from '../fixtures.ts';
 
 test.describe('station card', () => {
   test('shows address, opening times and every fuel price of a station', async ({ page }) => {
@@ -106,9 +108,7 @@ test.describe('station card', () => {
   test('a station from the favorites opens as a card on the map; back returns there', async ({
     page,
   }) => {
-    await page.addInitScript(identifier => {
-      localStorage.setItem('favoriteIDs', JSON.stringify([identifier]));
-    }, quaiDeLaRapeeStation.id);
+    await seedFavorites(page, [quaiDeLaRapeeStation.id]);
     await page.goto('/favorites');
     await stationCard(page, quaiDeLaRapeeStation).getByRole('link').click();
 
@@ -120,7 +120,7 @@ test.describe('station card', () => {
 
     await page.goBack();
     await expect(page).toHaveURL('/favorites');
-    await expect(page.getByRole('heading', { level: 1, name: 'Favoriten' })).toBeVisible();
+    await expect(pageHeading(page, 'Favoriten')).toBeVisible();
   });
 
   test('credits the French price data', async ({ page }) => {

@@ -1,14 +1,11 @@
+import { CLIENT_ADDRESS_HEADER, PROXY_SECRET_HEADER } from '@genialtanken/contracts';
 import { Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { InjectThrottlerOptions, InjectThrottlerStorage, ThrottlerGuard } from '@nestjs/throttler';
 import type { ThrottlerModuleOptions, ThrottlerStorage } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { ApplicationConfiguration } from '../configuration/application-configuration.js';
-import {
-  CLIENT_ADDRESS_HEADER,
-  PROXY_SECRET_HEADER,
-  resolveClientAddress,
-} from './resolve-client-address.js';
+import { resolveClientAddress } from './resolve-client-address.js';
 
 /** Rate-limits per client, also behind the Cloudflare Worker (see `resolveClientAddress`). */
 @Injectable()

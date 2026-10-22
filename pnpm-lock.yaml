@@ -187,6 +187,9 @@ importers:
       eslint:
         specifier: 10.13.0
         version: 10.13.0(jiti@1.21.7)(supports-color@8.1.1)
+      eslint-plugin-playwright:
+        specifier: 2.12.1
+        version: 2.12.1(eslint@10.13.0(jiti@1.21.7)(supports-color@8.1.1))
       globals:
         specifier: 17.13.0
         version: 17.13.0
@@ -205,6 +208,9 @@ importers:
       typescript-eslint:
         specifier: 8.71.2
         version: 8.71.2(eslint@10.13.0(jiti@1.21.7)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.3(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
 
   apps/api:
     dependencies:
@@ -220,9 +226,6 @@ importers:
       '@nestjs/common':
         specifier: 12.1.3
         version: 12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@5.5.0)
-      '@nestjs/config':
-        specifier: 12.0.1
-        version: 12.0.1(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@5.5.0))(rxjs@7.8.2)
       '@nestjs/core':
         specifier: 12.1.3
         version: 12.1.3(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@5.5.0))(@nestjs/platform-express@12.1.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -280,7 +283,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.5
-        version: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7))
+        version: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
 
   apps/web:
     dependencies:
@@ -381,7 +384,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.5
-        version: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7))
+        version: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
 
 packages:
 
@@ -1795,12 +1798,6 @@ packages:
         optional: true
       class-validator:
         optional: true
-
-  '@nestjs/config@12.0.1':
-    resolution: {integrity: sha512-pxqEtULFi4qXda0TqyR2YFq7o4UoRa7h4K5H0lgFuBMrUGr6x6VVldaJJrowFyh4uvp8dNq9Mie3T+l+uEOTfw==}
-    peerDependencies:
-      '@nestjs/common': ^11.0.0 || ^12.0.0
-      rxjs: ^7.1.0
 
   '@nestjs/core@12.1.3':
     resolution: {integrity: sha512-uHv2LPVewOnt5ZxSsDI11Vku9Gt1mdL0OWy/JOfXH1D5pV/HaPRGfreHPfYsO/bsyvZxdWVqFfAaFxvop6mFhw==}
@@ -3244,19 +3241,6 @@ packages:
     resolution: {integrity: sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q==}
     engines: {node: '>=8'}
 
-  dotenv-expand@13.0.0:
-    resolution: {integrity: sha512-aBfBS8eYIeXmpHI9ThIlA7/WLq+SLt18iXUZhb52rW89QLKQFoIpPG1bPeewoPZsTyjSSO3T7234FBVUM1V2rA==}
-    engines: {node: '>=12'}
-
-  dotenv@17.4.2:
-    resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
-    engines: {node: '>=12'}
-
-  dotenv@18.0.3:
-    resolution: {integrity: sha512-/8CJTyL817qPnfbQrJgOEcrU3fDrJkRIoXBE566wHuvIXKOCHUZhPqGPbCPi9SogjdGnreF0TlvnTgK6J/8zpA==}
-    engines: {node: '>=12'}
-    hasBin: true
-
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
@@ -3361,6 +3345,12 @@ packages:
   escape-string-regexp@5.0.0:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
+
+  eslint-plugin-playwright@2.12.1:
+    resolution: {integrity: sha512-JhavNuYBIq7SE/Zg9Esf9RGHkXoDbzrEKS383cowzMyvZ4JMbmdNCN6CoW+RU1Cjzwcoea1tou0je58uXmT/9A==}
+    engines: {node: '>=16.9.0'}
+    peerDependencies:
+      eslint: '>=8.40.0'
 
   eslint-scope@9.1.2:
     resolution: {integrity: sha512-xS90H51cKw0jltxmvmHy2Iai1LIqrfbw57b79w/J7MfvDfkIkFZ+kj6zC3BjtUwh150HsSSdxXZcsuv72miDFQ==}
@@ -7157,15 +7147,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@nestjs/config@12.0.1(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@5.5.0))(rxjs@7.8.2)':
-    dependencies:
-      '@nestjs/common': 12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@5.5.0)
-      '@standard-schema/spec': 1.1.0
-      dotenv: 18.0.3
-      dotenv-expand: 13.0.0
-      es-toolkit: 1.52.0
-      rxjs: 7.8.2
-
   '@nestjs/core@12.1.3(@nestjs/common@12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@5.5.0))(@nestjs/platform-express@12.1.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)':
     dependencies:
       '@nestjs/common': 12.1.3(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@5.5.0)
@@ -7858,7 +7839,7 @@ snapshots:
       obug: 3.0.0
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7))
+      vitest: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.3(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
 
   '@vitest/istanbul-lib-coverage@1.0.2': {}
 
@@ -7866,7 +7847,7 @@ snapshots:
     dependencies:
       '@vitest/istanbul-lib-coverage': 1.0.2
 
-  '@vitest/mocker@5.0.5(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7))':
+  '@vitest/mocker@5.0.5(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.5
@@ -8624,14 +8605,6 @@ snapshots:
     dependencies:
       is-obj: 2.0.0
 
-  dotenv-expand@13.0.0:
-    dependencies:
-      dotenv: 17.4.2
-
-  dotenv@17.4.2: {}
-
-  dotenv@18.0.3: {}
-
   dunder-proto@1.0.1:
     dependencies:
       call-bind-apply-helpers: 1.0.2
@@ -8739,6 +8712,11 @@ snapshots:
   escape-string-regexp@4.0.0: {}
 
   escape-string-regexp@5.0.0: {}
+
+  eslint-plugin-playwright@2.12.1(eslint@10.13.0(jiti@1.21.7)(supports-color@8.1.1)):
+    dependencies:
+      eslint: 10.13.0(jiti@1.21.7)(supports-color@8.1.1)
+      globals: 17.13.0
 
   eslint-scope@9.1.2:
     dependencies:
@@ -11171,10 +11149,10 @@ snapshots:
       sass-embedded: 1.104.1
       terser: 5.51.2
 
-  vitest@5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7)):
+  vitest@5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.5(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7))
+      '@vitest/mocker': 5.0.5(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
       chai: 6.3.0
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -11197,7 +11175,7 @@ snapshots:
   vitest@5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.3(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.5(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7))
+      '@vitest/mocker': 5.0.5(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
       chai: 6.3.0
       es-module-lexer: 2.3.2
       expect-type: 1.4.0

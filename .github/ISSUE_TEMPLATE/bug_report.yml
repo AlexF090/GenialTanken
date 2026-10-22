@@ -1,0 +1,33 @@
+name: Bug report
+description: Something in the app or the API does not work as expected.
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open https://genialtanken.alexf090.workers.dev
+        2. Search for …
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and device
+      placeholder: Safari on iPhone, Firefox on Windows, …
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Screenshots, console output, the station or place involved.

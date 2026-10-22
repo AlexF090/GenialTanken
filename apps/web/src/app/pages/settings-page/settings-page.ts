@@ -1,16 +1,19 @@
+import { KilometersPipe } from '../../core/formatting/kilometers-pipe';
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { form, FormField, max, min } from '@angular/forms/signals';
 import {
   COLOR_SCHEME_PREFERENCES,
-  FUEL_TYPES,
   MAXIMUM_RADIUS_IN_KILOMETERS,
   MINIMUM_RADIUS_IN_KILOMETERS,
 } from '@genialtanken/contracts';
 import type { ColorSchemePreference } from '@genialtanken/contracts';
-import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
+import { uniqueIdentifier } from '../../core/dom/unique-identifier';
+import { fuelTypeOptions } from '../../core/fuel-type-labels';
+import type { LabeledOption } from '../../core/labeled-option';
 import { SettingsStore } from '../../core/settings/settings-store';
 import type { Settings } from '../../core/settings/settings-store';
 import { Icon } from '../../ui/icon/icon';
+import { ExternalLink } from '../../ui/external-link/external-link';
 import { PageHeader } from '../../ui/page-header/page-header';
 
 type SearchSettings = Pick<Settings, 'fuelType' | 'radiusInKilometers'>;
@@ -24,7 +27,7 @@ const COLOR_SCHEME_LABELS: Record<ColorSchemePreference, string> = {
 /** Changes apply immediately and persist; there is nothing to submit. */
 @Component({
   selector: 'app-settings-page',
-  imports: [PageHeader, FormField, Icon],
+  imports: [PageHeader, FormField, Icon, KilometersPipe, ExternalLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',
@@ -32,14 +35,14 @@ const COLOR_SCHEME_LABELS: Record<ColorSchemePreference, string> = {
 export class SettingsPage {
   private readonly settingsStore = inject(SettingsStore);
 
-  protected readonly fuelTypeOptions = FUEL_TYPES.map(fuelType => ({
-    value: fuelType,
-    label: FUEL_TYPE_LABELS[fuelType].short,
-  }));
-  protected readonly colorSchemeOptions = COLOR_SCHEME_PREFERENCES.map(colorScheme => ({
-    value: colorScheme,
-    label: COLOR_SCHEME_LABELS[colorScheme],
-  }));
+  protected readonly fuelTypeOptions = fuelTypeOptions('short');
+  protected readonly colorSchemeOptions: readonly LabeledOption<ColorSchemePreference>[] =
+    COLOR_SCHEME_PREFERENCES.map(colorScheme => ({
+      value: colorScheme,
+      label: COLOR_SCHEME_LABELS[colorScheme],
+    }));
+  protected readonly radiusIdentifier = uniqueIdentifier('radius');
+  protected readonly dataSourceHeadingIdentifier = uniqueIdentifier('data-source-heading');
   protected readonly minimumRadiusInKilometers = MINIMUM_RADIUS_IN_KILOMETERS;
   protected readonly maximumRadiusInKilometers = MAXIMUM_RADIUS_IN_KILOMETERS;
   protected readonly colorScheme = this.settingsStore.colorScheme;

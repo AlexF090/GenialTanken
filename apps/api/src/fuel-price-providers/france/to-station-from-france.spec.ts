@@ -1,3 +1,4 @@
+import { emptyOpeningTimes } from '@genialtanken/contracts';
 import type { FrenchRecord } from './french-record.schema.js';
 import { toStationFromFrance } from './to-station-from-france.js';
 
@@ -40,16 +41,7 @@ describe('toStationFromFrance', () => {
         lpg: 0.999,
       },
       isOpen: null,
-      openingTimes: {
-        monday: [],
-        tuesday: [],
-        wednesday: [],
-        thursday: [],
-        friday: [],
-        saturday: [],
-        sunday: [],
-        publicHoliday: [],
-      },
+      openingTimes: emptyOpeningTimes(),
       distanceInMeters: null,
     });
   });

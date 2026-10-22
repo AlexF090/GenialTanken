@@ -1,5 +1,5 @@
-export const FRENCH_RECORDS_PATH =
-  '/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records';
+import { frenchStationPagePath } from '../../src/fuel-price-providers/france/french-upstream-paths.js';
+import type { FakeResponse } from './fake-upstream.js';
 
 const day = (id: string, name: string, hours: unknown, closed = '') => ({
   '@id': id,
@@ -18,7 +18,7 @@ export const RAPEE_RECORD_ID = 75012010;
 export const AUTOMATE_RECORD_ID = 75015001;
 export const WITHOUT_E10_RECORD_ID = 75011002;
 
-const rapeeRecord = {
+export const rapeeRecord = {
   id: RAPEE_RECORD_ID,
   latitude: '4884200',
   longitude: '237300',
@@ -105,4 +105,45 @@ export const frenchResponse = (records: unknown[]) => ({
   results: records,
 });
 
-export const rapeeDetailRecord = rapeeRecord;
+const REGULAR_DAY = [{ opening: '05:00', closing: '23:00' }];
+
+/** `rapeeRecord` as the API answers it for a search from `PARIS`. */
+export const EXPECTED_RAPEE_STATION = {
+  id: 'fr-75012010',
+  country: 'FR',
+  name: null,
+  brand: null,
+  address: {
+    street: '36 Quai de la Rapée',
+    houseNumber: null,
+    postalCode: '75012',
+    city: 'Paris',
+    latitude: 48.842,
+    longitude: 2.373,
+  },
+  pricesInEuro: { e5: null, e10: 2.152, superPlus: 2.286, diesel: 2.391, e85: null, lpg: null },
+  isOpen: null,
+  openingTimes: {
+    monday: [
+      { opening: '06:00', closing: '12:00' },
+      { opening: '14:00', closing: '20:30' },
+    ],
+    tuesday: REGULAR_DAY,
+    wednesday: REGULAR_DAY,
+    thursday: REGULAR_DAY,
+    friday: REGULAR_DAY,
+    saturday: REGULAR_DAY,
+    sunday: [],
+    publicHoliday: [],
+  },
+  distanceInMeters: 2225,
+};
+
+export const RAPEE_STATION_PAGE_PATH = frenchStationPagePath(RAPEE_RECORD_ID);
+
+/** Station page of `rapeeRecord` on the price service's website (recorded, shortened). */
+export const RAPEE_STATION_PAGE: FakeResponse = {
+  status: 200,
+  contentType: 'text/html; charset=UTF-8',
+  body: '<h3 class="fr-text--md">RELAIS DE LA RAPEE</h3><p><strong>TotalEnergies</strong><br />Quai de la Rapée</p>',
+};

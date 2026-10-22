@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { latitudeSchema, longitudeSchema } from './coordinates.js';
 
 export const FUEL_TYPES = ['e5', 'e10', 'superPlus', 'diesel', 'e85', 'lpg'] as const;
 
@@ -14,8 +15,8 @@ export const DEFAULT_RADIUS_IN_KILOMETERS = 5;
 
 /** Query parameters of `GET /api/stations`; values arrive as strings and are coerced. */
 export const stationsQuerySchema = z.object({
-  latitude: z.coerce.number().min(-90).max(90),
-  longitude: z.coerce.number().min(-180).max(180),
+  latitude: z.coerce.number().pipe(latitudeSchema),
+  longitude: z.coerce.number().pipe(longitudeSchema),
   radiusInKilometers: z.coerce
     .number()
     .min(MINIMUM_RADIUS_IN_KILOMETERS)

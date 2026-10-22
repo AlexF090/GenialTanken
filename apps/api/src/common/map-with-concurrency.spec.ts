@@ -66,6 +66,15 @@ describe('mapWithConcurrency', () => {
     expect([...calls.keys()]).toEqual(['a', 'b']);
   });
 
+  it.each([0, -1, 1.5, Number.NaN])('rejects the limit %d without calling', async limit => {
+    const map = vi.fn(() => Promise.resolve(1));
+
+    await expect(mapWithConcurrency(['a'], limit, map)).rejects.toThrow(
+      new RangeError(`The concurrency limit must be a positive integer, got ${String(limit)}.`)
+    );
+    expect(map).not.toHaveBeenCalled();
+  });
+
   it('handles no items', async () => {
     await expect(mapWithConcurrency([], 3, () => Promise.resolve(1))).resolves.toEqual([]);
   });

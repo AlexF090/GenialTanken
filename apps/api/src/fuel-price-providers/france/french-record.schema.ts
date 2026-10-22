@@ -1,3 +1,4 @@
+import { latitudeSchema, longitudeSchema } from '@genialtanken/contracts';
 import { z } from 'zod';
 
 const priceSchema = z.number().nullish();
@@ -6,12 +7,13 @@ const priceSchema = z.number().nullish();
  * Record of the dataset `prix-des-carburants-en-france-flux-instantane-v2` on
  * data.economie.gouv.fr. Only the fields the app uses are kept; unknown fields are stripped.
  */
-export const frenchRecordSchema = z.object({
+const frenchRecordSchema = z.object({
   id: z.number().int().nonnegative(),
   adresse: z.string().nullish(),
   ville: z.string().nullish(),
   cp: z.string().nullish(),
-  geom: z.object({ lon: z.number(), lat: z.number() }),
+  /** Range-checked so a record with impossible coordinates is dropped, not sent to the web app. */
+  geom: z.object({ lon: longitudeSchema, lat: latitudeSchema }),
   /** JSON-encoded opening hours, see `parseFrenchOpeningHours`. */
   horaires: z.string().nullish(),
   gazole_prix: priceSchema,
@@ -27,8 +29,22 @@ export type FrenchRecord = z.infer<typeof frenchRecordSchema>;
 export type FrenchPriceField =
   'gazole_prix' | 'sp95_prix' | 'e10_prix' | 'sp98_prix' | 'e85_prix' | 'gplc_prix';
 
-/** Records are validated one by one, so a single malformed record does not hide the others. */
+/** The records stay unchecked here; `parseFrenchRecords` validates them one by one. */
 export const frenchRecordsResponseSchema = z.object({
   total_count: z.number().int().nonnegative(),
   results: z.array(z.unknown()),
 });
+
+export interface ParsedFrenchRecords {
+  records: FrenchRecord[];
+  skippedRecordCount: number;
+}
+
+/** Drops malformed records one by one, so a single one does not hide the others. */
+export const parseFrenchRecords = (results: readonly unknown[]): ParsedFrenchRecords => {
+  const records = results.flatMap(result => {
+    const parsed = frenchRecordSchema.safeParse(result);
+    return parsed.success ? [parsed.data] : [];
+  });
+  return { records, skippedRecordCount: results.length - records.length };
+};

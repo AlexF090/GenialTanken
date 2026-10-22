@@ -1,11 +1,11 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import type { Place } from '@genialtanken/contracts';
-import type { Coordinates } from '../geolocation/coordinates';
+import type { Coordinates } from '@genialtanken/contracts';
 import { GeolocationService } from '../geolocation/geolocation-service';
 import { DEFAULT_SEARCH_CENTER, isSameSearchCenter } from './search-center';
 import type { LabeledCoordinates, SearchCenter } from './search-center';
 
-const OWN_POSITION_LABEL = 'Dein Standort';
+const OWN_POSITION_CENTER_LABEL = 'Dein Standort';
 const MAP_AREA_LABEL = 'Kartenmitte';
 
 /**
@@ -50,7 +50,7 @@ export class SearchCenterStore {
     this.state.set({
       latitude: position.latitude,
       longitude: position.longitude,
-      label: OWN_POSITION_LABEL,
+      label: OWN_POSITION_CENTER_LABEL,
       source: 'own-position',
     });
   }

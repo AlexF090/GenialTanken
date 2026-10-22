@@ -1,21 +1,20 @@
 import type { Locator, Page } from '@playwright/test';
 import {
+  chooseFuel,
   eiffelTower,
+  openExplore,
   expect,
   resultSummary,
   rueBailleulStation,
+  sheetHandle,
   stationRowButton,
   stationCard,
+  stationCards,
   stationList,
   stationsMap,
   test,
-} from '../fixtures.js';
-
-/** The list floats over the map as a sheet whose handle names the next step. */
-const sheetHandle = (page: Page): Locator =>
-  page
-    .getByRole('region', { name: 'Tankstellen', exact: true })
-    .getByRole('button', { name: /^Liste (vergrößern|verkleinern)$/ });
+  useOwnPosition,
+} from '../fixtures.ts';
 
 /**
  * Pixels by which the top of an element lies below the visible map, which ends at the navigation
@@ -152,5 +151,46 @@ test.describe('bottom sheet on a phone', () => {
         exact: true,
       })
     ).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test.describe('on a short screen, where the four stations overflow the full sheet', () => {
+    test.use({ viewport: { width: 412, height: 500 } });
+
+    test('the full sheet scrolls the list only vertically', async ({ page }) => {
+      await chooseFuel(page, 'Diesel');
+      await openExplore(page);
+      await useOwnPosition(page);
+      await expect(stationCards(page)).toHaveCount(4);
+      await sheetHandle(page).focus();
+      await page.keyboard.press('End');
+      await expectSheetAt(page, 'full', 'Liste verkleinern');
+
+      // The scroll container has no role of its own; it wraps the list inside the sheet region.
+      const content = page
+        .getByRole('region', { name: 'Tankstellen', exact: true })
+        .locator('.bottom-sheet__content');
+      const scrollPosition = () =>
+        content.evaluate(element => ({
+          left: element.scrollLeft,
+          top: element.scrollTop,
+          pageLeft: window.scrollX,
+        }));
+      const overflowsSideways = (element: Element): boolean =>
+        element.scrollWidth > element.clientWidth;
+      expect(await content.evaluate(overflowsSideways)).toBe(false);
+      expect(await page.locator('html').evaluate(overflowsSideways)).toBe(false);
+      // Panning a pinch-zoomed page sideways over the list must stay possible.
+      await expect(content).toHaveCSS('touch-action', 'auto');
+      // The rubber-band bounce at either end cannot be observed in Chromium; the setting can.
+      await expect(content).toHaveCSS('overscroll-behavior-y', 'none');
+
+      await stationCard(page, rueBailleulStation).hover();
+      await page.mouse.wheel(200, 0);
+      // Wheel events are handled in order: once the list has scrolled down, the sideways one was too.
+      await page.mouse.wheel(0, 200);
+      await expect.poll(async () => (await scrollPosition()).top).toBeGreaterThan(0);
+
+      expect(await scrollPosition()).toMatchObject({ left: 0, pageLeft: 0 });
+    });
   });
 });

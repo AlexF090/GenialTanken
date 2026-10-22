@@ -25,6 +25,28 @@ describe('parseFrenchStationIdentity', () => {
     ).toEqual({ name: "Station d'Auteuil & Fils", brand: 'E.Leclerc' });
   });
 
+  it('keeps numeric entities outside the Unicode range unchanged', () => {
+    expect(
+      parseFrenchStationIdentity(stationFragment('Station &#99999999; &#xD800; &#x41;', 'Total'))
+    ).toEqual({ name: 'Station &#99999999; &#xD800; A', brand: 'Total' });
+  });
+
+  it('keeps NUL and control characters as entities', () => {
+    expect(
+      parseFrenchStationIdentity(
+        stationFragment('Station &#0; &#x1; &#x7F; &#x80; &#159; &#x9;Nord', 'Total')
+      )
+    ).toEqual({ name: 'Station &#0; &#x1; &#x7F; &#x80; &#159; Nord', brand: 'Total' });
+  });
+
+  it('keeps unknown named entities, also those named like object properties', () => {
+    expect(
+      parseFrenchStationIdentity(
+        stationFragment('Station &constructor; &toString; &bogus;', 'Total')
+      )
+    ).toEqual({ name: 'Station &constructor; &toString; &bogus;', brand: 'Total' });
+  });
+
   it('returns null for missing or empty parts', () => {
     expect(parseFrenchStationIdentity(stationFragment('', ''))).toEqual({
       name: null,

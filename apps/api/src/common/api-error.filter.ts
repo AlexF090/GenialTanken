@@ -2,7 +2,9 @@ import { Catch, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import type { ArgumentsHost, ExceptionFilter } from '@nestjs/common';
 import type { ApiError } from '@genialtanken/contracts';
 import type { Response } from 'express';
+import { describeError } from './describe-error.js';
 import { ERROR_MESSAGES } from './error-messages.js';
+import { UpstreamUnavailableError } from './upstream-unavailable-error.js';
 
 const MESSAGE_SEPARATOR = '; ';
 
@@ -37,11 +39,11 @@ export class ApiErrorFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       return { statusCode: exception.getStatus(), message: toMessage(exception) };
     }
+    if (exception instanceof UpstreamUnavailableError) {
+      return { statusCode: HttpStatus.BAD_GATEWAY, message: exception.message };
+    }
 
-    this.logger.error(
-      'Unhandled error while processing a request',
-      exception instanceof Error ? exception.stack : String(exception)
-    );
+    this.logger.error('Unhandled error while processing a request', describeError(exception));
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: ERROR_MESSAGES.internalServerError,

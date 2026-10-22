@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { FakeStorage } from '../../../testing/fake-storage';
+import { FakeStorage, storedFavorites } from '../../../testing/fake-storage';
 import { BROWSER_STORAGE } from '../browser-storage';
 import { FavoritesStore } from './favorites-store';
 import { provideLocalStorageFavorites } from './local-storage-favorites-repository';
@@ -33,11 +33,11 @@ describe('FavoritesStore', () => {
     store.toggle('station-1');
     store.toggle('station-2');
     expect(store.favoriteStationIdentifiers()).toEqual(['station-1', 'station-2']);
-    expect(storage.getItem('favoriteIDs')).toBe('["station-1","station-2"]');
+    expect(storedFavorites(storage)).toBe('["station-1","station-2"]');
 
     store.toggle('station-1');
     expect(store.favoriteStationIdentifiers()).toEqual(['station-2']);
-    expect(storage.getItem('favoriteIDs')).toBe('["station-2"]');
+    expect(storedFavorites(storage)).toBe('["station-2"]');
   });
 
   it('removes several stale favorites at once', () => {
@@ -47,7 +47,7 @@ describe('FavoritesStore', () => {
     store.remove(['station-1', 'station-3']);
 
     expect(store.favoriteStationIdentifiers()).toEqual(['station-2']);
-    expect(storage.getItem('favoriteIDs')).toBe('["station-2"]');
+    expect(storedFavorites(storage)).toBe('["station-2"]');
   });
 
   it('ignores stored favorites that are not a list of ids', () => {

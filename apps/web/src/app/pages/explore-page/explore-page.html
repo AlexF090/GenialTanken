@@ -20,7 +20,7 @@
           [options]="radiusOptions()"
           [value]="radiusInKilometers()"
           (valueChange)="chooseRadius($event)">
-          <span class="visually-hidden">Radius: </span>{{ radiusInKilometers() }}&nbsp;km
+          <span class="visually-hidden">Radius: </span>{{ radiusInKilometers() | kilometers }}
           <app-icon name="chevron-down" class="explore-page__chevron" />
         </app-select-menu>
       </app-place-search-field>
@@ -60,7 +60,7 @@
     [(snapPosition)]="snapPosition"
     (heightChanged)="updateSheetHeight($event)">
     <div class="explore-page__header" bottomSheetHeader [hidden]="isStationCardOpen()">
-      <h1 class="explore-page__title" translate="no">GenialTanken</h1>
+      <h1 class="explore-page__title" translate="no">{{ applicationName }}</h1>
 
       <div class="explore-page__toolbar">
         <app-select-menu
@@ -82,7 +82,10 @@
         </button>
       </div>
 
-      <p class="explore-page__summary" role="status">{{ resultSummary() }}</p>
+      <!-- The only place that names an empty result, so it is shown and announced once. -->
+      <p #resultSummaryElement class="explore-page__summary" role="status" tabindex="-1">
+        {{ resultSummary() }}
+      </p>
 
       @if (stationsErrorMessage(); as message) {
         <p class="message message--error" role="alert">{{ message }}</p>
@@ -93,12 +96,6 @@
     <router-outlet />
     <!-- Hidden, not removed, while a station card is open: the list keeps its state. -->
     <div [hidden]="isStationCardOpen()">
-      @if (hasLoaded() && stations().length === 0) {
-        <p class="message explore-page__empty">
-          Keine Tankstellen mit Preis für {{ fuelLabel() }} im Umkreis von
-          {{ radiusInKilometers() }}&nbsp;km gefunden.
-        </p>
-      }
       <app-station-list
         [stations]="stations()"
         [fuelType]="fuelType()"

@@ -1,15 +1,5 @@
+import { emptyOpeningTimes } from '@genialtanken/contracts';
 import { parseFrenchOpeningHours } from './parse-french-opening-hours.js';
-
-const CLOSED_WEEK = {
-  monday: [],
-  tuesday: [],
-  wednesday: [],
-  thursday: [],
-  friday: [],
-  saturday: [],
-  sunday: [],
-  publicHoliday: [],
-};
 
 describe('parseFrenchOpeningHours', () => {
   it('reads single and multiple intervals and closed days', () => {
@@ -41,7 +31,7 @@ describe('parseFrenchOpeningHours', () => {
     });
 
     expect(parseFrenchOpeningHours(openingHours)).toEqual({
-      ...CLOSED_WEEK,
+      ...emptyOpeningTimes(),
       monday: [
         { opening: '07:00', closing: '12:30' },
         { opening: '14:00', closing: '19:00' },
@@ -88,7 +78,7 @@ describe('parseFrenchOpeningHours', () => {
     });
 
     expect(parseFrenchOpeningHours(openingHours)).toEqual({
-      ...CLOSED_WEEK,
+      ...emptyOpeningTimes(),
       wednesday: [{ opening: '06:00', closing: '21:15' }],
     });
   });
@@ -101,7 +91,7 @@ describe('parseFrenchOpeningHours', () => {
       ],
     });
 
-    expect(parseFrenchOpeningHours(openingHours)).toEqual(CLOSED_WEEK);
+    expect(parseFrenchOpeningHours(openingHours)).toEqual(emptyOpeningTimes());
   });
 
   it.each([
@@ -109,6 +99,6 @@ describe('parseFrenchOpeningHours', () => {
     ['not JSON', '{"jour": ['],
     ['an unexpected shape', '"Lundi 06.00-20.00"'],
   ])('reports no opening times when the value is %s', (_description, openingHours) => {
-    expect(parseFrenchOpeningHours(openingHours)).toEqual(CLOSED_WEEK);
+    expect(parseFrenchOpeningHours(openingHours)).toEqual(emptyOpeningTimes());
   });
 });

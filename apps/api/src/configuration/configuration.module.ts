@@ -1,26 +1,25 @@
 import { Global, Module } from '@nestjs/common';
 import type { DynamicModule } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { APPLICATION_VERSION, readApplicationVersion } from '../common/application-version.js';
 import { ApplicationConfiguration } from './application-configuration.js';
-import { environmentSchema } from './environment.js';
+import { parseEnvironment } from './environment.js';
+import type { EnvironmentVariables } from './environment.js';
 
 @Global()
 @Module({})
 export class ConfigurationModule {
-  /** Reads and validates `process.env` when called, so the application fails fast on bad values. */
-  static forRoot(): DynamicModule {
+  /** Validates the variables when called, so the application fails fast on bad values. */
+  static forRoot(variables: EnvironmentVariables): DynamicModule {
     return {
       module: ConfigurationModule,
-      imports: [
-        ConfigModule.forRoot({
-          ignoreEnvFile: true,
-          // Read validated values only, so optional variables never fall back to raw strings
-          skipProcessEnv: true,
-          validationSchema: environmentSchema,
-        }),
+      providers: [
+        {
+          provide: ApplicationConfiguration,
+          useValue: new ApplicationConfiguration(parseEnvironment(variables)),
+        },
+        { provide: APPLICATION_VERSION, useValue: readApplicationVersion() },
       ],
-      providers: [ApplicationConfiguration],
-      exports: [ApplicationConfiguration],
+      exports: [ApplicationConfiguration, APPLICATION_VERSION],
     };
   }
 }

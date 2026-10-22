@@ -1,6 +1,6 @@
 # Roadmap GenialTanken
 
-Ziel: GenialTanken als Fullstack-Showcase neu aufbauen (Angular + NestJS im Monorepo).
+Ziel: GenialTanken als Fullstack-Anwendung neu aufbauen (Angular + NestJS im Monorepo).
 
 Datenquellen: aktuelle Preise, keine Historie.
 
@@ -17,14 +17,14 @@ Datenquellen: aktuelle Preise, keine Historie.
 - **Tests:** Vitest überall (Angular- und Nest-12-Default), Supertest für API-E2E, Playwright für Browser-E2E
 - **Lint:** ESLint Flat Config im Root (typescript-eslint strict, angular-eslint inkl. Template-Accessibility)
 - **Git-Hooks und Draft-CI:** lefthook prüft vor jedem Commit Formatierung und Lint der gestagten Dateien, vor jedem Push Typecheck und Unit-Tests. Fehler fallen so lokal auf statt erst in der CI. Die CI überspringt Draft-PRs; PRs werden als Draft eröffnet und erst im fertigen Zustand auf „Ready for review“ gestellt. Zwischenstände lösen so weder CI-Läufe noch Preview-Deploys aus.
-- **Cloudflare Workers statt Pages:** Das Frontend läuft als Worker `genialtanken` mit Static Assets (`apps/web/wrangler.jsonc`) statt als Pages-Projekt. Gründe: Cloudflare empfiehlt Workers für neue Projekte, im Free-Tier gibt es keinen Unterschied, und SPA plus `/api`-Proxy funktionieren über Static Assets (`not_found_handling: single-page-application`) mit `run_worker_first` für `/api/*`. GitHub Actions deployt (`wrangler deploy` für `main`, `wrangler versions upload --preview-alias pr-<Nummer>` für PRs); die Wrangler-Konfiguration kommt dabei nur vom Default-Branch, damit kein PR Build-Befehle mit den Deploy-Secrets ausführen kann. Der Mapbox-Token ist auf die Produktions-URL beschränkt (Mapbox kennt keine Wildcards), PR-Previews zeigen deshalb OpenStreetMap-Kacheln.
+- **Cloudflare Workers statt Pages:** Das Frontend läuft als Worker `genialtanken` mit Static Assets (`apps/web/wrangler.jsonc`) statt als Pages-Projekt. Gründe: Cloudflare empfiehlt Workers für neue Projekte, im Free-Tier gibt es keinen Unterschied, und SPA plus `/api`-Proxy funktionieren über Static Assets (`not_found_handling: single-page-application`) mit `run_worker_first` für `/api/*`. GitHub Actions deployt (`wrangler deploy` für `main`, `wrangler versions upload --preview-alias pr-<Nummer>` für PRs); die Wrangler-Konfiguration kommt dabei nur vom Default-Branch, damit kein PR Build-Befehle mit den Deploy-Secrets ausführen kann. Der Mapbox-Token ist auf die Produktions-URL beschränkt (Mapbox kennt keine Wildcards), PR-Previews zeigen deshalb OpenStreetMap-Kacheln. PR-Previews laufen bewusst mit denselben Worker-Secrets wie Produktion, auch mit dem Proxy-Secret: Wer Branches pushen darf, könnte es auslesen. Solange nur der Owner pusht, ist das akzeptiert; vor Schreibrechten für andere bekommen Previews ein eigenes Secret.
 - **Suchradius:** 1 bis 30 km.
 - **Vorerst nur Frankreich:** Der deutsche Provider (tankentanken-API) ist entfernt, ebenso die Ortssuche in Deutschland. Grund: Die deutsche Quelle steht nicht zur Verfügung. Die Architektur bleibt mehrländerfähig (`FUEL_PRICE_PROVIDERS`, Länderpräfix in Stations-IDs, Routing der Sammelabfrage nach Präfix); ein weiteres Land kommt als neuer Provider dazu, der alte Code liegt in der Git-Historie. Gespeicherte Favoriten mit `de-…` meldet die API als nicht verfügbar.
 
 ## Phase 1 – BFF-Proxy (umgesetzt)
 
 - [x] API-Key aus dem Frontend-Bundle entfernen, nur noch als Env-Variable im Backend
-- [x] NestJS-API aufsetzen (TypeScript strict, `@nestjs/config`)
+- [x] NestJS-API aufsetzen (TypeScript strict, Umgebung per zod-Schema geprüft; `@nestjs/config` später entfernt)
 - [x] Provider-Modul: Frankreich (data.economie.gouv.fr) hinter gemeinsamer Schnittstelle (Deutschland war angebunden und ist wieder entfernt, siehe Entscheidungen)
 - [x] Feature-Modul `stations` (ein eigenes `prices`-Modul war nicht nötig: Preise kommen immer mit der Station)
 - [x] Validierung mit zod über Nests eingebaute `StandardSchemaValidationPipe` (zod 4 implementiert Standard Schema; `nestjs-zod` unterstützt Nest 12 noch nicht), Schemas aus `packages/contracts`
@@ -41,6 +41,7 @@ Offene Punkte aus dem Review (Follow-ups):
 - [x] Größenbegrenzung des In-Memory-Caches (LRU über `@cacheable/memory`, `CACHE_MAXIMUM_ENTRIES`, Standard 5000 Einträge)
 - [ ] Echter HTTP-Status 404 für unbekannte Routen; mit Static Assets und `not_found_handling: single-page-application` liefert der Cloudflare Worker die SPA mit 200 aus (bräuchte SSR oder Routing-Logik im Worker)
 - [x] Favoriten gebündelt in einem Request laden statt einem Request pro Favorit (`GET /api/stations/by-identifiers`, bis zu 50 IDs pro Request)
+- [ ] Favoriten auch beim Upstream gebündelt abfragen: eine Abfrage mit `where id in (...)` statt einer Upstream-Anfrage pro ID
 
 ## Phase 2 – Persistenz (geplant)
 
@@ -78,4 +79,4 @@ Umsetzung:
 
 ## Warum dieser Stack
 
-Fullstack-Stellen fragen vor allem nach Datenbank-Erfahrung (PostgreSQL, ORM wie Prisma), Auth sowie sauberem API-Design. Bewusst schlankes Monorepo-Setup ohne Nx: weniger Kopplung, Framework-Updates ohne Wartezeit auf Plugins.
+Die nächsten Phasen ergänzen, was einer Fullstack-Anwendung noch fehlt: Datenbank (PostgreSQL, Prisma), Auth und ein sauberes API-Design darüber. Bewusst schlankes Monorepo-Setup ohne Nx: weniger Kopplung, Framework-Updates ohne Wartezeit auf Plugins.

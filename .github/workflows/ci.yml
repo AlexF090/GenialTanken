@@ -19,7 +19,8 @@ concurrency:
 jobs:
   quality:
     name: Format, lint, typecheck
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    # Anchor reused by every job below, so all of them skip draft pull requests the same way.
+    if: &is-not-draft github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -36,7 +37,7 @@ jobs:
 
   unit:
     name: Unit tests
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    if: *is-not-draft
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -49,7 +50,7 @@ jobs:
 
   api-e2e:
     name: API end-to-end tests
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    if: *is-not-draft
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -62,7 +63,7 @@ jobs:
 
   build:
     name: Build
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    if: *is-not-draft
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -94,7 +95,7 @@ jobs:
 
   docker:
     name: API Docker image
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    if: *is-not-draft
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -115,7 +116,7 @@ jobs:
 
   e2e:
     name: Browser end-to-end tests
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    if: *is-not-draft
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -123,21 +124,7 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - name: Read Playwright version
-        id: playwright
-        run: echo "version=$(jq --raw-output '.devDependencies["@playwright/test"]' e2e/package.json)" >> "$GITHUB_OUTPUT"
-      - name: Cache Playwright browsers
-        id: playwright-cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
-      - name: Install Playwright Chromium with system dependencies
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm --filter e2e exec playwright install --with-deps chromium
-      - name: Install Playwright system dependencies (browsers restored from cache)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm --filter e2e exec playwright install-deps chromium
+      - uses: ./.github/actions/setup-playwright
       # No Mapbox token on purpose: the app falls back to OpenStreetMap tiles, which the suite mocks.
       - name: Run browser end-to-end tests
         run: pnpm test:e2e
@@ -151,7 +138,7 @@ jobs:
 
   audit:
     name: Dependency audit
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    if: *is-not-draft
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

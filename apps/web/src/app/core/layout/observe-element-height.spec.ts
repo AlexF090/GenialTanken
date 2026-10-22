@@ -2,29 +2,8 @@ import { ChangeDetectionStrategy, Component, viewChild } from '@angular/core';
 import type { ElementRef } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { observeElementHeight } from './observe-element-height';
-
-/** Lets the test report element sizes that jsdom cannot lay out. */
-class FakeResizeObserver {
-  static latest: FakeResizeObserver | undefined;
-  readonly observedElements: Element[] = [];
-  isDisconnected = false;
-
-  constructor(private readonly callback: () => void) {
-    FakeResizeObserver.latest = this;
-  }
-
-  observe(element: Element): void {
-    this.observedElements.push(element);
-  }
-
-  disconnect(): void {
-    this.isDisconnected = true;
-  }
-
-  resize(): void {
-    this.callback();
-  }
-}
+import { hostElementOf } from '../../../testing/render-page';
+import { FakeResizeObserver } from '../../../testing/fake-resize-observer';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,7 +17,7 @@ class ObservingHost {
 const render = async () => {
   const fixture = TestBed.createComponent(ObservingHost);
   await fixture.whenStable();
-  const box = (fixture.nativeElement as HTMLElement).querySelector('div');
+  const box = hostElementOf(fixture).querySelector('div');
   if (box === null) {
     throw new Error('No box rendered');
   }
@@ -52,7 +31,6 @@ const resizeTo = (box: HTMLElement, heightInPixels: number): void => {
 
 describe('observeElementHeight', () => {
   afterEach(() => {
-    FakeResizeObserver.latest = undefined;
     vi.unstubAllGlobals();
   });
 

@@ -1,63 +1,37 @@
 import { TestBed } from '@angular/core/testing';
-import type { ComponentFixture } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
-import { Router } from '@angular/router';
-import { RouterTestingHarness } from '@angular/router/testing';
-import { COMPACT_MEDIA_QUERY } from '../../core/layout/breakpoints';
-import { MATCH_MEDIA } from '../../core/layout/media-query';
 import { SearchCenterStore } from '../../core/search-center/search-center-store';
 import { SettingsStore } from '../../core/settings/settings-store';
-import { BottomSheet } from '../../ui/bottom-sheet/bottom-sheet';
 import { StationsMap } from '../../ui/stations-map/stations-map';
-import { FakeMatchMedia } from '../../../testing/fake-match-media';
-import { FakeStorage } from '../../../testing/fake-storage';
+import { FakeStorage, storedFavorites } from '../../../testing/fake-storage';
 import { bastillePlace } from '../../../testing/place-fixtures';
 import {
   configurePageTest,
   getButton,
   renderComponent,
+  stationTitles,
   textOf,
 } from '../../../testing/render-page';
 import type { PageTestContext } from '../../../testing/render-page';
 import {
-  essoStation,
   carrefourStation,
   totalStation,
   unbrandedStation,
-  withoutDistance,
 } from '../../../testing/station-fixtures';
-import { routes } from '../../app.routes';
 import { ExplorePage } from './explore-page';
 import { PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS } from './place-search';
-
-const EIFFEL_TOWER_E5_URL =
-  '/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=5&fuel=e5';
-
-const stationTitles = (element: HTMLElement): string[] =>
-  [...element.querySelectorAll('main li .station-row__title')].map(title => textOf(title));
-
-const selectedStationTitles = (element: HTMLElement): string[] =>
-  [...element.querySelectorAll('main li .station-row__title[aria-pressed="true"]')].map(title =>
-    textOf(title)
-  );
+import { PLACES_URL, placesUrl, stationsUrl } from '../../../testing/api-urls';
+import { SETTINGS_STORAGE_KEY } from '../../core/settings/settings-store';
+import {
+  childComponent,
+  EIFFEL_TOWER_E5_URL,
+  placeSearchInput,
+  selectedStationTitles,
+} from './explore-page-test-helpers';
 
 /** Needs fake timers: lets the debounce of the place search pass. */
 const waitForTypingPause = async (): Promise<void> => {
   await vi.advanceTimersByTimeAsync(PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS);
 };
-
-const placeSearchInput = (element: HTMLElement): HTMLInputElement => {
-  const input = element.querySelector<HTMLInputElement>('input[role="combobox"]');
-  if (input === null) {
-    throw new Error('No place search field');
-  }
-  return input;
-};
-
-const childComponent = <T>(
-  fixture: ComponentFixture<unknown>,
-  type: new (...args: never[]) => T
-): T => fixture.debugElement.query(By.directive(type)).componentInstance as T;
 
 describe('ExplorePage', () => {
   let context: PageTestContext;
@@ -155,7 +129,7 @@ describe('ExplorePage', () => {
     await context.settle();
 
     context.httpTesting
-      .expectOne('/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=5&fuel=diesel')
+      .expectOne(stationsUrl({ latitude: 48.8584, longitude: 2.2945 }, { fuel: 'diesel' }))
       .flush([carrefourStation]);
     await context.settle();
     expect(getButton(element, 'Kraftstoff: Diesel')).toBeDefined();
@@ -186,7 +160,7 @@ describe('ExplorePage', () => {
     await context.settle();
 
     context.httpTesting
-      .expectOne('/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=10&fuel=e5')
+      .expectOne(stationsUrl({ latitude: 48.8584, longitude: 2.2945 }, { radiusInKilometers: 10 }))
       .flush([totalStation]);
     await context.settle();
     expect(getButton(element, 'Radius: 10 km')).toBeDefined();
@@ -212,7 +186,7 @@ describe('ExplorePage', () => {
     context.httpTesting.expectNone(() => true);
     await vi.advanceTimersByTimeAsync(1);
     await context.settle();
-    context.httpTesting.expectOne('/api/places?query=Bastille&limit=6').flush([bastillePlace]);
+    context.httpTesting.expectOne(placesUrl('Bastille')).flush([bastillePlace]);
     await context.settle();
     await fixture.whenStable();
 
@@ -222,7 +196,7 @@ describe('ExplorePage', () => {
     await context.settle();
 
     context.httpTesting
-      .expectOne('/api/stations?latitude=48.8532&longitude=2.3692&radiusInKilometers=5&fuel=e5')
+      .expectOne(stationsUrl({ latitude: 48.8532, longitude: 2.3692 }))
       .flush([carrefourStation]);
     await context.settle();
     expect(input.value).toBe('Place de la Bastille');
@@ -231,7 +205,7 @@ describe('ExplorePage', () => {
       '1 Tankstelle im Umkreis von 5 km um Place de la Bastille'
     );
     await waitForTypingPause();
-    context.httpTesting.expectNone(request => request.url === '/api/places');
+    context.httpTesting.expectNone(request => request.url === PLACES_URL);
   });
 
   it('tells when no place matches and when the place search fails', async () => {
@@ -247,7 +221,7 @@ describe('ExplorePage', () => {
     };
 
     await typeAndWait('Xyzzy');
-    context.httpTesting.expectOne('/api/places?query=Xyzzy&limit=6').flush([]);
+    context.httpTesting.expectOne(placesUrl('Xyzzy')).flush([]);
     await context.settle();
     expect(textOf(element.querySelector('.place-search-field__status'))).toBe(
       'Keine passenden Orte gefunden.'
@@ -255,7 +229,7 @@ describe('ExplorePage', () => {
 
     await typeAndWait('Xyzzyx');
     context.httpTesting
-      .expectOne('/api/places?query=Xyzzyx&limit=6')
+      .expectOne(placesUrl('Xyzzyx'))
       .flush(null, { status: 502, statusText: 'Bad Gateway' });
     await context.settle();
     expect(textOf(element.querySelector('.place-search-field__status'))).toBe(
@@ -268,7 +242,7 @@ describe('ExplorePage', () => {
     TestBed.inject(SearchCenterStore).usePlace(bastillePlace);
     await context.settle();
     context.httpTesting
-      .expectOne('/api/stations?latitude=48.8532&longitude=2.3692&radiusInKilometers=5&fuel=e5')
+      .expectOne(stationsUrl({ latitude: 48.8532, longitude: 2.3692 }))
       .flush([carrefourStation]);
     await context.settle();
 
@@ -341,7 +315,10 @@ describe('ExplorePage', () => {
 
     context.httpTesting
       .expectOne(
-        '/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=10&fuel=diesel'
+        stationsUrl(
+          { latitude: 48.8584, longitude: 2.2945 },
+          { radiusInKilometers: 10, fuel: 'diesel' }
+        )
       )
       .flush([carrefourStation]);
     await context.settle();
@@ -380,7 +357,7 @@ describe('ExplorePage', () => {
     await context.settle();
 
     context.httpTesting
-      .expectOne('/api/stations?latitude=48.85&longitude=2.35&radiusInKilometers=5&fuel=e5')
+      .expectOne(stationsUrl({ latitude: 48.85, longitude: 2.35 }))
       .flush([carrefourStation]);
     await context.settle();
     expect(stationTitles(element)).toEqual(['Carrefour Market']);
@@ -417,7 +394,7 @@ describe('ExplorePage', () => {
     getButton(element, 'Favorit: Carrefour Market').click();
     await context.settle();
 
-    expect(context.storage.getItem('favoriteIDs')).toBe('["fr-75005002"]');
+    expect(storedFavorites(context.storage)).toBe('["fr-75005002"]');
     expect(getButton(element, 'Favorit: Carrefour Market').getAttribute('aria-pressed')).toBe(
       'true'
     );
@@ -441,7 +418,7 @@ describe('ExplorePage', () => {
     await context.settle();
 
     context.httpTesting
-      .expectOne('/api/stations?latitude=48.8532&longitude=2.3692&radiusInKilometers=5&fuel=e5')
+      .expectOne(stationsUrl({ latitude: 48.8532, longitude: 2.3692 }))
       .flush([carrefourStation]);
     await context.settle();
     expect(areaSearchButton()).toBeUndefined();
@@ -510,7 +487,7 @@ describe('ExplorePage', () => {
 
     expect(map.selectedStationIdentifier()).toBeUndefined();
     context.httpTesting
-      .expectOne('/api/stations?latitude=48.8532&longitude=2.3692&radiusInKilometers=5&fuel=e5')
+      .expectOne(stationsUrl({ latitude: 48.8532, longitude: 2.3692 }))
       .flush([totalStation]);
     await context.settle();
     expect(map.selectedStationIdentifier()).toBeUndefined();
@@ -552,216 +529,13 @@ describe('ExplorePage', () => {
     context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([]);
     await context.settle();
 
-    expect(textOf(element.querySelector('main .message'))).toBe(
-      'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.'
+    const emptyMessage = 'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.';
+    // Shown and announced once, by the result summary, so browse mode does not read it twice.
+    expect(textOf(element.querySelector('main')).split('Keine Tankstellen')).toHaveLength(2);
+    const announcingRegions = [...element.querySelectorAll('main [role="status"]')].filter(region =>
+      textOf(region).includes('Keine Tankstellen')
     );
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
-      '0 Tankstellen im Umkreis von 5 km um Eiffelturm, Paris'
-    );
-  });
-});
-
-describe('ExplorePage on a phone', () => {
-  let context: PageTestContext;
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  beforeEach(() => {
-    TestBed.overrideProvider(MATCH_MEDIA, {
-      useValue: new FakeMatchMedia([COMPACT_MEDIA_QUERY]).matchMedia,
-    });
-    context = configurePageTest();
-  });
-
-  const renderWithStations = async () => {
-    const rendered = await renderComponent(ExplorePage);
-    await context.settle();
-    context.httpTesting
-      .expectOne(EIFFEL_TOWER_E5_URL)
-      .flush([totalStation, carrefourStation, unbrandedStation]);
-    await context.settle();
-    return rendered;
-  };
-
-  it.each(['peek', 'full'] as const)(
-    'moves the sheet from %s to half when a price tag is chosen',
-    async startPosition => {
-      const { fixture } = await renderWithStations();
-      const sheet = childComponent(fixture, BottomSheet);
-      sheet.snapPosition.set(startPosition);
-      await context.settle();
-
-      childComponent(fixture, StationsMap).stationSelected.emit(totalStation.id);
-      await context.settle();
-
-      expect(sheet.snapPosition()).toBe('half');
-    }
-  );
-
-  it('lowers a fully opened sheet to half so pin and row of a chosen station are visible', async () => {
-    const { element, fixture } = await renderWithStations();
-    const sheet = childComponent(fixture, BottomSheet);
-    sheet.snapPosition.set('full');
-    await context.settle();
-
-    getButton(element, 'Carrefour Market').click();
-    await context.settle();
-
-    expect(sheet.snapPosition()).toBe('half');
-    expect(childComponent(fixture, StationsMap).selectedStationIdentifier()).toBe(
-      carrefourStation.id
-    );
-  });
-
-  it('keeps a peeking sheet down when a station is chosen in the list', async () => {
-    const { element, fixture } = await renderWithStations();
-    const sheet = childComponent(fixture, BottomSheet);
-    sheet.snapPosition.set('peek');
-    await context.settle();
-
-    getButton(element, 'Carrefour Market').click();
-    await context.settle();
-
-    expect(sheet.snapPosition()).toBe('peek');
-  });
-
-  it('moves the sheet aside while a place is typed', async () => {
-    const { fixture, element } = await renderWithStations();
-    const input = placeSearchInput(element);
-
-    input.value = 'Bas';
-    input.dispatchEvent(new Event('input'));
-    await context.settle();
-
-    expect(childComponent(fixture, BottomSheet).snapPosition()).toBe('peek');
-  });
-});
-
-describe('ExplorePage with a station card', () => {
-  let context: PageTestContext;
-
-  const TOTAL_DETAILS_URL = `/api/stations/${totalStation.id}`;
-
-  const openAt = async (url: string) => {
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl(url);
-    await context.settle();
-    const element = harness.fixture.nativeElement as HTMLElement;
-    const router = TestBed.inject(Router);
-    const navigate = async (target: string) => {
-      await router.navigateByUrl(target);
-      await context.settle();
-    };
-    return { harness, element, router, navigate };
-  };
-
-  const listContainer = (element: HTMLElement) =>
-    element.querySelector('app-station-list')?.parentElement;
-
-  beforeEach(() => {
-    context = configurePageTest({ routes });
-  });
-
-  afterEach(() => {
-    context.httpTesting.verify();
-    vi.restoreAllMocks();
-  });
-
-  it('shows the card instead of the list and selects its station on the map', async () => {
-    const { harness, element, navigate } = await openAt('/');
-    context.httpTesting
-      .expectOne(EIFFEL_TOWER_E5_URL)
-      .flush([totalStation, carrefourStation, unbrandedStation]);
-    await context.settle();
-
-    await navigate(`/stations/${totalStation.id}`);
-    context.httpTesting.expectOne(TOTAL_DETAILS_URL).flush(withoutDistance(totalStation));
-    await context.settle();
-
-    expect(listContainer(element)?.hidden).toBe(true);
-    expect(textOf(element.querySelector('app-station-detail-page h2'))).toBe('TotalEnergies');
-    expect(childComponent(harness.fixture, StationsMap).selectedStationIdentifier()).toBe(
-      totalStation.id
-    );
-  });
-
-  it('returns to the list with the station still selected when the card closes', async () => {
-    const { harness, element } = await openAt(`/stations/${totalStation.id}`);
-    context.httpTesting
-      .expectOne(EIFFEL_TOWER_E5_URL)
-      .flush([totalStation, carrefourStation, unbrandedStation]);
-    context.httpTesting.expectOne(TOTAL_DETAILS_URL).flush(withoutDistance(totalStation));
-    await context.settle();
-
-    getButton(element, 'Schließen').click();
-    await context.settle();
-    await harness.fixture.whenStable();
-
-    expect(TestBed.inject(Router).url).toBe('/');
-    expect(listContainer(element)?.hidden).toBe(false);
-    expect(element.querySelector('app-station-detail-page')).toBeNull();
-    expect(selectedStationTitles(element)).toEqual(['TotalEnergies']);
-    expect(textOf(document.activeElement)).toBe('TotalEnergies');
-    expect(document.activeElement?.classList).toContain('station-row__title');
-  });
-
-  it('shows an opened card from its top and returns to the list where it was', async () => {
-    const { element, navigate } = await openAt('/');
-    context.httpTesting
-      .expectOne(EIFFEL_TOWER_E5_URL)
-      .flush([totalStation, carrefourStation, unbrandedStation]);
-    await context.settle();
-    const sheetContent = element.querySelector<HTMLElement>('.bottom-sheet__content');
-    if (sheetContent === null) {
-      throw new Error('No sheet content');
-    }
-    sheetContent.scrollTop = 120;
-
-    await navigate(`/stations/${totalStation.id}`);
-    context.httpTesting.expectOne(TOTAL_DETAILS_URL).flush(withoutDistance(totalStation));
-    await context.settle();
-    expect(sheetContent.scrollTop).toBe(0);
-
-    await navigate('/');
-    expect(sheetContent.scrollTop).toBe(120);
-  });
-
-  it('opens the card of another price tag chosen while a card is open', async () => {
-    const { harness, router } = await openAt(`/stations/${totalStation.id}`);
-    context.httpTesting
-      .expectOne(EIFFEL_TOWER_E5_URL)
-      .flush([totalStation, carrefourStation, unbrandedStation]);
-    context.httpTesting.expectOne(TOTAL_DETAILS_URL).flush(withoutDistance(totalStation));
-    await context.settle();
-
-    childComponent(harness.fixture, StationsMap).stationSelected.emit(carrefourStation.id);
-    await context.settle();
-
-    expect(router.url).toBe(`/stations/${carrefourStation.id}`);
-    context.httpTesting.expectOne(`/api/stations/${carrefourStation.id}`);
-  });
-
-  it('moves the search to a station outside the results, named after it', async () => {
-    const { element } = await openAt(`/stations/${essoStation.id}`);
-    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
-    context.httpTesting
-      .expectOne(`/api/stations/${essoStation.id}`)
-      .flush(withoutDistance(essoStation));
-    await context.settle();
-
-    context.httpTesting
-      .expectOne(
-        `/api/stations?latitude=${String(essoStation.address.latitude)}&longitude=${String(essoStation.address.longitude)}&radiusInKilometers=5&fuel=e5`
-      )
-      .flush([essoStation]);
-    await context.settle();
-
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
-      '1 Tankstelle im Umkreis von 5 km um Esso'
-    );
-    context.httpTesting.expectNone(request => request.url === '/api/stations');
+    expect(announcingRegions.map(textOf)).toEqual([emptyMessage]);
   });
 });
 
@@ -769,14 +543,19 @@ describe('ExplorePage with stored settings', () => {
   it('uses the persisted fuel type and radius for the first request', async () => {
     const context = configurePageTest({
       storage: new FakeStorage({
-        'genialtanken.settings': '{"fuelType":"e10","radiusInKilometers":15}',
+        [SETTINGS_STORAGE_KEY]: '{"fuelType":"e10","radiusInKilometers":15}',
       }),
     });
     await renderComponent(ExplorePage);
     await context.settle();
 
     context.httpTesting
-      .expectOne('/api/stations?latitude=48.8584&longitude=2.2945&radiusInKilometers=15&fuel=e10')
+      .expectOne(
+        stationsUrl(
+          { latitude: 48.8584, longitude: 2.2945 },
+          { radiusInKilometers: 15, fuel: 'e10' }
+        )
+      )
       .flush([]);
     context.httpTesting.verify();
   });

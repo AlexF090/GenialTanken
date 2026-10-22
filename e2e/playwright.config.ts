@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { MOCK_UPSTREAM_PORT } from './mock-upstream-endpoints.js';
+import { MOCK_UPSTREAM_PORT } from './mock-upstream-endpoints.ts';
 import { defineConfig, devices } from '@playwright/test';
 
 /**

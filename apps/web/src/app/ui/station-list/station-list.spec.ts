@@ -1,7 +1,11 @@
-import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type { FuelType, Station } from '@genialtanken/contracts';
-import { accessibleTextOf, getButton, textOf } from '../../../testing/render-page';
+import {
+  accessibleTextOf,
+  getButton,
+  renderWithInputs,
+  textOf,
+} from '../../../testing/render-page';
 import {
   essoStation,
   carrefourStation,
@@ -26,16 +30,11 @@ const render = async ({
   favoriteStationIdentifiers = new Set<string>(),
   ...optionalInputs
 }: RenderOptions) => {
-  TestBed.configureTestingModule({ providers: [provideRouter([])] });
-  const fixture = TestBed.createComponent(StationList);
-  fixture.componentRef.setInput('stations', stations);
-  fixture.componentRef.setInput('fuelType', fuelType);
-  fixture.componentRef.setInput('favoriteStationIdentifiers', favoriteStationIdentifiers);
-  for (const [name, value] of Object.entries(optionalInputs)) {
-    fixture.componentRef.setInput(name, value);
-  }
-  await fixture.whenStable();
-  const element = fixture.nativeElement as HTMLElement;
+  const { fixture, element } = await renderWithInputs(
+    StationList,
+    { stations, fuelType, favoriteStationIdentifiers, ...optionalInputs },
+    [provideRouter([])]
+  );
   return {
     fixture,
     element,
@@ -206,8 +205,9 @@ describe('StationList', () => {
       const title = items[1]?.querySelector<HTMLElement>('.station-row__title');
       const focus = vi.spyOn(title ?? HTMLElement.prototype, 'focus');
 
-      fixture.componentInstance.focusStation(carrefourStation.id);
+      const isFocused = fixture.componentInstance.focusStation(carrefourStation.id);
 
+      expect(isFocused).toBe(true);
       expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true });
       expect(document.activeElement).toBe(title);
     }
@@ -217,8 +217,9 @@ describe('StationList', () => {
     const { fixture } = await render({ stations: [totalStation] });
     const previouslyFocused = document.activeElement;
 
-    fixture.componentInstance.focusStation(carrefourStation.id);
+    const isFocused = fixture.componentInstance.focusStation(carrefourStation.id);
 
+    expect(isFocused).toBe(false);
     expect(document.activeElement).toBe(previouslyFocused);
   });
 });

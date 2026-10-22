@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { APPLICATION_NAME } from '../../core/application-name';
 import { PageHeader } from '../../ui/page-header/page-header';
 
 @Component({
@@ -7,10 +8,10 @@ import { PageHeader } from '../../ui/page-header/page-header';
   imports: [PageHeader, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <app-page-header title="GenialTanken" />
+    <app-page-header [title]="applicationName" />
     <main class="page-content not-found">
       <h2 class="not-found__board">
-        <span class="visually-hidden">ERROR </span>
+        <span class="visually-hidden">Fehler </span>
         <span class="not-found__code">404</span>
       </h2>
       <p class="not-found__message">Diese Seite existiert nicht</p>
@@ -46,4 +47,6 @@ import { PageHeader } from '../../ui/page-header/page-header';
     }
   `,
 })
-export class NotFoundPage {}
+export class NotFoundPage {
+  protected readonly applicationName = APPLICATION_NAME;
+}

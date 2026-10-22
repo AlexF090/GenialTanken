@@ -1,6 +1,17 @@
+import { MILLISECONDS_PER_SECOND } from '@genialtanken/contracts';
 import { z } from 'zod';
 
 const positiveIntegerSchema = z.coerce.number().int().positive();
+
+/**
+ * Timers and `AbortSignal.timeout` of Node.js take at most a signed 32-bit delay; longer
+ * durations would only fail once a request uses them, so startup rejects them instead.
+ */
+const MAXIMUM_TIMER_DELAY_IN_MILLISECONDS = 2_147_483_647;
+const millisecondsSchema = positiveIntegerSchema.max(MAXIMUM_TIMER_DELAY_IN_MILLISECONDS);
+const secondsSchema = positiveIntegerSchema.max(
+  Math.floor(MAXIMUM_TIMER_DELAY_IN_MILLISECONDS / MILLISECONDS_PER_SECOND)
+);
 const MINIMUM_PROXY_SHARED_SECRET_LENGTH = 32;
 
 /** An absolute URL without trailing slashes, so paths can be appended directly. */
@@ -27,16 +38,16 @@ export const environmentSchema = z.object({
    */
   FRANCE_STATION_DETAILS_BASE_URL: baseUrlSchema('https://www.prix-carburants.gouv.fr'),
   /** Names and brands rarely change, so they are cached far longer than fuel prices. */
-  FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS: positiveIntegerSchema.default(604_800),
+  FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS: secondsSchema.default(604_800),
   /**
    * How long one station search may wait for station pages in total; stations whose page has
    * not arrived by then are served without name.
    */
-  FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS: positiveIntegerSchema.default(3000),
+  FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS: millisecondsSchema.default(3000),
   /** Photon (komoot) instance behind the place search. */
   PHOTON_BASE_URL: baseUrlSchema('https://photon.komoot.io'),
   /** Place search answers rarely change, so they are cached far longer than fuel prices. */
-  PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS: positiveIntegerSchema.default(86_400),
+  PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS: secondsSchema.default(86_400),
   WEB_ORIGIN: z
     .string()
     .default('http://localhost:4200')
@@ -48,8 +59,8 @@ export const environmentSchema = z.object({
     )
     .pipe(z.array(z.url()).min(1, 'must list at least one origin')),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-  UPSTREAM_TIMEOUT_IN_MILLISECONDS: positiveIntegerSchema.default(8000),
-  CACHE_TIME_TO_LIVE_IN_SECONDS: positiveIntegerSchema.default(300),
+  UPSTREAM_TIMEOUT_IN_MILLISECONDS: millisecondsSchema.default(8000),
+  CACHE_TIME_TO_LIVE_IN_SECONDS: secondsSchema.default(300),
   /** Upper bound of the in-memory cache; the least recently used entries are evicted beyond it. */
   CACHE_MAXIMUM_ENTRIES: positiveIntegerSchema.default(5000),
   RATE_LIMIT_REQUESTS_PER_MINUTE: positiveIntegerSchema.default(60),
@@ -69,3 +80,20 @@ export const environmentSchema = z.object({
 });
 
 export type Environment = z.infer<typeof environmentSchema>;
+
+/** Raw variables as found in `process.env`. */
+export type EnvironmentVariables = Readonly<Record<string, string | undefined>>;
+
+const describeIssue = ({ path, message }: z.core.$ZodIssue): string =>
+  path.length === 0 ? message : `${path.map(String).join('.')}: ${message}`;
+
+/** Throws an error naming every invalid variable, so the application fails fast on bad values. */
+export const parseEnvironment = (variables: EnvironmentVariables): Environment => {
+  const result = environmentSchema.safeParse(variables);
+  if (!result.success) {
+    throw new Error(
+      `Configuration validation error: ${result.error.issues.map(describeIssue).join('\n')}`
+    );
+  }
+  return result.data;
+};

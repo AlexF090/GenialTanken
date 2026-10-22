@@ -1,7 +1,8 @@
+import { latitudeSchema, longitudeSchema } from '@genialtanken/contracts';
 import { z } from 'zod';
 
 /** Feature of a Photon (komoot) search answer; only the fields the place search reads. */
-export const photonFeatureSchema = z.object({
+const photonFeatureSchema = z.object({
   type: z.literal('Feature'),
   properties: z.looseObject({
     /** `N` (node), `W` (way) or `R` (relation). */
@@ -18,15 +19,28 @@ export const photonFeatureSchema = z.object({
   }),
   geometry: z.object({
     type: z.literal('Point'),
-    /** GeoJSON order: longitude first. */
-    coordinates: z.tuple([z.number(), z.number()]),
+    /**
+     * GeoJSON order: longitude first. Range-checked so a feature with impossible coordinates is
+     * dropped, not sent to the web app.
+     */
+    coordinates: z.tuple([longitudeSchema, latitudeSchema]),
   }),
 });
 
-/** GeoJSON FeatureCollection returned by Photon's `GET /api`. */
+/**
+ * GeoJSON FeatureCollection returned by Photon's `GET /api`. The features stay unchecked here;
+ * `parsePhotonFeatures` validates them one by one.
+ */
 export const photonResponseSchema = z.object({
   type: z.literal('FeatureCollection'),
-  features: z.array(photonFeatureSchema),
+  features: z.array(z.unknown()),
 });
 
 export type PhotonFeature = z.infer<typeof photonFeatureSchema>;
+
+/** Drops malformed features one by one, so a single one does not hide the others. */
+export const parsePhotonFeatures = (features: readonly unknown[]): PhotonFeature[] =>
+  features.flatMap(feature => {
+    const parsed = photonFeatureSchema.safeParse(feature);
+    return parsed.success ? [parsed.data] : [];
+  });

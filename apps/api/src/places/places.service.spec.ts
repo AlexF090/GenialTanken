@@ -1,41 +1,41 @@
-import { BadGatewayException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { createCache } from 'cache-manager';
-import type { z } from 'zod';
 import { ERROR_MESSAGES } from '../common/error-messages.js';
+import { UpstreamUnavailableError } from '../common/upstream-unavailable-error.js';
 import { ApplicationConfiguration } from '../configuration/application-configuration.js';
-import { environmentSchema } from '../configuration/environment.js';
+import { parseEnvironment } from '../configuration/environment.js';
 import { UpstreamError } from '../upstream/upstream-error.js';
-import { UpstreamJsonFetcher } from '../upstream/upstream-json-fetcher.js';
+import { UpstreamFetcher } from '../upstream/upstream-fetcher.js';
+import type { PhotonFeature } from './photon/photon-response.schema.js';
+import { PhotonClient } from './photon/photon-client.js';
 import { PlacesService } from './places.service.js';
 
 const createPlacesService = (failure: Error): PlacesService => {
-  const configuration = new ApplicationConfiguration(
-    new ConfigService(environmentSchema.parse({ PHOTON_BASE_URL: 'http://photon.test' }))
-  );
+  const configuration = new ApplicationConfiguration(parseEnvironment({}));
 
-  class FailingUpstreamJsonFetcher extends UpstreamJsonFetcher {
-    override fetchRequired<Schema extends z.ZodType>(): Promise<z.infer<Schema>> {
+  class FailingPhotonClient extends PhotonClient {
+    override searchFeatures(): Promise<PhotonFeature[]> {
       return Promise.reject(failure);
     }
   }
 
   return new PlacesService(
-    configuration,
-    new FailingUpstreamJsonFetcher(configuration, createCache())
+    new FailingPhotonClient(
+      configuration,
+      new UpstreamFetcher(configuration, createCache()),
+      '2.0.0'
+    )
   );
 };
 
 describe('PlacesService', () => {
-  it('turns an upstream failure into a bad gateway with the place search message', async () => {
+  it('turns an upstream failure into an unavailable place search', async () => {
     const placesService = createPlacesService(
       new UpstreamError('GET /api responded with status 500')
     );
 
-    const failure = placesService.findPlaces({ query: 'bastille', limit: 5 });
-
-    await expect(failure).rejects.toBeInstanceOf(BadGatewayException);
-    await expect(failure).rejects.toThrow(ERROR_MESSAGES.placeSearchUnavailable);
+    await expect(placesService.findPlaces({ query: 'bastille', limit: 5 })).rejects.toThrow(
+      new UpstreamUnavailableError(ERROR_MESSAGES.placeSearchUnavailable)
+    );
   });
 
   it('rethrows other errors unchanged', async () => {

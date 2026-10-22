@@ -8,7 +8,7 @@ import { FavoritesRepository } from './favorites-repository';
  * Key kept from the legacy React app. Its entries are not migrated: legacy identifiers lack the
  * country prefix (`fr-…`), so they fail the lookup, and the app moved to another origin anyway.
  */
-const FAVORITES_STORAGE_KEY = 'favoriteIDs';
+export const FAVORITES_STORAGE_KEY = 'favoriteIDs';
 
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every(item => typeof item === 'string');

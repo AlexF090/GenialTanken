@@ -5,7 +5,6 @@
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
     "esModuleInterop": true,
-    "isolatedModules": true,
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -16,8 +15,6 @@
     "outDir": "./dist",
     "rootDir": ".",
     "incremental": true,
-    "skipLibCheck": true,
-    "strict": true,
     "types": ["vitest/globals", "node"]
   }
 }

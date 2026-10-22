@@ -1,3 +1,5 @@
+@use 'focus-ring';
+
 :host {
   display: inline-flex;
 }
@@ -15,8 +17,7 @@
   font-size: var(--icon-size-md);
 
   &:has(:focus-visible) {
-    outline: var(--border-width-focus) solid var(--color-focus-ring);
-    outline-offset: var(--focus-offset);
+    @include focus-ring.focus-ring;
   }
 }
 

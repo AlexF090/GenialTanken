@@ -1,5 +1,5 @@
 import { isSamePosition } from '../geolocation/coordinates';
-import type { Coordinates } from '../geolocation/coordinates';
+import type { Coordinates } from '@genialtanken/contracts';
 
 /** Where the current search center came from. */
 export type SearchCenterSource = 'default' | 'place' | 'own-position' | 'map-area' | 'station';

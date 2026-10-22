@@ -19,7 +19,8 @@ export interface Settings {
   colorScheme: ColorSchemePreference;
 }
 
-const SETTINGS_STORAGE_KEY = 'genialtanken.settings';
+/** The inline script in `index.html` reads the color scheme from it before Angular starts. */
+export const SETTINGS_STORAGE_KEY = 'genialtanken.settings';
 
 const DEFAULT_SETTINGS: Settings = {
   fuelType: DEFAULT_FUEL_TYPE,

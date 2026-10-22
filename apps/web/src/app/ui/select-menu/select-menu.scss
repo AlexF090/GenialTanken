@@ -1,3 +1,6 @@
+@use 'focus-ring';
+@use 'materials';
+
 // The host carries the look of the button (background, radius, padding), so each place can
 // style it like its surroundings; the button itself only fills the host.
 :host {
@@ -32,21 +35,19 @@
     flip-block,
     flip-inline,
     flip-block flip-inline;
-  min-width: 12rem;
+  min-width: var(--layout-menu-width-minimum);
   max-height: 60vh;
   margin: var(--space-2xs) 0;
   padding: var(--space-2xs) 0;
   overflow-y: auto;
   border: 0;
   border-radius: var(--radius-menu);
-  background: var(--material-menu);
+  @include materials.floating-material(var(--shadow-menu));
   color: var(--color-text);
   // Not inherited from the button's look
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-tight);
-  box-shadow: var(--shadow-menu);
-  backdrop-filter: var(--material-blur);
   transform-origin: top left;
   transition:
     opacity var(--duration-short) var(--easing-standard),
@@ -90,7 +91,7 @@
   }
 
   &:focus-visible {
-    outline-offset: calc(-1 * var(--border-width-focus));
+    @include focus-ring.inset-focus-ring;
   }
 }
 

@@ -1,7 +1,9 @@
 <article class="station-detail">
   <div class="station-detail__heading">
     <div class="station-detail__identity">
-      <h2 class="station-detail__title" translate="no" tabindex="-1">{{ title() }}</h2>
+      <h2 #titleHeading class="station-detail__title" translate="no" tabindex="-1">
+        {{ title() }}
+      </h2>
       @if (subtitle(); as subtitle) {
         <p class="station-detail__subtitle">{{ subtitle }}</p>
       }
@@ -26,8 +28,8 @@
     [destination]="destination()"
     [isLabelled]="true" />
 
-  <section class="station-detail__section" aria-labelledby="prices-heading">
-    <h3 id="prices-heading" class="station-detail__section-title">Preise</h3>
+  <section class="station-detail__section" [attr.aria-labelledby]="pricesHeadingIdentifier">
+    <h3 [id]="pricesHeadingIdentifier" class="station-detail__section-title">Preise</h3>
     <ul class="price-board" role="list">
       @for (fuelPrice of fuelPrices(); track fuelPrice.fuelType) {
         <li class="price-board__row" [class.price-board__row--selected]="fuelPrice.isSelected">
@@ -46,8 +48,10 @@
     </ul>
   </section>
 
-  <section class="station-detail__section" aria-labelledby="opening-times-heading">
-    <h3 id="opening-times-heading" class="station-detail__section-title">Öffnungszeiten</h3>
+  <section class="station-detail__section" [attr.aria-labelledby]="openingTimesHeadingIdentifier">
+    <h3 [id]="openingTimesHeadingIdentifier" class="station-detail__section-title">
+      Öffnungszeiten
+    </h3>
     @if (station().isOpen !== null) {
       <p class="station-detail__open-status">
         {{
@@ -57,6 +61,6 @@
         }}
       </p>
     }
-    <app-opening-times [openingTimes]="station().openingTimes" />
+    <app-opening-times [openingTimes]="station().openingTimes" [today]="today()" />
   </section>
 </article>

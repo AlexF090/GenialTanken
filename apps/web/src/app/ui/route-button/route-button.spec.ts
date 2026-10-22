@@ -1,22 +1,15 @@
 import { TestBed } from '@angular/core/testing';
 import { OPEN_EXTERNAL_URL } from '../../core/navigation-apps/open-external-url';
-import { textOf } from '../../../testing/render-page';
+import { renderWithInputs, textOf } from '../../../testing/render-page';
 import { RouteButton } from './route-button';
 
 const render = async (isLabelled = false) => {
   const openedUrls: string[] = [];
-  TestBed.configureTestingModule({
-    providers: [{ provide: OPEN_EXTERNAL_URL, useValue: (url: string) => openedUrls.push(url) }],
-  });
-  const fixture = TestBed.createComponent(RouteButton);
-  fixture.componentRef.setInput('destination', {
-    latitude: 48.8532,
-    longitude: 2.3692,
-    name: 'TotalEnergies',
-  });
-  fixture.componentRef.setInput('isLabelled', isLabelled);
-  await fixture.whenStable();
-  const element = fixture.nativeElement as HTMLElement;
+  const { element } = await renderWithInputs(
+    RouteButton,
+    { destination: { latitude: 48.8532, longitude: 2.3692, name: 'TotalEnergies' }, isLabelled },
+    [{ provide: OPEN_EXTERNAL_URL, useValue: (url: string) => openedUrls.push(url) }]
+  );
   const select = element.querySelector('select');
   if (select === null) {
     throw new Error('No select');

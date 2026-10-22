@@ -1,0 +1,14 @@
+// The focus ring of every focusable element; components that draw it on a wrapper or a
+// pseudo-element use the mixin (`src/styles` is an include path):
+//   @use 'focus-ring';
+//   .control:has(:focus-visible) { @include focus-ring.focus-ring; }
+// A negative offset draws it inside, where an outer ring would be clipped.
+@mixin focus-ring($offset: var(--focus-offset)) {
+  outline: var(--border-width-focus) solid var(--color-focus-ring);
+  outline-offset: $offset;
+}
+
+// Inside the element, e.g. for list rows whose container clips overflow
+@mixin inset-focus-ring {
+  @include focus-ring(calc(-1 * var(--border-width-focus)));
+}
