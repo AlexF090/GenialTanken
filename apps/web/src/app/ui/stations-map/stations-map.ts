@@ -25,6 +25,7 @@ import { destroyMap } from '../map/map-teardown';
 import {
   centerForVisibleArea,
   EDGE_SPACING_IN_PIXELS,
+  hasVisibleArea,
   isSameViewportPadding,
   NO_VIEWPORT_PADDING,
   searchAreaBounds,
@@ -150,7 +151,8 @@ export class StationsMap {
         previousViewportPadding !== undefined &&
         !isSameViewportPadding(previousViewportPadding, viewportPadding);
       previousViewportPadding = viewportPadding;
-      if (!hasPaddingChanged) {
+      // Nothing to show behind overlays covering the whole map; the next change fits again.
+      if (!hasPaddingChanged || !hasVisibleArea(map, viewportPadding)) {
         return;
       }
       untracked(() => {

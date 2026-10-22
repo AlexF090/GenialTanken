@@ -371,6 +371,26 @@ describe('StationsMap', () => {
       expect(fitBounds.mock.calls[0]?.[1]).toMatchObject({ paddingBottomRight: [24, 424] });
     });
 
+    it('leaves the view alone while the overlays cover the whole map', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture } = await render([]);
+      const map = fitBounds.mock.contexts[0] as L.Map;
+      const zoomBefore = map.getZoom();
+      fitBounds.mockClear();
+
+      // The fully opened sheet and the search field leave nothing of the 600 px high map.
+      fixture.componentRef.setInput('viewportPadding', { top: 80, right: 0, bottom: 560, left: 0 });
+      await fixture.whenStable();
+
+      expect(fitBounds).not.toHaveBeenCalled();
+      expect(map.getZoom()).toBe(zoomBefore);
+
+      fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
+      await fixture.whenStable();
+
+      expect(fitBounds).toHaveBeenCalledOnce();
+    });
+
     it('keeps the view the user moved the map to', async () => {
       const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
       const { fixture } = await render([]);

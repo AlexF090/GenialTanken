@@ -25,6 +25,18 @@ export const toPaddingOptions = (
   ],
 });
 
+/**
+ * Whether the overlays leave any of the map visible, edge spacing included. Fitting into no
+ * space at all would send the map to its maximum zoom, e.g. behind the fully opened sheet.
+ */
+export const hasVisibleArea = (map: L.Map, padding: ViewportPadding): boolean => {
+  const size = map.getSize();
+  return (
+    size.x - padding.left - padding.right - 2 * EDGE_SPACING_IN_PIXELS > 0 &&
+    size.y - padding.top - padding.bottom - 2 * EDGE_SPACING_IN_PIXELS > 0
+  );
+};
+
 /** Offset of the visible area's center from the map container's center, in pixels. */
 const visibleAreaOffset = (padding: ViewportPadding): L.Point =>
   L.point((padding.left - padding.right) / 2, (padding.top - padding.bottom) / 2);
