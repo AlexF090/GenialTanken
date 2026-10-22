@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { CLIENT_ADDRESS_HEADER, PROXY_SECRET_HEADER } from '@genialtanken/contracts';
 import { z } from 'zod';
 import { FRENCH_RECORDS_PATH } from '../src/fuel-price-providers/france/french-upstream-paths.js';
@@ -14,6 +15,11 @@ const ALLOWED_ORIGIN = 'https://genialtanken.alexf090.workers.dev';
 const requiredPropertiesSchema = z.object({ required: z.array(z.string()) });
 
 const openApiInformationSchema = z.object({ info: z.object({ version: z.string() }) });
+
+/** semantic-release bumps the version in package.json with every release. */
+const packageVersion = z
+  .object({ version: z.string() })
+  .parse(JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))).version;
 
 const openApiOperationSchema = z.object({
   summary: z.string().min(1),
@@ -73,6 +79,25 @@ describe('GET /health', () => {
   });
 });
 
+describe('GET /api/wake-up', () => {
+  it('answers without content and without calling the upstream', async () => {
+    const api = await startApplication();
+
+    const response = await api.get('/api/wake-up').expect(204);
+
+    expect(response.text).toBe('');
+    expect(upstream.requests).toHaveLength(0);
+  });
+
+  it('does not count towards the rate limit', async () => {
+    const api = await startApplication({ RATE_LIMIT_REQUESTS_PER_MINUTE: '1' });
+
+    await api.get('/api/wake-up').expect(204);
+    await api.get('/api/wake-up').expect(204);
+    await api.get('/api/stations').query(PARIS).expect(200);
+  });
+});
+
 describe('OpenAPI document', () => {
   it('documents the stations and places endpoints with the contract schemas', async () => {
     const api = await startApplication();
@@ -82,6 +107,7 @@ describe('OpenAPI document', () => {
     const { paths, components } = openApiDocumentSchema.parse(response.body);
     expect(Object.keys(paths)).toEqual([
       '/health',
+      '/api/wake-up',
       '/api/stations',
       '/api/stations/by-identifiers',
       '/api/stations/{id}',
@@ -121,7 +147,7 @@ describe('OpenAPI document', () => {
 
     const response = await api.get('/api/docs-json').expect(200);
 
-    expect(openApiInformationSchema.parse(response.body).info.version).toBe('2.0.0');
+    expect(openApiInformationSchema.parse(response.body).info.version).toBe(packageVersion);
   });
 });
 
