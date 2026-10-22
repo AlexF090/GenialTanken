@@ -6,8 +6,20 @@ import { L } from '../map/leaflet';
 import { clickOnActivationKey, createClusterIcon, StationMarker } from '../map/leaflet-layers';
 import { revealMarker } from '../map/reveal-marker';
 import type { MarkerReveal } from '../map/reveal-marker';
+import type { PriceTagAppearance } from '../map/price-tag-icons';
 
 const CLUSTER_RADIUS_IN_PIXELS = 56;
+
+/** A cluster icon was activated, by pointer or keyboard. */
+export interface ClusterActivation {
+  cluster: L.MarkerCluster;
+  isFromKeyboard: boolean;
+}
+
+/** Stations without a price come last. */
+const isCheaper = (candidate: PriceTagAppearance, current: PriceTagAppearance): boolean =>
+  candidate.priceInEuro !== null &&
+  (current.priceInEuro === null || candidate.priceInEuro < current.priceInEuro);
 
 /** What the price tags of one rendering share. */
 export interface StationMarkerContext {
@@ -37,15 +49,55 @@ export class StationMarkerLayer {
   constructor(private readonly onClick: (marker: StationMarker) => void) {}
 
   /** `onClusterClick` is called with the cluster whose icon is activated. */
-  addTo(map: L.Map, onClusterClick: (cluster: L.MarkerCluster) => void): void {
+  addTo(map: L.Map, onClusterClick: (activation: ClusterActivation) => void): void {
     this.clusterGroup.addTo(map);
     this.clusterGroup.on('clusterclick', event => {
       const cluster: unknown = event.propagatedFrom;
       if (cluster instanceof L.MarkerCluster) {
-        onClusterClick(cluster);
+        onClusterClick({
+          cluster,
+          // Leaflet types cluster events as plain events, although they carry the original one.
+          isFromKeyboard: 'originalEvent' in event && event.originalEvent instanceof KeyboardEvent,
+        });
       }
     });
     this.clusterGroup.on('clusterkeydown', clickOnActivationKey);
+  }
+
+  /**
+   * Calls `listener` once, as soon as the group shows the clusters of the new zoom level or the
+   * fanned-out cluster. Returns a function that stops waiting.
+   */
+  onceSettled(eventType: 'animationend' | 'spiderfied', listener: () => void): () => void {
+    this.clusterGroup.once(eventType, listener);
+    return () => {
+      this.clusterGroup.off(eventType, listener);
+    };
+  }
+
+  /**
+   * Element now showing the cheapest station of an opened cluster: its price tag or a smaller
+   * cluster. The cluster announced that price, so it is what the user expects to find. Of equally
+   * cheap stations the first one shown wins (the API sorts by distance): the cluster's own order
+   * depends on how it was built.
+   */
+  elementShowingCheapestOf(cluster: L.MarkerCluster): HTMLElement | undefined {
+    const markersOfCluster = new Set(cluster.getAllChildMarkers());
+    const cheapestMarker = [...this.markers().values()]
+      .filter(marker => markersOfCluster.has(marker))
+      .reduce<StationMarker | undefined>(
+        (cheapest, marker) =>
+          cheapest === undefined || isCheaper(marker.appearance, cheapest.appearance)
+            ? marker
+            : cheapest,
+        undefined
+      );
+    if (cheapestMarker === undefined) {
+      return undefined;
+    }
+    // Typed as never null, but it is null while neither the marker nor a cluster of it is shown.
+    const visibleParent: unknown = this.clusterGroup.getVisibleParent(cheapestMarker);
+    return visibleParent instanceof L.Marker ? visibleParent.getElement() : undefined;
   }
 
   markerOf(stationIdentifier: string): StationMarker | undefined {

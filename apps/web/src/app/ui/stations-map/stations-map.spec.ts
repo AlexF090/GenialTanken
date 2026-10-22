@@ -310,6 +310,85 @@ describe('StationsMap', () => {
       expect(keydown.defaultPrevented).toBe(true);
     });
 
+    describe('moving the focus out of the opened cluster', () => {
+      const pressEnter = (target: HTMLElement): void => {
+        target.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+        );
+      };
+      const cheaperNeighborOfTotal: Station = {
+        ...carrefourStation,
+        address: { ...carrefourStation.address, ...totalStation.address, latitude: 48.861 },
+      };
+
+      const equallyExpensiveNeighborOfTotal: Station = {
+        ...cheaperNeighborOfTotal,
+        pricesInEuro: totalStation.pricesInEuro,
+      };
+
+      it('focuses the price tag of the cheapest station once the map zoomed in', async () => {
+        const { fixture, element } = await render([totalStation, cheaperNeighborOfTotal]);
+        const cluster = clusterButton(element);
+        cluster.focus();
+
+        pressEnter(cluster);
+        await fixture.whenStable();
+
+        await vi.waitFor(() => {
+          expect(accessibleTextOf(document.activeElement)).toBe('Carrefour Market, 1,839 €');
+        });
+      });
+
+      it('focuses the price tag of the cheapest station once the cluster fanned out', async () => {
+        const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+        const { fixture, element } = await render([
+          totalStation,
+          { ...cheaperNeighborOfTotal, address: { ...totalStation.address } },
+        ]);
+        const map = fitBounds.mock.contexts[0] as L.Map;
+        vi.spyOn(map, 'getMaxZoom').mockReturnValue(map.getZoom());
+        const cluster = clusterButton(element);
+        cluster.focus();
+
+        pressEnter(cluster);
+        await fixture.whenStable();
+
+        await vi.waitFor(() => {
+          expect(accessibleTextOf(document.activeElement)).toBe('Carrefour Market, 1,839 €');
+        });
+      });
+
+      it.each([
+        ['TotalEnergies, 1,859 €', [totalStation, equallyExpensiveNeighborOfTotal]],
+        ['Carrefour Market, 1,859 €', [equallyExpensiveNeighborOfTotal, totalStation]],
+      ])('of equally cheap stations focuses the first one shown: %s', async (name, stations) => {
+        const { fixture, element } = await render(stations);
+        const cluster = clusterButton(element);
+        cluster.focus();
+
+        pressEnter(cluster);
+        await fixture.whenStable();
+
+        await vi.waitFor(() => {
+          expect(accessibleTextOf(document.activeElement)).toBe(name);
+        });
+      });
+
+      it('leaves the focus alone when the cluster is clicked', async () => {
+        const { fixture, element } = await render([totalStation, cheaperNeighborOfTotal]);
+        const cluster = clusterButton(element);
+        cluster.focus();
+
+        cluster.click();
+        await fixture.whenStable();
+
+        await vi.waitFor(() => {
+          expect(markerNames(element)).toContain('Carrefour Market, 1,839 €');
+        });
+        expect(markerButtons(element)).not.toContain(document.activeElement);
+      });
+    });
+
     it('fans out a cluster that zooming cannot separate and centers it', async () => {
       const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
       const panTo = vi.spyOn(L.Map.prototype, 'panTo');

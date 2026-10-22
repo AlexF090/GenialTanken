@@ -92,6 +92,7 @@ export class StationsMap {
   });
   private revealedStationIdentifier: string | undefined;
   private markerReveal: MarkerReveal | undefined;
+  private stopWaitingToFocusOpenedCluster: (() => void) | undefined;
   /** Set once the user drags the map; overlay changes then no longer move the view. */
   private hasUserMovedMap = false;
   /** A selected station stays centered while overlays move, until the user moves the map. */
@@ -111,8 +112,8 @@ export class StationsMap {
       L.control
         .zoom({ position: 'topright', zoomInTitle: 'Hineinzoomen', zoomOutTitle: 'Herauszoomen' })
         .addTo(map);
-      this.stationMarkers.addTo(map, cluster => {
-        this.zoomIntoCluster(map, cluster);
+      this.stationMarkers.addTo(map, ({ cluster, isFromKeyboard }) => {
+        this.zoomIntoCluster(map, cluster, isFromKeyboard);
       });
       map.on('dragstart', () => {
         this.hasUserMovedMap = true;
@@ -248,6 +249,7 @@ export class StationsMap {
 
     destroyRef.onDestroy(() => {
       this.markerReveal?.cancel();
+      this.stopWaitingToFocusOpenedCluster?.();
       const map = this.map();
       if (map !== undefined) {
         // Stopping a running animation fires `moveend`; the output is already gone then.
@@ -296,7 +298,7 @@ export class StationsMap {
    * Zooms so the cluster's stations fill the part of the map not covered by overlays. When
    * zooming cannot separate them (maximum zoom), they fan out around the centered cluster.
    */
-  private zoomIntoCluster(map: L.Map, cluster: L.MarkerCluster): void {
+  private zoomIntoCluster(map: L.Map, cluster: L.MarkerCluster, isFromKeyboard: boolean): void {
     const viewportPadding = this.viewportPadding();
     const paddingForTags = {
       ...viewportPadding,
@@ -308,7 +310,12 @@ export class StationsMap {
       paddingForTags.top + paddingForTags.bottom + 2 * EDGE_SPACING_IN_PIXELS
     );
     const targetZoom = Math.min(map.getBoundsZoom(bounds, false, totalPadding), map.getMaxZoom());
-    if (targetZoom <= map.getZoom()) {
+    const isFanningOut = targetZoom <= map.getZoom();
+    this.stopWaitingToFocusOpenedCluster?.();
+    this.stopWaitingToFocusOpenedCluster = isFromKeyboard
+      ? this.focusOnceOpened(cluster, isFanningOut ? 'spiderfied' : 'animationend')
+      : undefined;
+    if (isFanningOut) {
       cluster.spiderfy();
       map.panTo(centerForVisibleArea(map, cluster.getLatLng(), viewportPadding), this.motion());
       return;
@@ -317,6 +324,33 @@ export class StationsMap {
       ...toPaddingOptions(paddingForTags),
       maxZoom: map.getMaxZoom(),
       ...this.motion(),
+    });
+  }
+
+  /**
+   * Zooming in removes the focused cluster icon, which would drop the focus to the page. Moves it
+   * to what shows the cluster's cheapest station, or to the map, unless the user focused
+   * something else meanwhile.
+   */
+  private focusOnceOpened(
+    cluster: L.MarkerCluster,
+    eventType: 'animationend' | 'spiderfied'
+  ): () => void {
+    const clusterIcon = cluster.getElement();
+    return this.stationMarkers.onceSettled(eventType, () => {
+      this.stopWaitingToFocusOpenedCluster = undefined;
+      const focusedElement = document.activeElement;
+      if (
+        focusedElement !== null &&
+        focusedElement !== document.body &&
+        focusedElement !== clusterIcon
+      ) {
+        return;
+      }
+      const target =
+        this.stationMarkers.elementShowingCheapestOf(cluster) ?? this.container().nativeElement;
+      // Leaflet positions the panes itself; a scrolled map container would shift them.
+      target.focus({ preventScroll: true });
     });
   }
 
