@@ -9,6 +9,7 @@ import {
   unbrandedStation,
 } from '../../../testing/station-fixtures';
 import { accessibleTextOf, renderWithInputs, textOf } from '../../../testing/render-page';
+import { FakeResizeObserver } from '../../../testing/fake-resize-observer';
 import { L } from '../map/leaflet';
 import { StationsMap } from './stations-map';
 
@@ -43,6 +44,14 @@ const render = async (stations: readonly Station[], options: RenderOptions = {})
   );
   return { fixture, element, stationSelections };
 };
+
+/** The map applies overlay and size changes together, once per animation frame. */
+const nextAnimationFrame = (): Promise<void> =>
+  new Promise(resolve => {
+    requestAnimationFrame(() => {
+      resolve();
+    });
+  });
 
 /** Station price tags are toggle buttons; zoom controls and clusters are plain buttons. */
 const markerButtons = (element: HTMLElement): HTMLElement[] => [
@@ -195,6 +204,7 @@ describe('StationsMap', () => {
       const { fixture } = await render([totalStation, carrefourStation]);
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
+      await nextAnimationFrame();
 
       fixture.componentRef.setInput('selectedStationIdentifier', totalStation.id);
       await fixture.whenStable();
@@ -243,6 +253,8 @@ describe('StationsMap', () => {
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
 
+      await nextAnimationFrame();
+
       expect(panTo).toHaveBeenCalledOnce();
     });
 
@@ -257,6 +269,7 @@ describe('StationsMap', () => {
       map.fire('dragstart');
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
+      await nextAnimationFrame();
 
       expect(panTo).not.toHaveBeenCalled();
     });
@@ -285,6 +298,7 @@ describe('StationsMap', () => {
       const { fixture, element } = await render([totalStation, neighborOf(totalStation, 0.001)]);
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
+      await nextAnimationFrame();
       fitBounds.mockClear();
 
       clusterButton(element).click();
@@ -448,6 +462,72 @@ describe('StationsMap', () => {
     });
   });
 
+  describe('when the map changes its size', () => {
+    beforeEach(() => {
+      vi.stubGlobal('ResizeObserver', FakeResizeObserver);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    const resizeMap = (widthInPixels: number): void => {
+      vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(widthInPixels);
+      if (FakeResizeObserver.latest === undefined) {
+        throw new Error('The map observes no size');
+      }
+      FakeResizeObserver.latest.resize();
+    };
+
+    it('applies a new size and new overlays in the same frame with one fit', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const invalidateSize = vi.spyOn(L.Map.prototype, 'invalidateSize');
+      const { fixture } = await render([]);
+      fitBounds.mockClear();
+      invalidateSize.mockClear();
+
+      resizeMap(1000);
+      fixture.componentRef.setInput('viewportPadding', { top: 80, right: 0, bottom: 0, left: 0 });
+      await fixture.whenStable();
+      await nextAnimationFrame();
+
+      expect(invalidateSize).toHaveBeenCalledOnce();
+      expect(fitBounds).toHaveBeenCalledOnce();
+      expect(invalidateSize.mock.invocationCallOrder[0]).toBeLessThan(
+        fitBounds.mock.invocationCallOrder[0] ?? 0
+      );
+      expect(fitBounds.mock.calls[0]?.[1]).toMatchObject({ paddingTopLeft: [24, 104] });
+    });
+
+    it('fits the search area into the resized map', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      await render([]);
+      fitBounds.mockClear();
+
+      resizeMap(1000);
+      await nextAnimationFrame();
+
+      expect(fitBounds).toHaveBeenCalledOnce();
+    });
+
+    it('only adapts to the new size after the user moved the map', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const invalidateSize = vi.spyOn(L.Map.prototype, 'invalidateSize');
+      await render([]);
+      const map = fitBounds.mock.contexts[0] as L.Map;
+      fitBounds.mockClear();
+      invalidateSize.mockClear();
+
+      map.fire('dragstart');
+      resizeMap(1000);
+      await nextAnimationFrame();
+
+      expect(invalidateSize).toHaveBeenCalledOnce();
+      expect(map.getSize()).toEqual(L.point(1000, 600));
+      expect(fitBounds).not.toHaveBeenCalled();
+    });
+  });
+
   describe('when the overlays covering the map change', () => {
     const coveredByBottomSheet = { top: 0, right: 0, bottom: 400, left: 0 };
 
@@ -459,8 +539,28 @@ describe('StationsMap', () => {
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
 
+      await nextAnimationFrame();
+
       expect(fitBounds).toHaveBeenCalledOnce();
       expect(fitBounds.mock.calls[0]?.[1]).toMatchObject({ paddingBottomRight: [24, 424] });
+    });
+
+    it('fits once when the overlays report their sizes one after the other', async () => {
+      const fitBounds = vi.spyOn(L.Map.prototype, 'fitBounds');
+      const { fixture } = await render([]);
+      fitBounds.mockClear();
+
+      fixture.componentRef.setInput('viewportPadding', { top: 80, right: 0, bottom: 0, left: 0 });
+      await fixture.whenStable();
+      fixture.componentRef.setInput('viewportPadding', { top: 80, right: 0, bottom: 400, left: 0 });
+      await fixture.whenStable();
+      await nextAnimationFrame();
+
+      expect(fitBounds).toHaveBeenCalledOnce();
+      expect(fitBounds.mock.calls[0]?.[1]).toMatchObject({
+        paddingTopLeft: [24, 104],
+        paddingBottomRight: [24, 424],
+      });
     });
 
     it('leaves the view alone while the overlays cover the whole map', async () => {
@@ -473,12 +573,15 @@ describe('StationsMap', () => {
       // The fully opened sheet and the search field leave nothing of the 600 px high map.
       fixture.componentRef.setInput('viewportPadding', { top: 80, right: 0, bottom: 560, left: 0 });
       await fixture.whenStable();
+      await nextAnimationFrame();
 
       expect(fitBounds).not.toHaveBeenCalled();
       expect(map.getZoom()).toBe(zoomBefore);
 
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
+
+      await nextAnimationFrame();
 
       expect(fitBounds).toHaveBeenCalledOnce();
     });
@@ -492,6 +595,7 @@ describe('StationsMap', () => {
       map.fire('dragstart');
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
+      await nextAnimationFrame();
 
       expect(fitBounds).not.toHaveBeenCalled();
     });
@@ -505,6 +609,8 @@ describe('StationsMap', () => {
 
       fixture.componentRef.setInput('viewportPadding', coveredByBottomSheet);
       await fixture.whenStable();
+
+      await nextAnimationFrame();
 
       expect(fitBounds).not.toHaveBeenCalled();
     });

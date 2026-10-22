@@ -42,6 +42,12 @@ const PRICE_TAG_HEIGHT_IN_PIXELS = 40;
 /** Leaflet's default is unbounded, so a fast swipe flings the map far and for long. */
 const INERTIA_MAXIMUM_SPEED_IN_PIXELS_PER_SECOND = 1500;
 
+interface PendingViewUpdate {
+  frame: number;
+  hasPaddingChanged: boolean;
+  hasSizeChanged: boolean;
+}
+
 /**
  * Interactive map of the search area: a price tag per station (clustered when close), the search
  * center and the search radius. Selecting a tag reports the station; a selection from outside
@@ -93,6 +99,8 @@ export class StationsMap {
   private revealedStationIdentifier: string | undefined;
   private markerReveal: MarkerReveal | undefined;
   private stopWaitingToFocusOpenedCluster: (() => void) | undefined;
+  private pendingViewUpdate: PendingViewUpdate | undefined;
+  private hasAppliedViewUpdate = false;
   /** Set once the user drags the map; overlay changes then no longer move the view. */
   private hasUserMovedMap = false;
   /** A selected station stays centered while overlays move, until the user moves the map. */
@@ -127,7 +135,7 @@ export class StationsMap {
       observeElementResize(
         [this.host.nativeElement],
         () => {
-          map.invalidateSize();
+          this.scheduleViewUpdate(map, 'size');
         },
         destroyRef
       );
@@ -146,24 +154,9 @@ export class StationsMap {
         previousViewportPadding !== undefined &&
         !isSameViewportPadding(previousViewportPadding, viewportPadding);
       previousViewportPadding = viewportPadding;
-      // Nothing to show behind overlays covering the whole map; the next change fits again.
-      if (!hasPaddingChanged || !hasVisibleArea(map, viewportPadding)) {
-        return;
+      if (hasPaddingChanged) {
+        this.scheduleViewUpdate(map, 'padding');
       }
-      untracked(() => {
-        const selectedStationIdentifier = this.selectedStationIdentifier();
-        if (selectedStationIdentifier !== undefined) {
-          // E.g. the sheet moved after a price tag was chosen: keep that station in the middle.
-          const selectedMarker = this.stationMarkers.markerOf(selectedStationIdentifier);
-          if (selectedMarker !== undefined && !this.hasUserMovedMapSinceReveal) {
-            this.reveal(map, selectedMarker);
-          }
-          return;
-        }
-        if (!this.hasUserMovedMap) {
-          this.fitSearchArea(map, this.motion());
-        }
-      });
     });
 
     effect(onCleanup => {
@@ -250,6 +243,9 @@ export class StationsMap {
     destroyRef.onDestroy(() => {
       this.markerReveal?.cancel();
       this.stopWaitingToFocusOpenedCluster?.();
+      if (this.pendingViewUpdate !== undefined) {
+        cancelAnimationFrame(this.pendingViewUpdate.frame);
+      }
       const map = this.map();
       if (map !== undefined) {
         // Stopping a running animation fires `moveend`; the output is already gone then.
@@ -279,6 +275,61 @@ export class StationsMap {
       this.reveal(map, marker);
     }
     this.stationSelected.emit(marker.stationIdentifier);
+  }
+
+  /**
+   * Overlays and the map size report their changes one by one, often in separate change
+   * detection rounds. Applying them together once per frame moves the map once instead of
+   * starting a new animation for every report.
+   */
+  private scheduleViewUpdate(map: L.Map, change: 'padding' | 'size'): void {
+    const pendingViewUpdate = (this.pendingViewUpdate ??= {
+      frame: requestAnimationFrame(() => {
+        this.applyViewUpdate(map);
+      }),
+      hasPaddingChanged: false,
+      hasSizeChanged: false,
+    });
+    if (change === 'padding') {
+      pendingViewUpdate.hasPaddingChanged = true;
+    } else {
+      pendingViewUpdate.hasSizeChanged = true;
+    }
+  }
+
+  private applyViewUpdate(map: L.Map): void {
+    const update = this.pendingViewUpdate;
+    this.pendingViewUpdate = undefined;
+    if (update === undefined) {
+      return;
+    }
+    let hasSizeChanged = false;
+    if (update.hasSizeChanged) {
+      const sizeBefore = map.getSize();
+      map.invalidateSize();
+      hasSizeChanged = !sizeBefore.equals(map.getSize());
+    }
+    const viewportPadding = this.viewportPadding();
+    // Nothing to show behind overlays covering the whole map; the next change fits again.
+    if ((!update.hasPaddingChanged && !hasSizeChanged) || !hasVisibleArea(map, viewportPadding)) {
+      return;
+    }
+    // The view set up before the overlays had their size was never meant to be seen; correct it
+    // without an animation.
+    const motion = this.hasAppliedViewUpdate ? this.motion() : { animate: false };
+    this.hasAppliedViewUpdate = true;
+    const selectedStationIdentifier = this.selectedStationIdentifier();
+    if (selectedStationIdentifier !== undefined) {
+      // E.g. the sheet moved after a price tag was chosen: keep that station in the middle.
+      const selectedMarker = this.stationMarkers.markerOf(selectedStationIdentifier);
+      if (selectedMarker !== undefined && !this.hasUserMovedMapSinceReveal) {
+        this.reveal(map, selectedMarker, motion);
+      }
+      return;
+    }
+    if (!this.hasUserMovedMap) {
+      this.fitSearchArea(map, motion);
+    }
   }
 
   /** Animates map moves unless the user prefers reduced motion. */
@@ -358,14 +409,11 @@ export class StationsMap {
    * Opens the marker's cluster if needed, then centers the marker in the visible part of the map,
    * like a tapped pin in Apple Maps.
    */
-  private reveal(map: L.Map, marker: StationMarker): void {
+  private reveal(map: L.Map, marker: StationMarker, motion = this.motion()): void {
     this.markerReveal?.cancel();
     this.hasUserMovedMapSinceReveal = false;
     this.markerReveal = this.stationMarkers.reveal(map, marker, () => {
-      map.panTo(
-        centerForVisibleArea(map, marker.getLatLng(), this.viewportPadding()),
-        this.motion()
-      );
+      map.panTo(centerForVisibleArea(map, marker.getLatLng(), this.viewportPadding()), motion);
     });
   }
 }
