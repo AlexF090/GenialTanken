@@ -96,8 +96,10 @@
   --color-scrim: light-dark(rgb(0 0 0 / 20%), rgb(0 0 0 / 48%));
   // Behind the status bar, where the map reaches under it. Dark in both schemes: the installed
   // app asks for `black-translucent`, so iOS always draws the status bar text white. Fades out
-  // towards the map (`--color-status-bar-scrim-end`); opaque with more contrast below.
-  --color-status-bar-scrim: rgb(0 0 0 / 45%);
+  // towards the map (`--color-status-bar-scrim-end`) below the safe area; opaque with more
+  // contrast below. 60% black keeps white text at 5.7:1 over a white map tile (45% gave 3.4:1;
+  // checked by scripts/status-bar-scrim-contrast.spec.ts).
+  --color-status-bar-scrim: rgb(0 0 0 / 60%);
   --color-status-bar-scrim-end: rgb(0 0 0 / 0%);
 
   // Materials: translucent, blurred layers floating above the map and the content. Nearly
