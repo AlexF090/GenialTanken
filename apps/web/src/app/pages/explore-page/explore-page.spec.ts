@@ -529,19 +529,13 @@ describe('ExplorePage', () => {
     context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([]);
     await context.settle();
 
-    const emptyMessage = element.querySelector('main .explore-page__empty');
-    expect(textOf(emptyMessage)).toBe(
-      'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.'
-    );
-    // One live region, so screen readers announce the empty result once.
-    expect(emptyMessage?.closest('[role="status"]')).toBeNull();
+    const emptyMessage = 'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.';
+    // Shown and announced once, by the result summary, so browse mode does not read it twice.
+    expect(textOf(element.querySelector('main')).split('Keine Tankstellen')).toHaveLength(2);
     const announcingRegions = [...element.querySelectorAll('main [role="status"]')].filter(region =>
       textOf(region).includes('Keine Tankstellen')
     );
-    expect(announcingRegions.map(textOf)).toEqual([
-      '0 Tankstellen im Umkreis von 5 km um Eiffelturm, Paris. Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.',
-    ]);
-    expect(announcingRegions[0]?.querySelector('.visually-hidden')).not.toBeNull();
+    expect(announcingRegions.map(textOf)).toEqual([emptyMessage]);
   });
 });
 

@@ -65,7 +65,7 @@ export const configurePageTest = (
   };
 };
 
-export interface RenderedComponent<T> {
+interface RenderedComponent<T> {
   fixture: ComponentFixture<T>;
   element: HTMLElement;
 }
@@ -88,7 +88,7 @@ export const renderComponent = async <T>(component: Type<T>): Promise<RenderedCo
 };
 
 /** Values for the component's signal inputs, keyed by input name. */
-export type InputValues<T> = {
+type InputValues<T> = {
   [
     Name in keyof T as T[Name] extends InputSignalWithTransform<unknown, unknown> ? Name : never
   ]?: T[Name] extends InputSignalWithTransform<unknown, infer Value> ? Value : never;

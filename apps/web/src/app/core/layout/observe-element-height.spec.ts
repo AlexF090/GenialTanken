@@ -31,7 +31,6 @@ const resizeTo = (box: HTMLElement, heightInPixels: number): void => {
 
 describe('observeElementHeight', () => {
   afterEach(() => {
-    FakeResizeObserver.latest = undefined;
     vi.unstubAllGlobals();
   });
 

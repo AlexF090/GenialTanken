@@ -87,6 +87,26 @@ describe('ExplorePage with a station card', () => {
     expect(document.activeElement?.classList).toContain('station-row__title');
   });
 
+  it('focuses the result summary when the closed station is not in the list', async () => {
+    const { harness, element } = await openAt(`/stations/${totalStation.id}`);
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([carrefourStation]);
+    context.httpTesting.expectOne(TOTAL_DETAILS_URL).flush(withoutDistance(totalStation));
+    await context.settle();
+    // The search moved to the station, which has no price for the chosen fuel.
+    context.httpTesting.expectOne(stationsUrl(totalStation.address)).flush([]);
+    await context.settle();
+
+    getButton(element, 'Schließen').click();
+    await context.settle();
+    await harness.fixture.whenStable();
+
+    const summary = element.querySelector('main app-bottom-sheet [role="status"]');
+    expect(document.activeElement).toBe(summary);
+    expect(textOf(summary)).toBe(
+      'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.'
+    );
+  });
+
   it('shows an opened card from its top and returns to the list where it was', async () => {
     const { element, navigate } = await openAt('/');
     context.httpTesting

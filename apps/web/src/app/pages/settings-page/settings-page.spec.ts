@@ -21,6 +21,10 @@ const radiusLabel = (element: HTMLElement): HTMLLabelElement | undefined =>
 describe('SettingsPage', () => {
   let context: PageTestContext;
 
+  afterEach(() => {
+    context.httpTesting.verify();
+  });
+
   it('offers every fuel type with E5 selected and a 5 km radius', async () => {
     context = configurePageTest();
     const { element } = await renderComponent(SettingsPage);

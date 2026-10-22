@@ -205,8 +205,9 @@ describe('StationList', () => {
       const title = items[1]?.querySelector<HTMLElement>('.station-row__title');
       const focus = vi.spyOn(title ?? HTMLElement.prototype, 'focus');
 
-      fixture.componentInstance.focusStation(carrefourStation.id);
+      const isFocused = fixture.componentInstance.focusStation(carrefourStation.id);
 
+      expect(isFocused).toBe(true);
       expect(focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true });
       expect(document.activeElement).toBe(title);
     }
@@ -216,8 +217,9 @@ describe('StationList', () => {
     const { fixture } = await render({ stations: [totalStation] });
     const previouslyFocused = document.activeElement;
 
-    fixture.componentInstance.focusStation(carrefourStation.id);
+    const isFocused = fixture.componentInstance.focusStation(carrefourStation.id);
 
+    expect(isFocused).toBe(false);
     expect(document.activeElement).toBe(previouslyFocused);
   });
 });

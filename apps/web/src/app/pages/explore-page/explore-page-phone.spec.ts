@@ -18,6 +18,7 @@ describe('ExplorePage on a phone', () => {
   let context: PageTestContext;
 
   afterEach(() => {
+    context.httpTesting.verify();
     vi.restoreAllMocks();
   });
 
@@ -78,6 +79,9 @@ describe('ExplorePage on a phone', () => {
     await context.settle();
 
     expect(sheet.snapPosition()).toBe('peek');
+    expect(childComponent(fixture, StationsMap).selectedStationIdentifier()).toBe(
+      carrefourStation.id
+    );
   });
 
   it('moves the sheet aside while a place is typed', async () => {

@@ -88,6 +88,8 @@ export class ExplorePage {
   private readonly bottomSheet = viewChild(BottomSheet);
   private readonly stationList = viewChild(StationList);
   private readonly searchOverlay = viewChild.required<ElementRef<HTMLElement>>('searchOverlay');
+  private readonly resultSummaryElement =
+    viewChild<ElementRef<HTMLElement>>('resultSummaryElement');
 
   protected readonly applicationName = APPLICATION_NAME;
   protected readonly fuelType = this.settings.fuelType;
@@ -133,22 +135,14 @@ export class ExplorePage {
     sortStations(this.nearbyStations.stations(), this.sortOrder(), this.fuelType())
   );
 
-  protected readonly resultSummary = computed(() =>
-    this.hasLoaded()
-      ? describeResult(this.mapStations().length, this.radiusInKilometers(), this.center())
-      : ''
-  );
-
-  protected readonly emptyResultMessage = computed(() =>
-    this.hasLoaded() && this.stations().length === 0
+  protected readonly resultSummary = computed(() => {
+    if (!this.hasLoaded()) {
+      return '';
+    }
+    const stationCount = this.mapStations().length;
+    return stationCount === 0
       ? describeEmptyResult(this.fuelLabel(), this.radiusInKilometers())
-      : undefined
-  );
-
-  /** Appended to the summary for screen readers; the list below shows the message visibly. */
-  protected readonly emptyResultAnnouncement = computed(() => {
-    const message = this.emptyResultMessage();
-    return message === undefined ? '' : `. ${message}`;
+      : describeResult(stationCount, this.radiusInKilometers(), this.center());
   });
 
   private readonly router = inject(Router);
@@ -207,6 +201,9 @@ export class ExplorePage {
       snapPosition: this.snapPosition,
       selectInList: stationIdentifier => {
         this.listSelectedStationIdentifier.set(stationIdentifier);
+      },
+      focusInsteadOfStation: () => {
+        this.resultSummaryElement()?.nativeElement.focus({ preventScroll: true });
       },
     });
     this.showOpenedStationOnMap();

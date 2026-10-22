@@ -22,7 +22,7 @@ export const describeStationsError = (error: unknown): string => {
     return STATIONS_NOT_LOADED_MESSAGE;
   }
   switch (error.status) {
-    case 0:
+    case HTTP_STATUS.networkFailure:
       return 'Der Server ist nicht erreichbar. Bitte prüfe deine Internetverbindung.';
     case HTTP_STATUS.notFound:
       return STATION_NOT_FOUND_MESSAGE;

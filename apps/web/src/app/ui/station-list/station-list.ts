@@ -95,11 +95,17 @@ export class StationList {
     });
   }
 
-  /** Moves the focus to the title of a station's row, without scrolling the list. */
-  focusStation(stationIdentifier: string): void {
-    this.rowOf(stationIdentifier)
-      ?.querySelector<HTMLElement>('.station-row__title')
-      ?.focus({ preventScroll: true });
+  /**
+   * Moves the focus to the title of a station's row, without scrolling the list. `false` when the
+   * list has no row for the station, so the caller can focus something else.
+   */
+  focusStation(stationIdentifier: string): boolean {
+    const title = this.rowOf(stationIdentifier)?.querySelector<HTMLElement>('.station-row__title');
+    if (title === null || title === undefined) {
+      return false;
+    }
+    title.focus({ preventScroll: true });
+    return true;
   }
 
   private rowOf(stationIdentifier: string): HTMLElement | undefined {

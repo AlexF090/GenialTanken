@@ -82,9 +82,9 @@
         </button>
       </div>
 
-      <!-- The only live region of the results, so an empty result is announced once. -->
-      <p class="explore-page__summary" role="status">
-        {{ resultSummary() }}<span class="visually-hidden">{{ emptyResultAnnouncement() }}</span>
+      <!-- The only place that names an empty result, so it is shown and announced once. -->
+      <p #resultSummaryElement class="explore-page__summary" role="status" tabindex="-1">
+        {{ resultSummary() }}
       </p>
 
       @if (stationsErrorMessage(); as message) {
@@ -96,9 +96,6 @@
     <router-outlet />
     <!-- Hidden, not removed, while a station card is open: the list keeps its state. -->
     <div [hidden]="isStationCardOpen()">
-      @if (emptyResultMessage(); as message) {
-        <p class="message explore-page__empty">{{ message }}</p>
-      }
       <app-station-list
         [stations]="stations()"
         [fuelType]="fuelType()"

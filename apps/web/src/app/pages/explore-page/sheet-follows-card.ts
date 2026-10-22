@@ -12,13 +12,21 @@ import type { BottomSheet } from '../../ui/bottom-sheet/bottom-sheet';
 import type { SnapPosition } from '../../ui/bottom-sheet/bottom-sheet-snap';
 import type { StationList } from '../../ui/station-list/station-list';
 
+export type ScrollableSheet = Pick<BottomSheet, 'scrollPosition' | 'restoreScrollPosition'>;
+export type StationFocusTarget = Pick<StationList, 'focusStation'>;
+
 export interface SheetFollowsCardOptions {
   openedStationIdentifier: Signal<string | undefined>;
-  bottomSheet: Signal<BottomSheet | undefined>;
-  stationList: Signal<StationList | undefined>;
+  bottomSheet: Signal<ScrollableSheet | undefined>;
+  stationList: Signal<StationFocusTarget | undefined>;
   snapPosition: WritableSignal<SnapPosition>;
   /** Selects the station of the closed card in the list. */
   selectInList: (stationIdentifier: string) => void;
+  /**
+   * Called when the closed station has no row to focus (not in the results for the chosen fuel,
+   * or the list is still loading), so the focus does not fall back to the document body.
+   */
+  focusInsteadOfStation: () => void;
 }
 
 /**
@@ -57,7 +65,9 @@ export const injectSheetFollowsCard = (options: SheetFollowsCardOptions): void =
       afterNextRender(
         () => {
           bottomSheet?.restoreScrollPosition(listScrollPosition);
-          options.stationList()?.focusStation(closedStationIdentifier);
+          if (options.stationList()?.focusStation(closedStationIdentifier) !== true) {
+            options.focusInsteadOfStation();
+          }
         },
         { injector }
       );

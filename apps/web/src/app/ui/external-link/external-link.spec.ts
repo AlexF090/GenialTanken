@@ -34,4 +34,12 @@ describe('ExternalLink', () => {
     expect(accessibleTextOf(link)).toBe('Beispiel (öffnet in neuem Tab)');
     expect(textOf(link.querySelector('.visually-hidden'))).toBe('(öffnet in neuem Tab)');
   });
+
+  it('shows sighted users a decorative new tab icon', async () => {
+    const link = await renderLink();
+
+    const icon = link.querySelector('svg');
+    expect(icon?.getAttribute('aria-hidden')).toBe('true');
+    expect(link.querySelector('app-icon')?.getAttribute('name')).toBe('open-in-new');
+  });
 });

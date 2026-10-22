@@ -4,7 +4,7 @@ import type { Coordinates, FuelType } from '@genialtanken/contracts';
 export const STATIONS_URL = '/api/stations';
 export const PLACES_URL = '/api/places';
 
-export interface StationsUrlOptions {
+interface StationsUrlOptions {
   radiusInKilometers?: number;
   fuel?: FuelType;
 }

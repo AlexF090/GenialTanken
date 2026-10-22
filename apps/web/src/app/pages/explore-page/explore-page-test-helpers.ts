@@ -21,7 +21,7 @@ export const placeSearchInput = (element: HTMLElement): HTMLInputElement => {
 
 export const childComponent = <T>(
   fixture: ComponentFixture<unknown>,
-  type: new (...args: never[]) => T
+  type: new (...constructorArguments: never[]) => T
 ): T => {
   const instance: unknown = fixture.debugElement.query(By.directive(type)).componentInstance;
   if (!(instance instanceof type)) {
