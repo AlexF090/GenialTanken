@@ -44,40 +44,54 @@
   --color-chrome: light-dark(rgb(249 249 249 / 96%), rgb(29 29 29 / 96%));
   --color-chrome-opaque: light-dark(#f9f9f9, #1d1d1d);
 
-  // Tint (iOS blue, darkened in light and lightened in dark mode for text contrast). Filled
-  // actions: text on it light 9.2 (hover 11.2), dark 10.9 (hover 13.2)
-  --color-action: light-dark(#00449a, #85bfff);
-  --color-action-hover: light-dark(#00387f, #a8d1ff);
+  // Tint for text and filled controls with text: the accessible variants of iOS blue (Apple's
+  // "increased contrast" blues). Filled actions: text on it light 7.6 (hover 9.5), dark 7.4
+  // (hover 9.7)
+  --color-action: light-dark(#0040dd, #409cff);
+  --color-action-hover: light-dark(#0035b8, #6eb5ff);
   --color-on-action: light-dark(#ffffff, #000000);
-  // Links and plain buttons: light 9.2 / 8.2, dark 8.8 / 10.9 on surface / canvas; at least 7.5
-  // (light) and 7.3 (dark) on materials
-  --color-action-text: var(--color-action);
-  --color-action-text-hover: var(--color-action-hover);
-  // Opaque tint behind tinted capsules and the selected row: tint on it light 7.7, dark 7.3;
-  // secondary text light 7.8, dark 9.1
-  --color-action-tint: color-mix(in srgb, var(--color-action) 10%, var(--color-surface));
+  // Links and plain buttons: light 8.8 / 7.9, dark 8.5 / 10.5 on surface / canvas; at least 7.2
+  // (light) and 7.1 (dark) on materials and the tint below
+  --color-action-text: light-dark(#0038c6, #7dbcff);
+  --color-action-text-hover: light-dark(#002fa3, #a8d1ff);
+  // Vivid iOS system blue for everything without text: icons, the focus ring, the own position,
+  // spinners, filled icon buttons. Against surface / canvas light 4.0 / 3.6, dark 4.7 / 5.8; at
+  // least 3.1 on materials, the menu highlight, the grey fills and the tint below. White icons
+  // on it: light 4.0, dark 3.7
+  --color-tint-vivid: light-dark(#007aff, #0a84ff);
+  --color-on-tint-vivid: #ffffff;
+  // Opaque tint behind tinted capsules and the selected row: link text on it light 7.3, dark
+  // 7.2; secondary text light 7.7, dark 9.5
+  --color-action-tint: color-mix(in srgb, var(--color-tint-vivid) 14%, var(--color-surface));
 
-  // Focus ring (non-text, ≥ 3:1): the tint, against surface / canvas light 9.2 / 8.2, dark
-  // 8.8 / 10.9. The halo in the surface color on both sides of it keeps it visible on any
-  // backdrop, e.g. map tiles in the tint's own hue.
-  --color-focus-ring: var(--color-action);
+  // Focus ring (non-text, ≥ 3:1): the vivid tint, against surface / canvas light 4.0 / 3.6, dark
+  // 4.7 / 5.8, on the tint light 3.3, dark 4.0. The halo in the surface color on both sides of
+  // it keeps it visible on any backdrop, e.g. map tiles in the tint's own hue.
+  --color-focus-ring: var(--color-tint-vivid);
   --color-focus-ring-halo: var(--color-surface);
 
-  // Reserved for the cheapest price only, like a green price in Apple Maps: text on it light 7.2,
-  // dark 10.4; the edge separates it from white surfaces
-  --color-highlight: light-dark(#15652a, #30d158);
-  --color-on-highlight: light-dark(#ffffff, #000000);
-  --color-highlight-edge: var(--color-highlight);
+  // Reserved for the cheapest price only, like a green price in Apple Maps: iOS system green
+  // with black text, light 9.5, dark 10.4. The edge separates it from white surfaces (light 4.4,
+  // dark 8.4 against the surface).
+  --color-highlight: light-dark(#34c759, #30d158);
+  --color-on-highlight: #000000;
+  --color-highlight-edge: light-dark(#248a3d, #30d158);
 
-  // Price levels on the map, cheap to dear: a tint with a colored edge. Text on the tints: light
-  // 14.4 / 14.7 / 13.3, dark 13.5 / 13.4 / 15.5. Edges against the surface: light 7.2 / 4.3 / 8.4,
-  // dark 8.4 / 9.5 / 7.6. Color only repeats what the price says.
-  --color-price-low: light-dark(#d9f2df, #12351d);
-  --color-price-low-edge: var(--color-highlight);
-  --color-price-medium: light-dark(#fdedc8, #3d2c08);
-  --color-price-medium-edge: light-dark(#c25e00, #ffb340);
-  --color-price-high: light-dark(#fddcd8, #421616);
-  --color-price-high-edge: var(--color-error);
+  // Price levels on the map and in the list, cheap to dear: a tint of iOS green, orange and red
+  // with a colored edge. Text on the tints: light 12.7 / 12.8 / 10.5, dark 9.1 / 9.1 / 11.5.
+  // Edges against the surface: light 4.4 / 4.3 / 5.4, dark 8.4 / 8.3 / 5.0. Color only repeats
+  // what the price says.
+  --color-price-low: light-dark(#b8ebc5, #22522f);
+  --color-price-low-edge: var(--color-highlight-edge);
+  --color-price-medium: light-dark(#ffdaa6, #604318);
+  --color-price-medium-edge: light-dark(#c55a00, #ff9f0a);
+  --color-price-high: light-dark(#ffbab7, #602826);
+  --color-price-high-edge: light-dark(#d70015, #ff453a);
+
+  // A favorite's filled star: iOS system yellow with an edge that carries the contrast (light
+  // 5.2 against the surface, 4.3 on the tint; dark the yellow itself, 12.1 / 10.2)
+  --color-favorite: light-dark(#ffcc00, #ffd60a);
+  --color-favorite-edge: light-dark(#b25000, #ffd60a);
 
   // Errors: light 7.1 / 8.4, dark 7.2 / 7.6 on error surface / surface
   --color-error: light-dark(#a00016, #ff8c85);
@@ -88,8 +102,8 @@
   --color-hairline: light-dark(#c6c6c8, #38383a);
   --color-border-control: light-dark(#848489, #8e8e93);
 
-  // Map: the own position is the blue dot known from Apple Maps (decorative, carries no text)
-  --color-own-position: #007aff;
+  // Map: the own position is the blue dot known from Apple Maps
+  --color-own-position: var(--color-tint-vivid);
 
   // The only shadow color; used by `--shadow-floating`
   --color-shadow: light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 50%));
@@ -177,6 +191,9 @@
   --border-width-thin: 1px;
   --border-width-focus: 3px;
   --border-width-focus-halo: 2px;
+  // Outline of a filled icon glyph, e.g. the favorite star, in units of the 24-unit icon grid.
+  // Drawn below the fill, so half of it shows.
+  --border-width-icon-outline: 2px;
   // Outlines drawn on the map, e.g. the search radius
   --border-width-map-outline: 1.5px;
   --focus-offset: 2px;

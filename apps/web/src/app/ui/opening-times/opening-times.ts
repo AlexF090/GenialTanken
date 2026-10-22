@@ -88,7 +88,7 @@ interface OpeningDay {
           inset-block: 0;
           inset-inline-start: 0;
           width: var(--space-2xs);
-          background-color: var(--color-action);
+          background-color: var(--color-tint-vivid);
         }
       }
     }

@@ -15,7 +15,9 @@ export type FavoriteButtonAppearance = 'icon' | 'tile';
       [attr.aria-pressed]="isFavorite()"
       [attr.aria-label]="accessibleName()"
       (click)="toggled.emit()">
-      <app-icon [name]="isFavorite() ? 'star' : 'star-outline'" />
+      <app-icon
+        [name]="isFavorite() ? 'star' : 'star-outline'"
+        [class.favorite-button__star--filled]="isFavorite()" />
       @if (appearance() === 'tile') {
         <span class="action-tile__label" aria-hidden="true">Favorit</span>
       }
@@ -24,6 +26,15 @@ export type FavoriteButtonAppearance = 'icon' | 'tile';
   styles: `
     :host {
       display: contents;
+    }
+
+    /* Yellow like a favorite in iOS; the edge gives the light yellow its contrast. */
+    .favorite-button__star--filled {
+      color: var(--color-favorite);
+      stroke: var(--color-favorite-edge);
+      stroke-width: var(--border-width-icon-outline);
+      stroke-linejoin: round;
+      paint-order: stroke;
     }
   `,
 })
