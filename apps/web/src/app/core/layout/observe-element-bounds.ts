@@ -1,5 +1,5 @@
 import {
-  afterNextRender,
+  afterRenderEffect,
   assertInInjectionContext,
   DestroyRef,
   DOCUMENT,
@@ -27,24 +27,30 @@ const isSameBounds = (first: ElementBounds, second: ElementBounds): boolean =>
 
 /**
  * Where an element of the component's view lies in the window, updated whenever it or the window
- * resizes (an element fixed to the window moves only then). Starts at 0 on every edge and stays
- * there without `ResizeObserver` (jsdom in unit tests). Call it in an injection context.
+ * resizes (an element fixed to the window moves only then). Follows the element when the view
+ * replaces it, e.g. through hot module replacement, and keeps the last bounds while it is off the
+ * page instead of reading 0. Starts at 0 on every edge and stays there without `ResizeObserver`
+ * (jsdom in unit tests). Call it in an injection context.
  */
 export const observeElementBounds = (element: () => HTMLElement): Signal<ElementBounds> => {
   assertInInjectionContext(observeElementBounds);
   const destroyRef = inject(DestroyRef);
   const document = inject(DOCUMENT);
   const bounds = signal(NO_BOUNDS, { equal: isSameBounds });
-  afterNextRender(() => {
+  afterRenderEffect(onCleanup => {
     const observedElement = element();
-    observeElementResize(
+    const stopObserving = observeElementResize(
       [observedElement, document.documentElement],
       () => {
+        if (!observedElement.isConnected) {
+          return;
+        }
         const { top, right, bottom, left } = observedElement.getBoundingClientRect();
         bounds.set({ top, right, bottom, left });
       },
       destroyRef
     );
+    onCleanup(stopObserving);
   });
   return bounds.asReadonly();
 };
