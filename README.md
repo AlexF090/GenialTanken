@@ -64,7 +64,7 @@ Only current prices are served; there is no price history. French data is publis
 ## Tech stack
 
 - **Web:** Angular 22, signals and `httpResource`, Signal Forms, Leaflet + markercluster, SCSS with design tokens, Vitest
-- **API:** NestJS 12 (ESM), native Standard Schema validation with zod 4, `@nestjs/config`, cache-manager with an LRU store (`@cacheable/memory`), throttler, Swagger, Terminus, Vitest + Supertest
+- **API:** NestJS 12 (ESM), native Standard Schema validation with zod 4, environment validated by a zod schema at startup, cache-manager with an LRU store (`@cacheable/memory`), throttler, Swagger, Terminus, Vitest + Supertest
 - **Shared:** TypeScript 6 strict, zod 4 contracts
 - **Tooling:** pnpm 12 workspaces, ESLint (typescript-eslint strict, angular-eslint including template accessibility), Prettier, lefthook Git hooks, Playwright, dev container
 - **Delivery:** GitHub Actions, Cloudflare Workers with static assets (web), Render free web service from Docker (API), Dependabot

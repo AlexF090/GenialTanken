@@ -24,7 +24,7 @@ Datenquellen: aktuelle Preise, keine Historie.
 ## Phase 1 – BFF-Proxy (umgesetzt)
 
 - [x] API-Key aus dem Frontend-Bundle entfernen, nur noch als Env-Variable im Backend
-- [x] NestJS-API aufsetzen (TypeScript strict, `@nestjs/config`)
+- [x] NestJS-API aufsetzen (TypeScript strict, Umgebung per zod-Schema geprüft; `@nestjs/config` später entfernt)
 - [x] Provider-Modul: Frankreich (data.economie.gouv.fr) hinter gemeinsamer Schnittstelle (Deutschland war angebunden und ist wieder entfernt, siehe Entscheidungen)
 - [x] Feature-Modul `stations` (ein eigenes `prices`-Modul war nicht nötig: Preise kommen immer mit der Station)
 - [x] Validierung mit zod über Nests eingebaute `StandardSchemaValidationPipe` (zod 4 implementiert Standard Schema; `nestjs-zod` unterstützt Nest 12 noch nicht), Schemas aus `packages/contracts`
