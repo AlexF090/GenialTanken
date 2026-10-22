@@ -1,0 +1,28 @@
+name: Set up Playwright
+description: Restore or install Playwright Chromium (version from e2e/package.json) with its system dependencies. Run after the setup action.
+
+runs:
+  using: composite
+  steps:
+    - name: Read Playwright version
+      id: playwright
+      shell: bash
+      run: echo "version=$(jq --raw-output '.devDependencies["@playwright/test"]' e2e/package.json)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Playwright browsers
+      id: playwright-cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+    - name: Install Playwright Chromium with system dependencies
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: pnpm --filter e2e exec playwright install --with-deps chromium
+
+    # The cache holds only the browsers; the system packages are gone on a fresh runner.
+    - name: Install Playwright system dependencies (browsers restored from cache)
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: pnpm --filter e2e exec playwright install-deps chromium

@@ -187,6 +187,9 @@ importers:
       eslint:
         specifier: 10.13.0
         version: 10.13.0(jiti@1.21.7)(supports-color@8.1.1)
+      eslint-plugin-playwright:
+        specifier: 2.12.1
+        version: 2.12.1(eslint@10.13.0(jiti@1.21.7)(supports-color@8.1.1))
       globals:
         specifier: 17.13.0
         version: 17.13.0
@@ -205,6 +208,9 @@ importers:
       typescript-eslint:
         specifier: 8.71.2
         version: 8.71.2(eslint@10.13.0(jiti@1.21.7)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.3(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
 
   apps/api:
     dependencies:
@@ -280,7 +286,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.5
-        version: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7))
+        version: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
 
   apps/web:
     dependencies:
@@ -381,7 +387,7 @@ importers:
         version: 6.0.3
       vitest:
         specifier: 5.0.5
-        version: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7))
+        version: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
 
 packages:
 
@@ -3361,6 +3367,12 @@ packages:
   escape-string-regexp@5.0.0:
     resolution: {integrity: sha512-/veY75JbMK4j1yjvuUxuVsiS/hr/4iHs9FTT6cgTexxdE0Ly/glccBAkloH/DofkjRbZU3bnoj38mOmhkZ0lHw==}
     engines: {node: '>=12'}
+
+  eslint-plugin-playwright@2.12.1:
+    resolution: {integrity: sha512-JhavNuYBIq7SE/Zg9Esf9RGHkXoDbzrEKS383cowzMyvZ4JMbmdNCN6CoW+RU1Cjzwcoea1tou0je58uXmT/9A==}
+    engines: {node: '>=16.9.0'}
+    peerDependencies:
+      eslint: '>=8.40.0'
 
   eslint-scope@9.1.2:
     resolution: {integrity: sha512-xS90H51cKw0jltxmvmHy2Iai1LIqrfbw57b79w/J7MfvDfkIkFZ+kj6zC3BjtUwh150HsSSdxXZcsuv72miDFQ==}
@@ -7858,7 +7870,7 @@ snapshots:
       obug: 3.0.0
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7))
+      vitest: 5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.3(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
 
   '@vitest/istanbul-lib-coverage@1.0.2': {}
 
@@ -7866,7 +7878,7 @@ snapshots:
     dependencies:
       '@vitest/istanbul-lib-coverage': 1.0.2
 
-  '@vitest/mocker@5.0.5(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7))':
+  '@vitest/mocker@5.0.5(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.5
@@ -8739,6 +8751,11 @@ snapshots:
   escape-string-regexp@4.0.0: {}
 
   escape-string-regexp@5.0.0: {}
+
+  eslint-plugin-playwright@2.12.1(eslint@10.13.0(jiti@1.21.7)(supports-color@8.1.1)):
+    dependencies:
+      eslint: 10.13.0(jiti@1.21.7)(supports-color@8.1.1)
+      globals: 17.13.0
 
   eslint-scope@9.1.2:
     dependencies:
@@ -11171,10 +11188,10 @@ snapshots:
       sass-embedded: 1.104.1
       terser: 5.51.2
 
-  vitest@5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7)):
+  vitest@5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.1(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.5(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7))
+      '@vitest/mocker': 5.0.5(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
       chai: 6.3.0
       es-module-lexer: 2.3.2
       expect-type: 1.4.0
@@ -11197,7 +11214,7 @@ snapshots:
   vitest@5.0.5(@types/node@26.6.4)(@vitest/coverage-v8@5.0.5)(jsdom@30.1.3(@noble/hashes@1.8.0))(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.5(vite@8.3.0(@types/node@26.6.4)(jiti@1.21.7))
+      '@vitest/mocker': 5.0.5(vite@8.3.0(@types/node@26.6.4)(esbuild@0.28.2)(jiti@1.21.7)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
       chai: 6.3.0
       es-module-lexer: 2.3.2
       expect-type: 1.4.0

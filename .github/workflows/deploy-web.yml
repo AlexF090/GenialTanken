@@ -7,9 +7,10 @@ name: Deploy web
 # has access to secrets. This workflow therefore never checks out or executes code
 # from the triggering ref. It only downloads the `web-dist` artifact that the
 # successful CI run produced (static build plus the Worker sources) and uploads it to
-# the Cloudflare Worker `genialtanken`. The wrangler configuration comes from the
-# default branch, never from the artifact: a configuration from a pull request could
-# declare a custom build command that wrangler would run with the deploy secrets.
+# the Cloudflare Worker `genialtanken`. The wrangler configuration and the script that
+# verifies it come from the default branch, never from the artifact: a configuration from a
+# pull request could declare a custom build command that wrangler would run with the deploy
+# secrets.
 # Runs without that artifact (CI skips all jobs for draft pull requests) skip the
 # deploy instead of failing.
 #
@@ -17,10 +18,6 @@ name: Deploy web
 # with the preview alias `pr-<number>`, served at
 # https://pr-<number>-genialtanken.alexf090.workers.dev. Version previews serve the static
 # assets and share the production variables and secrets the /api proxy needs.
-#
-# The trusted apps/web/wrangler.jsonc must exist on the default branch. Until the change that
-# introduces it is merged, the deploy job fails with a clear error (previews of that very pull
-# request cannot work anyway, because workflow_run reads this file from the default branch).
 on:
   workflow_run:
     workflows: [CI]
@@ -127,7 +124,7 @@ jobs:
     permissions:
       # Download the artifact of the triggering CI run.
       actions: read
-      # Sparse checkout of the trusted wrangler.jsonc from the default branch.
+      # Sparse checkout of the trusted wrangler.jsonc and its verification script from the default branch.
       contents: read
     environment:
       name: ${{ github.event.workflow_run.event == 'pull_request' && 'preview' || 'production' }}
@@ -198,19 +195,27 @@ jobs:
             exit 1
           fi
 
-      # The only file taken from the repository, and only from the default branch.
+      # The only files taken from the repository, and only from the default branch: the wrangler
+      # configuration and the script that verifies it.
       - name: Check out trusted wrangler configuration
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.repository.default_branch }}
           path: trusted-configuration
-          sparse-checkout: apps/web/wrangler.jsonc
+          sparse-checkout: |
+            .nvmrc
+            apps/web/wrangler.jsonc
+            scripts/verify-wrangler-configuration.ts
           sparse-checkout-cone-mode: false
           persist-credentials: false
 
+      - name: Install Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: trusted-configuration/.nvmrc
+
       # Defense in depth: a `build` section would make wrangler run a shell command with the
-      # deploy secrets, so the trusted configuration must not have one (top level or per
-      # environment). Comments are stripped string-aware, because URLs contain `//`.
+      # deploy secrets, so the trusted configuration must not have one.
       - name: Verify trusted wrangler configuration
         env:
           CONFIGURATION_PATH: trusted-configuration/apps/web/wrangler.jsonc
@@ -220,53 +225,7 @@ jobs:
             echo "::error::apps/web/wrangler.jsonc is missing on '${DEFAULT_BRANCH}'. Deploys start working once the change that adds it is merged."
             exit 1
           fi
-          node --input-type=module - <<'EOF'
-          import { readFileSync } from 'node:fs';
-
-          const text = readFileSync(process.env.CONFIGURATION_PATH, 'utf8');
-          let withoutComments = '';
-          let isInString = false;
-          for (let index = 0; index < text.length; index += 1) {
-            const character = text[index];
-            const nextCharacter = text[index + 1];
-            if (isInString) {
-              withoutComments += character;
-              if (character === '\\') {
-                withoutComments += nextCharacter ?? '';
-                index += 1;
-              } else if (character === '"') {
-                isInString = false;
-              }
-              continue;
-            }
-            if (character === '"') {
-              isInString = true;
-              withoutComments += character;
-            } else if (character === '/' && nextCharacter === '/') {
-              while (index < text.length && text[index] !== '\n') index += 1;
-              withoutComments += '\n';
-            } else if (character === '/' && nextCharacter === '*') {
-              const end = text.indexOf('*/', index + 2);
-              index = end === -1 ? text.length : end + 1;
-            } else {
-              withoutComments += character;
-            }
-          }
-          const configuration = JSON.parse(withoutComments.replace(/,(\s*[}\]])/g, '$1'));
-          const environments = Object.entries(configuration.env ?? {});
-          const sectionsWithBuild = [
-            ...('build' in configuration ? ['top level'] : []),
-            ...environments.filter(([, environment]) => 'build' in environment).map(([name]) => `env.${name}`),
-          ];
-          if (sectionsWithBuild.length > 0) {
-            console.log(`::error::wrangler.jsonc must not define a build command (${sectionsWithBuild.join(', ')}).`);
-            process.exit(1);
-          }
-          if (configuration.name !== 'genialtanken') {
-            console.log(`::error::Unexpected Worker name '${configuration.name}' in wrangler.jsonc.`);
-            process.exit(1);
-          }
-          EOF
+          node trusted-configuration/scripts/verify-wrangler-configuration.ts "${CONFIGURATION_PATH}"
           cp "${CONFIGURATION_PATH}" web-dist/wrangler.jsonc
 
       - name: Deploy to Cloudflare Workers
