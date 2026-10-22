@@ -1,12 +1,12 @@
 import { CLIENT_ADDRESS_HEADER, PROXY_SECRET_HEADER } from '@genialtanken/contracts';
 import { z } from 'zod';
-import { FRENCH_RECORDS_PATH } from '../src/fuel-price-providers/france/french-upstream-paths.js';
+import { readApplicationVersion } from '../src/common/application-version.js';
+import { FRENCH_EXPORT_PATH } from '../src/fuel-price-providers/france/french-upstream-paths.js';
 import { strictApiErrorSchema } from './support/api-errors.js';
 import { useTestApplication } from './support/create-test-application.js';
 import type { TestApi } from './support/create-test-application.js';
 import type { EnvironmentVariables } from '../src/configuration/environment.js';
 import { useFakeUpstream } from './support/fake-upstream.js';
-import { frenchResponse } from './support/french-records.js';
 import { PARIS } from './support/positions.js';
 
 const ALLOWED_ORIGIN = 'https://genialtanken.alexf090.workers.dev';
@@ -50,18 +50,25 @@ const startApplication = useTestApplication(() => ({
   FRANCE_FUEL_PRICES_BASE_URL: upstream.baseUrl,
 }));
 
+/** Far beyond the default test timeout, so only a startup that does not wait for it passes. */
+const SLOW_EXPORT_DELAY_IN_MILLISECONDS = 20_000;
+
 beforeEach(() => {
-  upstream.respondTo(FRENCH_RECORDS_PATH, { status: 200, body: frenchResponse([]) });
+  upstream.respondTo(FRENCH_EXPORT_PATH, { status: 200, body: [] });
 });
 
 describe('GET /health', () => {
-  it('reports the application as up without calling the upstream', async () => {
+  it('reports the application as up while the French price snapshot is still loading', async () => {
+    upstream.respondTo(FRENCH_EXPORT_PATH, {
+      status: 200,
+      body: [],
+      delayInMilliseconds: SLOW_EXPORT_DELAY_IN_MILLISECONDS,
+    });
     const api = await startApplication();
 
     const response = await api.get('/health').expect(200);
 
     expect(response.body).toEqual(expect.objectContaining({ status: 'ok' }));
-    expect(upstream.requests).toHaveLength(0);
   });
 
   it('is not served below the api prefix', async () => {
@@ -121,7 +128,9 @@ describe('OpenAPI document', () => {
 
     const response = await api.get('/api/docs-json').expect(200);
 
-    expect(openApiInformationSchema.parse(response.body).info.version).toBe('2.0.0');
+    expect(openApiInformationSchema.parse(response.body).info.version).toBe(
+      readApplicationVersion()
+    );
   });
 });
 

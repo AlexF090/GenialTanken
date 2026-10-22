@@ -40,3 +40,14 @@ export const toStationFromFrance = (record: FrenchRecord): Station => ({
   openingTimes: parseFrenchOpeningHours(record.horaires),
   distanceInMeters: null,
 });
+
+export interface FrenchStationEntry {
+  /** Identifier of the record in the dataset, which the station pages are keyed by. */
+  localIdentifier: number;
+  station: Station;
+}
+
+export const toFrenchStationEntry = (record: FrenchRecord): FrenchStationEntry => ({
+  localIdentifier: record.id,
+  station: toStationFromFrance(record),
+});

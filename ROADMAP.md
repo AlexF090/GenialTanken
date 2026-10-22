@@ -39,9 +39,10 @@ Datenquellen: aktuelle Preise, keine Historie.
 Offene Punkte aus dem Review (Follow-ups):
 
 - [x] Größenbegrenzung des In-Memory-Caches (LRU über `@cacheable/memory`, `CACHE_MAXIMUM_ENTRIES`, Standard 5000 Einträge)
+- [x] Preis-Snapshot für Frankreich: der ganze Datensatz (Export-Endpunkt, knapp 10.000 Stationen, rund 8,5 MB) liegt im Speicher und wird beim Start ohne Blockieren und dann alle `FRANCE_PRICE_SNAPSHOT_REFRESH_INTERVAL_IN_SECONDS` (Standard 600) neu geladen, statt pro Suche den Upstream zu fragen. Das Laden hat ein eigenes Timeout (`FRANCE_PRICE_SNAPSHOT_TIMEOUT_IN_SECONDS`, Standard 30). Ein fehlgeschlagenes Neuladen behält den letzten Stand; ohne brauchbaren Stand versucht die API es nach einer Minute erneut. Älter als `FRANCE_PRICE_SNAPSHOT_MAXIMUM_AGE_IN_SECONDS` (Standard 3600, muss länger als das Intervall sein) gilt der Stand als fehlend; eine Anfrage wartet dann höchstens 3 Sekunden auf ein laufendes Laden und fragt sonst wie bisher den `records`-Endpunkt
 - [ ] Echter HTTP-Status 404 für unbekannte Routen; mit Static Assets und `not_found_handling: single-page-application` liefert der Cloudflare Worker die SPA mit 200 aus (bräuchte SSR oder Routing-Logik im Worker)
 - [x] Favoriten gebündelt in einem Request laden statt einem Request pro Favorit (`GET /api/stations/by-identifiers`, bis zu 50 IDs pro Request)
-- [ ] Favoriten auch beim Upstream gebündelt abfragen: eine Abfrage mit `where id in (...)` statt einer Upstream-Anfrage pro ID
+- [ ] Favoriten auch beim Upstream gebündelt abfragen: eine Abfrage mit `where id in (...)` statt einer Upstream-Anfrage pro ID (seit dem Preis-Snapshot nur noch im Fallback ohne Snapshot relevant)
 
 ## Phase 2 – Persistenz (geplant)
 

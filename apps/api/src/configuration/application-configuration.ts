@@ -28,6 +28,20 @@ export class ApplicationConfiguration {
     return this.environment.FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS;
   }
 
+  get francePriceSnapshotRefreshIntervalInMilliseconds(): number {
+    return (
+      this.environment.FRANCE_PRICE_SNAPSHOT_REFRESH_INTERVAL_IN_SECONDS * MILLISECONDS_PER_SECOND
+    );
+  }
+
+  get francePriceSnapshotMaximumAgeInMilliseconds(): number {
+    return this.environment.FRANCE_PRICE_SNAPSHOT_MAXIMUM_AGE_IN_SECONDS * MILLISECONDS_PER_SECOND;
+  }
+
+  get francePriceSnapshotTimeoutInMilliseconds(): number {
+    return this.environment.FRANCE_PRICE_SNAPSHOT_TIMEOUT_IN_SECONDS * MILLISECONDS_PER_SECOND;
+  }
+
   get photonBaseUrl(): string {
     return this.environment.PHOTON_BASE_URL;
   }

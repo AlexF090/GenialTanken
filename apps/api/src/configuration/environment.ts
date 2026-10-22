@@ -30,54 +30,77 @@ const optionalTrimmedString = () =>
     .transform(value => (value === '' ? undefined : value));
 
 /** Environment variables of the API, validated once at startup. */
-export const environmentSchema = z.object({
-  FRANCE_FUEL_PRICES_BASE_URL: baseUrlSchema('https://data.economie.gouv.fr'),
-  /**
-   * Website of the French price service; the open data lacks station names and brands, its
-   * station pages (HTML) have them.
-   */
-  FRANCE_STATION_DETAILS_BASE_URL: baseUrlSchema('https://www.prix-carburants.gouv.fr'),
-  /** Names and brands rarely change, so they are cached far longer than fuel prices. */
-  FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS: secondsSchema.default(604_800),
-  /**
-   * How long one station search may wait for station pages in total; stations whose page has
-   * not arrived by then are served without name.
-   */
-  FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS: millisecondsSchema.default(3000),
-  /** Photon (komoot) instance behind the place search. */
-  PHOTON_BASE_URL: baseUrlSchema('https://photon.komoot.io'),
-  /** Place search answers rarely change, so they are cached far longer than fuel prices. */
-  PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS: secondsSchema.default(86_400),
-  WEB_ORIGIN: z
-    .string()
-    .default('http://localhost:4200')
-    .transform(origins =>
-      origins
-        .split(',')
-        .map(origin => origin.trim())
-        .filter(origin => origin.length > 0)
-    )
-    .pipe(z.array(z.url()).min(1, 'must list at least one origin')),
-  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-  UPSTREAM_TIMEOUT_IN_MILLISECONDS: millisecondsSchema.default(8000),
-  CACHE_TIME_TO_LIVE_IN_SECONDS: secondsSchema.default(300),
-  /** Upper bound of the in-memory cache; the least recently used entries are evicted beyond it. */
-  CACHE_MAXIMUM_ENTRIES: positiveIntegerSchema.default(5000),
-  RATE_LIMIT_REQUESTS_PER_MINUTE: positiveIntegerSchema.default(60),
-  /**
-   * Shared with the Cloudflare Worker; only requests carrying it may name the client
-   * address for the rate limit. Without it every request is limited by its connecting address.
-   */
-  PROXY_SHARED_SECRET: optionalTrimmedString().pipe(
-    z
+export const environmentSchema = z
+  .object({
+    FRANCE_FUEL_PRICES_BASE_URL: baseUrlSchema('https://data.economie.gouv.fr'),
+    /**
+     * Website of the French price service; the open data lacks station names and brands, its
+     * station pages (HTML) have them.
+     */
+    FRANCE_STATION_DETAILS_BASE_URL: baseUrlSchema('https://www.prix-carburants.gouv.fr'),
+    /** Names and brands rarely change, so they are cached far longer than fuel prices. */
+    FRANCE_STATION_DETAILS_CACHE_TIME_TO_LIVE_IN_SECONDS: secondsSchema.default(604_800),
+    /**
+     * How long one station search may wait for station pages in total; stations whose page has
+     * not arrived by then are served without name.
+     */
+    FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS: millisecondsSchema.default(3000),
+    /** How often the whole French dataset is loaded again in the background. */
+    FRANCE_PRICE_SNAPSHOT_REFRESH_INTERVAL_IN_SECONDS: secondsSchema.default(600),
+    /**
+     * A snapshot older than this, because refreshes keep failing, is no longer served; searches
+     * then ask the open data API directly.
+     */
+    FRANCE_PRICE_SNAPSHOT_MAXIMUM_AGE_IN_SECONDS: secondsSchema.default(3600),
+    /** The export is about 8.5 MB, far more than `UPSTREAM_TIMEOUT_IN_MILLISECONDS` is meant for. */
+    FRANCE_PRICE_SNAPSHOT_TIMEOUT_IN_SECONDS: secondsSchema.default(30),
+    /** Photon (komoot) instance behind the place search. */
+    PHOTON_BASE_URL: baseUrlSchema('https://photon.komoot.io'),
+    /** Place search answers rarely change, so they are cached far longer than fuel prices. */
+    PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS: secondsSchema.default(86_400),
+    WEB_ORIGIN: z
       .string()
-      .min(
-        MINIMUM_PROXY_SHARED_SECRET_LENGTH,
-        `must have at least ${String(MINIMUM_PROXY_SHARED_SECRET_LENGTH)} characters`
+      .default('http://localhost:4200')
+      .transform(origins =>
+        origins
+          .split(',')
+          .map(origin => origin.trim())
+          .filter(origin => origin.length > 0)
       )
-      .optional()
-  ),
-});
+      .pipe(z.array(z.url()).min(1, 'must list at least one origin')),
+    PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+    UPSTREAM_TIMEOUT_IN_MILLISECONDS: millisecondsSchema.default(8000),
+    CACHE_TIME_TO_LIVE_IN_SECONDS: secondsSchema.default(300),
+    /** Upper bound of the in-memory cache; the least recently used entries are evicted beyond it. */
+    CACHE_MAXIMUM_ENTRIES: positiveIntegerSchema.default(5000),
+    RATE_LIMIT_REQUESTS_PER_MINUTE: positiveIntegerSchema.default(60),
+    /**
+     * Shared with the Cloudflare Worker; only requests carrying it may name the client
+     * address for the rate limit. Without it every request is limited by its connecting address.
+     */
+    PROXY_SHARED_SECRET: optionalTrimmedString().pipe(
+      z
+        .string()
+        .min(
+          MINIMUM_PROXY_SHARED_SECRET_LENGTH,
+          `must have at least ${String(MINIMUM_PROXY_SHARED_SECRET_LENGTH)} characters`
+        )
+        .optional()
+    ),
+  })
+  .superRefine((environment, context) => {
+    // Otherwise the snapshot would expire before its next regular refresh.
+    if (
+      environment.FRANCE_PRICE_SNAPSHOT_REFRESH_INTERVAL_IN_SECONDS >=
+      environment.FRANCE_PRICE_SNAPSHOT_MAXIMUM_AGE_IN_SECONDS
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['FRANCE_PRICE_SNAPSHOT_REFRESH_INTERVAL_IN_SECONDS'],
+        message: 'must be shorter than FRANCE_PRICE_SNAPSHOT_MAXIMUM_AGE_IN_SECONDS',
+      });
+    }
+  });
 
 export type Environment = z.infer<typeof environmentSchema>;
 
