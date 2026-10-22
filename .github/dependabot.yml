@@ -22,6 +22,10 @@ updates:
       # Remove once both declare support for TypeScript 6.1.
       - dependency-name: typescript
         versions: ['>= 6.1.0']
+      # Version 10 needs conventional-changelog-writer 9, but @semantic-release/release-notes-generator
+      # still brings writer 8. Remove once the generator supports writer 9.
+      - dependency-name: conventional-changelog-conventionalcommits
+        versions: ['>= 10.0.0']
     groups:
       angular:
         patterns:
