@@ -43,7 +43,7 @@ import { SortOrderControl } from '../../ui/sort-order-control/sort-order-control
 import { StationList } from '../../ui/station-list/station-list';
 import { StationsMap } from '../../ui/stations-map/stations-map';
 import { injectPlaceSearch } from './place-search';
-import { describeResult } from './result-summary';
+import { describeEmptyResult, describeResult } from './result-summary';
 import { injectSheetFollowsCard } from './sheet-follows-card';
 
 interface SelectionSource {
@@ -138,6 +138,18 @@ export class ExplorePage {
       ? describeResult(this.mapStations().length, this.radiusInKilometers(), this.center())
       : ''
   );
+
+  protected readonly emptyResultMessage = computed(() =>
+    this.hasLoaded() && this.stations().length === 0
+      ? describeEmptyResult(this.fuelLabel(), this.radiusInKilometers())
+      : undefined
+  );
+
+  /** Appended to the summary for screen readers; the list below shows the message visibly. */
+  protected readonly emptyResultAnnouncement = computed(() => {
+    const message = this.emptyResultMessage();
+    return message === undefined ? '' : `. ${message}`;
+  });
 
   private readonly router = inject(Router);
   private readonly openedStation = inject(OpenedStationStore).station;

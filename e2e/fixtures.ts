@@ -137,10 +137,10 @@ export const stationsMap = (page: Page): Locator =>
 /**
  * "N Tankstellen im Umkreis von R km um <label>" on the explore page. It is only filled once the
  * stations of the current search center have loaded, so its label proves the list is current.
- * Anchored at the count, because the empty-list message is a status mentioning the radius too.
+ * For an empty result it also announces the empty-list message, hidden from the eyes.
  */
 export const resultSummary = (page: Page): Locator =>
-  page.getByRole('status').filter({ hasText: /^\d+ Tankstellen? im Umkreis von/ });
+  page.getByRole('status').filter({ hasText: 'im Umkreis von' });
 
 /** The list floats over the map as a sheet whose handle names the next step. */
 export const sheetHandle = (page: Page): Locator =>

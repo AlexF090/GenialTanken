@@ -533,10 +533,15 @@ describe('ExplorePage', () => {
     expect(textOf(emptyMessage)).toBe(
       'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.'
     );
-    expect(emptyMessage?.closest('[role="status"]')).not.toBeNull();
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
-      '0 Tankstellen im Umkreis von 5 km um Eiffelturm, Paris'
+    // One live region, so screen readers announce the empty result once.
+    expect(emptyMessage?.closest('[role="status"]')).toBeNull();
+    const announcingRegions = [...element.querySelectorAll('main [role="status"]')].filter(region =>
+      textOf(region).includes('Keine Tankstellen')
     );
+    expect(announcingRegions.map(textOf)).toEqual([
+      '0 Tankstellen im Umkreis von 5 km um Eiffelturm, Paris. Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.',
+    ]);
+    expect(announcingRegions[0]?.querySelector('.visually-hidden')).not.toBeNull();
   });
 });
 

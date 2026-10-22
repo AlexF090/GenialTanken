@@ -1,6 +1,6 @@
 import { DEFAULT_SEARCH_CENTER } from '../../core/search-center/search-center';
 import type { SearchCenter } from '../../core/search-center/search-center';
-import { describeResult } from './result-summary';
+import { describeEmptyResult, describeResult } from './result-summary';
 
 const MAP_AREA: SearchCenter = {
   latitude: 48.8532,
@@ -28,6 +28,14 @@ describe('describeResult', () => {
   it('calls a search in the map area "die Kartenmitte"', () => {
     expect(describeResult(2, 5, MAP_AREA)).toBe(
       '2 Tankstellen im Umkreis von 5\u00a0km um die Kartenmitte'
+    );
+  });
+});
+
+describe('describeEmptyResult', () => {
+  it('names fuel and radius', () => {
+    expect(describeEmptyResult('Diesel', 10)).toBe(
+      'Keine Tankstellen mit Preis für Diesel im Umkreis von 10\u00a0km gefunden.'
     );
   });
 });

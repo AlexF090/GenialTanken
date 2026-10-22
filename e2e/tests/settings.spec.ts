@@ -102,9 +102,13 @@ test.describe('settings', () => {
     await chooseFuel(page, 'E10');
     await openExplore(page);
 
-    await expect(
-      page.getByText('Keine Tankstellen mit Preis für E10 im Umkreis von 1 km gefunden.')
-    ).toBeVisible();
+    const emptyMessage = 'Keine Tankstellen mit Preis für E10 im Umkreis von 1 km gefunden.';
+    await expect(page.getByText(emptyMessage, { exact: true })).toBeVisible();
+    // Announced once, by the result summary
+    await expect(page.getByRole('status').filter({ hasText: emptyMessage })).toHaveCount(1);
+    await expect(resultSummary(page)).toHaveText(
+      `0 Tankstellen im Umkreis von 1 km um Dein Standort. ${emptyMessage}`
+    );
     await expect(stationCards(page)).toHaveCount(0);
   });
 

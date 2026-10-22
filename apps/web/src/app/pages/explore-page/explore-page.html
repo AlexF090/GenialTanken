@@ -82,7 +82,10 @@
         </button>
       </div>
 
-      <p class="explore-page__summary" role="status">{{ resultSummary() }}</p>
+      <!-- The only live region of the results, so an empty result is announced once. -->
+      <p class="explore-page__summary" role="status">
+        {{ resultSummary() }}<span class="visually-hidden">{{ emptyResultAnnouncement() }}</span>
+      </p>
 
       @if (stationsErrorMessage(); as message) {
         <p class="message message--error" role="alert">{{ message }}</p>
@@ -93,15 +96,9 @@
     <router-outlet />
     <!-- Hidden, not removed, while a station card is open: the list keeps its state. -->
     <div [hidden]="isStationCardOpen()">
-      <!-- Always rendered, so screen readers announce the message when it appears. -->
-      <div role="status">
-        @if (hasLoaded() && stations().length === 0) {
-          <p class="message explore-page__empty">
-            Keine Tankstellen mit Preis für {{ fuelLabel() }} im Umkreis von
-            {{ radiusInKilometers() | kilometers }} gefunden.
-          </p>
-        }
-      </div>
+      @if (emptyResultMessage(); as message) {
+        <p class="message explore-page__empty">{{ message }}</p>
+      }
       <app-station-list
         [stations]="stations()"
         [fuelType]="fuelType()"
