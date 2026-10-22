@@ -12,15 +12,26 @@ const NAMED_ENTITIES: Record<string, string> = {
   quot: '"',
 };
 
+const MAXIMUM_CODE_POINT = 0x10ffff;
+const FIRST_SURROGATE = 0xd800;
+const LAST_SURROGATE = 0xdfff;
+
+const isValidCodePoint = (codePoint: number): boolean =>
+  codePoint <= MAXIMUM_CODE_POINT && (codePoint < FIRST_SURROGATE || codePoint > LAST_SURROGATE);
+
+// String.fromCodePoint throws for out-of-range values, which would fail the whole search
+const characterOrEntity = (codePoint: number, entity: string): string =>
+  isValidCodePoint(codePoint) ? String.fromCodePoint(codePoint) : entity;
+
 const decodeHtmlText = (html: string): string =>
   html
     .replace(/<[^>]*>/g, ' ')
     .replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, code: string) => {
       if (code.startsWith('#x') || code.startsWith('#X')) {
-        return String.fromCodePoint(Number.parseInt(code.slice(2), 16));
+        return characterOrEntity(Number.parseInt(code.slice(2), 16), entity);
       }
       if (code.startsWith('#')) {
-        return String.fromCodePoint(Number.parseInt(code.slice(1), 10));
+        return characterOrEntity(Number.parseInt(code.slice(1), 10), entity);
       }
       return NAMED_ENTITIES[code.toLowerCase()] ?? entity;
     })

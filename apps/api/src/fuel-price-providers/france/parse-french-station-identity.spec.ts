@@ -25,6 +25,12 @@ describe('parseFrenchStationIdentity', () => {
     ).toEqual({ name: "Station d'Auteuil & Fils", brand: 'E.Leclerc' });
   });
 
+  it('keeps numeric entities outside the Unicode range unchanged', () => {
+    expect(
+      parseFrenchStationIdentity(stationFragment('Station &#99999999; &#xD800; &#x41;', 'Total'))
+    ).toEqual({ name: 'Station &#99999999; &#xD800; A', brand: 'Total' });
+  });
+
   it('returns null for missing or empty parts', () => {
     expect(parseFrenchStationIdentity(stationFragment('', ''))).toEqual({
       name: null,
