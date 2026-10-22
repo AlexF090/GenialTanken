@@ -1,6 +1,6 @@
 import { stationsSchema } from '@genialtanken/contracts';
 import {
-  FRENCH_RECORDS_PATH,
+  FRENCH_EXPORT_PATH,
   frenchStationPagePath,
 } from '../src/fuel-price-providers/france/french-upstream-paths.js';
 import { MAXIMUM_PARALLEL_UPSTREAM_REQUESTS } from '../src/upstream/maximum-parallel-upstream-requests.js';
@@ -9,7 +9,6 @@ import { useFakeUpstream } from './support/fake-upstream.js';
 import {
   AUTOMATE_RECORD_ID,
   frenchRecords,
-  frenchResponse,
   RAPEE_RECORD_ID,
   RAPEE_STATION_PAGE,
   RAPEE_STATION_PAGE_PATH,
@@ -38,7 +37,7 @@ const pageRequestsFor = (recordIdentifier: number) =>
   );
 
 beforeEach(() => {
-  france.respondTo(FRENCH_RECORDS_PATH, { status: 200, body: frenchResponse(frenchRecords) });
+  france.respondTo(FRENCH_EXPORT_PATH, { status: 200, body: frenchRecords });
   for (const record of frenchRecords) {
     stationPages.respondTo(frenchStationPagePath(record.id), { status: 404 });
   }
@@ -83,7 +82,7 @@ describe('French station names', () => {
       { length: MAXIMUM_PARALLEL_UPSTREAM_REQUESTS + 2 },
       (_unused, index) => ({ ...rapeeRecord, id: RAPEE_RECORD_ID + index })
     );
-    france.respondTo(FRENCH_RECORDS_PATH, { status: 200, body: frenchResponse(manyRecords) });
+    france.respondTo(FRENCH_EXPORT_PATH, { status: 200, body: manyRecords });
     for (const record of manyRecords) {
       stationPages.respondTo(frenchStationPagePath(record.id), {
         ...RAPEE_STATION_PAGE,

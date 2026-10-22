@@ -26,6 +26,9 @@ const frenchRecordSchema = z.object({
 
 export type FrenchRecord = z.infer<typeof frenchRecordSchema>;
 
+/** Fields to request from the dataset, so the upstream sends nothing the schema strips anyway. */
+export const FRENCH_RECORD_FIELDS = frenchRecordSchema.keyof().options;
+
 export type FrenchPriceField =
   'gazole_prix' | 'sp95_prix' | 'e10_prix' | 'sp98_prix' | 'e85_prix' | 'gplc_prix';
 

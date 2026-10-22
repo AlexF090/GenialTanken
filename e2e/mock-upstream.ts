@@ -9,7 +9,9 @@ import { MOCK_UPSTREAM_PORT as PORT, UNEXPECTED_REQUESTS_PATH } from './mock-ups
 /**
  * Stand-in for the French government fuel price API (data.economie.gouv.fr, Opendatasoft
  * Explore API v2.1) so the browser suite runs without network access. Serves real records
- * captured around Paris from `data/france-stations.json`, honouring the fuel filter
+ * captured around Paris from `data/france-stations.json`: the whole dataset through the export
+ * endpoint (`exports/json`, a plain array the API loads at startup and on its refresh timer) and,
+ * for the API's fallback, the `records` endpoint honouring the fuel filter
  * (`<fuel>_prix is not null`), the search radius (`within_distance`) and lookups by `id`.
  *
  * Also stands in for the Photon place search (`GET /api?q=…`), answering with real responses
@@ -47,12 +49,18 @@ interface DistanceFilter {
   radiusInMeters: number;
 }
 
-const DATASET_PATH =
-  '/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records';
+const DATASET_BASE_PATH =
+  '/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2';
+const RECORDS_PATH = `${DATASET_BASE_PATH}/records`;
+const EXPORT_PATH = `${DATASET_BASE_PATH}/exports/json`;
 
 const fixture = franceResponseSchema.parse(
   JSON.parse(readFileSync(new URL('./data/france-stations.json', import.meta.url), 'utf8'))
 );
+
+const exportedRecords: FranceRecord[] = [
+  ...new Map(fixture.results.map(record => [record.id, record])).values(),
+];
 
 const PHOTON_SEARCH_PATH = '/api';
 const STATION_PAGE_PATH = /^\/map\/recuperer_infos_pdv\/\d+$/;
@@ -143,7 +151,11 @@ const handleRequest = (request: IncomingMessage, response: ServerResponse) => {
     sendJson(response, 200, unexpectedRequests.splice(0));
     return;
   }
-  if (request.method === 'GET' && url.pathname === DATASET_PATH) {
+  if (request.method === 'GET' && url.pathname === EXPORT_PATH) {
+    sendJson(response, 200, exportedRecords);
+    return;
+  }
+  if (request.method === 'GET' && url.pathname === RECORDS_PATH) {
     sendJson(response, 200, answerRecordsQuery(url.searchParams.get('where') ?? ''));
     return;
   }

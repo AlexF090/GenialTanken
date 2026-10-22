@@ -55,6 +55,12 @@ export class FakeUpstream {
     this.listeningBaseUrl = `http://127.0.0.1:${String(address.port)}`;
   }
 
+  requestsTo(pathname: string): RecordedRequest[] {
+    return this.requests.filter(
+      ({ url }) => new URL(url, 'http://fake-upstream').pathname === pathname
+    );
+  }
+
   respondTo(pathname: string, response: FakeResponse): void {
     this.responses.set(pathname, response);
   }

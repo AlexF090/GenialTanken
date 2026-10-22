@@ -4,7 +4,10 @@ import {
 } from '@genialtanken/contracts';
 import { ERROR_MESSAGES } from '../src/common/error-messages.js';
 import { toStationIdentifier } from '../src/fuel-price-providers/station-identifier.js';
-import { FRENCH_RECORDS_PATH } from '../src/fuel-price-providers/france/french-upstream-paths.js';
+import {
+  FRENCH_EXPORT_PATH,
+  FRENCH_RECORDS_PATH,
+} from '../src/fuel-price-providers/france/french-upstream-paths.js';
 import { strictApiErrorSchema } from './support/api-errors.js';
 import { useTestApplication } from './support/create-test-application.js';
 import { searchParametersOf, useFakeUpstream } from './support/fake-upstream.js';
@@ -26,8 +29,33 @@ const startApplication = useTestApplication(() => ({
   FRANCE_FUEL_PRICES_BASE_URL: france.baseUrl,
 }));
 
+const AUTOMATE_IDENTIFIER = toStationIdentifier('FR', String(AUTOMATE_RECORD_ID));
+
+beforeEach(() => {
+  france.respondTo(FRENCH_EXPORT_PATH, { status: 200, body: [rapeeRecord] });
+});
+
 describe('GET /api/stations/:id', () => {
-  it('returns a French station without distance', async () => {
+  it('returns a French station from the snapshot without distance', async () => {
+    const api = await startApplication();
+
+    const response = await api.get(`/api/stations/${RAPEE_IDENTIFIER}`).expect(200);
+
+    expect(response.body).toEqual({ ...EXPECTED_RAPEE_STATION, distanceInMeters: null });
+    expect(france.requestsTo(FRENCH_RECORDS_PATH)).toHaveLength(0);
+  });
+
+  it('responds with 404 when the snapshot does not know the station', async () => {
+    const api = await startApplication();
+
+    const response = await api.get(`/api/stations/${AUTOMATE_IDENTIFIER}`).expect(404);
+
+    expect(response.body).toEqual(NOT_FOUND_BODY);
+    expect(france.requestsTo(FRENCH_RECORDS_PATH)).toHaveLength(0);
+  });
+
+  it('asks the French API for the station when the export fails', async () => {
+    france.respondTo(FRENCH_EXPORT_PATH, { status: 503 });
     france.respondTo(FRENCH_RECORDS_PATH, {
       status: 200,
       body: frenchResponse([rapeeRecord]),
@@ -37,16 +65,17 @@ describe('GET /api/stations/:id', () => {
     const response = await api.get(`/api/stations/${RAPEE_IDENTIFIER}`).expect(200);
 
     expect(response.body).toEqual({ ...EXPECTED_RAPEE_STATION, distanceInMeters: null });
-    expect(searchParametersOf(france.requests[0]).get('where')).toBe('id=75012010');
+    expect(searchParametersOf(france.requestsTo(FRENCH_RECORDS_PATH)[0]).get('where')).toBe(
+      'id=75012010'
+    );
   });
 
-  it('responds with 404 when the French API does not know the station', async () => {
+  it('responds with 404 when neither the export nor the French API know the station', async () => {
+    france.respondTo(FRENCH_EXPORT_PATH, { status: 503 });
     france.respondTo(FRENCH_RECORDS_PATH, { status: 200, body: frenchResponse([]) });
     const api = await startApplication();
 
-    const response = await api
-      .get(`/api/stations/${toStationIdentifier('FR', String(AUTOMATE_RECORD_ID))}`)
-      .expect(404);
+    const response = await api.get(`/api/stations/${AUTOMATE_IDENTIFIER}`).expect(404);
 
     expect(response.body).toEqual(NOT_FOUND_BODY);
   });
@@ -57,10 +86,11 @@ describe('GET /api/stations/:id', () => {
     const response = await api.get('/api/stations/fr-abc').expect(404);
 
     expect(response.body).toEqual(NOT_FOUND_BODY);
-    expect(france.requests).toHaveLength(0);
+    expect(france.requestsTo(FRENCH_RECORDS_PATH)).toHaveLength(0);
   });
 
-  it('responds with 502 when the French API fails', async () => {
+  it('responds with 502 when the export and the French API fail', async () => {
+    france.respondTo(FRENCH_EXPORT_PATH, { status: 503 });
     france.respondTo(FRENCH_RECORDS_PATH, { status: 500 });
     const api = await startApplication();
 
@@ -77,7 +107,7 @@ describe('GET /api/stations/:id', () => {
       const response = await api.get(`/api/stations/${identifier}`).expect(404);
 
       expect(response.body).toEqual(NOT_FOUND_BODY);
-      expect(france.requests).toHaveLength(0);
+      expect(france.requestsTo(FRENCH_RECORDS_PATH)).toHaveLength(0);
     }
   );
 
@@ -89,7 +119,7 @@ describe('GET /api/stations/:id', () => {
       const response = await api.get(`/api/stations/${identifier}`).expect(400);
 
       expect(strictApiErrorSchema.parse(response.body).statusCode).toBe(400);
-      expect(france.requests).toHaveLength(0);
+      expect(france.requestsTo(FRENCH_RECORDS_PATH)).toHaveLength(0);
     }
   );
 });
@@ -99,28 +129,30 @@ describe('GET /api/stations/by-identifiers', () => {
   const UNKNOWN_COUNTRY_IDENTIFIER = 'it-12345';
 
   it('returns the found stations and lists the others as unavailable, in the requested order', async () => {
-    france.respondTo(FRENCH_RECORDS_PATH, {
-      status: 200,
-      body: frenchResponse([rapeeRecord]),
-    });
     const api = await startApplication();
 
     const response = await api
       .get(LOOKUP_PATH)
       .query({
-        identifiers: ['fr-abc', UNKNOWN_COUNTRY_IDENTIFIER, RAPEE_IDENTIFIER].join(','),
+        identifiers: [
+          'fr-abc',
+          UNKNOWN_COUNTRY_IDENTIFIER,
+          RAPEE_IDENTIFIER,
+          AUTOMATE_IDENTIFIER,
+        ].join(','),
       })
       .expect(200);
 
     expect(response.body).toEqual({
       stations: [{ ...EXPECTED_RAPEE_STATION, distanceInMeters: null }],
-      unavailableIdentifiers: ['fr-abc', UNKNOWN_COUNTRY_IDENTIFIER],
+      unavailableIdentifiers: ['fr-abc', UNKNOWN_COUNTRY_IDENTIFIER, AUTOMATE_IDENTIFIER],
       failedIdentifiers: [],
     });
-    expect(france.requests).toHaveLength(1);
+    expect(france.requestsTo(FRENCH_RECORDS_PATH)).toHaveLength(0);
   });
 
   it('looks up a repeated identifier once and lists its station once', async () => {
+    france.respondTo(FRENCH_EXPORT_PATH, { status: 503 });
     france.respondTo(FRENCH_RECORDS_PATH, {
       status: 200,
       body: frenchResponse([rapeeRecord]),
@@ -137,10 +169,11 @@ describe('GET /api/stations/by-identifiers', () => {
       unavailableIdentifiers: [],
       failedIdentifiers: [],
     });
-    expect(france.requests).toHaveLength(1);
+    expect(france.requestsTo(FRENCH_RECORDS_PATH)).toHaveLength(1);
   });
 
   it('lists the identifiers of a failing provider as failed and still answers', async () => {
+    france.respondTo(FRENCH_EXPORT_PATH, { status: 503 });
     france.respondTo(FRENCH_RECORDS_PATH, { status: 500 });
     const api = await startApplication();
 
@@ -157,6 +190,7 @@ describe('GET /api/stations/by-identifiers', () => {
   });
 
   it('responds with 502 when every lookup fails', async () => {
+    france.respondTo(FRENCH_EXPORT_PATH, { status: 503 });
     france.respondTo(FRENCH_RECORDS_PATH, { status: 500 });
     const api = await startApplication();
 
@@ -200,6 +234,6 @@ describe('GET /api/stations/by-identifiers', () => {
     const apiError = strictApiErrorSchema.parse(response.body);
     expect(apiError.statusCode).toBe(400);
     expect(apiError.message).toContain('identifiers');
-    expect(france.requests).toHaveLength(0);
+    expect(france.requestsTo(FRENCH_RECORDS_PATH)).toHaveLength(0);
   });
 });
