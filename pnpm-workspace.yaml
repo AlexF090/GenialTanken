@@ -4,7 +4,8 @@ packages:
   - e2e
 
 saveExact: true
-engineStrict: true
+# No engineStrict: Dependabot's updater runs Node 24 and would abort on `engines.node`.
+# .nvmrc, CI and the dev container enforce Node 26.
 # Minutes a release must be public before it can be installed (supply-chain protection)
 minimumReleaseAge: 1440
 
