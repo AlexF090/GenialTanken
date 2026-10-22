@@ -36,8 +36,19 @@ describe('apps/web/public/_headers', () => {
     '/ngsw.json',
     '/index.html',
     '/',
+    // Deep links get index.html through `not_found_handling`, but `_headers` matches the
+    // requested path, so the rules of `/index.html` and `/` do not reach them.
+    '/favorites',
+    '/settings',
+    '/stations/*',
+    '/map',
   ])('lets the browser revalidate %s on every request', path => {
     expect(rules.get(path)).toEqual(['! Cache-Control', 'Cache-Control: no-cache']);
+  });
+
+  it('keeps hashed styles and media immutable', () => {
+    expect(rules.get('/*.css')).toEqual(['Cache-Control: public, max-age=31536000, immutable']);
+    expect(rules.get('/media/*')).toEqual(['Cache-Control: public, max-age=31536000, immutable']);
   });
 });
 

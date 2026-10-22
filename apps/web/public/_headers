@@ -52,3 +52,18 @@
 /
   ! Cache-Control
   Cache-Control: no-cache
+# Deep links into the app get index.html through `not_found_handling: single-page-application`,
+# but rules match the requested path, not the file served, so each route needs its own rule.
+# A catch-all would also hit the hashed assets. Keep in sync with app.routes.ts.
+/favorites
+  ! Cache-Control
+  Cache-Control: no-cache
+/settings
+  ! Cache-Control
+  Cache-Control: no-cache
+/stations/*
+  ! Cache-Control
+  Cache-Control: no-cache
+/map
+  ! Cache-Control
+  Cache-Control: no-cache
