@@ -75,7 +75,7 @@
   <app-update-notice
     sheetDialogFooter
     class="settings__update"
-    [class.settings__update--shown]="isUpdateReady()"
-    [isUpdateReady]="isUpdateReady()"
+    [class.settings__update--shown]="pendingReload() !== undefined"
+    [pendingReload]="pendingReload()"
     (reloadRequested)="reloadApplication()" />
 </app-sheet-dialog>

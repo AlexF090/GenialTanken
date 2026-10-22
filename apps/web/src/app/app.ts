@@ -36,7 +36,7 @@ import { UpdateNotice } from './ui/update-notice/update-notice';
     <app-update-notice
       class="shell__notices"
       [hidden]="isSettingsOpen()"
-      [isUpdateReady]="isUpdateReady()"
+      [pendingReload]="pendingReload()"
       (reloadRequested)="reloadApplication()" />
   `,
   styles: `
@@ -70,7 +70,7 @@ export class App {
   private readonly applicationUpdate = inject(ApplicationUpdateStore);
   private readonly currentUrl = injectCurrentUrl();
   protected readonly mainContentIdentifier = MAIN_CONTENT_IDENTIFIER;
-  protected readonly isUpdateReady = this.applicationUpdate.isUpdateReady;
+  protected readonly pendingReload = this.applicationUpdate.pendingReload;
   protected readonly isSettingsOpen = computed(() =>
     isRouteOpen(this.currentUrl(), SETTINGS_ROUTE_PATH)
   );

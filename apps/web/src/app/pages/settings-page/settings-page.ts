@@ -41,7 +41,7 @@ const COLOR_SCHEME_LABELS: Record<ColorSchemePreference, string> = {
 export class SettingsPage {
   private readonly settingsStore = inject(SettingsStore);
   private readonly applicationUpdate = inject(ApplicationUpdateStore);
-  protected readonly isUpdateReady = this.applicationUpdate.isUpdateReady;
+  protected readonly pendingReload = this.applicationUpdate.pendingReload;
 
   protected readonly fuelTypeOptions = fuelTypeOptions('short');
   protected readonly colorSchemeOptions: readonly LabeledOption<ColorSchemePreference>[] =

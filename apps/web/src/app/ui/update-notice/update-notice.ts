@@ -1,7 +1,14 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import type { PendingReload } from '../../core/application-update/application-update-store';
+
+const MESSAGES: Record<PendingReload, string> = {
+  'update-ready': 'Neue Version verfügbar',
+  'reload-required': 'Die App muss neu geladen werden.',
+};
 
 /**
- * "Neue Version verfügbar" with a reload button. The status region is always rendered, so screen
+ * "Neue Version verfügbar" (or, for a broken cache, "Die App muss neu geladen werden.") with a
+ * reload button. The status region is always rendered, so screen
  * readers announce the notice when it appears. It never closes on a timer, so nobody misses it
  * (WCAG 2.2.3).
  */
@@ -10,9 +17,9 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="update-notice" role="status">
-      @if (isUpdateReady()) {
+      @if (pendingReload(); as pendingReload) {
         <div class="message toast update-notice__toast">
-          <p>Neue Version verfügbar</p>
+          <p>{{ messages[pendingReload] }}</p>
           <button type="button" class="button" (click)="reloadRequested.emit()">Neu laden</button>
         </div>
       }
@@ -21,6 +28,11 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   styles: `
     :host {
       display: block;
+    }
+
+    // Any author rule beats the user agent's [hidden] rule, the one above included.
+    :host([hidden]) {
+      display: none;
     }
 
     .update-notice {
@@ -42,6 +54,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   `,
 })
 export class UpdateNotice {
-  readonly isUpdateReady = input.required<boolean>();
+  readonly pendingReload = input<PendingReload | undefined>(undefined);
+  protected readonly messages = MESSAGES;
   readonly reloadRequested = output();
 }

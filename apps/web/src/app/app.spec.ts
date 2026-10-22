@@ -7,7 +7,12 @@ import { App } from './app';
 import { routes } from './app.routes';
 import { STATIONS_URL, stationUrl } from '../testing/api-urls';
 import { FakeServiceWorkerUpdate } from '../testing/fake-service-worker-update';
-import { RELOAD_PAGE } from './core/application-update/application-update-store';
+import { FakeStorage } from '../testing/fake-storage';
+import {
+  AUTOMATIC_RELOAD_STORAGE_KEY,
+  RELOAD_PAGE,
+} from './core/application-update/application-update-store';
+import { SESSION_STORAGE } from './core/browser-storage';
 
 describe('App', () => {
   let context: PageTestContext;
@@ -172,6 +177,10 @@ describe('App', () => {
         providers: [
           { provide: SwUpdate, useValue: serviceWorkerUpdate },
           { provide: RELOAD_PAGE, useValue: reloadPage },
+          {
+            provide: SESSION_STORAGE,
+            useValue: new FakeStorage({ [AUTOMATIC_RELOAD_STORAGE_KEY]: 'true' }),
+          },
         ],
       });
     });
@@ -210,6 +219,22 @@ describe('App', () => {
 
       expect(serviceWorkerUpdate.activations).toBe(1);
       expect(reloadPage).toHaveBeenCalledOnce();
+    });
+
+    it('asks for a reload by hand once reloading on its own did not repair the cache', async () => {
+      const element = await navigateTo('/unknown');
+
+      serviceWorkerUpdate.unrecoverable.next({ type: 'UNRECOVERABLE_STATE', reason: 'evicted' });
+      await context.settle();
+
+      expect(reloadPage).not.toHaveBeenCalled();
+      expect(notices(element).querySelector('p')?.textContent).toBe(
+        'Die App muss neu geladen werden.'
+      );
+      notices(element).querySelector('button')?.click();
+      await context.settle();
+      expect(reloadPage).toHaveBeenCalledOnce();
+      expect(serviceWorkerUpdate.activations).toBe(0);
     });
 
     it('shows the notice inside the open settings dialog, which makes the page inert', async () => {
