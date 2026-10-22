@@ -340,6 +340,31 @@ describe('ExplorePage', () => {
     expect(stationTitles(element)).toEqual(['TotalEnergies']);
   });
 
+  it('explains failed prices while offline and loads them once the connection is back', async () => {
+    const { element } = await renderComponent(ExplorePage);
+    await context.settle();
+    window.dispatchEvent(new Event('offline'));
+    context.httpTesting
+      .expectOne(EIFFEL_TOWER_E5_URL)
+      .error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+    await context.settle();
+
+    const offlineNotice = element.querySelector('.explore-page__offline');
+    expect(offlineNotice?.getAttribute('role')).toBe('status');
+    expect(textOf(offlineNotice)).toBe(
+      'Du bist offline – Preise werden geladen, sobald du wieder verbunden bist.'
+    );
+    expect(element.querySelector('[role="alert"]')).toBeNull();
+
+    window.dispatchEvent(new Event('online'));
+    await context.settle();
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
+    await context.settle();
+
+    expect(textOf(offlineNotice)).toBe('');
+    expect(stationTitles(element)).toEqual(['TotalEnergies']);
+  });
+
   it('locates the user on "Meinen Standort verwenden" and searches around the position', async () => {
     const { element } = await renderWithStations();
     const locateButton = getButton(element, 'Meinen Standort verwenden');

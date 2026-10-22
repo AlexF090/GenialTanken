@@ -50,6 +50,37 @@ describe('FavoritesPage', () => {
     return rendered;
   };
 
+  it('explains failed favorites while offline and loads them once the connection is back', async () => {
+    context = configurePageTest({
+      storage: new FakeStorage({ favoriteIDs: '["fr-75001001"]' }),
+    });
+    const { element } = await renderComponent(FavoritesPage);
+    window.dispatchEvent(new Event('offline'));
+    context.httpTesting
+      .expectOne(stationLookupUrl('fr-75001001'))
+      .error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+    await context.settle();
+
+    const offlineNotice = element.querySelector('.favorites__offline');
+    expect(offlineNotice?.getAttribute('role')).toBe('status');
+    expect(textOf(offlineNotice)).toBe(
+      'Du bist offline – Preise werden geladen, sobald du wieder verbunden bist.'
+    );
+    expect(element.querySelector('[role="alert"]')).toBeNull();
+
+    window.dispatchEvent(new Event('online'));
+    await context.settle();
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001')).flush({
+      stations: [withoutDistance(totalStation)],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [],
+    });
+    await context.settle();
+
+    expect(textOf(offlineNotice)).toBe('');
+    expect(stationTitles(element)).toEqual(['TotalEnergies']);
+  });
+
   it('lists the stored favorites without distance', async () => {
     const { element } = await renderWithTwoFavorites();
 

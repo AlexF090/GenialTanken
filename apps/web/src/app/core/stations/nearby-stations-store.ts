@@ -1,5 +1,6 @@
 import { computed, inject, Injectable } from '@angular/core';
 import { isSamePosition } from '../geolocation/coordinates';
+import { NetworkStatus, reloadWhenReconnected } from '../network/network-status';
 import { SearchCenterStore } from '../search-center/search-center-store';
 import { SettingsStore } from '../settings/settings-store';
 import { cheapestStationIdentifiers } from './cheapest-station-identifiers';
@@ -23,6 +24,7 @@ const isSameSearch = (first: StationsSearch, second: StationsSearch): boolean =>
 export class NearbyStationsStore {
   private readonly searchCenter = inject(SearchCenterStore);
   private readonly settings = inject(SettingsStore);
+  private readonly isOnline = inject(NetworkStatus).isOnline;
 
   private readonly search = computed<StationsSearch>(
     () => {
@@ -38,6 +40,10 @@ export class NearbyStationsStore {
   );
   private readonly stationsResource = inject(StationsApi).stationsAround(this.search);
 
+  constructor() {
+    reloadWhenReconnected(this.stationsResource);
+  }
+
   readonly stations = computed(() => resourceValueOr(this.stationsResource, []));
   readonly hasLoaded = computed(() => this.stationsResource.hasValue());
   readonly isLoading = computed(
@@ -46,7 +52,9 @@ export class NearbyStationsStore {
   /** Failures of the stations request; location errors are in `SearchCenterStore`. */
   readonly errorMessage = computed(() => {
     const error = this.stationsResource.error();
-    return error === undefined ? undefined : describeStationsError(error);
+    return error === undefined
+      ? undefined
+      : describeStationsError(error, { isOnline: this.isOnline() });
   });
   readonly cheapestStationIdentifiers = computed(() =>
     cheapestStationIdentifiers(this.stations(), this.settings.fuelType())

@@ -213,11 +213,12 @@
 
   // Stacking: above Leaflet panes and controls (max. 1000). From bottom to top: the search over
   // the map, the sheet (a fully opened one covers the search), the navigation and page header,
-  // the skip link.
+  // app-wide notices (new version), the skip link.
   --layer-chrome: 1100;
   --layer-map-search: calc(var(--layer-chrome) - 2);
   --layer-sheet: calc(var(--layer-chrome) - 1);
-  --layer-skip-link: calc(var(--layer-chrome) + 1);
+  --layer-notice: calc(var(--layer-chrome) + 1);
+  --layer-skip-link: calc(var(--layer-chrome) + 2);
 
   // Motion
   --duration-short: 150ms;

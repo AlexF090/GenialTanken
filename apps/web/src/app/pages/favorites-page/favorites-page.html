@@ -3,6 +3,12 @@
   @if (hasFavorites()) {
     <h2 #contentHeading class="visually-hidden" tabindex="-1">Gespeicherte Tankstellen</h2>
     <app-loading-state [isLoading]="isLoading()" label="Favoriten werden geladen …" />
+    <!-- Always rendered, so screen readers announce the notice when the connection drops. -->
+    <div class="favorites__offline" role="status">
+      @if (offlineMessage(); as message) {
+        <p class="message">{{ message }}</p>
+      }
+    </div>
     @if (errorMessage(); as message) {
       <p class="message message--error" role="alert">{{ message }}</p>
     }

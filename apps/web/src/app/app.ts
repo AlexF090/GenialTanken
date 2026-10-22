@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, ViewEncapsulation } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ApplicationUpdateStore } from './core/application-update/application-update-store';
 import { NavigationBar } from './ui/navigation-bar/navigation-bar';
 
 /**
@@ -11,6 +12,9 @@ import { NavigationBar } from './ui/navigation-bar/navigation-bar';
  *
  * The document scrolls (so the router restores scroll positions). A page that has to fill the
  * remaining viewport, such as a map, sets `height: var(--layout-page-height)` on its host.
+ *
+ * A new app version is offered above every page until the user reloads; it never closes on a
+ * timer, so nobody misses it (WCAG 2.2.3).
  */
 @Component({
   selector: 'app-root',
@@ -25,6 +29,15 @@ import { NavigationBar } from './ui/navigation-bar/navigation-bar';
     <app-navigation-bar class="shell__navigation" />
     <div class="shell__content" id="main-content" tabindex="-1" #content>
       <router-outlet />
+    </div>
+    <!-- Always rendered, so screen readers announce the notice when it appears. -->
+    <div class="shell__notices" role="status">
+      @if (isUpdateReady()) {
+        <div class="message toast shell__update">
+          <p>Neue Version verfügbar</p>
+          <button type="button" class="button" (click)="reloadApplication()">Neu laden</button>
+        </div>
+      }
     </div>
   `,
   styles: `
@@ -84,6 +97,36 @@ import { NavigationBar } from './ui/navigation-bar/navigation-bar';
       }
     }
 
+    // Above the bottom navigation (and the sheet over it) on phones, at the bottom from the
+    // medium breakpoint on, where the navigation is a rail.
+    .shell__notices {
+      position: fixed;
+      right: calc(var(--safe-area-right) + var(--space-md));
+      bottom: calc(var(--layout-navigation-height) + var(--safe-area-bottom) + var(--space-sm));
+      left: calc(var(--safe-area-left) + var(--space-md));
+      z-index: var(--layer-notice);
+      display: flex;
+      justify-content: center;
+      // The empty region spans the width; only the notice itself takes taps.
+      pointer-events: none;
+
+      @include breakpoints.medium-and-up {
+        bottom: calc(var(--safe-area-bottom) + var(--space-md));
+        left: calc(var(--layout-rail-width) + var(--safe-area-left) + var(--space-md));
+      }
+    }
+
+    .shell__update {
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-sm);
+      width: 100%;
+      max-width: var(--layout-search-width-maximum);
+      padding-inline-end: var(--space-sm);
+      pointer-events: auto;
+    }
+
     // Zero specificity, so a page can override this on its own host.
     :where(.shell__content > router-outlet + *) {
       display: flex;
@@ -93,6 +136,13 @@ import { NavigationBar } from './ui/navigation-bar/navigation-bar';
   `,
 })
 export class App {
+  private readonly applicationUpdate = inject(ApplicationUpdateStore);
+  protected readonly isUpdateReady = this.applicationUpdate.isUpdateReady;
+
+  protected reloadApplication(): void {
+    void this.applicationUpdate.reload();
+  }
+
   /**
    * A plain `#fragment` link would resolve against `<base href="/">` and reload the start page,
    * so the skip link moves focus itself; `focus()` also scrolls the content into view.

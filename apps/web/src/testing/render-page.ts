@@ -5,6 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import type { ComponentFixture } from '@angular/core/testing';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import type { Routes } from '@angular/router';
+import { provideServiceWorker } from '@angular/service-worker';
 import { BROWSER_STORAGE } from '../app/core/browser-storage';
 import { provideLocalStorageFavorites } from '../app/core/favorites/local-storage-favorites-repository';
 import { GEOLOCATION } from '../app/core/geolocation/geolocation-service';
@@ -39,7 +40,12 @@ const afterQueuedMicrotasks = (): Promise<void> =>
 
 /** Providers shared by page tests: real stores and API on top of fake browser seams. */
 export const configurePageTest = (
-  options: { storage?: FakeStorage; routes?: Routes } = {}
+  options: {
+    storage?: FakeStorage;
+    routes?: Routes;
+    /** Replace the defaults above, e.g. a fake `SwUpdate`. */
+    providers?: (Provider | EnvironmentProviders)[];
+  } = {}
 ): PageTestContext => {
   const storage = options.storage ?? new FakeStorage();
   const geolocation = new FakeGeolocation();
@@ -49,8 +55,11 @@ export const configurePageTest = (
       provideHttpClient(),
       provideHttpClientTesting(),
       provideLocalStorageFavorites(),
+      // As in app.config.ts, but never registered: the shell injects `SwUpdate`.
+      provideServiceWorker('ngsw-worker.js', { enabled: false }),
       { provide: BROWSER_STORAGE, useValue: storage },
       { provide: GEOLOCATION, useValue: geolocation },
+      ...(options.providers ?? []),
     ],
   });
   return {

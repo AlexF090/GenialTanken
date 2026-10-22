@@ -1,10 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
+import { SwUpdate } from '@angular/service-worker';
 import { configurePageTest, hostElementOf, textOf } from '../testing/render-page';
 import type { PageTestContext } from '../testing/render-page';
 import { App } from './app';
 import { routes } from './app.routes';
 import { STATIONS_URL, stationUrl } from '../testing/api-urls';
+import { FakeServiceWorkerUpdate } from '../testing/fake-service-worker-update';
+import { RELOAD_PAGE } from './core/application-update/application-update-store';
 
 describe('App', () => {
   let context: PageTestContext;
@@ -138,4 +141,66 @@ describe('App', () => {
       expect(element.querySelector('nav')).not.toBeNull();
     }
   );
+
+  describe('update notice', () => {
+    let serviceWorkerUpdate: FakeServiceWorkerUpdate;
+    let reloadPage: ReturnType<typeof vi.fn<() => void>>;
+
+    const notices = (element: HTMLElement): HTMLElement => {
+      const region = element.querySelector<HTMLElement>('.shell__notices');
+      if (region === null) {
+        throw new Error('No notice region rendered');
+      }
+      return region;
+    };
+
+    beforeEach(() => {
+      TestBed.resetTestingModule();
+      serviceWorkerUpdate = new FakeServiceWorkerUpdate();
+      reloadPage = vi.fn<() => void>();
+      context = configurePageTest({
+        routes,
+        providers: [
+          { provide: SwUpdate, useValue: serviceWorkerUpdate },
+          { provide: RELOAD_PAGE, useValue: reloadPage },
+        ],
+      });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('keeps an empty status region until a new version is ready', async () => {
+      const element = await navigateTo('/settings');
+
+      expect(notices(element).getAttribute('role')).toBe('status');
+      expect(textOf(notices(element))).toBe('');
+    });
+
+    it('offers a reload once a new version is ready and keeps it open', async () => {
+      vi.useFakeTimers();
+      const element = await navigateTo('/settings');
+
+      serviceWorkerUpdate.announceReadyVersion();
+      await context.settle();
+      vi.advanceTimersByTime(60_000);
+      await context.settle();
+
+      expect(notices(element).querySelector('p')?.textContent).toBe('Neue Version verfügbar');
+      expect(textOf(notices(element).querySelector('button'))).toBe('Neu laden');
+    });
+
+    it('activates the new version and reloads on request', async () => {
+      const element = await navigateTo('/settings');
+      serviceWorkerUpdate.announceReadyVersion();
+      await context.settle();
+
+      notices(element).querySelector('button')?.click();
+      await context.settle();
+
+      expect(serviceWorkerUpdate.activations).toBe(1);
+      expect(reloadPage).toHaveBeenCalledOnce();
+    });
+  });
 });

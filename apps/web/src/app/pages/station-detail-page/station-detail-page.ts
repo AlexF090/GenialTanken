@@ -12,6 +12,7 @@ import {
 import { NgTemplateOutlet } from '@angular/common';
 import { Router } from '@angular/router';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
+import { NetworkStatus, reloadWhenReconnected } from '../../core/network/network-status';
 import { OpenedStationStore } from '../../core/stations/opened-station-store';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { describeStationsError } from '../../core/stations/stations-error-message';
@@ -45,6 +46,7 @@ export class StationDetailPage {
   private readonly stationDetail = viewChild(StationDetail);
   private readonly favorites = inject(FavoritesStore);
   private readonly stationResource = inject(StationsApi).stationByIdentifier(() => this.id());
+  private readonly isOnline = inject(NetworkStatus).isOnline;
 
   protected readonly station = computed(() => resourceValueOr(this.stationResource, undefined));
   protected readonly fuelType = inject(SettingsStore).fuelType;
@@ -52,11 +54,14 @@ export class StationDetailPage {
   protected readonly isLoading = this.stationResource.isLoading;
   protected readonly errorMessage = computed(() => {
     const error = this.stationResource.error();
-    return error === undefined ? undefined : describeStationsError(error);
+    return error === undefined
+      ? undefined
+      : describeStationsError(error, { isOnline: this.isOnline() });
   });
   protected readonly isFavorite = computed(() => this.favorites.isFavorite(this.id()));
 
   constructor() {
+    reloadWhenReconnected(this.stationResource);
     const openedStation = inject(OpenedStationStore);
     effect(() => {
       const station = this.station();

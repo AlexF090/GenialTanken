@@ -1,6 +1,6 @@
 # Response headers of the static assets (Cloudflare Workers). Copied unchanged into
 # dist/web/browser by the Angular build. They do not apply to the Worker's /api responses.
-# Headers of all matching rules are combined.
+# Headers of all matching rules are combined; `! Name` removes a header set by a broader rule.
 
 /*
   X-Content-Type-Options: nosniff
@@ -27,3 +27,28 @@
   Cache-Control: public, max-age=86400
 /favicon.ico
   Cache-Control: public, max-age=86400
+
+# The service worker and its manifest decide which app version runs, so the browser must
+# revalidate them on every request; `/*.js` would otherwise make the workers immutable for a
+# year. index.html (also served for `/`) is what the service worker compares against the
+# manifest. Every rule removes inherited Cache-Control first, so a broader rule added later
+# cannot sneak in a long cache time.
+/ngsw-worker.js
+  ! Cache-Control
+  Cache-Control: no-cache
+/safety-worker.js
+  ! Cache-Control
+  Cache-Control: no-cache
+# Legacy name of the safety worker, emitted by the build as well.
+/worker-basic.min.js
+  ! Cache-Control
+  Cache-Control: no-cache
+/ngsw.json
+  ! Cache-Control
+  Cache-Control: no-cache
+/index.html
+  ! Cache-Control
+  Cache-Control: no-cache
+/
+  ! Cache-Control
+  Cache-Control: no-cache

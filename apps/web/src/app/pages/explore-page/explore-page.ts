@@ -15,11 +15,13 @@ import type { Coordinates, FuelType, Place, Station } from '@genialtanken/contra
 import { APPLICATION_NAME } from '../../core/application-name';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
 import { FUEL_TYPE_LABELS, fuelTypeOptions } from '../../core/fuel-type-labels';
+import { OFFLINE_MESSAGE } from '../../core/http/request-failure-messages';
 import { KilometersPipe } from '../../core/formatting/kilometers-pipe';
 import { formatKilometers } from '../../core/formatting/number-format';
 import { injectOpenedStationIdentifier, stationRoute } from '../../core/navigation/station-route';
 import { observeElementHeight } from '../../core/layout/observe-element-height';
 import { Viewport } from '../../core/layout/viewport';
+import { NetworkStatus } from '../../core/network/network-status';
 import { shouldOfferAreaSearch } from '../../core/search-center/area-search';
 import type { SearchCenter } from '../../core/search-center/search-center';
 import { SearchCenterStore } from '../../core/search-center/search-center-store';
@@ -122,7 +124,14 @@ export class ExplorePage {
   protected readonly placeSuggestions = this.placeSearch.suggestions;
   protected readonly placeSearchStatus = this.placeSearch.statusMessage;
   protected readonly locationErrorMessage = this.searchCenter.locationErrorMessage;
-  protected readonly stationsErrorMessage = this.nearbyStations.errorMessage;
+  private readonly isOnline = inject(NetworkStatus).isOnline;
+  protected readonly offlineMessage = computed(() =>
+    this.isOnline() ? undefined : OFFLINE_MESSAGE
+  );
+  /** While offline the notice explains every failed request, so no error shows next to it. */
+  protected readonly stationsErrorMessage = computed(() =>
+    this.isOnline() ? this.nearbyStations.errorMessage() : undefined
+  );
   protected readonly isLoading = this.nearbyStations.isLoading;
   protected readonly hasLoaded = this.nearbyStations.hasLoaded;
   protected readonly mapStations = this.nearbyStations.stations;

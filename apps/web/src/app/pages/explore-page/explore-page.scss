@@ -157,6 +157,11 @@
   border-bottom: var(--border-width-hairline) solid var(--color-hairline);
 }
 
+// Stays in the accessibility tree while empty, so the notice is announced, but takes no gap.
+.explore-page__offline:empty {
+  @include visually-hidden.visually-hidden;
+}
+
 // Phones: the map is the page's heading, the title only names it for assistive technology.
 .explore-page__title {
   @include breakpoints.compact {

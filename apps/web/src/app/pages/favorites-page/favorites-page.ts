@@ -11,7 +11,8 @@ import {
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
-import { TRY_AGAIN_LATER } from '../../core/http/request-failure-messages';
+import { OFFLINE_MESSAGE, TRY_AGAIN_LATER } from '../../core/http/request-failure-messages';
+import { NetworkStatus, reloadWhenReconnected } from '../../core/network/network-status';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { describeStationsError } from '../../core/stations/stations-error-message';
 import { StationsApi } from '../../core/stations/stations-api';
@@ -31,6 +32,7 @@ export class FavoritesPage {
   private readonly favorites = inject(FavoritesStore);
   private readonly stationsApi = inject(StationsApi);
   private readonly injector = inject(Injector);
+  private readonly isOnline = inject(NetworkStatus).isOnline;
   /** Heading of whichever state is shown: the list or the empty state. */
   private readonly contentHeading = viewChild<ElementRef<HTMLElement>>('contentHeading');
 
@@ -84,10 +86,17 @@ export class FavoritesPage {
       : `${String(count)} Favoriten sind gerade nicht verfügbar.`;
   });
   protected readonly isLoading = this.favoriteStationsResource.isLoading;
+  protected readonly offlineMessage = computed(() =>
+    this.isOnline() ? undefined : OFFLINE_MESSAGE
+  );
+  /** While offline the notice explains every failed request, so no error shows next to it. */
   protected readonly errorMessage = computed(() => {
+    if (!this.isOnline()) {
+      return undefined;
+    }
     const error = this.favoriteStationsResource.error();
     if (error !== undefined) {
-      return describeStationsError(error);
+      return describeStationsError(error, { isOnline: true });
     }
     if (!this.favoriteStationsResource.hasValue()) {
       return undefined;
@@ -99,12 +108,16 @@ export class FavoritesPage {
       return undefined;
     }
     if (stations.length === 0 && unavailableStationIdentifiers.length === 0) {
-      return describeStationsError(firstFailure.error);
+      return describeStationsError(firstFailure.error, { isOnline: true });
     }
     const failedFavorites =
       failures.length === 1 ? 'Ein Favorit konnte' : `${String(failures.length)} Favoriten konnten`;
     return `${failedFavorites} nicht geladen werden. ${TRY_AGAIN_LATER}`;
   });
+
+  constructor() {
+    reloadWhenReconnected(this.favoriteStationsResource);
+  }
 
   protected toggleFavorite(stationIdentifier: string): void {
     this.favorites.toggle(stationIdentifier);

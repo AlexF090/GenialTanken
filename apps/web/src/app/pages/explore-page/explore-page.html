@@ -87,6 +87,12 @@
         {{ resultSummary() }}
       </p>
 
+      <!-- Always rendered, so screen readers announce the notice when the connection drops. -->
+      <div class="explore-page__offline" role="status">
+        @if (offlineMessage(); as message) {
+          <p class="message">{{ message }}</p>
+        }
+      </div>
       @if (stationsErrorMessage(); as message) {
         <p class="message message--error" role="alert">{{ message }}</p>
       }
