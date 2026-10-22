@@ -1,5 +1,6 @@
 import { CLIENT_ADDRESS_HEADER, PROXY_SECRET_HEADER } from '@genialtanken/contracts';
 import { z } from 'zod';
+import { readApplicationVersion } from '../src/common/application-version.js';
 import { FRENCH_RECORDS_PATH } from '../src/fuel-price-providers/france/french-upstream-paths.js';
 import { strictApiErrorSchema } from './support/api-errors.js';
 import { useTestApplication } from './support/create-test-application.js';
@@ -121,7 +122,9 @@ describe('OpenAPI document', () => {
 
     const response = await api.get('/api/docs-json').expect(200);
 
-    expect(openApiInformationSchema.parse(response.body).info.version).toBe('2.0.0');
+    expect(openApiInformationSchema.parse(response.body).info.version).toBe(
+      readApplicationVersion()
+    );
   });
 });
 
