@@ -28,7 +28,7 @@ The Worker is configured by [`apps/web/wrangler.jsonc`](../apps/web/wrangler.jso
     ```bash
     pnpm --filter web exec wrangler secret put PROXY_SHARED_SECRET
     ```
-    Preview versions use the same variables and secrets as production. `wrangler.jsonc` defines no `vars`, and `deploy-web.yml` deploys with `--keep-vars`, so the dashboard value of `API_ORIGIN` survives every deploy.
+    Preview versions use the same variables and secrets as production. This is a deliberate trade-off: a pull request's Worker code runs with the production `PROXY_SHARED_SECRET`, so anyone who can push branches to this repository can read it (forks are excluded). Only the owner pushes branches today; give previews their own secret before granting others write access. `wrangler.jsonc` defines no `vars`, and `deploy-web.yml` deploys with `--keep-vars`, so the dashboard value of `API_ORIGIN` survives every deploy.
 - Worker → Settings → Domains & Routes: `workers.dev` and **Preview URLs** stay enabled (pull request previews are aliased version URLs).
 - The deploy token is a Cloudflare API token (template _Edit Cloudflare Workers_, or a custom token with _Account → Workers Scripts → Edit_).
 - Manual deploy and local preview (needs `wrangler login` or `CLOUDFLARE_API_TOKEN`; the preview reads `API_ORIGIN` and `PROXY_SHARED_SECRET` from the git-ignored `apps/web/.dev.vars`):
