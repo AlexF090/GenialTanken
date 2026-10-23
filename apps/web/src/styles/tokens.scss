@@ -72,7 +72,7 @@
   // lime: 13.4 / 16.6, at least 9.0. Icons on it: white 4.0 (light), dark 13.3 (dark).
   --color-tint-vivid: var(--color-wordmark-accent);
   --color-on-tint-vivid: light-dark(#ffffff, var(--color-on-brand));
-  // Opaque lime wash behind tinted capsules, hints and the selected row. Text on it light 15.7 /
+  // Opaque lime wash behind tinted capsules and hints. Text on it light 15.7 /
   // secondary 8.5 / link 8.4; dark 11.8 / 7.8 / 9.3.
   --color-action-tint: light-dark(
     color-mix(in srgb, var(--color-brand) 30%, #ffffff),
@@ -198,6 +198,12 @@
   --color-segmented-track: light-dark(rgb(118 118 128 / 12%), rgb(118 118 128 / 24%));
   --color-segmented-thumb: light-dark(#ffffff, #555558);
   --color-menu-highlight: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 7%));
+  // Selected list row, like a selected cell in iOS: a grey fill (green would read as "cheap")
+  // and a leading bar in the link color, so the selection does not rest on the fill alone. Over
+  // the sheet text 14.8 / 12.8, secondary 8.0 / 8.4, links 7.9 / 10.1 (light / dark); the bar
+  // keeps the same 7.9 / 10.1 against the fill.
+  --color-selection: light-dark(rgb(118 118 128 / 12%), rgb(118 118 128 / 24%));
+  --color-selection-indicator: var(--color-action-text);
   // Grey fill of the search bar and the filter chips in the sheet (iOS tertiary fill). Text on it
   // over the sheet: light 14.8, dark 12.8; secondary text light 8.0, dark 8.4. Tinted text falls
   // below 7:1 on it in dark mode, so labels on it use the text colors
@@ -258,6 +264,8 @@
   --border-width-thin: 1px;
   --border-width-focus: 3px;
   --border-width-focus-halo: 2px;
+  // Leading bar of a selected list row
+  --border-width-selection-indicator: 4px;
   // Outline of a filled icon glyph, e.g. the favorite star, in units of the 24-unit icon grid.
   // Drawn below the fill, so half of it shows.
   --border-width-icon-outline: 2px;

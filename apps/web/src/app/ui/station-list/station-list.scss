@@ -36,10 +36,28 @@ $price-levels: low, medium, high;
     background-color: var(--color-menu-highlight);
   }
 
-  // The station shown on the map: tinted like a selected row in iOS
+  // The station shown on the map: grey like a selected cell in iOS, plus a leading bar
   &--selected,
   &--selected:hover {
-    background-color: var(--color-action-tint);
+    background-color: var(--color-selection);
+  }
+
+  &--selected::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: var(--border-width-selection-indicator);
+    border-start-end-radius: var(--radius-pill);
+    border-end-end-radius: var(--radius-pill);
+    background-color: var(--color-selection-indicator);
+    pointer-events: none;
+
+    // The grey fill disappears in forced colors; the bar stays in the system's selection color.
+    @media (forced-colors: active) {
+      forced-color-adjust: none;
+      background-color: Highlight;
+    }
   }
 }
 
