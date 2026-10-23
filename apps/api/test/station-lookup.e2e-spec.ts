@@ -15,6 +15,7 @@ import {
   RAPEE_RECORD_ID,
   rapeeRecord,
 } from './support/french-records.js';
+import { PARIS } from './support/positions.js';
 
 const UNAVAILABLE_BODY = { statusCode: 502, message: ERROR_MESSAGES.upstreamUnavailable };
 const NOT_FOUND_BODY = { statusCode: 404, message: ERROR_MESSAGES.stationNotFound };
@@ -40,6 +41,24 @@ describe('GET /api/stations/:id', () => {
     expect(searchParametersOf(france.requests[0]).get('where')).toBe('id=75012010');
   });
 
+  it('answers a station of a recent search without asking the French API again', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, {
+      status: 200,
+      body: frenchResponse([rapeeRecord]),
+    });
+    const api = await startApplication();
+    await api
+      .get('/api/stations')
+      .query({ ...PARIS, radiusInKilometers: '5', fuel: 'e10' })
+      .expect(200);
+    france.respondTo(FRENCH_RECORDS_PATH, { status: 500 });
+
+    const response = await api.get(`/api/stations/${RAPEE_IDENTIFIER}`).expect(200);
+
+    expect(response.body).toEqual({ ...EXPECTED_RAPEE_STATION, distanceInMeters: null });
+    expect(france.requests).toHaveLength(1);
+  });
+
   it('responds with 404 when the French API does not know the station', async () => {
     france.respondTo(FRENCH_RECORDS_PATH, { status: 200, body: frenchResponse([]) });
     const api = await startApplication();
@@ -63,6 +82,19 @@ describe('GET /api/stations/:id', () => {
   it('responds with 502 when the French API fails', async () => {
     france.respondTo(FRENCH_RECORDS_PATH, { status: 500 });
     const api = await startApplication();
+
+    const response = await api.get(`/api/stations/${RAPEE_IDENTIFIER}`).expect(502);
+
+    expect(response.body).toEqual(UNAVAILABLE_BODY);
+  });
+
+  it('responds with 502 when the French API answers too late for a station outside any search', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, {
+      status: 200,
+      body: frenchResponse([rapeeRecord]),
+      delayInMilliseconds: 5000,
+    });
+    const api = await startApplication({ UPSTREAM_TIMEOUT_IN_MILLISECONDS: '100' });
 
     const response = await api.get(`/api/stations/${RAPEE_IDENTIFIER}`).expect(502);
 
