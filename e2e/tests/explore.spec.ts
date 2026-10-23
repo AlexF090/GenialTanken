@@ -179,7 +179,9 @@ test.describe('explore page', () => {
     await expect(favoriteButton(card, rueBailleulStation)).toHaveAttribute('aria-pressed', 'false');
 
     const map = stationsMap(page);
-    await expect(map.getByText(eiffelTower.label, { exact: true })).toBeVisible();
+    // Only a pin: a label there would cover price tags, and the search field names the place.
+    await expect(map.getByRole('img', { name: eiffelTower.label, exact: true })).toBeVisible();
+    await expect(map.getByText(eiffelTower.label, { exact: true })).toHaveCount(0);
     await expect(map.getByRole('img', { name: 'Dein Standort' })).toHaveCount(0);
     await expect(
       page.getByRole('link', { name: 'Preisdaten: prix-carburants.gouv.fr (öffnet in neuem Tab)' })

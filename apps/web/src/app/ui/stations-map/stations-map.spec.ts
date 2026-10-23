@@ -10,7 +10,7 @@ import {
   totalStation,
   unbrandedStation,
 } from '../../../testing/station-fixtures';
-import { accessibleTextOf, renderWithInputs, textOf } from '../../../testing/render-page';
+import { accessibleTextOf, renderWithInputs } from '../../../testing/render-page';
 import { FakeResizeObserver } from '../../../testing/fake-resize-observer';
 import { L } from '../map/leaflet';
 import { NO_VIEWPORT_PADDING } from '../map/map-viewport';
@@ -195,24 +195,32 @@ describe('StationsMap', () => {
     );
   });
 
-  it('labels the search center', async () => {
-    const { fixture, element } = await render([]);
+  it('marks a searched place with a named pin instead of a label covering price tags', async () => {
+    const { element } = await render([]);
 
-    expect(textOf(element.querySelector('.leaflet-tooltip'))).toBe('Eiffelturm, Paris');
-
-    fixture.componentRef.setInput('center', {
-      latitude: 48.86,
-      longitude: 2.34,
-      label: 'Dein Standort',
-      source: 'own-position',
-    });
-    await fixture.whenStable();
-
-    // Like the blue dot in Apple Maps: a permanent label there would cover nearby price tags.
     expect(element.querySelector('.leaflet-tooltip')).toBeNull();
-    expect(element.querySelector('.own-position-dot')?.getAttribute('aria-label')).toBe(
-      'Dein Standort'
+    expect(element.querySelector('.location-pin')?.getAttribute('aria-label')).toBe(
+      'Eiffelturm, Paris'
     );
+  });
+
+  it('stacks every price tag above the pin of a searched place', async () => {
+    const { element } = await render([totalStation], {
+      // South of the tag: Leaflet stacks markers lower on the screen above higher ones.
+      center: {
+        latitude: totalStation.address.latitude - 0.002,
+        longitude: totalStation.address.longitude,
+        label: 'Eiffelturm, Paris',
+        source: 'place',
+      },
+    });
+    const pin = element.querySelector('.location-pin-marker');
+    const priceTag = markerButtons(element)[0]?.closest('.leaflet-marker-icon');
+    if (!(pin instanceof HTMLElement) || !(priceTag instanceof HTMLElement)) {
+      throw new Error('No marker element');
+    }
+
+    expect(Number(priceTag.style.zIndex)).toBeGreaterThan(Number(pin.style.zIndex));
   });
 
   it('stacks every price tag, selected or not, above the own position', async () => {

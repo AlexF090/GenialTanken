@@ -1,4 +1,4 @@
-// Leaflet renders markers, tooltips and controls outside of Angular's view encapsulation, so
+// Leaflet renders markers and controls outside of Angular's view encapsulation, so
 // their styles live here instead of in the map components.
 @use 'breakpoints';
 @use 'typography';
@@ -8,7 +8,6 @@
 $price-levels: low, medium, high;
 
 .leaflet-container {
-  // Shared by the markers and the labels above them.
   --location-pin-size: var(--icon-size-md);
   --own-position-dot-size: var(--icon-size-sm);
 
@@ -281,27 +280,6 @@ $price-levels: low, medium, high;
     0 0 0 var(--space-xs) color-mix(in srgb, var(--color-own-position) 18%, transparent),
     var(--shadow-floating);
   transform: translate(-50%, -50%);
-}
-
-.leaflet-tooltip.center-tooltip {
-  padding: var(--space-3xs) var(--space-xs);
-  border: none;
-  border-radius: var(--radius-sm);
-  background-color: var(--color-surface);
-  color: var(--color-text);
-  font-size: var(--font-size-subheadline);
-  font-weight: var(--font-weight-medium);
-  box-shadow: var(--shadow-floating);
-
-  &.leaflet-tooltip-top::before {
-    border-top-color: var(--color-surface);
-  }
-
-  // Leaflet anchors the label at the map point; `translate` composes with Leaflet's `transform`
-  // and lifts it above the marker. The rotated pin head reaches √2 of its size above the tip.
-  &--above-pin {
-    translate: 0 calc(var(--location-pin-size) * -1.414);
-  }
 }
 
 // Search radius: a thin outline, the area inside only faintly tinted.
