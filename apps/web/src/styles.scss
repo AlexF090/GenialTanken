@@ -173,7 +173,7 @@ select {
   transform: translateY(var(--border-width-hairline));
 }
 
-// Primary action: filled with the brand lime. `.button--quiet` is the outlined secondary action.
+// Primary action: filled with the brand indigo. `.button--quiet` is the outlined secondary action.
 .button {
   display: inline-flex;
   align-items: center;
@@ -307,7 +307,7 @@ select {
 }
 
 // Action of a place card in Apple Maps: an equal-width tile with the icon above its label.
-// Tinted on the opaque tint (8.4 light, 9.3 dark); `--primary` is filled with the brand lime.
+// Tinted on the opaque tint (8.1 light, 9.5 dark); `--primary` is filled with the brand indigo.
 .action-tile {
   display: flex;
   flex-direction: column;

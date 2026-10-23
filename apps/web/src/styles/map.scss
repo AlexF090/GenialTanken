@@ -112,7 +112,7 @@ $price-levels: low, medium, high;
     transform: scale(var(--scale-marker-cheapest));
   }
 
-  // Selected: keeps the fill of its price level (lime would make any price look cheap), gets a
+  // Selected: keeps the fill of its price level (a brand fill would hide the price level), gets a
   // ring with a gap and floats higher. The pointer carries the ring too.
   &--selected {
     --price-tag-shadow: var(--shadow-price-tag-selected);
