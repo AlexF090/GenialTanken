@@ -24,7 +24,12 @@
     <div class="station-card__pending">
       <app-loading-state [isLoading]="isLoading()" label="Tankstelle wird geladen …" />
       @if (errorMessage(); as message) {
-        <p class="message message--error" role="alert">{{ message }}</p>
+        <div class="station-card__failure">
+          <p class="message message--error" role="alert">{{ message }}</p>
+          <button type="button" class="button button--quiet" (click)="retry()">
+            Erneut versuchen
+          </button>
+        </div>
       }
       <ng-container [ngTemplateOutlet]="closeButton" />
     </div>

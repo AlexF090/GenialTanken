@@ -8,6 +8,7 @@ import {
   effect,
   inject,
   input,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
@@ -15,6 +16,7 @@ import { Router } from '@angular/router';
 import type { Station } from '@genialtanken/contracts';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
 import { NetworkStatus, reloadWhenReconnected } from '../../core/network/network-status';
+import { KnownStations } from '../../core/stations/known-stations';
 import { OpenedStationStore } from '../../core/stations/opened-station-store';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { describeStationsError } from '../../core/stations/stations-error-message';
@@ -50,13 +52,26 @@ export class StationDetailPage {
   private readonly router = inject(Router);
   private readonly stationDetail = viewChild(StationDetail);
   private readonly favorites = inject(FavoritesStore);
-  private readonly stationResource = inject(StationsApi).stationByIdentifier(() => this.id());
+  private readonly knownStations = inject(KnownStations);
+  private readonly knownStation = computed(() => this.knownStations.find(this.id()));
+  /**
+   * Only a station the app has not loaded yet is requested, e.g. from a shared link. Decided once
+   * per station, so the request neither starts nor stops when the known stations change.
+   */
+  private readonly stationResource = inject(StationsApi).stationByIdentifier(() => {
+    const stationIdentifier = this.id();
+    return untracked(() => this.knownStations.find(stationIdentifier)) === undefined
+      ? stationIdentifier
+      : undefined;
+  });
   private readonly isOnline = inject(NetworkStatus).isOnline;
   private readonly shareSheet = inject(SHARE);
   private readonly document = inject(DOCUMENT);
   private readonly logger = inject(Logger);
 
-  protected readonly station = computed(() => resourceValueOr(this.stationResource, undefined));
+  protected readonly station = computed(
+    () => resourceValueOr(this.stationResource, undefined) ?? this.knownStation()
+  );
   protected readonly fuelType = inject(SettingsStore).fuelType;
   protected readonly today = inject(CURRENT_DATE);
   protected readonly isLoading = this.stationResource.isLoading;
@@ -97,6 +112,10 @@ export class StationDetailPage {
       focusedStationIdentifier = station.id;
       stationDetail.focusTitle();
     });
+  }
+
+  protected retry(): void {
+    this.stationResource.reload();
   }
 
   protected toggleFavorite(): void {

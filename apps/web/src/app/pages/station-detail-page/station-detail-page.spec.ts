@@ -2,7 +2,9 @@ import { MILLISECONDS_PER_MINUTE } from '@genialtanken/contracts';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
+import type { Station } from '@genialtanken/contracts';
 import { OpenedStationStore } from '../../core/stations/opened-station-store';
+import { NearbyStationsStore } from '../../core/stations/nearby-stations-store';
 import {
   accessibleTextOf,
   configurePageTest,
@@ -13,10 +15,12 @@ import {
 import type { PageTestContext } from '../../../testing/render-page';
 import { essoStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
 import { StationDetailPage } from './station-detail-page';
-import { stationUrl } from '../../../testing/api-urls';
-import { storedFavorites } from '../../../testing/fake-storage';
+import { STATIONS_URL, stationLookupUrl, stationUrl } from '../../../testing/api-urls';
+import { FakeStorage, storedFavorites } from '../../../testing/fake-storage';
+import { FAVORITES_STORAGE_KEY } from '../../core/favorites/local-storage-favorites-repository';
 import { SETTINGS_STORAGE_KEY } from '../../core/settings/settings-store';
 import { Logger } from '../../core/logging/logger';
+import { FavoriteStationsResource } from '../../core/favorites/favorite-stations-resource';
 import { SHARE } from '../../core/sharing/share';
 import type { Share } from '../../core/sharing/share';
 
@@ -26,7 +30,16 @@ class EmptyPage {}
 describe('StationDetailPage', () => {
   let context: PageTestContext;
 
-  const renderStation = async (stationIdentifier: string) => {
+  /** The explore page around the card has searched already, as when a list row opens it. */
+  const loadNearbyStations = async (stations: Station[]) => {
+    TestBed.inject(NearbyStationsStore).stations();
+    await context.settle();
+    context.httpTesting.expectOne(request => request.url === STATIONS_URL).flush(stations);
+    await context.settle();
+  };
+
+  const renderStation = async (stationIdentifier: string, nearbyStations: Station[] = []) => {
+    await loadNearbyStations(nearbyStations);
     const fixture = TestBed.createComponent(StationDetailPage);
     document.body.append(hostElementOf(fixture));
     fixture.componentRef.setInput('id', stationIdentifier);
@@ -137,6 +150,67 @@ describe('StationDetailPage', () => {
     await context.settle();
 
     expect(storedFavorites(context.storage)).toBe('["fr-75001001"]');
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001'));
+  });
+
+  describe('for a station the app already loaded', () => {
+    it('shows a station of the search results at once, without asking the API again', async () => {
+      const { element } = await renderStation(totalStation.id, [totalStation, essoStation]);
+
+      context.httpTesting.expectNone(stationUrl('fr-75001001'));
+      expect(element.textContent).not.toContain('wird geladen');
+      expect(textOf(element.querySelector('article h2'))).toBe('TotalEnergies');
+      expect(element.querySelector('.price-board')?.textContent).toContain('1,859 €');
+      expect(getButton(element, 'Favorit: TotalEnergies')).toBeDefined();
+      expect(textOf(document.activeElement)).toBe('TotalEnergies');
+    });
+
+    it('shows a loaded favorite at once', async () => {
+      TestBed.resetTestingModule();
+      context = configurePageTest({
+        storage: new FakeStorage({ [FAVORITES_STORAGE_KEY]: '["fr-69003001"]' }),
+        routes: [{ path: '', component: EmptyPage }],
+      });
+      TestBed.inject(FavoriteStationsResource).stations();
+      await context.settle();
+      context.httpTesting.expectOne(stationLookupUrl('fr-69003001')).flush({
+        stations: [withoutDistance(essoStation)],
+        unavailableIdentifiers: [],
+        failedIdentifiers: [],
+      });
+
+      const { element } = await renderStation(essoStation.id);
+
+      context.httpTesting.expectNone(stationUrl('fr-69003001'));
+      expect(textOf(element.querySelector('article h2'))).toBe('Esso');
+    });
+  });
+
+  describe('opened through a link without loaded data', () => {
+    it('offers to try again after a failure and shows the station once it loads', async () => {
+      const { element } = await renderStation(totalStation.id);
+
+      context.httpTesting
+        .expectOne(stationUrl('fr-75001001'))
+        .flush(
+          { statusCode: 502, message: 'Bad Gateway' },
+          { status: 502, statusText: 'Bad Gateway' }
+        );
+      await context.settle();
+
+      expect(textOf(element.querySelector('[role="alert"]'))).toContain(
+        'Die Preisdaten sind gerade nicht erreichbar.'
+      );
+      expect(getButton(element, 'Schließen')).toBeDefined();
+
+      getButton(element, 'Erneut versuchen').click();
+      await context.settle();
+      context.httpTesting.expectOne(stationUrl('fr-75001001')).flush(withoutDistance(totalStation));
+      await context.settle();
+
+      expect(textOf(element.querySelector('article h2'))).toBe('TotalEnergies');
+      expect(element.querySelector('[role="alert"]')).toBeNull();
+    });
   });
 
   it('explains an unknown station', async () => {

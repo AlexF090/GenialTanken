@@ -16,6 +16,13 @@
   gap: var(--space-md);
 }
 
+.station-card__failure {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
 // The circle lines up with the card's corner; the touch target around it stays whole.
 .station-card__close {
   margin-block-start: calc((var(--space-xl) - var(--layout-touch-target)) / 2);

@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test';
+import type { FixtureStation } from '../fixtures.ts';
 import {
   chooseFuel,
   expect,
@@ -16,6 +18,28 @@ declare global {
     sharedData?: ShareData[];
   }
 }
+
+/** Lookups of one station (`/api/stations/fr-…`); searches and favorites have other paths. */
+const isStationLookup = (url: URL): boolean => url.pathname.startsWith('/api/stations/fr-');
+
+const failStationLookups = (page: Page) =>
+  page.route(isStationLookup, route =>
+    route.fulfill({
+      status: 502,
+      json: { statusCode: 502, message: 'The fuel price service is unavailable.' },
+    })
+  );
+
+const expectUsableCard = async (page: Page, station: FixtureStation) => {
+  const card = page.getByRole('article');
+  await expect(card.getByRole('heading', { level: 2, name: station.title })).toBeVisible();
+  await expect(card.getByRole('region', { name: 'Preise' }).getByRole('listitem')).toHaveCount(6);
+  await expect(
+    card.getByRole('combobox', { name: `Route zu ${station.title}`, exact: true })
+  ).toBeEnabled();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByText('Tankstelle wird geladen …')).toHaveCount(0);
+};
 
 test.describe('station card', () => {
   test('shows address, opening times and every fuel price of a station', async ({ page }) => {
@@ -104,6 +128,46 @@ test.describe('station card', () => {
     await expect(rowButton).toBeFocused();
   });
 
+  test('opens a station of the list at once, without asking the API again', async ({ page }) => {
+    const stationLookups: string[] = [];
+    page.on('request', request => {
+      if (isStationLookup(new URL(request.url()))) {
+        stationLookups.push(request.url());
+      }
+    });
+    await failStationLookups(page);
+    await page.goto('/');
+
+    await stationCard(page, rueBailleulStation)
+      .getByRole('link', { name: `Details: ${rueBailleulStation.title}` })
+      .click();
+
+    await expect(page).toHaveURL(`/stations/${rueBailleulStation.id}`);
+    await expectUsableCard(page, rueBailleulStation);
+    await expect(page.getByRole('region', { name: 'Preise' })).toContainText('2,540 €');
+    expect(stationLookups).toEqual([]);
+  });
+
+  test('a station opened by its link offers to try again when loading fails', async ({ page }) => {
+    // Without search results around it, the app knows nothing about the station.
+    await page.route(
+      url => url.pathname === '/api/stations',
+      route => route.fulfill({ json: [] })
+    );
+    await failStationLookups(page);
+    await page.goto(`/stations/${rueBailleulStation.id}`);
+
+    await expect(page.getByRole('alert')).toHaveText(
+      'Die Preisdaten sind gerade nicht erreichbar. Bitte versuche es später erneut.'
+    );
+    await expect(page.getByRole('button', { name: 'Schließen', exact: true })).toBeVisible();
+
+    await page.unroute(isStationLookup);
+    await page.getByRole('button', { name: 'Erneut versuchen', exact: true }).click();
+
+    await expectUsableCard(page, rueBailleulStation);
+  });
+
   test('Escape closes the card', async ({ page }) => {
     await page.goto(`/stations/${quaiDeLaRapeeStation.id}`);
     await expect(page.getByRole('region', { name: 'Preise' })).toBeVisible();
@@ -118,14 +182,14 @@ test.describe('station card', () => {
     page,
   }) => {
     await seedFavorites(page, [quaiDeLaRapeeStation.id]);
+    // The favorites list has loaded the station, so its card needs no request of its own.
+    await failStationLookups(page);
     await page.goto('/favorites');
     await stationCard(page, quaiDeLaRapeeStation).getByRole('link').click();
 
     await expect(page).toHaveURL(`/stations/${quaiDeLaRapeeStation.id}`);
     await expect(stationsMap(page)).toBeVisible();
-    await expect(
-      page.getByRole('article').getByRole('heading', { level: 2, name: quaiDeLaRapeeStation.title })
-    ).toBeVisible();
+    await expectUsableCard(page, quaiDeLaRapeeStation);
 
     await page.goBack();
     await expect(page).toHaveURL('/favorites');

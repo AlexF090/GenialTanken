@@ -58,8 +58,8 @@ describe('ExplorePage with a station card', () => {
     await context.settle();
 
     await navigate(`/stations/${totalStation.id}`);
-    context.httpTesting.expectOne(TOTAL_DETAILS_URL).flush(withoutDistance(totalStation));
-    await context.settle();
+    // The station is among the results, so the card needs no request of its own.
+    context.httpTesting.expectNone(TOTAL_DETAILS_URL);
 
     expect(listContainer(element)?.hidden).toBe(true);
     expect(textOf(element.querySelector('app-station-detail-page h2'))).toBe('TotalEnergies');
@@ -121,8 +121,8 @@ describe('ExplorePage with a station card', () => {
     sheetContent.scrollTop = 120;
 
     await navigate(`/stations/${totalStation.id}`);
-    context.httpTesting.expectOne(TOTAL_DETAILS_URL).flush(withoutDistance(totalStation));
-    await context.settle();
+    // The station is among the results, so the card needs no request of its own.
+    context.httpTesting.expectNone(TOTAL_DETAILS_URL);
     expect(sheetContent.scrollTop).toBe(0);
 
     await navigate('/');
@@ -141,7 +141,7 @@ describe('ExplorePage with a station card', () => {
     await context.settle();
 
     expect(router.url).toBe(`/stations/${carrefourStation.id}`);
-    context.httpTesting.expectOne(stationUrl(carrefourStation.id));
+    context.httpTesting.expectNone(stationUrl(carrefourStation.id));
   });
 
   it('moves the search to a station outside the results, named after it', async () => {
