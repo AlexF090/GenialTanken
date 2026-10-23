@@ -2,13 +2,13 @@
   <!-- The app icon simplified for tab sizes: no halo or sparkle, a larger drop and a bolder "G". -->
   <defs>
     <linearGradient id="drop" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#E6FF5E" />
-      <stop offset="1" stop-color="#9ADA10" />
+      <stop offset="0" stop-color="#ffffff" />
+      <stop offset="1" stop-color="#e4e3ff" />
     </linearGradient>
   </defs>
-  <rect width="1024" height="1024" rx="224" fill="#1d1d1d" />
+  <rect width="1024" height="1024" rx="224" fill="#3a37b8" />
   <g transform="translate(512 528) scale(1.16) translate(-512 -521)">
     <path d="M512 160 C600 280 782 430 782 612 A270 270 0 0 1 242 612 C242 430 424 280 512 160 Z" fill="url(#drop)" />
-    <path d="M608 535 A125 125 0 1 0 637 615 L560 615" fill="none" stroke="#1d1d1d" stroke-width="84" stroke-linecap="round" stroke-linejoin="round" />
+    <path d="M608 535 A125 125 0 1 0 637 615 L560 615" fill="none" stroke="#3a37b8" stroke-width="84" stroke-linecap="round" stroke-linejoin="round" />
   </g>
 </svg>
