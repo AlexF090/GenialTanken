@@ -11,7 +11,8 @@ const AWAKE_HOURS_TIME_ZONE = 'Europe/Berlin';
 
 /**
  * Spreads the calls of the cron trigger so they do not hit the API on the same second. With the
- * ten-minute cron, two calls are at most 12 minutes apart, below the 15 idle minutes of Render.
+ * five-minute cron, two calls are at most 12 minutes apart even when one run is skipped, below
+ * the 15 idle minutes of Render.
  */
 export const MAXIMUM_DELAY_IN_MILLISECONDS = 2 * 60 * 1000;
 /** A cold start of the API takes about a minute. */
@@ -28,6 +29,7 @@ const berlinHourFormat = new Intl.DateTimeFormat('en-GB', {
 
 export interface KeepAwakeDependencies {
   fetchImplementation: FetchImplementation;
+  now: () => Date;
   /** Returns a number in [0, 1), like `Math.random`. */
   random: () => number;
   sleep: (durationInMilliseconds: number) => Promise<void>;
@@ -38,13 +40,19 @@ export const isWithinAwakeHours = (date: Date): boolean => {
   return hour >= FIRST_AWAKE_HOUR && hour <= LAST_AWAKE_HOUR;
 };
 
-/** Calls the health check of the API during the awake hours; never throws, only logs. */
+const mayEndWithinAwakeHours = (delayStart: Date): boolean =>
+  isWithinAwakeHours(delayStart) ||
+  isWithinAwakeHours(new Date(delayStart.getTime() + MAXIMUM_DELAY_IN_MILLISECONDS));
+
+/**
+ * Calls the health check of the API when the random delay ends within the awake hours; never
+ * throws, only logs.
+ */
 export const keepApiAwake = async (
   environment: ApiProxyEnvironment,
-  scheduledTime: Date,
   dependencies: KeepAwakeDependencies
 ): Promise<void> => {
-  if (!isWithinAwakeHours(scheduledTime)) {
+  if (!mayEndWithinAwakeHours(dependencies.now())) {
     return;
   }
   const apiOrigin = environment.API_ORIGIN;
@@ -55,6 +63,9 @@ export const keepApiAwake = async (
     return;
   }
   await dependencies.sleep(Math.floor(dependencies.random() * MAXIMUM_DELAY_IN_MILLISECONDS));
+  if (!isWithinAwakeHours(dependencies.now())) {
+    return;
+  }
   const healthCheckUrl = new URL(HEALTH_CHECK_PATH, apiOrigin);
   try {
     const response = await dependencies.fetchImplementation(

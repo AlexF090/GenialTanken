@@ -22,6 +22,8 @@ describe('worker', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
     vi.resetAllMocks();
   });
@@ -64,19 +66,15 @@ describe('worker', () => {
   );
 
   it('wakes the API through the cron trigger within the awake hours', async () => {
-    vi.useFakeTimers();
+    const scheduledTime = Date.parse('2026-07-15T10:00:00Z');
+    vi.useFakeTimers({ now: scheduledTime });
     vi.spyOn(Math, 'random').mockReturnValue(0);
     const pending: Promise<unknown>[] = [];
     const context: ExecutionContext = { waitUntil: promise => pending.push(promise) };
 
-    worker.scheduled(
-      { scheduledTime: Date.parse('2026-07-15T10:00:00Z') },
-      createEnvironment(assetsFetch),
-      context
-    );
+    worker.scheduled({ scheduledTime }, createEnvironment(assetsFetch), context);
     await vi.runAllTimersAsync();
     await Promise.all(pending);
-    vi.useRealTimers();
 
     expect(pending).toHaveLength(1);
     expect(apiFetch).toHaveBeenCalledTimes(1);

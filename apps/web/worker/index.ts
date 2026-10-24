@@ -42,14 +42,16 @@ export default {
     }
     return environment.ASSETS.fetch(request);
   },
+  // The awake hours are checked at the time of the call, so `scheduledTime` is not needed.
   scheduled(
-    controller: ScheduledController,
+    _controller: ScheduledController,
     environment: WorkerEnvironment,
     context: ExecutionContext
   ): void {
     context.waitUntil(
-      keepApiAwake(environment, new Date(controller.scheduledTime), {
+      keepApiAwake(environment, {
         fetchImplementation: request => fetch(request),
+        now: () => new Date(),
         random: Math.random,
         sleep: durationInMilliseconds =>
           new Promise(resolve => setTimeout(resolve, durationInMilliseconds)),
