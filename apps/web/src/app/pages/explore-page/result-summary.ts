@@ -16,6 +16,13 @@ export const describeResult = (
 ): string =>
   `${describeStationCount(stationCount)} im Umkreis von ${formatKilometers(radiusInKilometers)} um ${describeCenter(center)}`;
 
+/**
+ * "3 Tankstellen · 5 km": the visible line under the filters, where the search field already
+ * names the place. Screen readers get `describeResult` instead.
+ */
+export const describeResultBriefly = (stationCount: number, radiusInKilometers: number): string =>
+  `${describeStationCount(stationCount)} · ${formatKilometers(radiusInKilometers)}`;
+
 /** "Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden." */
 export const describeEmptyResult = (fuelLabel: string, radiusInKilometers: number): string =>
   `Keine Tankstellen mit Preis für ${fuelLabel} im Umkreis von ${formatKilometers(radiusInKilometers)} gefunden.`;

@@ -172,11 +172,12 @@ $narrow-header-width: 22rem;
 
 // One row that scrolls sideways when the chips do not fit, padded so focus rings are not cut
 // off. In narrow sheets, or with large text (the query is in rem), the chips wrap instead, so
-// nothing hides beyond the edge (1.4.10 Reflow).
+// nothing hides beyond the edge (1.4.10 Reflow). The row takes the height of the capsules only;
+// their touch targets reach into the gaps around it.
 .explore-page__filters {
   display: flex;
   gap: var(--space-xs);
-  margin: calc(-1 * var(--space-xs)) calc(-1 * var(--space-md));
+  margin: calc(-1 * (var(--space-xs) + var(--layout-chip-overhang))) calc(-1 * var(--space-md));
   padding: var(--space-xs) var(--space-md);
   overflow-x: auto;
   scroll-padding-inline: var(--space-md);
@@ -187,21 +188,6 @@ $narrow-header-width: 22rem;
     flex-wrap: wrap;
     overflow-x: visible;
   }
-}
-
-// The summary is a whole sentence of varying length; "Aktualisieren" stays at the end of its row
-// instead of trailing it, so a wrapped summary never strands the button.
-.explore-page__summary-line {
-  display: flex;
-  gap: var(--space-xs);
-  align-items: center;
-  justify-content: space-between;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-subheadline);
-}
-
-.explore-page__refresh {
-  font-weight: var(--font-weight-medium);
 }
 
 .explore-page__credit {

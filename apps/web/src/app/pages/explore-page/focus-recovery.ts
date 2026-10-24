@@ -13,13 +13,13 @@ export const isFocusLost = (document: Document): boolean =>
   document.activeElement === null || document.activeElement === document.body;
 
 /**
- * Whenever `content` changes, e.g. a notice closes, moves the focus to `target` after the next
- * render if the focused control went away with the old content (WCAG 2.4.3). Call it in an
- * injection context.
+ * Whenever `content` changes, e.g. a notice closes, calls `focusTarget` after the next render if
+ * the focused control went away with the old content (WCAG 2.4.3). Call it in an injection
+ * context.
  */
 export const recoverFocusWhenChanged = (
   content: Signal<unknown>,
-  target: () => HTMLElement | undefined
+  focusTarget: () => void
 ): void => {
   assertInInjectionContext(recoverFocusWhenChanged);
   const document = inject(DOCUMENT);
@@ -34,7 +34,7 @@ export const recoverFocusWhenChanged = (
     afterNextRender(
       () => {
         if (isFocusLost(document)) {
-          target()?.focus({ preventScroll: true });
+          focusTarget();
         }
       },
       { injector }

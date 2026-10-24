@@ -350,6 +350,9 @@
 
   // Layout
   --layout-touch-target: 2.75rem;
+  // Capsule of a filter chip, smaller than its touch target, which overhangs it above and below
+  --layout-chip-height: 2.25rem;
+  --layout-chip-overhang: calc((var(--layout-touch-target) - var(--layout-chip-height)) / 2);
   // An action of a station card (route, favorite, share): icon above its label
   --layout-action-tile-height: 3.75rem;
   --layout-header-height: 6.25rem;

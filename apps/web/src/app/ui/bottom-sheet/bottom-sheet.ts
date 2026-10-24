@@ -70,13 +70,18 @@ export class BottomSheet {
 
   private readonly sheetHeight = signal(0);
   private readonly peekHeight = signal(0);
+  private readonly windowHeight = signal(0);
   private readonly dragHeight = signal<number | null>(null);
   private readonly direction = signal<SnapDirection>('up');
   private dragState: DragState | undefined;
   private suppressesNextClick = false;
 
   private readonly heights = computed(() =>
-    snapHeights({ sheetHeight: this.sheetHeight(), peekHeight: this.peekHeight() })
+    snapHeights({
+      sheetHeight: this.sheetHeight(),
+      peekHeight: this.peekHeight(),
+      windowHeight: this.windowHeight(),
+    })
   );
   private readonly settledVisibleHeight = computed(() => this.heights()[this.snapPosition()]);
   private readonly visibleHeight = computed(() => this.dragHeight() ?? this.settledVisibleHeight());
@@ -250,6 +255,8 @@ export class BottomSheet {
   private measure(): void {
     const sheet = this.sheet().nativeElement;
     this.sheetHeight.set(sheet.offsetHeight);
+    // Fixed and reaching the bottom of the window: its top and height add up to the window's.
+    this.windowHeight.set(sheet.offsetTop + sheet.offsetHeight);
     // Handle and header stay visible at peek; the content starts right below them. The sheet
     // reaches under the home indicator, so peek shows that strip (its bottom padding) as well.
     const safeAreaBottom = Number.parseFloat(getComputedStyle(sheet).paddingBottom);

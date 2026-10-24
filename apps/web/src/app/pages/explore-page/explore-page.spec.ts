@@ -95,6 +95,28 @@ describe('ExplorePage', () => {
     );
   });
 
+  it('shows count and radius on one line and leaves the full sentence to screen readers', async () => {
+    const { element } = await renderWithStations();
+
+    const summaryLine = resultSummaryElement(element)?.parentElement;
+    expect(textOf(summaryLine?.querySelector('[aria-hidden="true"]'))).toBe('3 Tankstellen · 5 km');
+    expect(accessibleTextOf(summaryLine)).toBe(
+      '3 Tankstellen im Umkreis von 5 km um Eiffelturm, Paris'
+    );
+  });
+
+  it('shows the whole message when nothing was found', async () => {
+    const { element } = await renderComponent(ExplorePage);
+    await context.settle();
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([]);
+    await context.settle();
+
+    const summaryLine = resultSummaryElement(element)?.parentElement;
+    expect(textOf(summaryLine)).toBe(
+      'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.'
+    );
+  });
+
   it('uses the singular for a single station', async () => {
     const { element } = await renderComponent(ExplorePage);
     await context.settle();

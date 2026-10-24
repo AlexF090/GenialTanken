@@ -1,0 +1,44 @@
+// A slim tinted strip at the end of the sheet, like the tips Apple shows in its own apps; it
+// never pushes the stations down.
+:host {
+  display: block;
+  padding: var(--space-sm) var(--space-md) 0;
+}
+
+.installation-hint {
+  padding-inline: var(--space-xs) var(--space-3xs);
+  border-radius: var(--radius-md);
+  background-color: var(--color-action-tint);
+  color: var(--color-text);
+  font-size: var(--font-size-subheadline);
+}
+
+.installation-hint__bar {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.installation-hint__icon {
+  flex: none;
+  width: var(--icon-size-md);
+  height: var(--icon-size-md);
+  border-radius: var(--radius-sm);
+}
+
+// Gives way first, so the buttons stay on the line; wraps with large text.
+.installation-hint__heading {
+  flex: 1;
+  min-width: 0;
+  font-size: inherit;
+}
+
+.installation-hint__steps {
+  padding: 0 var(--space-xs) var(--space-sm);
+}
+
+.installation-hint__share-icon {
+  color: var(--color-action-text);
+  font-size: var(--icon-size-sm);
+  vertical-align: text-bottom;
+}

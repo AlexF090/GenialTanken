@@ -12,19 +12,28 @@ const VELOCITY_PROJECTION_IN_MILLISECONDS = 200;
 /** Visible height in pixels per snap position. */
 export type SnapHeights = Record<SnapPosition, number>;
 
+/** Half opens the sheet to this share of the window: room for two or three stations. */
+const HALF_SHARE_OF_WINDOW = 0.55;
+
 /**
- * Peek shows the handle and header, half shows half the sheet, full shows all of it. Small
- * sheets collapse the positions instead of inverting their order.
+ * Peek shows the handle and header, half 55 % of the window like the middle detent of Apple
+ * Maps, full all of the sheet. Small sheets collapse the positions instead of inverting their
+ * order.
  */
 export const snapHeights = ({
   sheetHeight,
   peekHeight,
+  windowHeight,
 }: {
   sheetHeight: number;
   peekHeight: number;
+  windowHeight: number;
 }): SnapHeights => {
   const peek = Math.min(peekHeight, sheetHeight);
-  const half = Math.min(Math.max(Math.round(sheetHeight / 2), peek), sheetHeight);
+  const half = Math.min(
+    Math.max(Math.round(windowHeight * HALF_SHARE_OF_WINDOW), peek),
+    sheetHeight
+  );
   return { peek, half, full: sheetHeight };
 };
 

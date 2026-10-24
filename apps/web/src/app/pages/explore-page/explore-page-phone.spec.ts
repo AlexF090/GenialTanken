@@ -256,7 +256,7 @@ describe('ExplorePage on a phone', () => {
   it('does not suggest the home screen without a browser that supports it', async () => {
     const { element } = await renderWithStations();
 
-    expect(element.querySelector('app-installation-hint-card')).toBeNull();
+    expect(element.querySelector('app-installation-hint-banner')).toBeNull();
   });
 });
 
@@ -283,12 +283,12 @@ describe('ExplorePage in the browser of an iPhone', () => {
     return rendered;
   };
 
-  it('suggests adding the app to the home screen at the top of the list', async () => {
+  it('suggests adding the app to the home screen after the list, so it never hides a station', async () => {
     const { element } = await render();
 
-    const hint = element.querySelector('app-installation-hint-card');
+    const hint = element.querySelector('app-installation-hint-banner');
     expect(textOf(hint?.querySelector('h2'))).toBe('GenialTanken als App');
-    expect(hint?.nextElementSibling?.tagName).toBe('APP-FAVORITES-ROW');
+    expect(hint?.previousElementSibling?.tagName).toBe('APP-STATION-LIST');
   });
 
   it('closes the suggestion for good', async () => {
@@ -300,10 +300,10 @@ describe('ExplorePage in the browser of an iPhone', () => {
     dismissButton.click();
     await context.settle();
 
-    expect(element.querySelector('app-installation-hint-card')).toBeNull();
+    expect(element.querySelector('app-installation-hint-banner')).toBeNull();
     expect(context.storage.getItem(INSTALLATION_HINT_STORAGE_KEY)).toBe('dismissed');
-    // The closed hint took the focus with it; it continues just above, at the result summary.
-    expect(document.activeElement).toBe(resultSummaryElement(element));
+    // The closed hint took the focus with it; it continues right after it, at the credit.
+    expect(document.activeElement).toBe(element.querySelector('app-data-source-credit a'));
     document.body.replaceChildren();
   });
 });

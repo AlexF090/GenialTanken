@@ -107,15 +107,12 @@
             (valueChange)="sortOrder.set($event)" />
         </div>
 
-        <div class="explore-page__summary-line" [hidden]="isSearching()">
-          <!-- The only place that names an empty result, so it is shown and announced once. -->
-          <p #resultSummaryElement class="explore-page__summary" role="status" tabindex="-1">
-            {{ resultSummary() }}
-          </p>
-          <button type="button" class="text-button explore-page__refresh" (click)="refresh()">
-            Aktualisieren
-          </button>
-        </div>
+        <!-- The only place that names an empty result, so it is announced once. -->
+        <app-result-summary-line
+          [hidden]="isSearching()"
+          [summary]="resultSummary()"
+          [briefSummary]="briefResultSummary()"
+          (refreshRequested)="refresh()" />
 
         @if (stationsErrorMessage(); as message) {
           <p class="message message--error" role="alert">{{ message }}</p>
@@ -138,12 +135,6 @@
     <router-outlet />
     <!-- Hidden, not removed, while a card or the search is open: the list keeps its state. -->
     <div [hidden]="isCardOpen() || isSearching()">
-      @if (installationOffer(); as offer) {
-        <app-installation-hint-card
-          [offer]="offer"
-          (installRequested)="installApplication()"
-          (dismissed)="dismissInstallationHint()" />
-      }
       <app-favorites-row [stations]="favoriteStationsNearby()" [fuelType]="fuelType()" />
       <app-station-list
         [stations]="stations()"
@@ -154,6 +145,12 @@
         [selectsOnMap]="true"
         (stationSelected)="showOnMap($event)"
         (favoriteToggled)="toggleFavorite($event)" />
+      @if (installationOffer(); as offer) {
+        <app-installation-hint-banner
+          [offer]="offer"
+          (installRequested)="installApplication()"
+          (dismissed)="dismissInstallationHint()" />
+      }
       <app-data-source-credit class="explore-page__credit" />
     </div>
   </app-bottom-sheet>

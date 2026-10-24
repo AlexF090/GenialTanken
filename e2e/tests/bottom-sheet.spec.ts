@@ -96,6 +96,40 @@ test.describe('bottom sheet on a phone', () => {
     expect(overflow).toBeLessThanOrEqual(0);
   });
 
+  test('half opens the sheet to about 55 % of the window, with room for two stations', async ({
+    page,
+  }) => {
+    await expectSheetAt(page, 'half', 'Liste vergrößern');
+    const windowHeight = page.viewportSize()?.height ?? 0;
+
+    await expect
+      .poll(async () => (await sheet(page).boundingBox())?.y ?? 0)
+      .toBeCloseTo(windowHeight * 0.45, -1);
+    // Only one station lies around the Eiffel Tower; a second row of its height fits below it.
+    const firstStationBox = await stationCards(page).first().boundingBox();
+    expect((firstStationBox?.y ?? 0) + 2 * (firstStationBox?.height ?? 0)).toBeLessThanOrEqual(
+      windowHeight
+    );
+  });
+
+  test('the header keeps compact controls with touch targets of 44 px', async ({ page }) => {
+    const fuelChip = sheet(page).getByRole('button', { name: /^Kraftstoff:/ });
+    const refreshButton = sheet(page).getByRole('button', { name: 'Aktualisieren', exact: true });
+
+    for (const control of [fuelChip, refreshButton]) {
+      const box = await control.boundingBox();
+      expect(box?.width).toBeGreaterThanOrEqual(44);
+      expect(box?.height).toBeGreaterThanOrEqual(44);
+    }
+    const capsuleHeight = await fuelChip.evaluate(button =>
+      button.parentElement === null
+        ? 0
+        : Number.parseFloat(getComputedStyle(button.parentElement, '::before').height)
+    );
+    expect(capsuleHeight).toBeGreaterThanOrEqual(32);
+    expect(capsuleHeight).toBeLessThan(44);
+  });
+
   test('the handle steps through the positions and turns around at either end', async ({
     page,
   }) => {
@@ -311,7 +345,12 @@ test.describe('installation hint in the browser of an iPhone', () => {
 
   test('suggests the home screen once and stays closed after a reload', async ({ page }) => {
     const hint = installationHint(page);
-    await expect(hint).toContainText('Tippe auf Teilen und dann auf „Zum Home-Bildschirm“.');
+    const steps = hint.getByText('Tippe auf Teilen und dann auf „Zum Home-Bildschirm“.');
+    await expect(steps).toBeHidden();
+    const disclosure = hint.getByRole('button', { name: 'So geht’s', exact: true });
+    await disclosure.click();
+    await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+    await expect(steps).toBeVisible();
 
     const closeButton = hint.getByRole('button', { name: 'Hinweis schließen', exact: true });
     const closeButtonBox = await closeButton.boundingBox();
@@ -327,6 +366,8 @@ test.describe('installation hint in the browser of an iPhone', () => {
 
   test('has no WCAG 2.2 AAA violations, in the dark too', async ({ page }) => {
     await expect(installationHint(page)).toBeVisible();
+    await expectNoAccessibilityViolations(page);
+    await installationHint(page).getByRole('button', { name: 'So geht’s', exact: true }).click();
     await expectNoAccessibilityViolations(page);
 
     await page.emulateMedia({ colorScheme: 'dark' });

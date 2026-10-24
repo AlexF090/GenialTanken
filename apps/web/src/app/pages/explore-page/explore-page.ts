@@ -53,11 +53,12 @@ import { FavoritesRow } from '../../ui/favorites-row/favorites-row';
 import { FilterChip } from '../../ui/filter-chip/filter-chip';
 import { Icon } from '../../ui/icon/icon';
 import { Wordmark } from '../../ui/wordmark/wordmark';
-import { InstallationHintCard } from '../../ui/installation-hint-card/installation-hint-card';
+import { InstallationHintBanner } from '../../ui/installation-hint-banner/installation-hint-banner';
 import { LoadingState } from '../../ui/loading-state/loading-state';
 import { isSameViewportPadding } from '../../ui/map/map-viewport';
 import type { ViewportPadding } from '../../ui/map/map-viewport';
 import { PlaceSearchField } from '../../ui/place-search-field/place-search-field';
+import { ResultSummaryLine } from '../../ui/result-summary-line/result-summary-line';
 import { StatusBarScrim } from '../../ui/status-bar-scrim/status-bar-scrim';
 import { StationList } from '../../ui/station-list/station-list';
 import { StationsMap } from '../../ui/stations-map/stations-map';
@@ -65,7 +66,7 @@ import { ZoomControls } from '../../ui/zoom-controls/zoom-controls';
 import { recoverFocusWhenChanged } from './focus-recovery';
 import { mapViewportPaddingFor } from './map-viewport-padding';
 import { injectPlaceSearch } from './place-search';
-import { describeEmptyResult, describeResult } from './result-summary';
+import { describeEmptyResult, describeResult, describeResultBriefly } from './result-summary';
 import { injectSearchMode } from './search-mode';
 import { focusSettingsLinkAfterSettings } from './settings-link-focus';
 import { injectSheetFollowsCard, isSameCard } from './sheet-follows-card';
@@ -91,10 +92,11 @@ const FUEL_TYPE_OPTIONS = fuelTypeOptions('long');
     FavoritesRow,
     FilterChip,
     Icon,
-    InstallationHintCard,
+    InstallationHintBanner,
     LoadingState,
     NgTemplateOutlet,
     PlaceSearchField,
+    ResultSummaryLine,
     RouterLink,
     RouterOutlet,
     StationList,
@@ -119,14 +121,14 @@ export class ExplorePage {
   private readonly bottomSheet = viewChild(BottomSheet);
   private readonly stationList = viewChild(StationList);
   private readonly favoritesRow = viewChild(FavoritesRow);
+  private readonly dataSourceCredit = viewChild.required(DataSourceCredit);
   private readonly settingsLink = viewChild<ElementRef<HTMLElement>>('settingsLink');
   private readonly locateButton = viewChild.required<ElementRef<HTMLElement>>('locateButton');
   private readonly mapControls = viewChild.required<ElementRef<HTMLElement>>('mapControls');
   private readonly panel = viewChild.required<string, ElementRef<HTMLElement>>('panel', {
     read: ElementRef<HTMLElement>,
   });
-  private readonly resultSummaryElement =
-    viewChild<ElementRef<HTMLElement>>('resultSummaryElement');
+  private readonly resultSummaryLine = viewChild(ResultSummaryLine);
 
   protected readonly mainContentIdentifier = MAIN_CONTENT_IDENTIFIER;
   protected readonly fuelType = this.settings.fuelType;
@@ -189,6 +191,12 @@ export class ExplorePage {
     return stationCount === 0
       ? describeEmptyResult(this.fuelLabel(), this.radiusInKilometers())
       : describeResult(stationCount, this.radiusInKilometers(), this.center());
+  });
+  protected readonly briefResultSummary = computed(() => {
+    const stationCount = this.mapStations().length;
+    return stationCount === 0
+      ? this.resultSummary()
+      : describeResultBriefly(stationCount, this.radiusInKilometers());
   });
 
   private readonly router = inject(Router);
@@ -304,15 +312,16 @@ export class ExplorePage {
       settingsLink: () => this.settingsLink()?.nativeElement,
     });
     // Closing a notice removes its focused button; the focus returns to where the notice belongs.
-    recoverFocusWhenChanged(this.locationErrorMessage, () => this.locateButton().nativeElement);
-    recoverFocusWhenChanged(
-      this.installationOffer,
-      () => this.resultSummaryElement()?.nativeElement
-    );
+    recoverFocusWhenChanged(this.locationErrorMessage, () => {
+      this.locateButton().nativeElement.focus({ preventScroll: true });
+    });
+    recoverFocusWhenChanged(this.installationOffer, () => {
+      this.dataSourceCredit().focusLink();
+    });
   }
 
   private focusResultSummary(): void {
-    this.resultSummaryElement()?.nativeElement.focus({ preventScroll: true });
+    this.resultSummaryLine()?.focusSummary();
   }
 
   /**

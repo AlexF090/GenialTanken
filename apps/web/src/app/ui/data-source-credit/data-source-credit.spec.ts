@@ -4,6 +4,10 @@ import { DataSourceCredit } from './data-source-credit';
 const render = async (): Promise<HTMLElement> =>
   (await renderWithInputs(DataSourceCredit, {})).element;
 
+afterEach(() => {
+  document.body.replaceChildren();
+});
+
 describe('DataSourceCredit', () => {
   it('credits the French price data with a link that opens in a new tab', async () => {
     const element = await render();
@@ -15,5 +19,14 @@ describe('DataSourceCredit', () => {
     expect(link?.getAttribute('href')).toBe('https://www.prix-carburants.gouv.fr/');
     expect(link?.getAttribute('target')).toBe('_blank');
     expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+
+  it('moves the focus to its link on request', async () => {
+    const { element, fixture } = await renderWithInputs(DataSourceCredit, {});
+    document.body.append(element);
+
+    fixture.componentInstance.focusLink();
+
+    expect(document.activeElement).toBe(element.querySelector('a'));
   });
 });

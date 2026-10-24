@@ -48,7 +48,7 @@ const render = async ({ isCompact }: { isCompact: boolean }) => {
   return { fixture, element, handle, host: fixture.componentInstance };
 };
 
-/** A sheet of 800 px whose handle and header take 100 px. */
+/** A sheet of 800 px, 100 px below the top of the window, whose handle and header take 100 px. */
 const layOut = async (element: HTMLElement, settle: () => Promise<unknown>) => {
   const sheet = element.querySelector('section');
   const content = element.querySelector('.bottom-sheet__content');
@@ -56,6 +56,7 @@ const layOut = async (element: HTMLElement, settle: () => Promise<unknown>) => {
     throw new Error('BottomSheet rendered no sheet');
   }
   Object.defineProperty(sheet, 'offsetHeight', { value: 800 });
+  Object.defineProperty(sheet, 'offsetTop', { value: 100 });
   Object.defineProperty(content, 'offsetTop', { value: 100 });
   FakeResizeObserver.latest?.resize();
   await settle();
@@ -178,7 +179,7 @@ describe('BottomSheet', () => {
     handle.click();
     await fixture.whenStable();
 
-    expect(host.heights.slice(-2)).toEqual([100, 400]);
+    expect(host.heights.slice(-2)).toEqual([100, 495]);
   });
 
   it('slides down by the hidden part of the sheet', async () => {
@@ -206,7 +207,7 @@ describe('BottomSheet', () => {
     await fixture.whenStable();
 
     expect(host.snapPosition()).toBe('half');
-    expect(sheet.style.getPropertyValue('--bottom-sheet-offset')).toBe('400px');
+    expect(sheet.style.getPropertyValue('--bottom-sheet-offset')).toBe('305px');
   });
 
   it('carries a quick flick on to the next position', async () => {
