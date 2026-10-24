@@ -94,9 +94,10 @@ updates:
 
   - package-ecosystem: docker
     directory: /apps/api
+    # Daily: the base image carries the Node.js runtime of the API, and Node.js security releases
+    # should reach production within a day, not on the next Monday.
     schedule:
-      interval: weekly
-      day: monday
+      interval: daily
     commit-message:
       prefix: chore
       include: scope

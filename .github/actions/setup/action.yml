@@ -13,6 +13,9 @@ runs:
       uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version-file: .nvmrc
+        # .nvmrc names only the major version; without this the runner's cached Node.js may lag
+        # behind the latest security release.
+        check-latest: true
         cache: pnpm
 
     - name: Install dependencies
