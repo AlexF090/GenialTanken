@@ -23,7 +23,7 @@ GenialTanken started as a React capstone project and is being rebuilt with Angul
 
 ![GenialTanken on three phones: the map with price tags above the station list at half height, the details card of a station with its prices per fuel, and the same explore view in dark mode](docs/images/product-mobile.jpg)
 
-The images show the live app with real prices; they predate the redesign above and are refreshed once it is deployed to production. To regenerate them, run `node e2e/product-shots/capture-product-shots.ts` (details in the script header).
+The images show the live app with real prices. To regenerate them, run `node e2e/product-shots/capture-product-shots.ts` (details in the script header).
 
 ## Architecture
 

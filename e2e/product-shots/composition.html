@@ -323,23 +323,13 @@
         position: absolute;
         left: 112px;
         top: 74px;
-        display: flex;
-        align-items: center;
-        gap: 18px;
-        font-size: 58px;
-        font-weight: 700;
-        letter-spacing: -0.02em;
+        height: 84px;
       }
 
-      /* The own-position dot of the map, the one place where the app always starts */
-      .wordmark__dot {
-        width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        background: var(--color-own-position);
-        box-shadow:
-          0 0 0 5px var(--color-surface),
-          0 0 0 14px color-mix(in srgb, var(--color-own-position) 18%, transparent);
+      .wordmark img {
+        display: block;
+        height: 100%;
+        width: auto;
       }
     </style>
   </head>
@@ -393,7 +383,7 @@
       const createWordmark = () => {
         const wordmark = document.createElement('div');
         wordmark.className = 'wordmark';
-        wordmark.innerHTML = '<span class="wordmark__dot"></span>GenialTanken';
+        wordmark.innerHTML = '<img src="../../apps/web/icon-source/wordmark.svg" alt="" />';
         return wordmark;
       };
 
