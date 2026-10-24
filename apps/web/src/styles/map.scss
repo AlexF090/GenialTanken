@@ -75,7 +75,7 @@ $price-levels: low, medium, high;
   &::after {
     content: '';
     position: absolute;
-    z-index: -1;
+    z-index: var(--layer-behind-parent);
     bottom: calc(var(--price-tag-pointer-size) / -2 - var(--border-width-hairline));
     left: 50%;
     width: var(--price-tag-pointer-size);
@@ -277,7 +277,7 @@ $price-levels: low, medium, high;
   border-radius: var(--radius-round);
   background-color: var(--color-own-position);
   box-shadow:
-    0 0 0 var(--space-xs) color-mix(in srgb, var(--color-own-position) 18%, transparent),
+    0 0 0 var(--space-xs) var(--color-own-position-halo),
     var(--shadow-floating);
   transform: translate(-50%, -50%);
 }
@@ -286,9 +286,9 @@ $price-levels: low, medium, high;
 .search-radius {
   stroke: var(--color-text);
   stroke-width: var(--border-width-map-outline);
-  stroke-opacity: 0.7;
+  stroke-opacity: var(--opacity-search-radius-outline);
   fill: var(--color-text);
-  fill-opacity: 0.05;
+  fill-opacity: var(--opacity-search-radius-fill);
 }
 
 // Controls
@@ -313,8 +313,8 @@ app-stations-map {
   }
 }
 
-// Phones zoom with two fingers, like Apple Maps; the buttons would crowd the sheet. Larger windows
-// show them at the bottom right, like Apple Maps on the Mac, clear of the locate button.
+// On phones the sheet would cover these buttons; the explore page shows its own below the locate
+// button instead. Larger windows show them at the bottom right, like Apple Maps on the Mac.
 app-stations-map .leaflet-control-zoom {
   @include breakpoints.compact {
     display: none;
@@ -342,7 +342,7 @@ app-stations-map .leaflet-control-zoom {
 
     &:focus-visible {
       position: relative;
-      z-index: 1;
+      z-index: var(--layer-above-siblings);
     }
 
     &:first-child {
@@ -357,11 +357,11 @@ app-stations-map .leaflet-control-zoom {
   }
 }
 
-// OpenStreetMap requires a visible attribution; nearly opaque, so its small text keeps 7:1 on
-// every tile color.
+// OpenStreetMap requires a visible attribution; its background keeps the small text at 7:1 on
+// every tile color (`--color-map-attribution-background`).
 .leaflet-container .leaflet-control-attribution {
   padding: 0 var(--space-2xs);
-  background-color: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  background-color: var(--color-map-attribution-background);
   color: var(--color-text-secondary);
   font-size: var(--font-size-caption-1);
 

@@ -38,3 +38,8 @@ $expanded-media-query: '(width >= #{$expanded-minimum-width})';
     @content;
   }
 }
+
+// Container widths (`@container`) at which a component stacks what sits side by side, e.g. with
+// large text or at 400 % zoom (1.4.10). Container queries cannot read custom properties.
+$favorites-row-stacking-width: 20rem;
+$opening-times-stacking-width: 18rem;

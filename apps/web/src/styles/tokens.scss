@@ -39,8 +39,9 @@
   // materials and the menu highlight over them
   --color-text-secondary: light-dark(#47474c, #d1d1d6);
 
-  // Browser UI color (`theme-color` in `index.html` and the manifest; keep them in sync) and the
-  // opaque fallback of the materials
+  // Browser UI color (`theme-color` in `index.html`; keep them in sync) and the opaque fallback
+  // of the materials. The manifest's `theme_color` is the icon's indigo on purpose, so the launch
+  // screen matches the icon.
   --color-chrome: light-dark(rgb(249 249 249 / 96%), rgb(29 29 29 / 96%));
   --color-chrome-opaque: light-dark(#f9f9f9, #1d1d1d);
 
@@ -180,6 +181,20 @@
   // hue (211°) lies 30° from the brand indigo (241°), and it is far more saturated than the pale
   // dark indigo, so it never reads as a selection. Against surface light 4.0, dark 4.7.
   --color-own-position: light-dark(#007aff, #0a84ff);
+  // Accuracy halo around the own position; decoration, the dot itself carries the meaning
+  --color-own-position-halo: color-mix(in srgb, var(--color-own-position) 18%, transparent);
+
+  // Search radius on the map: a thin outline in the text color, the area inside only faintly
+  // tinted. Opacities, because they must override Leaflet's `stroke-opacity`/`fill-opacity`
+  // attributes. Outline against the tiles: light 6.3 on white, 5.9 on OpenStreetMap land; dark
+  // 8.1 on the inverted tiles (non-text, needs 3:1).
+  --opacity-search-radius-outline: 0.7;
+  --opacity-search-radius-fill: 0.05;
+
+  // Behind the map attribution (OpenStreetMap requires it visible): nearly opaque, so its small
+  // text keeps 7:1 on every tile from white to black: secondary text light at least 8.1, dark
+  // 9.5; links light 8.6, dark 9.4. Opaque with `opaque-materials`.
+  --color-map-attribution-background: color-mix(in srgb, var(--color-surface) 94%, transparent);
 
   // The only shadow color; used by `--shadow-floating`
   --color-shadow: light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 50%));
@@ -187,9 +202,9 @@
   // Behind the status bar, where the map reaches under it. Dark in both schemes: the installed
   // app asks for `black-translucent`, so iOS always draws the status bar text white. Fades out
   // towards the map (`--color-status-bar-scrim-end`) below the safe area; opaque with more
-  // contrast below. 60% black keeps white text at 5.7:1 over a white map tile (45% gave 3.4:1;
+  // contrast below. 66% black keeps white text at 7.3:1 over a white map tile (60% gave 5.7:1;
   // checked by scripts/status-bar-scrim-contrast.spec.ts).
-  --color-status-bar-scrim: rgb(0 0 0 / 60%);
+  --color-status-bar-scrim: rgb(0 0 0 / 66%);
   --color-status-bar-scrim-end: rgb(0 0 0 / 0%);
 
   // Materials: translucent, blurred layers floating above the map and the content. Nearly
@@ -383,6 +398,10 @@
   --layer-sheet: calc(var(--layer-chrome) - 1);
   --layer-notice: calc(var(--layer-chrome) + 1);
   --layer-skip-link: calc(var(--layer-chrome) + 2);
+  // Within one component: behind its parent's content (e.g. a pseudo-element under the board of
+  // a price tag), and above its siblings (e.g. a focused button whose ring overlaps them)
+  --layer-behind-parent: -1;
+  --layer-above-siblings: 1;
 
   // Motion
   --duration-short: 150ms;
@@ -393,6 +412,8 @@
   // Map price tags: the cheapest a little larger than the others, the selected one the largest
   --scale-marker-cheapest: 1.1;
   --scale-marker-selected: 1.15;
+  // A centered dialog (from 48rem) grows into place from slightly smaller as it opens
+  --scale-dialog-entrance: 0.96;
 }
 
 :root {
@@ -411,6 +432,7 @@
   --material-bar: var(--color-canvas);
   --material-blur: none;
   --material-edge: var(--color-border-control);
+  --color-map-attribution-background: var(--color-surface);
 }
 
 :root {
@@ -454,6 +476,7 @@
     --material-bar: Canvas;
     --material-blur: none;
     --material-edge: CanvasText;
+    --color-map-attribution-background: Canvas;
     --color-focus-ring: Highlight;
     --color-focus-ring-halo: Canvas;
   }

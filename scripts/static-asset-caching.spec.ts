@@ -22,33 +22,75 @@ const parseHeadersFile = (text: string): Map<string, string[]> => {
   return rules;
 };
 
+const escapeRegularExpression = (text: string): string =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** A path pattern with at most one splat (`*`), which greedily matches any characters. */
+const matchesPattern = (pattern: string, path: string): boolean =>
+  new RegExp(`^${pattern.split('*').map(escapeRegularExpression).join('.*')}$`).test(path);
+
+/**
+ * The value of a header for a requested path as Cloudflare combines the rules: every matching
+ * rule applies in file order, `! Name` removes what earlier rules set, values add up.
+ */
+const headerFor = (rules: Map<string, string[]>, path: string, name: string): string => {
+  let values: string[] = [];
+  for (const [pattern, lines] of rules) {
+    if (!matchesPattern(pattern, path)) {
+      continue;
+    }
+    for (const line of lines) {
+      if (line === `! ${name}`) {
+        values = [];
+      } else if (line.startsWith(`${name}:`)) {
+        values.push(line.slice(name.length + 1).trim());
+      }
+    }
+  }
+  return values.join(', ');
+};
+
 describe('apps/web/public/_headers', () => {
   const rules = parseHeadersFile(readRepositoryFile('apps/web/public/_headers'));
-
-  it('keeps hashed scripts immutable', () => {
-    expect(rules.get('/*.js')).toEqual(['Cache-Control: public, max-age=31536000, immutable']);
-  });
+  const cacheControlFor = (path: string): string => headerFor(rules, path, 'Cache-Control');
 
   it.each([
+    '/',
+    '/index.html',
     '/ngsw-worker.js',
     '/safety-worker.js',
     '/worker-basic.min.js',
     '/ngsw.json',
-    '/index.html',
-    '/',
-    // Deep links get index.html through `not_found_handling`, but `_headers` matches the
-    // requested path, so the rules of `/index.html` and `/` do not reach them.
+    // Deep links, unknown paths and trailing slashes get index.html through
+    // `not_found_handling`, but `_headers` matches the requested path.
     '/favorites',
+    '/favorites/',
     '/settings',
-    '/stations/*',
+    '/stations/fr-75001001',
+    '/stations/fr-75001001/',
     '/map',
-  ])('lets the browser revalidate %s on every request', path => {
-    expect(rules.get(path)).toEqual(['! Cache-Control', 'Cache-Control: no-cache']);
+    '/does-not-exist',
+    '/does/not/exist/',
+  ])('serves %s with no-cache only', path => {
+    expect(cacheControlFor(path)).toBe('no-cache');
   });
 
-  it('keeps hashed styles and media immutable', () => {
-    expect(rules.get('/*.css')).toEqual(['Cache-Control: public, max-age=31536000, immutable']);
-    expect(rules.get('/media/*')).toEqual(['Cache-Control: public, max-age=31536000, immutable']);
+  it.each(['/main-ABCD1234.js', '/chunk-EFGH5678.js', '/styles-IJKL9012.css', '/media/font.woff2'])(
+    'keeps the hashed asset %s immutable',
+    path => {
+      expect(cacheControlFor(path)).toBe('public, max-age=31536000, immutable');
+    }
+  );
+
+  it.each(['/icons/icon-192.png', '/favicon.svg', '/favicon.ico'])(
+    'caches the stable name %s for a day',
+    path => {
+      expect(cacheControlFor(path)).toBe('public, max-age=86400');
+    }
+  );
+
+  it('caches the manifest for an hour', () => {
+    expect(cacheControlFor('/manifest.webmanifest')).toBe('public, max-age=3600');
   });
 });
 

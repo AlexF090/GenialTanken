@@ -25,10 +25,8 @@ const contrastOfWhiteTextOnWhiteTile = (blackOpacity: number): number =>
 describe('--color-status-bar-scrim in apps/web/src/styles/tokens.scss', () => {
   const [regular, moreContrast] = declarationsOf('--color-status-bar-scrim');
 
-  it('keeps the white status bar text at 4.5:1 or more over white map tiles', () => {
-    expect(contrastOfWhiteTextOnWhiteTile(blackOpacityOf(regular ?? ''))).toBeGreaterThanOrEqual(
-      4.5
-    );
+  it('keeps the white status bar text at 7:1 or more over white map tiles (WCAG AAA)', () => {
+    expect(contrastOfWhiteTextOnWhiteTile(blackOpacityOf(regular ?? ''))).toBeGreaterThanOrEqual(7);
   });
 
   it('is opaque with more contrast', () => {
