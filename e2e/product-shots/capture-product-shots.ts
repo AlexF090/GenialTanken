@@ -149,7 +149,12 @@ const cheapestRow = (page: Page): Locator =>
   stationCards(page).filter({ hasText: 'Günstigster Preis' }).first();
 
 const sortByPrice = async (page: Page): Promise<void> => {
-  await page.getByText('Preis', { exact: true }).click();
+  await page.getByRole('button', { name: /^Sortierung: / }).click();
+  await page
+    .getByRole('menu', { name: 'Sortierung', exact: true })
+    .getByRole('menuitemradio', { name: 'Preis', exact: true })
+    .click();
+  await expect(page.getByRole('button', { name: 'Sortierung: Preis', exact: true })).toBeVisible();
   await waitUntilSettled(page);
 };
 
