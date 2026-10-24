@@ -14,6 +14,8 @@ export type VisualViewportEventType = 'resize' | 'scroll';
 export interface ObservedVisualViewport {
   readonly height: number;
   readonly offsetTop: number;
+  /** Pinch-zoom factor; 1 when the page is not zoomed. */
+  readonly scale: number;
   addEventListener(type: VisualViewportEventType, listener: () => void): void;
   removeEventListener(type: VisualViewportEventType, listener: () => void): void;
 }
@@ -57,16 +59,27 @@ export const KEYBOARD_AWARE_WINDOW = new InjectionToken<KeyboardAwareWindow | nu
 /** Custom property on the root element: pixels of the window an on-screen keyboard covers. */
 export const KEYBOARD_INSET_PROPERTY = '--layout-keyboard-inset';
 
+const SCALE_TOLERANCE = 0.01;
+
+/** Pinch zoom shrinks and moves the visual viewport as a keyboard would, so it must be told apart. */
+const isPinchZoomed = (visualViewport: Pick<ObservedVisualViewport, 'scale'>): boolean =>
+  Math.abs(visualViewport.scale - 1) > SCALE_TOLERANCE;
+
 /**
  * How much of the layout viewport lies below the visual viewport: the on-screen keyboard where
  * the browser does not resize the layout for it (Safari on iOS). With
  * `interactive-widget=resizes-content` (Chrome on Android) the layout shrinks and this stays 0.
+ * While the page is pinch-zoomed the keyboard cannot be told apart from the zoom, so it is 0.
  */
 export const keyboardInsetFor = (
   layoutHeight: number,
-  visualViewport: Pick<ObservedVisualViewport, 'height' | 'offsetTop'>
-): number =>
-  Math.max(Math.round(layoutHeight - visualViewport.height - visualViewport.offsetTop), 0);
+  visualViewport: Pick<ObservedVisualViewport, 'height' | 'offsetTop' | 'scale'>
+): number => {
+  if (isPinchZoomed(visualViewport)) {
+    return 0;
+  }
+  return Math.max(Math.round(layoutHeight - visualViewport.height - visualViewport.offsetTop), 0);
+};
 
 const TEXT_FIELD_SELECTOR = 'input, textarea, [contenteditable]:not([contenteditable="false"])';
 
@@ -74,7 +87,8 @@ const TEXT_FIELD_SELECTOR = 'input, textarea, [contenteditable]:not([contentedit
  * Follows the on-screen keyboard: returns the covered height and writes it to
  * `--layout-keyboard-inset`, so scrolling content can pad its end above the keyboard. Safari on
  * iOS also scrolls the whole page up to reveal a focused field, although the page is fixed to the
- * window; that is scrolled back, so the sheet stays where it is. Call it in an injection context;
+ * window; that is scrolled back, so the sheet stays where it is, but never while the user
+ * pinch-zooms, which would throw them back to the top. Call it in an injection context;
  * it stops when the injector is destroyed.
  */
 export const injectKeyboardInset = (): Signal<number> => {
@@ -94,7 +108,7 @@ export const injectKeyboardInset = (): Signal<number> => {
   };
   const scrollPageBack = (): void => {
     const isTextFieldFocused = document.activeElement?.matches(TEXT_FIELD_SELECTOR) === true;
-    if (isTextFieldFocused && window.scrollY !== 0) {
+    if (isTextFieldFocused && window.scrollY !== 0 && !isPinchZoomed(visualViewport)) {
       window.scrollTo(0, 0);
     }
     updateInset();

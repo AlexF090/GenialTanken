@@ -7,6 +7,7 @@ import type {
 class FakeObservedVisualViewport implements ObservedVisualViewport {
   height: number;
   offsetTop = 0;
+  scale = 1;
   readonly listeners = new Map<VisualViewportEventType, Set<() => void>>();
 
   constructor(height: number) {
@@ -52,16 +53,31 @@ export class FakeKeyboardAwareWindow implements KeyboardAwareWindow {
     this.scrollY = y;
   }
 
-  /** Shows a keyboard of the given height; iOS may also scroll the visual viewport down. */
+  /**
+   * Shows a keyboard of the given height. iOS may also scroll the visual viewport down
+   * (`offsetTop`), which it reports with a `scroll` event after the `resize`.
+   */
   openKeyboard(heightInPixels: number, offsetTop = 0): void {
     this.visualViewport.height = this.innerHeight - heightInPixels;
     this.visualViewport.offsetTop = offsetTop;
     this.visualViewport.dispatch('resize');
+    if (offsetTop !== 0) {
+      this.visualViewport.dispatch('scroll');
+    }
   }
 
   closeKeyboard(): void {
     this.visualViewport.height = this.innerHeight;
     this.visualViewport.offsetTop = 0;
     this.visualViewport.dispatch('resize');
+  }
+
+  /** Pinch-zooms by `scale` and pans down by `offsetTop`, without a keyboard. */
+  pinchZoom(scale: number, offsetTop = 0): void {
+    this.visualViewport.scale = scale;
+    this.visualViewport.height = this.innerHeight / scale;
+    this.visualViewport.offsetTop = offsetTop;
+    this.visualViewport.dispatch('resize');
+    this.visualViewport.dispatch('scroll');
   }
 }

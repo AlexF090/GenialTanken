@@ -1,5 +1,7 @@
-import { renderWithInputs } from '../../../testing/render-page';
-import { UpdateNotice } from './update-notice';
+import type { PendingReload } from '../../core/application-update/application-update-store';
+import { TestBed } from '@angular/core/testing';
+import { hostElementOf } from '../../../testing/render-page';
+import { LIVE_REGION_REGISTRATION_DELAY_IN_MILLISECONDS, UpdateNotice } from './update-notice';
 
 /**
  * The `display` of the last author rule that matches the element. Browsers let any author rule
@@ -22,32 +24,65 @@ const lastAuthorDisplayOf = (element: Element): string | undefined => {
   return display;
 };
 
+/**
+ * Renders the notice synchronously with fake timers (`whenStable` would wait for the faked
+ * scheduler), so the test decides when the status region is filled.
+ */
+const render = (pendingReload: PendingReload | undefined) => {
+  vi.useFakeTimers();
+  const fixture = TestBed.createComponent(UpdateNotice);
+  fixture.componentRef.setInput('pendingReload', pendingReload);
+  TestBed.tick();
+  return { fixture, element: hostElementOf(fixture) };
+};
+
+const renderAnnounced = (pendingReload: PendingReload | undefined) => {
+  const rendered = render(pendingReload);
+  vi.advanceTimersByTime(LIVE_REGION_REGISTRATION_DELAY_IN_MILLISECONDS);
+  TestBed.tick();
+  return rendered;
+};
+
 describe('UpdateNotice', () => {
-  it('stays hidden with the hidden attribute', async () => {
-    const { element } = await renderWithInputs(UpdateNotice, { pendingReload: 'update-ready' });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('stays hidden with the hidden attribute', () => {
+    const { element } = renderAnnounced('update-ready');
 
     element.hidden = true;
 
     expect(lastAuthorDisplayOf(element)).toBe('none');
   });
 
-  it('shows the notice without the hidden attribute', async () => {
-    const { element } = await renderWithInputs(UpdateNotice, { pendingReload: 'update-ready' });
+  it('shows the notice without the hidden attribute', () => {
+    const { element } = renderAnnounced('update-ready');
 
     expect(lastAuthorDisplayOf(element)).toBe('block');
     expect(element.querySelector('[role="status"] p')?.textContent).toBe('Neue Version verfügbar');
   });
 
-  it('keeps the status region empty without a pending reload', async () => {
-    const { element } = await renderWithInputs(UpdateNotice, { pendingReload: undefined });
+  it('keeps the status region empty without a pending reload', () => {
+    const { element } = renderAnnounced(undefined);
 
     expect(element.querySelector('[role="status"]')?.textContent.trim()).toBe('');
   });
 
-  it('asks for a reload by hand once the broken cache could not be repaired', async () => {
-    const { fixture, element } = await renderWithInputs(UpdateNotice, {
-      pendingReload: 'reload-required',
-    });
+  it('fills its status region a moment after rendering it, so screen readers announce a notice already pending', () => {
+    const { element } = render('update-ready');
+    const region = element.querySelector('[role="status"]');
+
+    expect(region?.textContent.trim()).toBe('');
+
+    vi.advanceTimersByTime(LIVE_REGION_REGISTRATION_DELAY_IN_MILLISECONDS);
+    TestBed.tick();
+
+    expect(region?.querySelector('p')?.textContent).toBe('Neue Version verfügbar');
+  });
+
+  it('asks for a reload by hand once the broken cache could not be repaired', () => {
+    const { fixture, element } = renderAnnounced('reload-required');
     const reloadRequested = vi.fn();
     fixture.componentInstance.reloadRequested.subscribe(reloadRequested);
 

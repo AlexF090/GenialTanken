@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { BROWSER_STORAGE } from '../browser-storage';
+import { LOCAL_STORAGE } from '../browser-storage';
 import { MATCH_MEDIA } from '../layout/media-query';
 import { Logger } from '../logging/logger';
 import { FakeMatchMedia } from '../../../testing/fake-match-media';
@@ -34,7 +34,7 @@ const createHint = (device: Device) => {
   TestBed.configureTestingModule({
     providers: [
       { provide: MATCH_MEDIA, useValue: matchMedia.matchMedia },
-      { provide: BROWSER_STORAGE, useValue: storage },
+      { provide: LOCAL_STORAGE, useValue: storage },
       {
         provide: ADDS_TO_HOME_SCREEN_THROUGH_SHARE,
         useValue: device.addsToHomeScreenThroughShare ?? false,

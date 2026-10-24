@@ -17,16 +17,24 @@ const insetProperty = (): string =>
 
 describe('keyboardInsetFor', () => {
   it('is the part of the layout viewport below the visual viewport', () => {
-    expect(keyboardInsetFor(800, { height: 500, offsetTop: 0 })).toBe(300);
-    expect(keyboardInsetFor(800, { height: 500, offsetTop: 120 })).toBe(180);
+    expect(keyboardInsetFor(800, { height: 500, offsetTop: 0, scale: 1 })).toBe(300);
+    expect(keyboardInsetFor(800, { height: 500, offsetTop: 120, scale: 1 })).toBe(180);
   });
 
-  it('is never negative, e.g. while the page is pinch-zoomed and scrolled', () => {
-    expect(keyboardInsetFor(800, { height: 400, offsetTop: 500 })).toBe(0);
+  it('is never negative', () => {
+    expect(keyboardInsetFor(800, { height: 400, offsetTop: 500, scale: 1 })).toBe(0);
+  });
+
+  it('is 0 while the page is pinch-zoomed, because the zoom shrinks the visual viewport', () => {
+    expect(keyboardInsetFor(800, { height: 400, offsetTop: 100, scale: 2 })).toBe(0);
+  });
+
+  it('tolerates the rounding of an unzoomed scale', () => {
+    expect(keyboardInsetFor(800, { height: 500, offsetTop: 0, scale: 1.000_1 })).toBe(300);
   });
 
   it('rounds to whole pixels', () => {
-    expect(keyboardInsetFor(800, { height: 499.6, offsetTop: 0 })).toBe(300);
+    expect(keyboardInsetFor(800, { height: 499.6, offsetTop: 0, scale: 1 })).toBe(300);
   });
 });
 
@@ -95,6 +103,33 @@ describe('injectKeyboardInset', () => {
     fakeWindow.scrollY = 0;
     fakeWindow.visualViewport.dispatch('scroll');
 
+    expect(fakeWindow.scrollCalls).toEqual([]);
+  });
+
+  it('follows a keyboard that also scrolls the visual viewport, like on iOS', () => {
+    const inset = start();
+    const field = document.createElement('input');
+    document.body.append(field);
+    field.focus();
+    fakeWindow.scrollY = 140;
+
+    fakeWindow.openKeyboard(320, 120);
+
+    expect(inset()).toBe(200);
+    expect(fakeWindow.scrollCalls).toEqual([[0, 0]]);
+  });
+
+  it('leaves a pinch-zoomed page where the user moved it and reports no keyboard', () => {
+    const inset = start();
+    const field = document.createElement('input');
+    document.body.append(field);
+    field.focus();
+    fakeWindow.scrollY = 140;
+
+    fakeWindow.pinchZoom(2, 300);
+
+    expect(inset()).toBe(0);
+    expect(insetProperty()).toBe('0px');
     expect(fakeWindow.scrollCalls).toEqual([]);
   });
 

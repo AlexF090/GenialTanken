@@ -1,12 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { FakeStorage, storedFavorites } from '../../../testing/fake-storage';
-import { BROWSER_STORAGE } from '../browser-storage';
+import { LOCAL_STORAGE } from '../browser-storage';
 import { FavoritesStore } from './favorites-store';
 import { provideLocalStorageFavorites } from './local-storage-favorites-repository';
 
 const createStore = (storage: Storage): FavoritesStore => {
   TestBed.configureTestingModule({
-    providers: [{ provide: BROWSER_STORAGE, useValue: storage }, provideLocalStorageFavorites()],
+    providers: [{ provide: LOCAL_STORAGE, useValue: storage }, provideLocalStorageFavorites()],
   });
   return TestBed.inject(FavoritesStore);
 };

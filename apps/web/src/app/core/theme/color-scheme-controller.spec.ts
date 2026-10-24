@@ -2,7 +2,7 @@ import { DOCUMENT } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { FakeMatchMedia } from '../../../testing/fake-match-media';
 import { FakeStorage } from '../../../testing/fake-storage';
-import { BROWSER_STORAGE } from '../browser-storage';
+import { LOCAL_STORAGE } from '../browser-storage';
 import { MATCH_MEDIA } from '../layout/media-query';
 import { SettingsStore } from '../settings/settings-store';
 import {
@@ -27,7 +27,7 @@ describe('ColorSchemeController', () => {
   const startController = (storage: FakeStorage = new FakeStorage()): ColorSchemeController => {
     TestBed.configureTestingModule({
       providers: [
-        { provide: BROWSER_STORAGE, useValue: storage },
+        { provide: LOCAL_STORAGE, useValue: storage },
         { provide: MATCH_MEDIA, useValue: matchMedia.matchMedia },
       ],
     });

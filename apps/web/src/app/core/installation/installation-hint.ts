@@ -8,7 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { BROWSER_STORAGE } from '../browser-storage';
+import { LOCAL_STORAGE } from '../browser-storage';
 import { injectMediaQueryMatches } from '../layout/media-query';
 import { Logger } from '../logging/logger';
 
@@ -19,7 +19,7 @@ import { Logger } from '../logging/logger';
  */
 export type InstallationOffer = 'install-dialog' | 'home-screen-steps';
 
-export const INSTALLATION_HINT_STORAGE_KEY = 'genialtanken.installationHint';
+export const INSTALLATION_HINT_STORAGE_KEY = 'genialtanken.installation-hint';
 const DISMISSED = 'dismissed';
 
 /** Phones and tablets: a touch screen as the only pointer. */
@@ -59,7 +59,7 @@ const isInstallDialogEvent = (event: Event): event is InstallDialogEvent =>
  */
 @Injectable({ providedIn: 'root' })
 export class InstallationHint {
-  private readonly storage = inject(BROWSER_STORAGE);
+  private readonly storage = inject(LOCAL_STORAGE);
   private readonly logger = inject(Logger);
   private readonly isTouchDevice = injectMediaQueryMatches(TOUCH_DEVICE_MEDIA_QUERY);
   private readonly isStandalone = injectMediaQueryMatches(STANDALONE_DISPLAY_MEDIA_QUERY);

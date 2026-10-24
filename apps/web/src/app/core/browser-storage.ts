@@ -1,7 +1,7 @@
 import { InjectionToken } from '@angular/core';
 
 /** Persistent key-value storage; `localStorage` in the browser, a fake in tests. */
-export const BROWSER_STORAGE = new InjectionToken<Storage>('BrowserStorage', {
+export const LOCAL_STORAGE = new InjectionToken<Storage>('LocalStorage', {
   providedIn: 'root',
   factory: () => localStorage,
 });
