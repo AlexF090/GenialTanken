@@ -352,6 +352,9 @@
   // Capsule of a filter chip, smaller than its touch target, which overhangs it above and below
   --layout-chip-height: 2.25rem;
   --layout-chip-overhang: calc((var(--layout-touch-target) - var(--layout-chip-height)) / 2);
+  // Strips at the window edges that tint Safari's bars; Safari ignores fixed elements of 10 to 12 px
+  // or less, so keep it above 12 px
+  --layout-browser-edge-tint-height: 1rem;
   // An action of a station card (route, favorite, share): icon above its label
   --layout-action-tile-height: 3.75rem;
   --layout-header-height: 6.25rem;
@@ -394,9 +397,10 @@
   --safe-area-bottom: env(safe-area-inset-bottom, 0);
   --safe-area-left: env(safe-area-inset-left, 0);
 
-  // Stacking: above Leaflet panes and controls (max. 1000). From bottom to top: the map controls
+  // Stacking: above Leaflet panes and controls (max. 1000). From bottom to top: the browser edge tint (above the map, below everything else), the map controls
   // (locate, area search), the sheet (a fully opened one covers the map controls), the page header, app-wide notices (new version), the skip link.
   --layer-chrome: 1100;
+  --layer-browser-edge-tint: calc(var(--layer-chrome) - 3);
   --layer-map-controls: calc(var(--layer-chrome) - 2);
   --layer-sheet: calc(var(--layer-chrome) - 1);
   --layer-notice: calc(var(--layer-chrome) + 1);

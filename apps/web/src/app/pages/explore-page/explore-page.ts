@@ -61,6 +61,7 @@ import { PlaceSearchField } from '../../ui/place-search-field/place-search-field
 import { ResultSummaryLine } from '../../ui/result-summary-line/result-summary-line';
 import { StationList } from '../../ui/station-list/station-list';
 import { StationsMap } from '../../ui/stations-map/stations-map';
+import { BrowserEdgeTint } from '../../ui/browser-edge-tint/browser-edge-tint';
 import { ZoomControls } from '../../ui/zoom-controls/zoom-controls';
 import { recoverFocusWhenChanged } from './focus-recovery';
 import { mapViewportPaddingFor } from './map-viewport-padding';
@@ -106,6 +107,7 @@ const INSTALLATION_HINT_AFTER_ROW = 3;
     KilometersPipe,
     Wordmark,
     ZoomControls,
+    BrowserEdgeTint,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './explore-page.html',
