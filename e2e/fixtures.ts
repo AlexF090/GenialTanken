@@ -340,6 +340,67 @@ export const suggestHomeScreenSteps = async (page: Page): Promise<void> => {
   });
 };
 
+export interface TouchPoint {
+  x: number;
+  y: number;
+}
+
+export interface SwipeOptions {
+  /** Number of touch moves between the start and the end point. */
+  steps?: number;
+  /** Pause between two moves, so the gesture has a speed a test can reason about. */
+  stepDelayInMilliseconds?: number;
+  /** When false the finger stays on the screen; the returned function lifts it. */
+  release?: boolean;
+}
+
+/**
+ * Swipes one finger from one point to another through the Chromium DevTools protocol, which
+ * sends real touch events (Playwright's own touchscreen can only tap). Returns a function that
+ * lifts the finger; it does nothing when the swipe released already.
+ */
+export const swipe = async (
+  page: Page,
+  from: TouchPoint,
+  to: TouchPoint,
+  { steps = 10, stepDelayInMilliseconds = 0, release = true }: SwipeOptions = {}
+): Promise<() => Promise<void>> => {
+  const session = await page.context().newCDPSession(page);
+  let isFingerDown = true;
+  const liftFinger = async (): Promise<void> => {
+    if (!isFingerDown) {
+      return;
+    }
+    isFingerDown = false;
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await session.detach();
+  };
+
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [from] });
+  for (let step = 1; step <= steps; step++) {
+    if (stepDelayInMilliseconds > 0) {
+      await page.evaluate(
+        delay => new Promise<void>(resolve => setTimeout(resolve, delay)),
+        stepDelayInMilliseconds
+      );
+    }
+    const progress = step / steps;
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [
+        {
+          x: from.x + (to.x - from.x) * progress,
+          y: from.y + (to.y - from.y) * progress,
+        },
+      ],
+    });
+  }
+  if (release) {
+    await liftFinger();
+  }
+  return liftFinger;
+};
+
 // `wcag2aaa` adds the enhanced contrast rule (1.4.6).
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag2aaa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 

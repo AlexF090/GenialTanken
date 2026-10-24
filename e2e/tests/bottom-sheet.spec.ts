@@ -16,7 +16,9 @@ import {
   stationList,
   stationsMap,
   installationHint,
+  openedStationCard,
   suggestHomeScreenSteps,
+  swipe,
   test,
   useOwnPosition,
 } from '../fixtures.ts';
@@ -342,6 +344,230 @@ test.describe('bottom sheet on a phone', () => {
       await expect.poll(async () => (await scrollPosition()).top).toBeGreaterThan(0);
 
       expect(await scrollPosition()).toMatchObject({ left: 0, pageLeft: 0 });
+    });
+  });
+
+  test.describe('the list leads the sheet', () => {
+    const content = (page: Page): Locator => sheet(page).locator('.bottom-sheet__content');
+
+    const sheetTop = async (page: Page): Promise<number> => (await renderedBox(sheet(page))).y;
+
+    /** Resolves once the sheet stopped sliding, and returns where it rests. */
+    const settledSheetTop = async (page: Page): Promise<number> => {
+      let previousTop = Number.NaN;
+      await expect
+        .poll(async () => {
+          const top = await sheetTop(page);
+          const hasSettled = top === previousTop;
+          previousTop = top;
+          return hasSettled;
+        })
+        .toBe(true);
+      return previousTop;
+    };
+
+    const centerOf = async (element: Locator): Promise<{ x: number; y: number }> => {
+      const box = await renderedBox(element);
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    };
+
+    test('has touch-action that lets the sheet take vertical swipes only below full', async ({
+      page,
+    }) => {
+      await expectSheetAt(page, 'half', 'Liste vergrößern');
+      await expect(sheet(page)).toHaveClass(/bottom-sheet--content-leads/);
+      await expect(content(page)).toHaveCSS('touch-action', 'pan-x pinch-zoom');
+
+      await sheetHandle(page).focus();
+      await page.keyboard.press('Home');
+      await expectSheetAt(page, 'peek', 'Liste vergrößern');
+      await expect(content(page)).toHaveCSS('touch-action', 'pan-x pinch-zoom');
+
+      await page.keyboard.press('End');
+      await expectSheetAt(page, 'full', 'Liste verkleinern');
+      await expect(content(page)).toHaveCSS('touch-action', 'auto');
+    });
+
+    test('a swipe up at half opens the sheet fully without choosing the station', async ({
+      page,
+    }) => {
+      await expectSheetAt(page, 'half', 'Liste vergrößern');
+      const row = stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation);
+      const start = await centerOf(row);
+
+      await swipe(page, start, { x: start.x, y: start.y - 300 });
+
+      await expectSheetAt(page, 'full', 'Liste verkleinern');
+      await expect(page).toHaveURL('/');
+      await expect(row).not.toHaveAttribute('aria-current', 'true');
+    });
+
+    test('the sheet follows the finger and rests at full after the finger lifts', async ({
+      page,
+    }) => {
+      await expectSheetAt(page, 'half', 'Liste vergrößern');
+      const halfTop = await settledSheetTop(page);
+      const start = await centerOf(stationCard(page, rueBailleulStation));
+
+      const liftFinger = await swipe(
+        page,
+        start,
+        { x: start.x, y: start.y - 250 },
+        { release: false, steps: 25, stepDelayInMilliseconds: 20 }
+      );
+      try {
+        await expect.poll(() => sheetTop(page)).toBeLessThan(halfTop - 100);
+        // Only a part of the way to full: the sheet moved with the finger, it did not jump.
+        expect(await sheetTop(page)).toBeGreaterThan(0);
+      } finally {
+        await liftFinger();
+      }
+
+      await expectSheetAt(page, 'full', 'Liste verkleinern');
+    });
+
+    test('a short swipe up at half returns the sheet to half', async ({ page }) => {
+      await expectSheetAt(page, 'half', 'Liste vergrößern');
+      const halfTop = await settledSheetTop(page);
+      const start = await centerOf(stationCard(page, rueBailleulStation));
+
+      await swipe(page, start, { x: start.x, y: start.y - 30 }, { stepDelayInMilliseconds: 50 });
+
+      await expectSheetAt(page, 'half', 'Liste vergrößern');
+      expect(await settledSheetTop(page)).toBeCloseTo(halfTop, 0);
+    });
+
+    test('a tap on a row at half still chooses the station', async ({ page }) => {
+      await expectSheetAt(page, 'half', 'Liste vergrößern');
+      const row = stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation);
+      const target = await centerOf(row);
+
+      await page.touchscreen.tap(target.x, target.y);
+
+      await expect(row).toHaveAttribute('aria-current', 'true');
+      await expectSheetAt(page, 'half', 'Liste vergrößern');
+    });
+
+    test('the mouse wheel steps the sheet up to full and back down to half', async ({ page }) => {
+      await expectSheetAt(page, 'half', 'Liste vergrößern');
+      const halfTop = await settledSheetTop(page);
+      await stationCard(page, rueBailleulStation).hover();
+
+      await page.mouse.wheel(0, 100);
+      await expectSheetAt(page, 'full', 'Liste verkleinern');
+      await settledSheetTop(page);
+
+      await page.mouse.wheel(0, -100);
+      // Set by the wheel, not the handle, the sheet keeps its direction: the label may stay.
+      await expect.poll(() => sheetTop(page)).toBe(halfTop);
+      await expect(sheetHandle(page)).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    test.describe('on a short screen, where the four stations overflow the full sheet', () => {
+      test.use({ viewport: { width: 412, height: 500 } });
+
+      test.beforeEach(async ({ page }) => {
+        await chooseFuel(page, 'Diesel');
+        await openExplore(page);
+        await useOwnPosition(page);
+        await expect(stationCards(page)).toHaveCount(4);
+      });
+
+      test('at full a swipe up scrolls the list and leaves the sheet where it is', async ({
+        page,
+      }) => {
+        await sheetHandle(page).focus();
+        await page.keyboard.press('End');
+        await expectSheetAt(page, 'full', 'Liste verkleinern');
+        const fullTop = await settledSheetTop(page);
+        const start = await centerOf(stationCards(page).nth(1));
+
+        await swipe(page, start, { x: start.x, y: start.y - 150 });
+
+        await expect
+          .poll(() => content(page).evaluate(element => element.scrollTop))
+          .toBeGreaterThan(0);
+        expect(await sheetTop(page)).toBe(fullTop);
+        await expectSheetAt(page, 'full', 'Liste verkleinern');
+      });
+
+      test('at full with the list at its top a swipe down lowers the sheet to half', async ({
+        page,
+      }) => {
+        await sheetHandle(page).focus();
+        await page.keyboard.press('End');
+        await expectSheetAt(page, 'full', 'Liste verkleinern');
+        await expect.poll(() => content(page).evaluate(element => element.scrollTop)).toBe(0);
+        const start = await centerOf(stationCards(page).first());
+
+        const fullTop = await settledSheetTop(page);
+
+        await swipe(
+          page,
+          start,
+          { x: start.x, y: start.y + 140 },
+          { steps: 14, stepDelayInMilliseconds: 40 }
+        );
+
+        await expect.poll(() => sheetTop(page)).toBeGreaterThan(fullTop + 100);
+        await expect(sheetHandle(page)).toHaveAttribute('aria-expanded', 'true');
+        await expectShownOnScreen(page, stationList(page));
+      });
+
+      test('at full with a scrolled list a swipe down scrolls back and keeps the sheet', async ({
+        page,
+      }) => {
+        await sheetHandle(page).focus();
+        await page.keyboard.press('End');
+        await expectSheetAt(page, 'full', 'Liste verkleinern');
+        await content(page).evaluate(element => {
+          element.scrollTop = 120;
+        });
+        const fullTop = await settledSheetTop(page);
+        const start = await centerOf(stationCards(page).nth(1));
+
+        await swipe(page, start, { x: start.x, y: start.y + 60 });
+
+        await expectSheetAt(page, 'full', 'Liste verkleinern');
+        expect(await sheetTop(page)).toBe(fullTop);
+      });
+    });
+
+    test('the place search keeps the sheet where it is under swipes and the wheel', async ({
+      page,
+    }) => {
+      await page.getByRole('combobox', { name: 'Ort suchen' }).pressSequentially('Bastille');
+      const suggestions = sheet(page).getByRole('listbox', { name: 'Orte' }).getByRole('option');
+      await expect(suggestions.first()).toContainText('Bastille');
+      await expect(sheetHandle(page)).toHaveAccessibleName('Liste verkleinern');
+      const fullTop = await settledSheetTop(page);
+      const start = await centerOf(suggestions.first());
+
+      await swipe(page, start, { x: start.x, y: start.y + 250 });
+      await page.mouse.move(start.x, start.y);
+      await page.mouse.wheel(0, -100);
+
+      await expect(sheetHandle(page)).toHaveAccessibleName('Liste verkleinern');
+      expect(await settledSheetTop(page)).toBe(fullTop);
+    });
+
+    test('an opened station card keeps the sheet where it is under swipes and the wheel', async ({
+      page,
+    }) => {
+      await page.goto(`/stations/${rueBailleulStation.id}`);
+      const card = openedStationCard(page);
+      await expect(card).toBeVisible();
+      await expect(sheetHandle(page)).toHaveAccessibleName('Liste vergrößern');
+      await expect(sheet(page)).not.toHaveClass(/bottom-sheet--content-leads/);
+      const halfTop = await settledSheetTop(page);
+      const start = await centerOf(card);
+
+      await swipe(page, start, { x: start.x, y: start.y - 300 });
+      await page.mouse.move(start.x, start.y);
+      await page.mouse.wheel(0, 100);
+
+      await expect(sheetHandle(page)).toHaveAccessibleName('Liste vergrößern');
+      expect(await settledSheetTop(page)).toBe(halfTop);
     });
   });
 });
