@@ -95,6 +95,6 @@ Cross-cutting API pieces:
 - TypeScript strict everywhere; `interface` for object shapes (lint-enforced), `import type` for type-only imports (except in the API, see above).
 - Identifiers and comments use full words, no abbreviations (`configuration`, `identifier`, `InMilliseconds`).
 - Prettier: single quotes, `printWidth` 100, `arrowParens: avoid`, `trailingComma: es5`.
-- Dependencies are pinned exactly (`saveExact`), and `minimumReleaseAge` blocks releases younger than one day.
+- Dependencies are pinned exactly (`saveExact`), and `minimumReleaseAge` blocks releases younger than one day. Security fixes for transitive dependencies go into `overrides` in `pnpm-workspace.yaml`, keyed by the vulnerable range and commented with the advisory; overrides do not reach auto-installed peers (refresh those with `pnpm update -r <package>`). The API's Node.js runtime in production is the base image in `apps/api/Dockerfile` (exact tag plus digest, both stages together; Dependabot checks it daily), not `.nvmrc`, which names only the major version for CI and local tooling.
 - Commits and pushes run the lefthook hooks (see Commands); `LEFTHOOK=0` skips them.
 - Deployment and release steps: `docs/deployment.md`.

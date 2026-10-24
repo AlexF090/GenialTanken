@@ -1,3 +1,9 @@
+## [2.0.2](https://github.com/AlexF090/GenialTanken/compare/v2.0.1...v2.0.2) (2026-10-24)
+
+### Bug Fixes
+
+* **deps:** close security advisories in transitive dependencies ([#27](https://github.com/AlexF090/GenialTanken/issues/27)) ([b393094](https://github.com/AlexF090/GenialTanken/commit/b3930948c35eff1b122e0becacb0d6d55a4a6dab))
+
 ## [2.0.1](https://github.com/AlexF090/GenialTanken/compare/v2.0.0...v2.0.1) (2026-10-22)
 
 ### Bug Fixes

@@ -9,6 +9,23 @@ saveExact: true
 # Minutes a release must be public before it can be installed (supply-chain protection)
 minimumReleaseAge: 1440
 
+# Security fixes for transitive dependencies whose dependents still pin or allow vulnerable
+# versions. Each selector matches only the vulnerable range, so an entry stops applying once the
+# dependents move on; remove it when `pnpm why <package>` shows no version inside the range.
+overrides:
+  # GHSA-27r3-jxmh-p828 (@nestjs/platform-express through express)
+  'body-parser@>=2.0.0 <2.4.0': 2.4.0
+  # GHSA-q7qp-rjg7-q26m (@nestjs/platform-express pins multer 2.4.0)
+  'multer@>=2.0.0 <2.5.0': 2.5.0
+  # GHSA-587h-7wmj-h5pm and five more (vitest; @angular/build pins vite 8.3.0)
+  'vite@>=8.3.0 <8.3.3': 8.3.5
+  # GHSA-xjj6-f33q-929c, GHSA-4qv8-2p9j-2685, GHSA-f72v-6w45-q472 (semantic-release, miniflare)
+  'undici@>=7.0.0 <7.30.1': 7.30.1
+  # GHSA-w74x-v6f9-j3xg and three more (ajv)
+  'fast-uri@>=3.0.0 <3.1.9': 3.1.9
+  # GHSA-rj75-hqrm-r3gf (cssnano 5 and tailwindcss 3, build tooling only)
+  'postcss-selector-parser@<7.1.6': 7.1.7
+
 allowBuilds:
   esbuild: true
   '@parcel/watcher': true
