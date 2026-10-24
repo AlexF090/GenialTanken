@@ -1,0 +1,177 @@
+@use 'breakpoints';
+
+// Every shape copies the box of the content it stands for (`station-list.scss`,
+// `favorites-row.scss`, `.price-board` in `station-detail.scss`), so nothing moves once that
+// content replaces it. Bars sit in the line box of the text they stand for: heights in `em` of
+// that text's font size, so they grow with Dynamic Type like the text.
+
+:host {
+  display: block;
+}
+
+// A bar of text: `$fill` of the line box filled, the rest split above and below it.
+@mixin text-bar($font-size, $line-height, $fill: 0.8) {
+  font-size: $font-size;
+  block-size: #{$fill}em;
+  margin-block: calc((#{$line-height} - #{$fill}) * 0.5em);
+}
+
+// Station list
+
+:host(.skeleton-rows--station) {
+  container: skeleton-rows / inline-size;
+}
+
+.skeleton-rows__row {
+  :host(.skeleton-rows--text) & {
+    padding-block: var(--space-sm);
+  }
+
+  :host(.skeleton-rows--station) & {
+    position: relative;
+    display: grid;
+    grid-template-areas: 'price details actions';
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-xs) var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+
+    // The list's separator, from the start of the text to the trailing edge
+    &::before {
+      content: '';
+      grid-row: 1;
+      grid-column: details / -1;
+      align-self: end;
+      height: var(--border-width-hairline);
+      margin-block-end: calc(-1 * var(--space-sm));
+      margin-inline-end: calc(-1 * var(--space-md));
+      background-color: var(--color-hairline);
+    }
+  }
+}
+
+@container skeleton-rows (width < #{breakpoints.$station-row-stacking-width}) {
+  :host(.skeleton-rows--station) .skeleton-rows__row {
+    grid-template-areas:
+      'price actions'
+      'details details';
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    &::before {
+      grid-row: 2;
+      grid-column: 1 / -1;
+    }
+  }
+
+  .skeleton-rows__tile {
+    justify-self: start;
+  }
+}
+
+// As tall as the price tile: its price line and padding, at least a touch target
+.skeleton-rows__tile {
+  grid-area: price;
+  inline-size: var(--layout-price-tile-width);
+  block-size: max(
+    var(--layout-touch-target),
+    calc(var(--font-size-price-list) * var(--line-height-numerals) + 2 * var(--space-xs))
+  );
+  border-radius: var(--radius-md);
+}
+
+.skeleton-rows__lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  grid-area: details;
+  min-width: 0;
+}
+
+.skeleton-rows__line--title {
+  inline-size: 70%;
+  @include text-bar(var(--font-size-body), var(--line-height-tight));
+}
+
+.skeleton-rows__line--secondary {
+  inline-size: 45%;
+  @include text-bar(var(--font-size-subheadline), var(--line-height-tight));
+}
+
+// Star and ⓘ: two touch targets, pulled into the row's padding like the real ones
+.skeleton-rows__actions {
+  grid-area: actions;
+  inline-size: calc(2 * var(--layout-touch-target));
+  block-size: var(--layout-touch-target);
+  margin-inline-end: calc((var(--icon-size-md) - var(--layout-touch-target)) / 2);
+}
+
+// Price board of the station card
+
+:host(.skeleton-rows--price) {
+  border-top: var(--border-width-hairline) solid var(--color-hairline);
+}
+
+.skeleton-rows__price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2xs) var(--space-md);
+  padding: var(--space-sm) var(--space-2xs);
+  border-bottom: var(--border-width-hairline) solid var(--color-hairline);
+}
+
+.skeleton-rows__fuel {
+  inline-size: 35%;
+  @include text-bar(var(--font-size-body), var(--line-height-base));
+}
+
+.skeleton-rows__price-end {
+  flex: none;
+  inline-size: 3.5em;
+  @include text-bar(var(--font-size-price-list), var(--line-height-numerals));
+}
+
+// Favorites row: clipped instead of scrolled, the placeholders are not content to reach. It
+// stacks with the cards, at the width of the favorites row (the nearest container; this host is
+// none on purpose).
+
+:host(.skeleton-rows--tile) {
+  display: flex;
+  gap: var(--space-xs);
+  overflow: hidden;
+
+  @container (width <= #{breakpoints.$favorites-row-stacking-width}) {
+    flex-direction: column;
+  }
+}
+
+.skeleton-rows__card {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  box-sizing: border-box;
+  inline-size: var(--layout-favorite-card-width);
+  padding: var(--space-sm);
+  border-radius: var(--radius-md);
+  background-color: var(--color-canvas);
+
+  @container (width <= #{breakpoints.$favorites-row-stacking-width}) {
+    inline-size: auto;
+  }
+}
+
+.skeleton-rows__card-title {
+  inline-size: 80%;
+  @include text-bar(var(--font-size-subheadline), var(--line-height-tight));
+}
+
+.skeleton-rows__card-price {
+  inline-size: 60%;
+  @include text-bar(var(--font-size-price-list), var(--line-height-numerals));
+}
+
+.skeleton-rows__card-distance {
+  inline-size: 40%;
+  @include text-bar(var(--font-size-footnote), var(--line-height-base));
+}

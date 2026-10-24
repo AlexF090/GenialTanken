@@ -97,6 +97,47 @@ describe('FavoritesPage', () => {
     expect(stationTitles(element)).toEqual(['TotalEnergies']);
   });
 
+  it('holds the place of the favorites loading for the first time and says so as text', async () => {
+    context = configurePageTest({ storage: new FakeStorage({ favoriteIDs: '["fr-75001001"]' }) });
+    const { element } = await renderComponent(FavoritesPage);
+    await context.settle();
+
+    const loadingStatus = element.querySelector('.favorites__loading');
+    expect(loadingStatus?.getAttribute('role')).toBe('status');
+    expect(textOf(loadingStatus)).toBe('Favoriten werden geladen …');
+    expect(element.querySelectorAll('app-skeleton-rows .skeleton-rows__row')).toHaveLength(1);
+
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001')).flush({
+      stations: [withoutDistance(totalStation)],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [],
+    });
+    await context.settle();
+
+    expect(textOf(loadingStatus)).toBe('');
+    expect(element.querySelector('app-skeleton-rows')).toBeNull();
+    expect(stationTitles(element)).toEqual(['TotalEnergies']);
+  });
+
+  it('renders the loading status empty first, so screen readers announce it after the focus moves', async () => {
+    context = configurePageTest({ storage: new FakeStorage({ favoriteIDs: '["fr-75001001"]' }) });
+    const { element } = await renderComponent(FavoritesPage);
+
+    const loadingStatus = element.querySelector('.favorites > .favorites__loading');
+    expect(loadingStatus?.getAttribute('role')).toBe('status');
+    expect(textOf(loadingStatus)).toBe('');
+    expect(textOf(document.activeElement)).toBe('Favoriten');
+
+    await context.settle();
+    expect(element.querySelector('.favorites > .favorites__loading')).toBe(loadingStatus);
+    expect(textOf(loadingStatus)).toBe('Favoriten werden geladen …');
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001')).flush({
+      stations: [withoutDistance(totalStation)],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [],
+    });
+  });
+
   it('lists the stored favorites without distance', async () => {
     const { element } = await renderWithTwoFavorites();
 
@@ -467,6 +508,8 @@ describe('FavoritesPage', () => {
     await context.settle();
 
     expect(stationTitles(element)).toEqual(['TotalEnergies']);
+    expect(element.querySelector('app-skeleton-rows')).toBeNull();
+    expect(textOf(element.querySelector('.favorites__loading'))).toBe('Favoriten werden geladen …');
     context.httpTesting.expectOne(stationLookupUrl('fr-75001001')).flush({
       stations: [withoutDistance(totalStation)],
       unavailableIdentifiers: [],

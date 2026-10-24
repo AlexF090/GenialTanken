@@ -33,12 +33,12 @@ describe('describeResult', () => {
 });
 
 describe('describeResultBriefly', () => {
-  it('names count and radius on one short line', () => {
-    expect(describeResultBriefly(4, 5)).toBe('4 Tankstellen · 5\u00a0km');
+  it('names count and radius on one short line that never breaks', () => {
+    expect(describeResultBriefly(4, 5)).toBe('4\u00a0Tankstellen\u00a0·\u00a05\u00a0km');
   });
 
   it('uses the singular for a single station', () => {
-    expect(describeResultBriefly(1, 10)).toBe('1 Tankstelle · 10\u00a0km');
+    expect(describeResultBriefly(1, 10)).toBe('1\u00a0Tankstelle\u00a0·\u00a010\u00a0km');
   });
 });
 

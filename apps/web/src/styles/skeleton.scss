@@ -1,0 +1,42 @@
+// Grey placeholder of content that loads for the first time (`.skeleton-block`). Decorative: the
+// loading state is announced as text elsewhere, so hide placeholders from assistive technology.
+// It stays invisible for `--delay-skeleton-appearance`, so an answer that comes quickly never
+// flashes grey, then pulses between two fills; it stands still under reduced motion.
+.skeleton-block {
+  display: block;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-skeleton);
+  animation:
+    skeleton-appear var(--duration-short) var(--easing-standard) var(--delay-skeleton-appearance)
+      both,
+    skeleton-pulse var(--duration-pulse) ease-in-out var(--delay-skeleton-appearance) infinite
+      alternate;
+
+  // Still appears late, but at once and without pulsing.
+  @media (prefers-reduced-motion: reduce) {
+    animation: skeleton-appear 0s var(--delay-skeleton-appearance) both;
+  }
+
+  // The grey fill fades into the background here; an edge keeps the shape. An outline, so it
+  // takes no room the real content would not take.
+  @media (prefers-contrast: more), (forced-colors: active) {
+    outline: var(--border-width-hairline) solid var(--color-border-control);
+    outline-offset: calc(-1 * var(--border-width-hairline));
+  }
+}
+
+@keyframes skeleton-appear {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes skeleton-pulse {
+  to {
+    background-color: var(--color-skeleton-pulse);
+  }
+}

@@ -37,6 +37,11 @@ $narrow-width: breakpoints.$favorites-row-stacking-width;
   text-decoration: none;
 }
 
+// Where the list's cards would start.
+.favorites-row__placeholders {
+  padding: var(--space-xs) var(--space-md) var(--space-sm);
+}
+
 // Snaps card by card; the padding leaves room for the focus ring inside the scroll container.
 .favorites-row__list {
   display: flex;

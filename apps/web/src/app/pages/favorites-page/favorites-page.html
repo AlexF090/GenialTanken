@@ -6,8 +6,14 @@
     <h2 #title [id]="titleIdentifier" class="favorites__title" tabindex="-1">Favoriten</h2>
   </div>
 
+  <!-- Rendered empty with the page and filled afterwards: screen readers announce changes of a live region, not the text it appears with. The placeholders are silent. -->
+  <div class="favorites__loading visually-hidden" role="status">
+    @if (announcesLoading()) {
+      Favoriten werden geladen …
+    }
+  </div>
+
   @if (hasFavorites()) {
-    <app-loading-state [isLoading]="isLoading()" label="Favoriten werden geladen …" />
     <!-- Always rendered, so screen readers announce the notice when the connection drops. -->
     <div class="favorites__offline" role="status">
       @if (offlineMessage(); as message) {
@@ -31,6 +37,10 @@
       [fuelType]="fuelType()"
       [favoriteStationIdentifiers]="favoriteStationIdentifiers()"
       (favoriteToggled)="toggleFavorite($event)" />
+    <!-- Only before the first favorites: a reload keeps them in view. -->
+    @if (isLoading() && stations().length === 0) {
+      <app-skeleton-rows class="favorites__list" [count]="placeholderCount()" />
+    }
     @if (showsFrenchPrices()) {
       <app-data-source-credit />
     }

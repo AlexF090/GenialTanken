@@ -11,9 +11,69 @@
 
 .station-card__pending {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+// Laid out like the heading of `StationDetail`, so the loaded card replaces it without a shift.
+.station-card__pending-heading {
+  display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-md);
+  gap: var(--space-xs);
+}
+
+.station-card__skeleton-identity {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  min-width: 0;
+}
+
+.station-card__skeleton-title {
+  inline-size: 60%;
+  block-size: calc(var(--font-size-title-1) * var(--line-height-tight));
+}
+
+.station-card__skeleton-subtitle {
+  inline-size: 40%;
+  block-size: calc(var(--font-size-subheadline) * var(--line-height-base));
+}
+
+.station-card__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.station-card__skeleton-tiles {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: var(--space-xs);
+}
+
+.station-card__skeleton-tile {
+  block-size: var(--layout-action-tile-height);
+  border-radius: var(--radius-md);
+}
+
+.station-card__skeleton-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.station-card__skeleton-section-title {
+  inline-size: 25%;
+  block-size: calc(var(--font-size-title-3) * var(--line-height-tight));
+}
+
+.station-card__cold-start-hint {
+  max-inline-size: 40ch;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-subheadline);
 }
 
 .station-card__failure {

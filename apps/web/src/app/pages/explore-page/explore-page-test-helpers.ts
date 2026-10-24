@@ -15,6 +15,10 @@ export const selectedStationTitles = (element: HTMLElement): string[] =>
 export const resultSummaryElement = (element: HTMLElement): HTMLElement | null =>
   element.querySelector('main app-bottom-sheet app-result-summary-line [role="status"]');
 
+/** The line sighted users see; screen readers hear `resultSummaryElement` instead. */
+export const shownResultSummaryElement = (element: HTMLElement): HTMLElement | null =>
+  element.querySelector('main app-bottom-sheet app-result-summary-line .result-summary-line__text');
+
 export const placeSearchInput = (element: HTMLElement): HTMLInputElement => {
   const input = element.querySelector<HTMLInputElement>('input[role="combobox"]');
   if (input === null) {

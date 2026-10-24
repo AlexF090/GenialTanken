@@ -3,11 +3,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  Directive,
   ElementRef,
   inject,
   input,
   output,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import type { FuelType, Station } from '@genialtanken/contracts';
 import { formatDistance } from '../../core/formatting/number-format';
@@ -26,6 +28,8 @@ import type { PriceTint } from '../price-tile/price-tile';
 
 interface StationListItem {
   stationIdentifier: string;
+  /** Place among all rows, counted from 1, also when the rows are split into two lists. */
+  position: number;
   title: string;
   addressLine: string;
   priceInEuro: number | null;
@@ -50,13 +54,28 @@ const priceTintOf = (
   return isCheapest ? 'cheapest' : priceLevelOf(price, priceRange);
 };
 
+interface StationRowContext {
+  $implicit: StationListItem;
+}
+
+/** Types the row template, so both lists render the same row. */
+@Directive({ selector: 'ng-template[appStationRow]' })
+class StationRowTemplate {
+  static ngTemplateContextGuard(
+    _directive: StationRowTemplate,
+    _context: unknown
+  ): _context is StationRowContext {
+    return true;
+  }
+}
+
 /**
  * Stations as an iOS list: per row a price tile tinted like the price tags on the map, the
  * station with distance and address, and its actions.
  */
 @Component({
   selector: 'app-station-list',
-  imports: [RouterLink, PriceTile, FavoriteButton, Icon],
+  imports: [NgTemplateOutlet, RouterLink, PriceTile, FavoriteButton, Icon, StationRowTemplate],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './station-list.html',
   styleUrl: './station-list.scss',
@@ -72,6 +91,11 @@ export class StationList {
    * detail page. Otherwise the title links to the detail page.
    */
   readonly selectsOnMap = input(false);
+  /**
+   * Shows the content marked `stationListInsertion` after this many rows, or after the list when
+   * it has no more rows than that; without it, after the list.
+   */
+  readonly insertionAfterRow = input<number>();
   readonly favoriteToggled = output<string>();
   readonly stationSelected = output<string>();
 
@@ -84,10 +108,11 @@ export class StationList {
       price: priceInEuro(station, fuelType),
     }));
     const priceRange = priceRangeOf(pricedStations.map(({ price }) => price));
-    return pricedStations.map(({ station, price }) => {
+    return pricedStations.map(({ station, price }, index) => {
       const isCheapest = this.cheapestStationIdentifiers().has(station.id);
       return {
         stationIdentifier: station.id,
+        position: index + 1,
         title: stationTitle(station),
         addressLine: addressLinesBelowTitle(station).join(', '),
         priceInEuro: price,
@@ -100,6 +125,12 @@ export class StationList {
       };
     });
   });
+
+  protected readonly leadingItems = computed(() =>
+    this.items().slice(0, this.insertionAfterRow() ?? Number.POSITIVE_INFINITY)
+  );
+  protected readonly trailingItems = computed(() => this.items().slice(this.leadingItems().length));
+  protected readonly isSplit = computed(() => this.trailingItems().length > 0);
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 

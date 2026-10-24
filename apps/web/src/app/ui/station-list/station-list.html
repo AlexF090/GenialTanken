@@ -1,57 +1,73 @@
+<!-- Content inserted after a row (e.g. a tip) ends the list there and a second one continues it:
+     inside a list it would count as a station. The rows keep their place among all stations. -->
 <ul class="station-list" role="list" aria-label="Tankstellen">
-  @for (item of items(); track item.stationIdentifier) {
-    <li
-      class="station-row"
-      [class.station-row--selected]="item.isSelected"
-      [attr.data-station-identifier]="item.stationIdentifier">
-      <div class="station-row__details">
-        @if (selectsOnMap()) {
-          <button
-            type="button"
-            class="station-row__title"
-            translate="no"
-            [attr.aria-current]="item.isSelected ? true : null"
-            (click)="stationSelected.emit(item.stationIdentifier)">
-            {{ item.title }}
-          </button>
-        } @else {
-          <a
-            class="station-row__title"
-            translate="no"
-            [routerLink]="stationRoute(item.stationIdentifier)"
-            >{{ item.title }}</a
-          >
-        }
-        <span class="station-row__secondary">
-          @if (item.distance) {
-            <span class="station-row__distance"
-              >{{ item.distance }}<span class="visually-hidden">,</span
-              ><span aria-hidden="true">&nbsp;·</span></span
-            >&ngsp;
-          }
-          {{ item.addressLine }}
-        </span>
-      </div>
-      <!-- After the station in reading order, so screen readers hear the price right after its name; shown first. -->
-      <app-price-tile
-        class="station-row__price"
-        [priceInEuro]="item.priceInEuro"
-        [tint]="item.priceTint"
-        [isCheapest]="item.isCheapest" />
-      <div class="station-row__actions">
-        <app-favorite-button
-          [stationName]="item.title"
-          [isFavorite]="item.isFavorite"
-          (toggled)="favoriteToggled.emit(item.stationIdentifier)" />
-        @if (selectsOnMap()) {
-          <a
-            class="icon-button icon-button--row-action"
-            [routerLink]="stationRoute(item.stationIdentifier)"
-            [attr.aria-label]="'Details: ' + item.title">
-            <app-icon name="info" />
-          </a>
-        }
-      </div>
-    </li>
+  @for (item of leadingItems(); track item.stationIdentifier) {
+    <ng-container *ngTemplateOutlet="stationRow; context: { $implicit: item }" />
   }
 </ul>
+<ng-content select="[stationListInsertion]" />
+@if (trailingItems().length > 0) {
+  <ul class="station-list" role="list" aria-label="Weitere Tankstellen">
+    @for (item of trailingItems(); track item.stationIdentifier) {
+      <ng-container *ngTemplateOutlet="stationRow; context: { $implicit: item }" />
+    }
+  </ul>
+}
+
+<ng-template #stationRow appStationRow let-item>
+  <li
+    class="station-row"
+    [class.station-row--selected]="item.isSelected"
+    [attr.data-station-identifier]="item.stationIdentifier"
+    [attr.aria-posinset]="isSplit() ? item.position : null"
+    [attr.aria-setsize]="isSplit() ? items().length : null">
+    <div class="station-row__details">
+      @if (selectsOnMap()) {
+        <button
+          type="button"
+          class="station-row__title"
+          translate="no"
+          [attr.aria-current]="item.isSelected ? true : null"
+          (click)="stationSelected.emit(item.stationIdentifier)">
+          {{ item.title }}
+        </button>
+      } @else {
+        <a
+          class="station-row__title"
+          translate="no"
+          [routerLink]="stationRoute(item.stationIdentifier)"
+          >{{ item.title }}</a
+        >
+      }
+      <span class="station-row__secondary">
+        @if (item.distance) {
+          <span class="station-row__distance"
+            >{{ item.distance }}<span class="visually-hidden">,</span
+            ><span aria-hidden="true">&nbsp;·</span></span
+          >&ngsp;
+        }
+        {{ item.addressLine }}
+      </span>
+    </div>
+    <!-- After the station in reading order, so screen readers hear the price right after its name; shown first. -->
+    <app-price-tile
+      class="station-row__price"
+      [priceInEuro]="item.priceInEuro"
+      [tint]="item.priceTint"
+      [isCheapest]="item.isCheapest" />
+    <div class="station-row__actions">
+      <app-favorite-button
+        [stationName]="item.title"
+        [isFavorite]="item.isFavorite"
+        (toggled)="favoriteToggled.emit(item.stationIdentifier)" />
+      @if (selectsOnMap()) {
+        <a
+          class="icon-button icon-button--row-action"
+          [routerLink]="stationRoute(item.stationIdentifier)"
+          [attr.aria-label]="'Details: ' + item.title">
+          <app-icon name="info" />
+        </a>
+      }
+    </div>
+  </li>
+</ng-template>

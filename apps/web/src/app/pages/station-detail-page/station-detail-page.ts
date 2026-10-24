@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   afterRenderEffect,
   ChangeDetectionStrategy,
   Component,
@@ -9,6 +10,7 @@ import {
   inject,
   input,
   linkedSignal,
+  signal,
   untracked,
   viewChild,
 } from '@angular/core';
@@ -31,7 +33,8 @@ import { stationRoute } from '../../core/navigation/station-route';
 import { isShareCanceled, SHARE } from '../../core/sharing/share';
 import { addressLinesOf, stationTitle } from '../../core/stations/station-display';
 import { CloseButton } from '../../ui/close-button/close-button';
-import { LoadingState } from '../../ui/loading-state/loading-state';
+import { SkeletonRows } from '../../ui/skeleton-rows/skeleton-rows';
+import { COLD_START_HINT, injectShowsColdStartHint } from '../../core/api-wake-up/cold-start-hint';
 import { StationDetail } from '../../ui/station-detail/station-detail';
 import { resourceValueOr } from '../../core/resource-value-or';
 
@@ -46,7 +49,7 @@ interface ShownStation {
  */
 @Component({
   selector: 'app-station-detail-page',
-  imports: [StationDetail, LoadingState, CloseButton, NgTemplateOutlet],
+  imports: [StationDetail, SkeletonRows, CloseButton, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './station-detail-page.html',
   styleUrl: './station-detail-page.scss',
@@ -117,6 +120,15 @@ export class StationDetailPage {
   });
   protected readonly isFavorite = computed(() => this.favorites.isFavorite(this.id()));
   protected readonly canShare = this.shareSheet !== undefined;
+  /** Route and Favorit, and Teilen where `StationDetail` offers it. */
+  protected readonly skeletonTiles = this.canShare ? [0, 1, 2] : [0, 1];
+  protected readonly showsColdStartHint = injectShowsColdStartHint(this.isLoading);
+  /** Set a task after the first render, once the empty status region is in the document. */
+  private readonly isLoadingStatusReady = signal(false);
+  protected readonly announcesLoading = computed(
+    () => this.isLoadingStatusReady() && this.isLoading() && this.station() === undefined
+  );
+  protected readonly coldStartHint = COLD_START_HINT;
 
   constructor() {
     reloadWhenReconnected(this.stationResource);
@@ -129,8 +141,17 @@ export class StationDetailPage {
         openedStation.open(shownStation.station, shownStation.loadedAt);
       }
     });
-    inject(DestroyRef).onDestroy(() => {
+    const destroyRef = inject(DestroyRef);
+    destroyRef.onDestroy(() => {
       openedStation.close();
+    });
+    afterNextRender(() => {
+      const timer = setTimeout(() => {
+        this.isLoadingStatusReady.set(true);
+      });
+      destroyRef.onDestroy(() => {
+        clearTimeout(timer);
+      });
     });
 
     // Screen readers and keyboards start at the station's name once it is shown.

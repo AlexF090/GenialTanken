@@ -3,8 +3,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   Injector,
+  signal,
   viewChild,
 } from '@angular/core';
 import type { ElementRef } from '@angular/core';
@@ -19,8 +21,10 @@ import { SettingsStore } from '../../core/settings/settings-store';
 import { describeStationsError } from '../../core/stations/stations-error-message';
 import { DataSourceCredit } from '../../ui/data-source-credit/data-source-credit';
 import { Icon } from '../../ui/icon/icon';
-import { LoadingState } from '../../ui/loading-state/loading-state';
+import { SkeletonRows } from '../../ui/skeleton-rows/skeleton-rows';
 import { StationList } from '../../ui/station-list/station-list';
+
+const MAXIMUM_PLACEHOLDER_COUNT = 5;
 
 const STALE_PRICES_HINT = 'Angezeigte Preise sind womöglich nicht mehr aktuell.';
 
@@ -46,7 +50,7 @@ const neighborOf = (
  */
 @Component({
   selector: 'app-favorites-page',
-  imports: [StationList, LoadingState, DataSourceCredit, Icon],
+  imports: [StationList, SkeletonRows, DataSourceCredit, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './favorites-page.html',
   styleUrl: './favorites-page.scss',
@@ -89,6 +93,15 @@ export class FavoritesPage {
       : `${String(count)} Favoriten sind gerade nicht verfügbar.`;
   });
   protected readonly isLoading = this.favoriteStations.isLoading;
+  /** Set a task after the first render, once the empty status region is in the document. */
+  private readonly isLoadingStatusReady = signal(false);
+  protected readonly announcesLoading = computed(
+    () => this.isLoadingStatusReady() && this.hasFavorites() && this.isLoading()
+  );
+  /** One placeholder per favorite, up to a screenful. */
+  protected readonly placeholderCount = computed(() =>
+    Math.min(this.favoriteStationIdentifiers().size, MAXIMUM_PLACEHOLDER_COUNT)
+  );
   protected readonly offlineMessage = computed(() =>
     this.isOnline() ? undefined : OFFLINE_MESSAGE
   );
@@ -137,11 +150,18 @@ export class FavoritesPage {
   });
 
   constructor() {
+    const destroyRef = inject(DestroyRef);
     // Prices shown in the explore sheet may be old by now; a first load is not requested twice.
     this.favoriteStations.refreshIfLoaded();
     // Screen readers and keyboards start at the title, as on a station card.
     afterNextRender(() => {
       this.title().nativeElement.focus();
+      const timer = setTimeout(() => {
+        this.isLoadingStatusReady.set(true);
+      });
+      destroyRef.onDestroy(() => {
+        clearTimeout(timer);
+      });
     });
   }
 

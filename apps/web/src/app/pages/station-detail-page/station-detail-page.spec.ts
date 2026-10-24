@@ -24,6 +24,7 @@ import {
 } from '../../../testing/station-fixtures';
 import { KNOWN_STATION_SOURCES } from '../../core/stations/known-stations';
 import { RECONNECT_DELAY_IN_MILLISECONDS } from '../../core/network/network-status';
+import { COLD_START_HINT_DELAY_IN_MILLISECONDS } from '../../core/api-wake-up/cold-start-hint';
 import { StationDetailPage } from './station-detail-page';
 import { STATIONS_URL, stationLookupUrl, stationUrl } from '../../../testing/api-urls';
 import { FakeStorage, storedFavorites } from '../../../testing/fake-storage';
@@ -497,6 +498,110 @@ describe('StationDetailPage', () => {
 
     expect(getButton(element, 'Schließen')).toBeDefined();
     context.httpTesting.expectOne(stationUrl('fr-75001001'));
+  });
+
+  describe('while an unknown station loads', () => {
+    const skeletonOf = (element: HTMLElement) => element.querySelector('.station-card__skeleton');
+
+    it('draws a quiet outline of the card and announces the loading as text', async () => {
+      const { element } = await renderStation(totalStation.id);
+      context.httpTesting.expectOne(stationUrl('fr-75001001'));
+
+      expect(textOf(element.querySelector('[role="status"]'))).toBe('Tankstelle wird geladen …');
+      const hiddenBlockOf = (selector: string) =>
+        element.querySelector(`[aria-hidden="true"] ${selector}`);
+      expect(skeletonOf(element)?.getAttribute('aria-hidden')).toBe('true');
+      expect(hiddenBlockOf('.station-card__skeleton-title.skeleton-block')).not.toBeNull();
+      expect(hiddenBlockOf('.station-card__skeleton-subtitle.skeleton-block')).not.toBeNull();
+      expect(hiddenBlockOf('.station-card__skeleton-section-title.skeleton-block')).not.toBeNull();
+      expect(hiddenBlockOf('app-skeleton-rows[variant="price"]')).not.toBeNull();
+      expect(element.querySelector('article')).toBeNull();
+    });
+
+    it('draws the action tiles Route and Favorit, without a share sheet no Teilen', async () => {
+      const { element } = await renderStation(totalStation.id);
+      context.httpTesting.expectOne(stationUrl('fr-75001001'));
+
+      expect(element.querySelectorAll('.station-card__skeleton-tile.skeleton-block')).toHaveLength(
+        2
+      );
+    });
+
+    it('draws a third action tile for Teilen when the browser can share', async () => {
+      TestBed.resetTestingModule();
+      context = configurePageTest({
+        routes: [{ path: '', component: EmptyPage }],
+        providers: [{ provide: SHARE, useValue: () => Promise.resolve() }],
+      });
+      const { element } = await renderStation(totalStation.id);
+      context.httpTesting.expectOne(stationUrl('fr-75001001'));
+
+      expect(element.querySelectorAll('.station-card__skeleton-tile.skeleton-block')).toHaveLength(
+        3
+      );
+    });
+
+    it('renders the status region empty first, so screen readers announce the loading', async () => {
+      await loadNearbyStations([]);
+      const fixture = TestBed.createComponent(StationDetailPage);
+      const element = hostElementOf(fixture);
+      document.body.append(element);
+      fixture.componentRef.setInput('id', totalStation.id);
+      TestBed.tick();
+
+      const status = element.querySelector('.station-card > [role="status"]');
+      expect(status).not.toBeNull();
+      expect(skeletonOf(element)).not.toBeNull();
+      expect(textOf(status)).toBe('');
+
+      await context.settle();
+      expect(element.querySelector('.station-card > [role="status"]')).toBe(status);
+      expect(textOf(status)).toBe('Tankstelle wird geladen …');
+      context.httpTesting.expectOne(stationUrl('fr-75001001'));
+    });
+
+    it('mentions the waking server below the outline after a few seconds', async () => {
+      vi.useFakeTimers();
+      const { element } = await renderStation(totalStation.id);
+      const request = context.httpTesting.expectOne(stationUrl('fr-75001001'));
+      const coldStartHint =
+        'Der Server wird gerade gestartet. Das kann beim ersten Aufruf bis zu einer Minute dauern.';
+      const visibleHintOf = () => element.querySelector('.station-card__cold-start-hint');
+
+      vi.advanceTimersByTime(COLD_START_HINT_DELAY_IN_MILLISECONDS - 1);
+      await context.settle();
+      expect(visibleHintOf()).toBeNull();
+
+      vi.advanceTimersByTime(1);
+      await context.settle();
+      expect(textOf(element.querySelector('[role="status"]'))).toBe(
+        `Tankstelle wird geladen … ${coldStartHint}`
+      );
+      expect(textOf(visibleHintOf())).toBe(coldStartHint);
+      // The status region says it already; screen readers would hear it twice.
+      expect(visibleHintOf()?.closest('[aria-hidden="true"]')).not.toBeNull();
+
+      request.flush(withoutDistance(totalStation));
+      await context.settle();
+      expect(visibleHintOf()).toBeNull();
+      expect(element.textContent).not.toContain(coldStartHint);
+    });
+
+    it('replaces the outline with the error and keeps the status region empty', async () => {
+      const { element } = await renderStation(totalStation.id);
+
+      context.httpTesting
+        .expectOne(stationUrl('fr-75001001'))
+        .flush(
+          { statusCode: 502, message: 'Bad Gateway' },
+          { status: 502, statusText: 'Bad Gateway' }
+        );
+      await context.settle();
+
+      expect(skeletonOf(element)).toBeNull();
+      expect(textOf(element.querySelector('[role="status"]'))).toBe('');
+      expect(getButton(element, 'Erneut versuchen')).toBeDefined();
+    });
   });
 
   describe('sharing', () => {

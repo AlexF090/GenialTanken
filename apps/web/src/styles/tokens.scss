@@ -232,6 +232,12 @@
   // over the sheet: light 14.8, dark 12.8; secondary text light 8.0, dark 8.4; links light 7.9,
   // dark 7.7. Labels on it still use the text colors, which keep the larger margin
   --color-search-field: var(--color-segmented-track);
+  // Placeholder of content loading for the first time (`.skeleton-block`), pulsing between the
+  // two fills. Decorative, so no contrast minimum; still heavier than the tertiary fill (12 %),
+  // which vanished over the translucent sheet in light. An edge in --color-border-control draws
+  // it under more contrast and forced colors
+  --color-skeleton: light-dark(rgb(118 118 128 / 20%), rgb(118 118 128 / 32%));
+  --color-skeleton-pulse: light-dark(rgb(118 118 128 / 12%), rgb(118 118 128 / 22%));
 
   // Spacing
   --space-3xs: 0.125rem;
@@ -373,7 +379,6 @@
   --layout-fuel-badge-height: 2.125rem;
   // Price tile of a list row: wide enough for "2,25⁰ €", so the station names line up
   --layout-price-tile-width: 7rem;
-  --layout-spinner-size: 1.5rem;
   // The iOS grabber of a sheet: 36 × 5 points
   --layout-grabber-width: 2.25rem;
   --layout-grabber-height: 0.3125rem;
@@ -413,8 +418,12 @@
   // Motion
   --duration-short: 150ms;
   --duration-medium: 250ms;
-  // One turn of the loading spinner
+  // One turn of the busy refresh icon
   --duration-spin: 1s;
+  // One fade of the skeleton placeholders between their two fills
+  --duration-pulse: 1.2s;
+  // Skeleton placeholders stay invisible this long, so quick answers never flash grey
+  --delay-skeleton-appearance: 300ms;
   --easing-standard: cubic-bezier(0.2, 0, 0, 1);
   // Map price tags: the cheapest a little larger than the others, the selected one the largest
   --scale-marker-cheapest: 1.1;

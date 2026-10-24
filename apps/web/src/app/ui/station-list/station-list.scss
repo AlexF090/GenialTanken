@@ -1,7 +1,7 @@
+@use 'breakpoints';
 @use 'focus-ring';
 
-// Below this width large text (or a narrow window) leaves no room beside the price tile.
-$narrow-width: 19rem;
+$narrow-width: breakpoints.$station-row-stacking-width;
 
 // An iOS list: the price tile leads, separators are inset to the text like in Apple Maps.
 .station-list {

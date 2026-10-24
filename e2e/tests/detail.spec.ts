@@ -168,6 +168,35 @@ test.describe('station card', () => {
     await expectUsableCard(page, rueBailleulStation);
   });
 
+  test('a station opened by its link shows a quiet outline while it loads', async ({ page }) => {
+    await page.route(
+      url => url.pathname === '/api/stations',
+      route => route.fulfill({ json: [] })
+    );
+    let releaseLookup = (): undefined => undefined;
+    const lookupReleased = new Promise<undefined>(resolve => {
+      releaseLookup = () => {
+        resolve(undefined);
+      };
+    });
+    await page.route(isStationLookup, async route => {
+      await lookupReleased;
+      await route.fallback();
+    });
+    const lookupRequested = page.waitForRequest(request => isStationLookup(new URL(request.url())));
+    await page.goto(`/stations/${rueBailleulStation.id}`);
+    await lookupRequested;
+
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Tankstelle wird geladen …' })
+    ).toHaveCount(1);
+    await expect(page.getByRole('progressbar')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Schließen', exact: true })).toBeVisible();
+
+    releaseLookup();
+    await expectUsableCard(page, rueBailleulStation);
+  });
+
   test('Escape closes the card', async ({ page }) => {
     await page.goto(`/stations/${quaiDeLaRapeeStation.id}`);
     await expect(page.getByRole('region', { name: 'Preise' })).toBeVisible();

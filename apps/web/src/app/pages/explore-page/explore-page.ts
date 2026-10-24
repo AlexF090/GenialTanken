@@ -54,7 +54,7 @@ import { FilterChip } from '../../ui/filter-chip/filter-chip';
 import { Icon } from '../../ui/icon/icon';
 import { Wordmark } from '../../ui/wordmark/wordmark';
 import { InstallationHintBanner } from '../../ui/installation-hint-banner/installation-hint-banner';
-import { LoadingState } from '../../ui/loading-state/loading-state';
+import { SkeletonRows } from '../../ui/skeleton-rows/skeleton-rows';
 import { isSameViewportPadding } from '../../ui/map/map-viewport';
 import type { ViewportPadding } from '../../ui/map/map-viewport';
 import { PlaceSearchField } from '../../ui/place-search-field/place-search-field';
@@ -79,6 +79,9 @@ interface SelectionSource {
 
 const FUEL_TYPE_OPTIONS = fuelTypeOptions('long');
 
+/** The installation hint follows the first stations, so it never hides the nearest ones. */
+const INSTALLATION_HINT_AFTER_ROW = 3;
+
 /**
  * Start page: stations around the search center as a price board and on a map. The map fills
  * the window, under the system bars too; on phones the list is a bottom sheet over it, from 48rem
@@ -93,12 +96,12 @@ const FUEL_TYPE_OPTIONS = fuelTypeOptions('long');
     FilterChip,
     Icon,
     InstallationHintBanner,
-    LoadingState,
     NgTemplateOutlet,
     PlaceSearchField,
     ResultSummaryLine,
     RouterLink,
     RouterOutlet,
+    SkeletonRows,
     StationList,
     StationsMap,
     StatusBarScrim,
@@ -225,7 +228,9 @@ export class ExplorePage {
   );
   protected readonly settingsRoute = `/${SETTINGS_ROUTE_PATH}`;
 
-  private readonly favoriteStations = inject(FavoriteStationsResource).stations;
+  private readonly favoriteStationsResource = inject(FavoriteStationsResource);
+  private readonly favoriteStations = this.favoriteStationsResource.stations;
+  protected readonly favoritesAreLoading = this.favoriteStationsResource.isLoading;
   /** Distances from the search center, like the rows of the list. */
   protected readonly favoriteStationsNearby = computed(() => {
     const center = this.center();
@@ -286,6 +291,16 @@ export class ExplorePage {
 
   private readonly installationHint = inject(InstallationHint);
   protected readonly installationOffer = this.installationHint.offer;
+  protected readonly isLoadingFirstStations = computed(
+    () => this.isLoading() && this.stations().length === 0
+  );
+  protected readonly showsInstallationHint = computed(
+    () => this.installationOffer() !== undefined && !this.isLoadingFirstStations()
+  );
+  /** Only a shown hint splits the list. */
+  protected readonly installationHintAfterRow = computed(() =>
+    this.showsInstallationHint() ? INSTALLATION_HINT_AFTER_ROW : undefined
+  );
 
   constructor() {
     injectKeyboardInset();
@@ -315,7 +330,12 @@ export class ExplorePage {
     recoverFocusWhenChanged(this.locationErrorMessage, () => {
       this.locateButton().nativeElement.focus({ preventScroll: true });
     });
+    // Continues right after the closed hint: at the station below it, or at the credit.
     recoverFocusWhenChanged(this.installationOffer, () => {
+      const nextStation = this.stations()[INSTALLATION_HINT_AFTER_ROW];
+      if (nextStation !== undefined && this.stationList()?.focusStation(nextStation.id) === true) {
+        return;
+      }
       this.dataSourceCredit().focusLink();
     });
   }

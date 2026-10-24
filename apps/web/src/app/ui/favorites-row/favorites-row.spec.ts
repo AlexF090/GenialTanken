@@ -9,14 +9,46 @@ import {
 } from '../../../testing/station-fixtures';
 import { FavoritesRow } from './favorites-row';
 
-const render = (stations: Station[]) =>
-  renderWithInputs(FavoritesRow, { stations, fuelType: 'e5' }, [provideRouter([])]);
+const render = (stations: Station[], isLoading = false, favoriteCount = stations.length) =>
+  renderWithInputs(FavoritesRow, { stations, fuelType: 'e5', isLoading, favoriteCount }, [
+    provideRouter([]),
+  ]);
 
 describe('FavoritesRow', () => {
   it('renders nothing without favorites', async () => {
     const { element } = await render([]);
 
     expect(element.children).toHaveLength(0);
+  });
+
+  it('holds the place of favorites loading for the first time, named as text', async () => {
+    const { element } = await render([], true, 2);
+
+    const section = element.querySelector('section');
+    expect(textOf(section?.querySelector('h2'))).toBe('Favoriten');
+    expect(element.querySelector('app-skeleton-rows')?.getAttribute('aria-hidden')).toBe('true');
+    expect(accessibleTextOf(section)).toContain('Favoriten werden geladen …');
+    expect(section?.querySelector('[role="status"], [aria-live]')).toBeNull();
+  });
+
+  it('holds the place of one card for a single favorite', async () => {
+    const { element } = await render([], true, 1);
+
+    expect(element.querySelectorAll('.skeleton-rows__card')).toHaveLength(1);
+  });
+
+  it('holds the place of at most two cards, as many as the row shows at once', async () => {
+    const { element } = await render([], true, 5);
+
+    expect(element.querySelectorAll('.skeleton-rows__card')).toHaveLength(2);
+  });
+
+  it('keeps the shown favorites while they load again', async () => {
+    const { element } = await render([totalStation], true);
+
+    expect(element.querySelector('app-skeleton-rows')).toBeNull();
+    expect(element.querySelectorAll('li a')).toHaveLength(1);
+    expect(textOf(element)).not.toContain('geladen');
   });
 
   it('is a section named "Favoriten" that links to all favorites', async () => {

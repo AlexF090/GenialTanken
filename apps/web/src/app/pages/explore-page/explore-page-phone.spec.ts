@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import type { Station } from '@genialtanken/contracts';
 import { COMPACT_MEDIA_QUERY } from '../../core/layout/breakpoints';
 import {
   ADDS_TO_HOME_SCREEN_THROUGH_SHARE,
@@ -18,6 +19,7 @@ import {
 import type { PageTestContext } from '../../../testing/render-page';
 import {
   carrefourStation,
+  essoStation,
   totalStation,
   unbrandedStation,
 } from '../../../testing/station-fixtures';
@@ -254,9 +256,15 @@ describe('ExplorePage on a phone', () => {
   });
 
   it('does not suggest the home screen without a browser that supports it', async () => {
-    const { element } = await renderWithStations();
+    const { element } = await renderComponent(ExplorePage);
+    await context.settle();
+    context.httpTesting
+      .expectOne(EIFFEL_TOWER_E5_URL)
+      .flush([totalStation, carrefourStation, unbrandedStation, essoStation]);
+    await context.settle();
 
     expect(element.querySelector('app-installation-hint-banner')).toBeNull();
+    expect(element.querySelectorAll('app-station-list ul')).toHaveLength(1);
   });
 });
 
@@ -275,35 +283,80 @@ describe('ExplorePage in the browser of an iPhone', () => {
     context = configurePageTest();
   });
 
-  const render = async () => {
+  const render = async (stations: readonly Station[] = [totalStation]) => {
     const rendered = await renderComponent(ExplorePage);
     await context.settle();
-    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush(stations);
     await context.settle();
     return rendered;
   };
 
-  it('suggests adding the app to the home screen after the list, so it never hides a station', async () => {
-    const { element } = await render();
+  const fourStations: readonly Station[] = [
+    totalStation,
+    carrefourStation,
+    unbrandedStation,
+    essoStation,
+  ];
 
-    const hint = element.querySelector('app-installation-hint-banner');
-    expect(textOf(hint?.querySelector('h2'))).toBe('GenialTanken als App');
-    expect(hint?.previousElementSibling?.tagName).toBe('APP-STATION-LIST');
-  });
-
-  it('closes the suggestion for good', async () => {
-    const { element } = await render();
-
+  const dismiss = async (element: HTMLElement) => {
     document.body.append(element);
     const dismissButton = getButton(element, 'Hinweis schließen');
     dismissButton.focus();
     dismissButton.click();
     await context.settle();
+  };
+
+  it('suggests adding the app to the home screen after the list of a few stations', async () => {
+    const { element } = await render();
+
+    const hint = element.querySelector('app-installation-hint-banner');
+    expect(textOf(hint?.querySelector('h2'))).toBe('GenialTanken als App');
+    expect(hint?.previousElementSibling?.getAttribute('aria-label')).toBe('Tankstellen');
+    expect(hint?.nextElementSibling).toBeNull();
+  });
+
+  it('suggests it after the third station of a longer list, so the first ones stay in view', async () => {
+    const { element } = await render(fourStations);
+
+    const hint = element.querySelector('app-installation-hint-banner');
+    expect(hint?.previousElementSibling?.querySelectorAll('li')).toHaveLength(3);
+    expect(hint?.nextElementSibling?.getAttribute('aria-label')).toBe('Weitere Tankstellen');
+  });
+
+  it('does not suggest it while the first stations load, so it never jumps below them', async () => {
+    const { element } = await renderComponent(ExplorePage);
+    await context.settle();
+
+    expect(element.querySelector('app-skeleton-rows')).not.toBeNull();
+    expect(element.querySelector('app-installation-hint-banner')).toBeNull();
+
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
+    await context.settle();
+    expect(element.querySelector('app-installation-hint-banner')).not.toBeNull();
+  });
+
+  it('closes the suggestion for good', async () => {
+    const { element } = await render();
+
+    await dismiss(element);
 
     expect(element.querySelector('app-installation-hint-banner')).toBeNull();
     expect(context.storage.getItem(INSTALLATION_HINT_STORAGE_KEY)).toBe('dismissed');
     // The closed hint took the focus with it; it continues right after it, at the credit.
     expect(document.activeElement).toBe(element.querySelector('app-data-source-credit a'));
+    document.body.replaceChildren();
+  });
+
+  it('continues at the station after the closed suggestion', async () => {
+    const { element } = await render(fourStations);
+
+    await dismiss(element);
+
+    // The list is whole again; the station that followed the hint has the focus.
+    expect(element.querySelectorAll('app-station-list ul')).toHaveLength(1);
+    expect(document.activeElement).toBe(
+      element.querySelectorAll('app-station-list .station-row__title')[3]
+    );
     document.body.replaceChildren();
   });
 });

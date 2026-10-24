@@ -112,12 +112,12 @@
           [hidden]="isSearching()"
           [summary]="resultSummary()"
           [briefSummary]="briefResultSummary()"
+          [isLoading]="isLoading()"
           (refreshRequested)="refresh()" />
 
         @if (stationsErrorMessage(); as message) {
           <p class="message message--error" role="alert">{{ message }}</p>
         }
-        <app-loading-state [isLoading]="isLoading()" />
       </div>
 
       <!-- Always rendered, so screen readers announce the notice when the connection drops. -->
@@ -135,7 +135,11 @@
     <router-outlet />
     <!-- Hidden, not removed, while a card or the search is open: the list keeps its state. -->
     <div [hidden]="isCardOpen() || isSearching()">
-      <app-favorites-row [stations]="favoriteStationsNearby()" [fuelType]="fuelType()" />
+      <app-favorites-row
+        [stations]="favoriteStationsNearby()"
+        [fuelType]="fuelType()"
+        [isLoading]="favoritesAreLoading()"
+        [favoriteCount]="favoriteStationIdentifiers().size" />
       <app-station-list
         [stations]="stations()"
         [fuelType]="fuelType()"
@@ -143,13 +147,21 @@
         [cheapestStationIdentifiers]="cheapestStationIdentifiers()"
         [selectedStationIdentifier]="selectedStationIdentifier()"
         [selectsOnMap]="true"
+        [insertionAfterRow]="installationHintAfterRow()"
         (stationSelected)="showOnMap($event)"
-        (favoriteToggled)="toggleFavorite($event)" />
-      @if (installationOffer(); as offer) {
-        <app-installation-hint-banner
-          [offer]="offer"
-          (installRequested)="installApplication()"
-          (dismissed)="dismissInstallationHint()" />
+        (favoriteToggled)="toggleFavorite($event)">
+        <!-- After the first stations, which it never hides; not over the placeholders, which it would jump below. -->
+        @if (showsInstallationHint() && installationOffer(); as offer) {
+          <app-installation-hint-banner
+            stationListInsertion
+            [offer]="offer"
+            (installRequested)="installApplication()"
+            (dismissed)="dismissInstallationHint()" />
+        }
+      </app-station-list>
+      <!-- Only before the first stations: a reload keeps them, its state shows in the summary. -->
+      @if (isLoadingFirstStations()) {
+        <app-skeleton-rows />
       }
       <app-data-source-credit class="explore-page__credit" />
     </div>

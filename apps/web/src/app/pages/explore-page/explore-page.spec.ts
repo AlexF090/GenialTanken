@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { FavoriteStationsResource } from '../../core/favorites/favorite-stations-resource';
 import { SearchCenterStore } from '../../core/search-center/search-center-store';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { StationsMap } from '../../ui/stations-map/stations-map';
@@ -29,6 +30,7 @@ import {
   EIFFEL_TOWER_E5_URL,
   placeSearchInput,
   resultSummaryElement,
+  shownResultSummaryElement,
   selectedStationTitles,
 } from './explore-page-test-helpers';
 
@@ -111,10 +113,9 @@ describe('ExplorePage', () => {
     context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([]);
     await context.settle();
 
-    const summaryLine = resultSummaryElement(element)?.parentElement;
-    expect(textOf(summaryLine)).toBe(
-      'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.'
-    );
+    const message = 'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.';
+    expect(textOf(shownResultSummaryElement(element))).toBe(message);
+    expect(accessibleTextOf(resultSummaryElement(element)?.parentElement)).toBe(message);
   });
 
   it('uses the singular for a single station', async () => {
@@ -419,6 +420,41 @@ describe('ExplorePage', () => {
     expect(getButton(element, 'Kraftstoff: Diesel')).toBeDefined();
   });
 
+  it('shows quiet placeholders and a busy refresh button while the first stations load', async () => {
+    const { element } = await renderComponent(ExplorePage);
+    await context.settle();
+
+    expect(textOf(shownResultSummaryElement(element))).toBe('Tankstellen werden geladen …');
+    expect(getButton(element, 'Aktualisieren').getAttribute('aria-disabled')).toBe('true');
+    expect(element.querySelector('app-skeleton-rows')?.getAttribute('aria-hidden')).toBe('true');
+    expect(element.querySelector('app-loading-state')).toBeNull();
+
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
+    await context.settle();
+    expect(element.querySelector('app-skeleton-rows')).toBeNull();
+    expect(getButton(element, 'Aktualisieren').hasAttribute('aria-disabled')).toBe(false);
+  });
+
+  it('keeps the shown stations while fresh prices load and ignores a second press', async () => {
+    const { element } = await renderWithStations();
+
+    getButton(element, 'Aktualisieren').click();
+    await context.settle();
+    getButton(element, 'Aktualisieren').click();
+    await context.settle();
+
+    expect(stationTitles(element)).toEqual([
+      'TotalEnergies',
+      'Carrefour Market',
+      '40 Avenue de Flandre',
+    ]);
+    expect(element.querySelector('app-skeleton-rows')).toBeNull();
+    expect(textOf(shownResultSummaryElement(element))).toBe('3 Tankstellen · 5 km');
+    expect(getButton(element, 'Aktualisieren').getAttribute('aria-disabled')).toBe('true');
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
+    await context.settle();
+  });
+
   it('requests fresh prices once on "Aktualisieren" next to the result summary', async () => {
     const { element } = await renderWithStations();
     const refreshButton = getButton(element, 'Aktualisieren');
@@ -567,6 +603,33 @@ describe('ExplorePage', () => {
     expect(settingsLink?.getAttribute('href')).toBe('/settings');
   });
 
+  it('holds the place of the favorites while they load for the first time, not on a reload', async () => {
+    TestBed.resetTestingModule();
+    context = configurePageTest({ storage: new FakeStorage({ favoriteIDs: '["fr-75001001"]' }) });
+    const { element } = await renderWithStations();
+    const favoritesPlaceholders = () =>
+      element.querySelector('app-favorites-row app-skeleton-rows[aria-hidden="true"]');
+
+    expect(favoritesPlaceholders()).not.toBeNull();
+    // One favorite, one placeholder: no card stands for a favorite that is not there.
+    expect(element.querySelectorAll('app-favorites-row .skeleton-rows__card')).toHaveLength(1);
+    const favoritesAnswer = {
+      stations: [withoutDistance(totalStation)],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [],
+    };
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001')).flush(favoritesAnswer);
+    await context.settle();
+    expect(favoritesPlaceholders()).toBeNull();
+
+    TestBed.inject(FavoriteStationsResource).refreshIfLoaded();
+    await context.settle();
+
+    expect(favoritesPlaceholders()).toBeNull();
+    expect(textOf(element.querySelector('app-favorites-row li a'))).toContain('TotalEnergies');
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001')).flush(favoritesAnswer);
+  });
+
   it('offers a search in the area the map was moved to and searches there', async () => {
     const { fixture, element } = await renderWithStations();
     const map = childComponent(fixture, StationsMap);
@@ -698,7 +761,10 @@ describe('ExplorePage', () => {
 
     const emptyMessage = 'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.';
     // Shown and announced once, by the result summary, so browse mode does not read it twice.
-    expect(textOf(element.querySelector('main')).split('Keine Tankstellen')).toHaveLength(2);
+    expect(accessibleTextOf(element.querySelector('main')).split('Keine Tankstellen')).toHaveLength(
+      2
+    );
+    expect(textOf(shownResultSummaryElement(element))).toBe(emptyMessage);
     const announcingRegions = [...element.querySelectorAll('main [role="status"]')].filter(region =>
       textOf(region).includes('Keine Tankstellen')
     );

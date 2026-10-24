@@ -1,8 +1,12 @@
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import type { FuelType, Station } from '@genialtanken/contracts';
 import {
   accessibleTextOf,
   getButton,
+  hostElementOf,
   renderWithInputs,
   textOf,
 } from '../../../testing/render-page';
@@ -293,5 +297,92 @@ describe('StationList', () => {
 
     expect(isFocused).toBe(false);
     expect(document.activeElement).toBe(previouslyFocused);
+  });
+
+  describe('with content inserted after a row', () => {
+    @Component({
+      imports: [StationList],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `
+        <app-station-list
+          fuelType="e5"
+          [stations]="stations()"
+          [favoriteStationIdentifiers]="favoriteStationIdentifiers"
+          [insertionAfterRow]="3">
+          <aside stationListInsertion aria-label="Hinweis">Tipp</aside>
+        </app-station-list>
+      `,
+    })
+    class InsertingHost {
+      readonly stations = input.required<readonly Station[]>();
+      readonly favoriteStationIdentifiers: ReadonlySet<string> = new Set();
+    }
+
+    const fiveStations: readonly Station[] = [
+      totalStation,
+      carrefourStation,
+      unbrandedStation,
+      essoStation,
+      { ...totalStation, id: 'fr-75000005' },
+    ];
+
+    const renderInserting = async (stations: readonly Station[]) => {
+      TestBed.configureTestingModule({ providers: [provideRouter([])] });
+      const fixture = TestBed.createComponent(InsertingHost);
+      fixture.componentRef.setInput('stations', stations);
+      await fixture.whenStable();
+      const element = hostElementOf(fixture);
+      return {
+        fixture,
+        element,
+        stationList: fixture.debugElement
+          .query(By.directive(StationList))
+          .injector.get(StationList),
+        lists: [...element.querySelectorAll('ul')],
+        insertion: element.querySelector('aside'),
+      };
+    };
+
+    it('ends the list after the row and continues it after the content, with every row counted', async () => {
+      const { lists, insertion } = await renderInserting(fiveStations);
+
+      expect(lists.map(list => list.getAttribute('aria-label'))).toEqual([
+        'Tankstellen',
+        'Weitere Tankstellen',
+      ]);
+      expect(lists[0]?.querySelectorAll('li')).toHaveLength(3);
+      expect(lists[1]?.querySelectorAll('li')).toHaveLength(2);
+      expect(lists[0]?.nextElementSibling).toBe(insertion);
+      expect(insertion?.nextElementSibling).toBe(lists[1]);
+      const items = lists.flatMap(list => [...list.querySelectorAll('li')]);
+      expect(items.map(item => item.getAttribute('aria-posinset'))).toEqual([
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+      ]);
+      expect(new Set(items.map(item => item.getAttribute('aria-setsize')))).toEqual(new Set(['5']));
+    });
+
+    it('puts the content after the list when it has no more rows than that', async () => {
+      const { lists, insertion } = await renderInserting(fiveStations.slice(0, 3));
+
+      expect(lists).toHaveLength(1);
+      expect(lists[0]?.querySelectorAll('li')).toHaveLength(3);
+      expect(lists[0]?.nextElementSibling).toBe(insertion);
+      expect(lists[0]?.querySelector('li')?.hasAttribute('aria-posinset')).toBe(false);
+    });
+
+    it('focuses a station after the content', async () => {
+      const { element, stationList } = await renderInserting(fiveStations);
+      document.body.append(element);
+
+      expect(stationList.focusStation(essoStation.id)).toBe(true);
+      expect(document.activeElement?.closest('ul')?.getAttribute('aria-label')).toBe(
+        'Weitere Tankstellen'
+      );
+      document.body.replaceChildren();
+    });
   });
 });

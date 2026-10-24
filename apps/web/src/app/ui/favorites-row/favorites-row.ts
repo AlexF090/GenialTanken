@@ -8,6 +8,10 @@ import { FAVORITES_ROUTE_PATH } from '../../core/navigation/explore-routes';
 import { stationRoute } from '../../core/navigation/station-route';
 import { priceInEuro, stationTitle } from '../../core/stations/station-display';
 import { Price } from '../price/price';
+import { SkeletonRows } from '../skeleton-rows/skeleton-rows';
+
+/** Two hold the row's place; more would only guess at the length of a list still loading. */
+const MAXIMUM_PLACEHOLDER_COUNT = 2;
 
 interface FavoriteCard {
   stationIdentifier: string;
@@ -20,12 +24,13 @@ interface FavoriteCard {
 /**
  * The starred stations as a row of small cards, like the favorites of Apple Maps: each shows
  * the price of the chosen fuel and opens the station's card; "Alle" opens the whole list.
- * Renders nothing without favorites. On narrow screens the cards stack instead of scrolling
+ * Renders nothing without favorites; placeholders hold their place while they load for the first
+ * time, and a reload keeps the shown ones. On narrow screens the cards stack instead of scrolling
  * sideways.
  */
 @Component({
   selector: 'app-favorites-row',
-  imports: [RouterLink, Price],
+  imports: [RouterLink, Price, SkeletonRows],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './favorites-row.html',
   styleUrl: './favorites-row.scss',
@@ -33,11 +38,18 @@ interface FavoriteCard {
 export class FavoritesRow {
   readonly stations = input.required<readonly Station[]>();
   readonly fuelType = input.required<FuelType>();
+  /** The favorites are loading, the first time or again. */
+  readonly isLoading = input(false);
+  /** How many favorites are stored; sizes the placeholders before the first ones load. */
+  readonly favoriteCount = input(MAXIMUM_PLACEHOLDER_COUNT);
 
   private readonly allLink = viewChild<ElementRef<HTMLElement>>('allLink');
 
   protected readonly headingIdentifier = uniqueIdentifier('favorites-row-heading');
   protected readonly favoritesRoute = `/${FAVORITES_ROUTE_PATH}`;
+  protected readonly placeholderCount = computed(() =>
+    Math.min(this.favoriteCount(), MAXIMUM_PLACEHOLDER_COUNT)
+  );
   protected readonly cards = computed<FavoriteCard[]>(() =>
     this.stations().map(station => ({
       stationIdentifier: station.id,

@@ -136,7 +136,7 @@ const PAGES: PageUnderTest[] = [
     name: 'settings',
     path: '/settings',
     // The dialog slides in; axe must not measure contrast halfway. Endless animations (the
-    // spinner) never finish, so only finite ones are awaited.
+    // turning refresh icon, pulsing placeholders) never finish, so only finite ones are awaited.
     isReady: async page => {
       await expect(page.getByRole('slider', { name: 'Radius: 5 km' })).toBeVisible();
       await expect(page.getByRole('dialog')).toHaveJSProperty('open', true);
