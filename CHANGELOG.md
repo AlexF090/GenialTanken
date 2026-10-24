@@ -1,3 +1,9 @@
+## [2.1.0](https://github.com/AlexF090/GenialTanken/compare/v2.0.2...v2.1.0) (2026-10-24)
+
+### Features
+
+* **web:** redesign mobile experience with new brand, offline support and keep the API awake ([#25](https://github.com/AlexF090/GenialTanken/issues/25)) ([ef25c33](https://github.com/AlexF090/GenialTanken/commit/ef25c33450681bcde4228f200cf0fd576e1b90a1))
+
 ## [2.0.2](https://github.com/AlexF090/GenialTanken/compare/v2.0.1...v2.0.2) (2026-10-24)
 
 ### Bug Fixes
