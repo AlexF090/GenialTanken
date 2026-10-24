@@ -6,7 +6,7 @@ import type { ComponentFixture } from '@angular/core/testing';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import type { Routes } from '@angular/router';
 import { provideServiceWorker } from '@angular/service-worker';
-import { BROWSER_STORAGE } from '../app/core/browser-storage';
+import { LOCAL_STORAGE } from '../app/core/browser-storage';
 import { provideLocalStorageFavorites } from '../app/core/favorites/local-storage-favorites-repository';
 import { GEOLOCATION } from '../app/core/geolocation/geolocation-service';
 import { FakeGeolocation } from './fake-geolocation';
@@ -57,7 +57,7 @@ export const configurePageTest = (
       provideLocalStorageFavorites(),
       // As in app.config.ts, but never registered: the shell injects `SwUpdate`.
       provideServiceWorker('ngsw-worker.js', { enabled: false }),
-      { provide: BROWSER_STORAGE, useValue: storage },
+      { provide: LOCAL_STORAGE, useValue: storage },
       { provide: GEOLOCATION, useValue: geolocation },
       ...(options.providers ?? []),
     ],
