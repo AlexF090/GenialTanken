@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { CLIENT_ADDRESS_HEADER, PROXY_SECRET_HEADER } from '@genialtanken/contracts';
 import { z } from 'zod';
 import { FRENCH_RECORDS_PATH } from '../src/fuel-price-providers/france/french-upstream-paths.js';
@@ -14,6 +15,11 @@ const ALLOWED_ORIGIN = 'https://genialtanken.alexf090.workers.dev';
 const requiredPropertiesSchema = z.object({ required: z.array(z.string()) });
 
 const openApiInformationSchema = z.object({ info: z.object({ version: z.string() }) });
+
+/** semantic-release bumps the version in package.json with every release. */
+const packageVersion = z
+  .object({ version: z.string() })
+  .parse(JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))).version;
 
 const openApiOperationSchema = z.object({
   summary: z.string().min(1),
@@ -121,7 +127,7 @@ describe('OpenAPI document', () => {
 
     const response = await api.get('/api/docs-json').expect(200);
 
-    expect(openApiInformationSchema.parse(response.body).info.version).toBe('2.0.0');
+    expect(openApiInformationSchema.parse(response.body).info.version).toBe(packageVersion);
   });
 });
 
