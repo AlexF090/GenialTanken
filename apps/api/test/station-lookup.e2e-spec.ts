@@ -1,12 +1,14 @@
 import {
   MAXIMUM_STATION_IDENTIFIERS_PER_REQUEST,
   stationLookupSchema,
+  stationSchema,
 } from '@genialtanken/contracts';
 import { ERROR_MESSAGES } from '../src/common/error-messages.js';
 import { toStationIdentifier } from '../src/fuel-price-providers/station-identifier.js';
 import { FRENCH_RECORDS_PATH } from '../src/fuel-price-providers/france/french-upstream-paths.js';
 import { strictApiErrorSchema } from './support/api-errors.js';
 import { useTestApplication } from './support/create-test-application.js';
+import type { TestApi } from './support/create-test-application.js';
 import { searchParametersOf, useFakeUpstream } from './support/fake-upstream.js';
 import {
   AUTOMATE_RECORD_ID,
@@ -15,6 +17,7 @@ import {
   RAPEE_RECORD_ID,
   rapeeRecord,
 } from './support/french-records.js';
+import { PARIS } from './support/positions.js';
 
 const UNAVAILABLE_BODY = { statusCode: 502, message: ERROR_MESSAGES.upstreamUnavailable };
 const NOT_FOUND_BODY = { statusCode: 404, message: ERROR_MESSAGES.stationNotFound };
@@ -25,6 +28,16 @@ const france = useFakeUpstream();
 const startApplication = useTestApplication(() => ({
   FRANCE_FUEL_PRICES_BASE_URL: france.baseUrl,
 }));
+
+const searchAroundParis = async (api: TestApi, radiusInKilometers = '5'): Promise<void> => {
+  await api
+    .get('/api/stations')
+    .query({ ...PARIS, radiusInKilometers, fuel: 'e10' })
+    .expect(200);
+};
+
+const wait = (delayInMilliseconds: number): Promise<void> =>
+  new Promise(resolve => setTimeout(resolve, delayInMilliseconds));
 
 describe('GET /api/stations/:id', () => {
   it('returns a French station without distance', async () => {
@@ -38,6 +51,63 @@ describe('GET /api/stations/:id', () => {
 
     expect(response.body).toEqual({ ...EXPECTED_RAPEE_STATION, distanceInMeters: null });
     expect(searchParametersOf(france.requests[0]).get('where')).toBe('id=75012010');
+  });
+
+  it('answers a station of a recent search without asking the French API again', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, {
+      status: 200,
+      body: frenchResponse([rapeeRecord]),
+    });
+    const api = await startApplication();
+    await api
+      .get('/api/stations')
+      .query({ ...PARIS, radiusInKilometers: '5', fuel: 'e10' })
+      .expect(200);
+    france.respondTo(FRENCH_RECORDS_PATH, { status: 500 });
+
+    const response = await api.get(`/api/stations/${RAPEE_IDENTIFIER}`).expect(200);
+
+    expect(response.body).toEqual({ ...EXPECTED_RAPEE_STATION, distanceInMeters: null });
+    expect(france.requests).toHaveLength(1);
+  });
+
+  it('asks the French API again once the searched record is older than the cache time to live', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, {
+      status: 200,
+      body: frenchResponse([rapeeRecord]),
+    });
+    const api = await startApplication({ CACHE_TIME_TO_LIVE_IN_SECONDS: '1' });
+    await searchAroundParis(api);
+    await wait(600);
+    // Served from the cached search answer, which must not make its records younger
+    await searchAroundParis(api);
+    await wait(600);
+
+    await api.get(`/api/stations/${RAPEE_IDENTIFIER}`).expect(200);
+
+    expect(france.requests).toHaveLength(2);
+    expect(searchParametersOf(france.requests[1]).get('where')).toBe('id=75012010');
+  });
+
+  it('keeps the newer record when an older search answer comes from the cache', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, {
+      status: 200,
+      body: frenchResponse([rapeeRecord]),
+    });
+    const api = await startApplication();
+    await searchAroundParis(api);
+    france.respondTo(FRENCH_RECORDS_PATH, {
+      status: 200,
+      body: frenchResponse([{ ...rapeeRecord, e10_prix: 2.049 }]),
+    });
+    await searchAroundParis(api, '10');
+    await searchAroundParis(api);
+    france.respondTo(FRENCH_RECORDS_PATH, { status: 500 });
+
+    const response = await api.get(`/api/stations/${RAPEE_IDENTIFIER}`).expect(200);
+
+    expect(stationSchema.parse(response.body).pricesInEuro.e10).toBe(2.049);
+    expect(france.requests).toHaveLength(2);
   });
 
   it('responds with 404 when the French API does not know the station', async () => {
@@ -63,6 +133,19 @@ describe('GET /api/stations/:id', () => {
   it('responds with 502 when the French API fails', async () => {
     france.respondTo(FRENCH_RECORDS_PATH, { status: 500 });
     const api = await startApplication();
+
+    const response = await api.get(`/api/stations/${RAPEE_IDENTIFIER}`).expect(502);
+
+    expect(response.body).toEqual(UNAVAILABLE_BODY);
+  });
+
+  it('responds with 502 when the French API answers too late for a station outside any search', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, {
+      status: 200,
+      body: frenchResponse([rapeeRecord]),
+      delayInMilliseconds: 5000,
+    });
+    const api = await startApplication({ UPSTREAM_TIMEOUT_IN_MILLISECONDS: '100' });
 
     const response = await api.get(`/api/stations/${RAPEE_IDENTIFIER}`).expect(502);
 
@@ -115,6 +198,28 @@ describe('GET /api/stations/by-identifiers', () => {
     expect(response.body).toEqual({
       stations: [{ ...EXPECTED_RAPEE_STATION, distanceInMeters: null }],
       unavailableIdentifiers: ['fr-abc', UNKNOWN_COUNTRY_IDENTIFIER],
+      failedIdentifiers: [],
+    });
+    expect(france.requests).toHaveLength(1);
+  });
+
+  it('answers stations of a recent search without asking the French API again', async () => {
+    france.respondTo(FRENCH_RECORDS_PATH, {
+      status: 200,
+      body: frenchResponse([rapeeRecord]),
+    });
+    const api = await startApplication();
+    await searchAroundParis(api);
+    france.respondTo(FRENCH_RECORDS_PATH, { status: 500 });
+
+    const response = await api
+      .get(LOOKUP_PATH)
+      .query({ identifiers: RAPEE_IDENTIFIER })
+      .expect(200);
+
+    expect(stationLookupSchema.parse(response.body)).toEqual({
+      stations: [{ ...EXPECTED_RAPEE_STATION, distanceInMeters: null }],
+      unavailableIdentifiers: [],
       failedIdentifiers: [],
     });
     expect(france.requests).toHaveLength(1);

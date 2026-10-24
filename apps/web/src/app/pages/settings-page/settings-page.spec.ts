@@ -1,8 +1,17 @@
+import { Location } from '@angular/common';
+import { provideLocationMocks } from '@angular/common/testing';
 import { TestBed } from '@angular/core/testing';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { FakeStorage, storedSettings } from '../../../testing/fake-storage';
-import { configurePageTest, getRadio, renderComponent, textOf } from '../../../testing/render-page';
+import {
+  configurePageTest,
+  getButton,
+  getRadio,
+  renderComponent,
+  textOf,
+} from '../../../testing/render-page';
 import type { PageTestContext } from '../../../testing/render-page';
+import { Router } from '@angular/router';
 import { SettingsPage } from './settings-page';
 import { SETTINGS_STORAGE_KEY } from '../../core/settings/settings-store';
 
@@ -75,12 +84,12 @@ describe('SettingsPage', () => {
   it('orders the sections fuel, radius, appearance and data source without any button', async () => {
     context = configurePageTest();
     const { element } = await renderComponent(SettingsPage);
-    const main = element.querySelector('main');
+    const content = element.querySelector('.settings');
 
     expect(
-      [...(main?.querySelectorAll('legend, label[for], h2') ?? [])].map(title => textOf(title))
+      [...(content?.querySelectorAll('legend, label[for], h2') ?? [])].map(title => textOf(title))
     ).toEqual(['Kraftstoff', 'Radius: 5 km', 'Darstellung', 'Datenquelle']);
-    expect(main?.querySelectorAll('button')).toHaveLength(0);
+    expect(content?.querySelectorAll('button')).toHaveLength(0);
   });
 
   it('offers system, light and dark appearance with system selected', async () => {
@@ -134,7 +143,7 @@ describe('SettingsPage', () => {
     context = configurePageTest();
     const { element } = await renderComponent(SettingsPage);
 
-    const link = element.querySelector('main section a');
+    const link = element.querySelector('section a');
     expect(textOf(link)).toBe('prix-carburants.gouv.fr (öffnet in neuem Tab)');
     expect(link?.getAttribute('href')).toBe(
       'https://www.prix-carburants.gouv.fr/rubrique/opendata/'
@@ -154,5 +163,59 @@ describe('SettingsPage', () => {
     expect(getRadio(element, 'E10').checked).toBe(true);
     expect(radiusSlider(element).value).toBe('20');
     expect(textOf(radiusLabel(element))).toBe('Radius: 20 km');
+  });
+
+  it('opens as a modal dialog titled "Einstellungen" without a landmark of its own', async () => {
+    context = configurePageTest();
+    const { fixture, element } = await renderComponent(SettingsPage);
+    await fixture.whenStable();
+
+    const dialog = element.querySelector('dialog');
+    expect(dialog?.hasAttribute('open')).toBe(true);
+    expect(textOf(dialog?.querySelector(`#${dialog.getAttribute('aria-labelledby') ?? ''}`))).toBe(
+      'Einstellungen'
+    );
+    expect(element.querySelector('main, h1, header')).toBeNull();
+  });
+
+  describe('closing', () => {
+    const renderOpened = async (urls: string[]) => {
+      context = configurePageTest({
+        routes: [
+          { path: '', children: [] },
+          { path: 'settings', children: [] },
+        ],
+        providers: [provideLocationMocks()],
+      });
+      for (const url of urls) {
+        await TestBed.inject(Router).navigateByUrl(url);
+      }
+      const rendered = await renderComponent(SettingsPage);
+      await rendered.fixture.whenStable();
+      return { ...rendered, location: TestBed.inject(Location) };
+    };
+
+    it('goes back to the explore page it was opened from', async () => {
+      const { element, location } = await renderOpened(['/', '/settings']);
+
+      getButton(element, 'Schließen').click();
+      await context.settle();
+
+      expect(location.path() || '/').toBe('/');
+      location.forward();
+      expect(location.path()).toBe('/settings');
+    });
+
+    it('replaces a deep link with the explore page, so Back does not open it again', async () => {
+      const { element, location } = await renderOpened(['/settings']);
+
+      getButton(element, 'Schließen').click();
+      await context.settle();
+      await context.settle();
+
+      expect(TestBed.inject(Router).url).toBe('/');
+      location.back();
+      expect(location.path()).not.toBe('/settings');
+    });
   });
 });

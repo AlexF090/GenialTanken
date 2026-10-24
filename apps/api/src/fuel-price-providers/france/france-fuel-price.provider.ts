@@ -2,10 +2,12 @@ import type { Station, StationsQuery } from '@genialtanken/contracts';
 import { Injectable, Logger } from '@nestjs/common';
 import { ApplicationConfiguration } from '../../configuration/application-configuration.js';
 import { UpstreamFetcher } from '../../upstream/upstream-fetcher.js';
+import type { UpstreamAnswer } from '../../upstream/upstream-fetcher.js';
 import type { FuelPriceProvider } from '../fuel-price-provider.js';
 import { roundCoordinate } from '../round-coordinate.js';
 import { frenchRecordsResponseSchema, parseFrenchRecords } from './french-record.schema.js';
 import type { FrenchRecord } from './french-record.schema.js';
+import { FrenchSearchedRecords } from './french-searched-records.js';
 import { FrenchStationIdentityLookup } from './french-station-identity-lookup.js';
 import { FRENCH_RECORDS_PATH } from './french-upstream-paths.js';
 import { FRENCH_PRICE_FIELDS, toStationFromFrance } from './to-station-from-france.js';
@@ -22,7 +24,8 @@ export class FranceFuelPriceProvider implements FuelPriceProvider {
   constructor(
     private readonly configuration: ApplicationConfiguration,
     private readonly upstreamFetcher: UpstreamFetcher,
-    private readonly identityLookup: FrenchStationIdentityLookup
+    private readonly identityLookup: FrenchStationIdentityLookup,
+    private readonly searchedRecords: FrenchSearchedRecords
   ) {}
 
   async findStationsAround({
@@ -33,11 +36,12 @@ export class FranceFuelPriceProvider implements FuelPriceProvider {
   }: StationsQuery): Promise<Station[]> {
     // The dataset expects WKT points in longitude-latitude order
     const point = `geom'POINT(${roundCoordinate(longitude)} ${roundCoordinate(latitude)})'`;
-    const records = await this.findRecords({
+    const { body: records, fetchedAt } = await this.findRecords({
       where: `within_distance(geom, ${point}, ${String(radiusInKilometers)}km) and ${FRENCH_PRICE_FIELDS[fuel]} is not null`,
       order_by: `distance(geom, ${point})`,
       limit: String(MAXIMUM_RECORDS_PER_REQUEST),
     });
+    this.searchedRecords.remember(records, fetchedAt);
     return this.toNamedStations(records);
   }
 
@@ -45,7 +49,13 @@ export class FranceFuelPriceProvider implements FuelPriceProvider {
     if (!NUMERIC_IDENTIFIER_PATTERN.test(localIdentifier)) {
       return null;
     }
-    const records = await this.findRecords({ where: `id=${localIdentifier}`, limit: '1' });
+    // Opening a station from the list is the common case; the open data portal often needs
+    // seconds for a query by identifier, while the search answered moments ago.
+    const searchedRecord = this.searchedRecords.find(localIdentifier);
+    const records =
+      searchedRecord === undefined
+        ? (await this.findRecords({ where: `id=${localIdentifier}`, limit: '1' })).body
+        : [searchedRecord];
     const [station] = await this.toNamedStations(records);
     return station ?? null;
   }
@@ -59,18 +69,20 @@ export class FranceFuelPriceProvider implements FuelPriceProvider {
     }));
   }
 
-  private async findRecords(parameters: Record<string, string>): Promise<FrenchRecord[]> {
+  private async findRecords(
+    parameters: Record<string, string>
+  ): Promise<UpstreamAnswer<FrenchRecord[]>> {
     const url = new URL(`${this.configuration.franceFuelPricesBaseUrl}${FRENCH_RECORDS_PATH}`);
     url.search = new URLSearchParams(parameters).toString();
-    const response = await this.upstreamFetcher.fetchJson({
+    const { body, fetchedAt } = await this.upstreamFetcher.fetchJsonAnswer({
       url,
       schema: frenchRecordsResponseSchema,
     });
 
-    const { records, skippedRecordCount } = parseFrenchRecords(response.results);
+    const { records, skippedRecordCount } = parseFrenchRecords(body.results);
     if (skippedRecordCount > 0) {
       this.logger.warn(`Skipped ${String(skippedRecordCount)} malformed French fuel price records`);
     }
-    return records;
+    return { body: records, fetchedAt };
   }
 }

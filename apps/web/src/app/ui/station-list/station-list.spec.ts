@@ -1,8 +1,12 @@
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import type { FuelType, Station } from '@genialtanken/contracts';
 import {
   accessibleTextOf,
   getButton,
+  hostElementOf,
   renderWithInputs,
   textOf,
 } from '../../../testing/render-page';
@@ -12,6 +16,7 @@ import {
   totalStation,
   unbrandedStation,
   withoutDistance,
+  withPrices,
 } from '../../../testing/station-fixtures';
 import { StationList } from './station-list';
 
@@ -106,12 +111,46 @@ describe('StationList', () => {
     expect(linkOf(items[1])?.getAttribute('href')).toBe('/stations/fr%2F12%2034');
   });
 
-  it('offers a route to each station', async () => {
+  it('leaves the route to the card of the station', async () => {
     const { element } = await render({ stations: [totalStation, carrefourStation] });
 
+    expect(element.querySelector('select')).toBeNull();
+  });
+
+  it('puts the distance before the address in the secondary line', async () => {
+    const { items } = await render({ stations: [totalStation] });
+
+    expect(textOf(items[0]?.querySelector('.station-row__secondary'))).toBe(
+      '0,85 km, · 12 Rue de Rivoli, 75001 Paris'
+    );
+    expect(accessibleTextOf(items[0]?.querySelector('.station-row__secondary'))).toBe(
+      '0,85 km, 12 Rue de Rivoli, 75001 Paris'
+    );
+  });
+
+  it('tints the price tiles by their level, the cheapest solid green', async () => {
+    const { items } = await render({
+      stations: [
+        withPrices(totalStation, { e5: 1.7 }),
+        withPrices(carrefourStation, { e5: 1.8 }),
+        withPrices(essoStation, { e5: 1.9 }),
+        withPrices(unbrandedStation, { e5: null }),
+      ],
+      cheapestStationIdentifiers: new Set([totalStation.id]),
+    });
+
     expect(
-      [...element.querySelectorAll('select')].map(select => select.getAttribute('aria-label'))
-    ).toEqual(['Route zu TotalEnergies', 'Route zu Carrefour Market']);
+      items.map(item =>
+        [...(item.querySelector('.station-row__price')?.classList ?? [])].filter(name =>
+          name.startsWith('price-tile--')
+        )
+      )
+    ).toEqual([
+      ['price-tile--cheapest'],
+      ['price-tile--medium'],
+      ['price-tile--high'],
+      ['price-tile--without-price'],
+    ]);
   });
 
   it('labels the cheapest stations in words', async () => {
@@ -122,6 +161,9 @@ describe('StationList', () => {
 
     expect(accessibleTextOf(items[0])).not.toContain('Günstigster Preis');
     expect(accessibleTextOf(items[1])).toContain('Günstigster Preis');
+    expect(textOf(items[1]?.querySelector('[aria-hidden="true"].price-tile__cheapest-label'))).toBe(
+      'günstigst'
+    );
   });
 
   it('marks favorites and reports star toggles with the station id', async () => {
@@ -157,6 +199,19 @@ describe('StationList', () => {
     expect(element.querySelector('a[aria-label^="Details:"]')).toBeNull();
   });
 
+  it('offers the favorite star and the details as the only link in a selecting row', async () => {
+    const { items } = await render({ stations: [totalStation], selectsOnMap: true });
+    const row = items[0];
+    if (row === undefined) {
+      throw new Error('Expected one station');
+    }
+
+    expect([...row.querySelectorAll('a')].map(link => link.getAttribute('aria-label'))).toEqual([
+      'Details: TotalEnergies',
+    ]);
+    expect(getButton(row, 'Favorit: TotalEnergies')).toBeTruthy();
+  });
+
   it('selects a station with its row and opens the details with a separate link', async () => {
     const { fixture, element } = await render({
       stations: [totalStation, carrefourStation],
@@ -170,8 +225,10 @@ describe('StationList', () => {
     const totalButton = getButton(element, 'TotalEnergies');
     const carrefourButton = getButton(element, 'Carrefour Market');
 
-    expect(totalButton.getAttribute('aria-pressed')).toBe('false');
-    expect(carrefourButton.getAttribute('aria-pressed')).toBe('true');
+    // Selecting is not a toggle: the selected row is the current one, like a selected list cell.
+    expect(totalButton.hasAttribute('aria-pressed')).toBe(false);
+    expect(totalButton.hasAttribute('aria-current')).toBe(false);
+    expect(carrefourButton.getAttribute('aria-current')).toBe('true');
     expect(
       element.querySelector('a[aria-label="Details: TotalEnergies"]')?.getAttribute('href')
     ).toBe('/stations/fr-75001001');
@@ -221,5 +278,111 @@ describe('StationList', () => {
 
     expect(isFocused).toBe(false);
     expect(document.activeElement).toBe(previouslyFocused);
+  });
+
+  it('focuses the star of a station', async () => {
+    const { fixture } = await render({ stations: [totalStation, carrefourStation] });
+
+    const isFocused = fixture.componentInstance.focusFavoriteButton(carrefourStation.id);
+
+    expect(isFocused).toBe(true);
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Favorit: Carrefour Market');
+  });
+
+  it('leaves the focus alone when asked for the star of a station it does not list', async () => {
+    const { fixture } = await render({ stations: [totalStation] });
+    const previouslyFocused = document.activeElement;
+
+    const isFocused = fixture.componentInstance.focusFavoriteButton(carrefourStation.id);
+
+    expect(isFocused).toBe(false);
+    expect(document.activeElement).toBe(previouslyFocused);
+  });
+
+  describe('with content inserted after a row', () => {
+    @Component({
+      imports: [StationList],
+      changeDetection: ChangeDetectionStrategy.OnPush,
+      template: `
+        <app-station-list
+          fuelType="e5"
+          [stations]="stations()"
+          [favoriteStationIdentifiers]="favoriteStationIdentifiers"
+          [insertionAfterRow]="3">
+          <aside stationListInsertion aria-label="Hinweis">Tipp</aside>
+        </app-station-list>
+      `,
+    })
+    class InsertingHost {
+      readonly stations = input.required<readonly Station[]>();
+      readonly favoriteStationIdentifiers: ReadonlySet<string> = new Set();
+    }
+
+    const fiveStations: readonly Station[] = [
+      totalStation,
+      carrefourStation,
+      unbrandedStation,
+      essoStation,
+      { ...totalStation, id: 'fr-75000005' },
+    ];
+
+    const renderInserting = async (stations: readonly Station[]) => {
+      TestBed.configureTestingModule({ providers: [provideRouter([])] });
+      const fixture = TestBed.createComponent(InsertingHost);
+      fixture.componentRef.setInput('stations', stations);
+      await fixture.whenStable();
+      const element = hostElementOf(fixture);
+      return {
+        fixture,
+        element,
+        stationList: fixture.debugElement
+          .query(By.directive(StationList))
+          .injector.get(StationList),
+        lists: [...element.querySelectorAll('ul')],
+        insertion: element.querySelector('aside'),
+      };
+    };
+
+    it('ends the list after the row and continues it after the content, with every row counted', async () => {
+      const { lists, insertion } = await renderInserting(fiveStations);
+
+      expect(lists.map(list => list.getAttribute('aria-label'))).toEqual([
+        'Tankstellen',
+        'Weitere Tankstellen',
+      ]);
+      expect(lists[0]?.querySelectorAll('li')).toHaveLength(3);
+      expect(lists[1]?.querySelectorAll('li')).toHaveLength(2);
+      expect(lists[0]?.nextElementSibling).toBe(insertion);
+      expect(insertion?.nextElementSibling).toBe(lists[1]);
+      const items = lists.flatMap(list => [...list.querySelectorAll('li')]);
+      expect(items.map(item => item.getAttribute('aria-posinset'))).toEqual([
+        '1',
+        '2',
+        '3',
+        '4',
+        '5',
+      ]);
+      expect(new Set(items.map(item => item.getAttribute('aria-setsize')))).toEqual(new Set(['5']));
+    });
+
+    it('puts the content after the list when it has no more rows than that', async () => {
+      const { lists, insertion } = await renderInserting(fiveStations.slice(0, 3));
+
+      expect(lists).toHaveLength(1);
+      expect(lists[0]?.querySelectorAll('li')).toHaveLength(3);
+      expect(lists[0]?.nextElementSibling).toBe(insertion);
+      expect(lists[0]?.querySelector('li')?.hasAttribute('aria-posinset')).toBe(false);
+    });
+
+    it('focuses a station after the content', async () => {
+      const { element, stationList } = await renderInserting(fiveStations);
+      document.body.append(element);
+
+      expect(stationList.focusStation(essoStation.id)).toBe(true);
+      expect(document.activeElement?.closest('ul')?.getAttribute('aria-label')).toBe(
+        'Weitere Tankstellen'
+      );
+      document.body.replaceChildren();
+    });
   });
 });

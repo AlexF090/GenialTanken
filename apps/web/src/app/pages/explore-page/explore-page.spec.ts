@@ -1,10 +1,12 @@
 import { TestBed } from '@angular/core/testing';
+import { FavoriteStationsResource } from '../../core/favorites/favorite-stations-resource';
 import { SearchCenterStore } from '../../core/search-center/search-center-store';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { StationsMap } from '../../ui/stations-map/stations-map';
 import { FakeStorage, storedFavorites } from '../../../testing/fake-storage';
 import { bastillePlace } from '../../../testing/place-fixtures';
 import {
+  accessibleTextOf,
   configurePageTest,
   getButton,
   renderComponent,
@@ -16,15 +18,19 @@ import {
   carrefourStation,
   totalStation,
   unbrandedStation,
+  withoutDistance,
 } from '../../../testing/station-fixtures';
 import { ExplorePage } from './explore-page';
 import { PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS } from './place-search';
-import { PLACES_URL, placesUrl, stationsUrl } from '../../../testing/api-urls';
+import { PLACES_URL, placesUrl, stationLookupUrl, stationsUrl } from '../../../testing/api-urls';
 import { SETTINGS_STORAGE_KEY } from '../../core/settings/settings-store';
+import { RECONNECT_DELAY_IN_MILLISECONDS } from '../../core/network/network-status';
 import {
   childComponent,
   EIFFEL_TOWER_E5_URL,
   placeSearchInput,
+  resultSummaryElement,
+  shownResultSummaryElement,
   selectedStationTitles,
 } from './explore-page-test-helpers';
 
@@ -60,7 +66,7 @@ describe('ExplorePage', () => {
     const { element } = await renderComponent(ExplorePage);
 
     expect(element.querySelectorAll('main')).toHaveLength(1);
-    expect(textOf(element.querySelector('main h1'))).toBe('GenialTanken');
+    expect(accessibleTextOf(element.querySelector('main h1'))).toBe('GenialTanken');
     context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL);
   });
 
@@ -86,9 +92,30 @@ describe('ExplorePage', () => {
   it('summarizes the result with count, radius and search center', async () => {
     const { element } = await renderWithStations();
 
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+    expect(textOf(resultSummaryElement(element))).toBe(
       '3 Tankstellen im Umkreis von 5 km um Eiffelturm, Paris'
     );
+  });
+
+  it('shows count and radius on one line and leaves the full sentence to screen readers', async () => {
+    const { element } = await renderWithStations();
+
+    const summaryLine = resultSummaryElement(element)?.parentElement;
+    expect(textOf(summaryLine?.querySelector('[aria-hidden="true"]'))).toBe('3 Tankstellen · 5 km');
+    expect(accessibleTextOf(summaryLine)).toBe(
+      '3 Tankstellen im Umkreis von 5 km um Eiffelturm, Paris'
+    );
+  });
+
+  it('shows the whole message when nothing was found', async () => {
+    const { element } = await renderComponent(ExplorePage);
+    await context.settle();
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([]);
+    await context.settle();
+
+    const message = 'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.';
+    expect(textOf(shownResultSummaryElement(element))).toBe(message);
+    expect(accessibleTextOf(resultSummaryElement(element)?.parentElement)).toBe(message);
   });
 
   it('uses the singular for a single station', async () => {
@@ -97,7 +124,7 @@ describe('ExplorePage', () => {
     context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
     await context.settle();
 
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+    expect(textOf(resultSummaryElement(element))).toBe(
       '1 Tankstelle im Umkreis von 5 km um Eiffelturm, Paris'
     );
   });
@@ -136,11 +163,12 @@ describe('ExplorePage', () => {
     expect(TestBed.inject(SettingsStore).fuelType()).toBe('diesel');
   });
 
-  it('offers the radius steps in a menu inside the search field', async () => {
+  it('offers the radius steps in a menu of the filter row', async () => {
     const { element } = await renderWithStations();
 
     const radiusButton = getButton(element, 'Radius: 5 km');
-    expect(radiusButton.closest('[role="search"]')).not.toBeNull();
+    expect(radiusButton.closest('[role="search"]')).toBeNull();
+    expect(radiusButton.closest('app-bottom-sheet')).not.toBeNull();
     radiusButton.click();
     await context.settle();
     const items = [
@@ -192,6 +220,9 @@ describe('ExplorePage', () => {
 
     const option = element.querySelector<HTMLElement>('[role="option"]');
     expect(textOf(option)).toBe('Place de la Bastille, 75011 Paris, Frankreich');
+    // In the panel instead of the list, like on phones
+    expect(option?.closest('.bottom-sheet__content')).not.toBeNull();
+    expect(element.querySelector('app-station-list')?.closest('[hidden]')).not.toBeNull();
     option?.click();
     await context.settle();
 
@@ -201,7 +232,8 @@ describe('ExplorePage', () => {
     await context.settle();
     expect(input.value).toBe('Place de la Bastille');
     expect(element.querySelector('[role="option"]')).toBeNull();
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+    expect(element.querySelector('app-station-list')?.closest('[hidden]')).toBeNull();
+    expect(textOf(resultSummaryElement(element))).toBe(
       '1 Tankstelle im Umkreis von 5 km um Place de la Bastille'
     );
     await waitForTypingPause();
@@ -237,6 +269,67 @@ describe('ExplorePage', () => {
     );
   });
 
+  describe('focus while searching places', () => {
+    afterEach(() => {
+      document.body.replaceChildren();
+    });
+
+    /** Focus only reaches elements in the document. */
+    const renderAttached = async () => {
+      const rendered = await renderWithStations();
+      document.body.append(rendered.element);
+      return rendered;
+    };
+
+    const typeInto = async (input: HTMLInputElement, query: string) => {
+      input.focus();
+      input.value = query;
+      input.dispatchEvent(new Event('input'));
+      await context.settle();
+    };
+
+    it('keeps the focus in the field when Escape ends the search', async () => {
+      const { element } = await renderAttached();
+      const input = placeSearchInput(element);
+      await typeInto(input, 'Bas');
+
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      await context.settle();
+
+      expect(document.activeElement).toBe(input);
+      expect(element.querySelector('app-station-list')?.closest('[hidden]')).toBeNull();
+    });
+
+    it('moves the focus to the result summary when the focused "Abbrechen" goes away', async () => {
+      const { element } = await renderAttached();
+      await typeInto(placeSearchInput(element), 'Bas');
+      const cancelButton = getButton(element, 'Abbrechen');
+
+      cancelButton.focus();
+      cancelButton.click();
+      await context.settle();
+
+      expect(document.activeElement).toBe(resultSummaryElement(element));
+    });
+
+    it('keeps the suggestions when the field loses the focus', async () => {
+      const { element } = await renderAttached();
+      vi.useFakeTimers();
+      const input = placeSearchInput(element);
+      await typeInto(input, 'Bastille');
+      await waitForTypingPause();
+      await context.settle();
+      context.httpTesting.expectOne(placesUrl('Bastille')).flush([bastillePlace]);
+      await context.settle();
+
+      input.blur();
+      await context.settle();
+
+      expect(element.querySelector('[role="listbox"]')?.hasAttribute('hidden')).toBe(false);
+      expect(element.querySelector('app-station-list')?.closest('[hidden]')).not.toBeNull();
+    });
+  });
+
   it('keeps searching around the place but drops its name when the search is cleared', async () => {
     const { element } = await renderWithStations();
     TestBed.inject(SearchCenterStore).usePlace(bastillePlace);
@@ -251,7 +344,7 @@ describe('ExplorePage', () => {
 
     context.httpTesting.expectNone(() => true);
     expect(placeSearchInput(element).value).toBe('');
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+    expect(textOf(resultSummaryElement(element))).toBe(
       '1 Tankstelle im Umkreis von 5 km um die Kartenmitte'
     );
   });
@@ -265,20 +358,20 @@ describe('ExplorePage', () => {
 
   it('switches between distance order and ascending price', async () => {
     const { element } = await renderWithStations();
-    const radio = (name: string): HTMLInputElement => {
-      const input = [...element.querySelectorAll('fieldset label')]
-        .find(label => textOf(label) === name)
-        ?.querySelector('input');
-      if (input === null || input === undefined) {
-        throw new Error(`No radio named ${name}`);
-      }
-      return input;
+    const chooseOrder = async (chipName: string, optionName: string) => {
+      getButton(element, chipName).click();
+      await context.settle();
+      const option = [
+        ...element.querySelectorAll<HTMLElement>(
+          '[role="menu"][aria-label="Sortierung"] [role="menuitemradio"]'
+        ),
+      ].find(item => textOf(item) === optionName);
+      option?.click();
+      await context.settle();
     };
-    expect(textOf(element.querySelector('fieldset legend'))).toBe('Sortierung');
-    expect(radio('Entfernung').checked).toBe(true);
+    expect(getButton(element, 'Sortierung: Entfernung').getAttribute('aria-haspopup')).toBe('menu');
 
-    radio('Preis').click();
-    await context.settle();
+    await chooseOrder('Sortierung: Entfernung', 'Preis');
 
     expect(stationTitles(element)).toEqual([
       '40 Avenue de Flandre',
@@ -286,8 +379,8 @@ describe('ExplorePage', () => {
       'TotalEnergies',
     ]);
 
-    radio('Entfernung').click();
-    await context.settle();
+    expect(getButton(element, 'Sortierung: Preis')).toBeDefined();
+    await chooseOrder('Sortierung: Preis', 'Entfernung');
 
     expect(stationTitles(element)).toEqual([
       'TotalEnergies',
@@ -327,10 +420,48 @@ describe('ExplorePage', () => {
     expect(getButton(element, 'Kraftstoff: Diesel')).toBeDefined();
   });
 
-  it('requests fresh prices once on "Aktualisieren"', async () => {
+  it('shows quiet placeholders and a busy refresh button while the first stations load', async () => {
+    const { element } = await renderComponent(ExplorePage);
+    await context.settle();
+
+    expect(textOf(shownResultSummaryElement(element))).toBe('Tankstellen werden geladen …');
+    expect(getButton(element, 'Aktualisieren').getAttribute('aria-disabled')).toBe('true');
+    expect(element.querySelector('app-skeleton-rows')?.getAttribute('aria-hidden')).toBe('true');
+    expect(element.querySelector('app-loading-state')).toBeNull();
+
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
+    await context.settle();
+    expect(element.querySelector('app-skeleton-rows')).toBeNull();
+    expect(getButton(element, 'Aktualisieren').hasAttribute('aria-disabled')).toBe(false);
+  });
+
+  it('keeps the shown stations while fresh prices load and ignores a second press', async () => {
     const { element } = await renderWithStations();
 
     getButton(element, 'Aktualisieren').click();
+    await context.settle();
+    getButton(element, 'Aktualisieren').click();
+    await context.settle();
+
+    expect(stationTitles(element)).toEqual([
+      'TotalEnergies',
+      'Carrefour Market',
+      '40 Avenue de Flandre',
+    ]);
+    expect(element.querySelector('app-skeleton-rows')).toBeNull();
+    expect(textOf(shownResultSummaryElement(element))).toBe('3 Tankstellen · 5 km');
+    expect(getButton(element, 'Aktualisieren').getAttribute('aria-disabled')).toBe('true');
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
+    await context.settle();
+  });
+
+  it('requests fresh prices once on "Aktualisieren" next to the result summary', async () => {
+    const { element } = await renderWithStations();
+    const refreshButton = getButton(element, 'Aktualisieren');
+    expect(refreshButton.parentElement).toBe(resultSummaryElement(element)?.parentElement);
+    expect(refreshButton.closest('[role="status"]')).toBeNull();
+
+    refreshButton.click();
     await context.settle();
 
     const requests = context.httpTesting.match(() => true);
@@ -338,6 +469,41 @@ describe('ExplorePage', () => {
     requests[0]?.flush([totalStation]);
     await context.settle();
     expect(stationTitles(element)).toEqual(['TotalEnergies']);
+  });
+
+  it('explains failed prices while offline and loads them once the connection is back', async () => {
+    const { element } = await renderComponent(ExplorePage);
+    await context.settle();
+    window.dispatchEvent(new Event('offline'));
+    context.httpTesting
+      .expectOne(EIFFEL_TOWER_E5_URL)
+      .error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+    await context.settle();
+
+    const offlineNotice = element.querySelector('.explore-page__offline');
+    expect(offlineNotice?.getAttribute('role')).toBe('status');
+    expect(textOf(offlineNotice)).toBe(
+      'Du bist offline – Preise werden geladen, sobald du wieder verbunden bist.'
+    );
+    expect(element.querySelector('[role="alert"]')).toBeNull();
+
+    vi.useFakeTimers();
+    window.dispatchEvent(new Event('online'));
+    await context.settle();
+    await vi.advanceTimersByTimeAsync(RECONNECT_DELAY_IN_MILLISECONDS);
+    await context.settle();
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
+    await context.settle();
+
+    expect(textOf(offlineNotice)).toBe('');
+    expect(stationTitles(element)).toEqual(['TotalEnergies']);
+  });
+
+  it('leaves zooming to the buttons of the map from 48rem', async () => {
+    const { element } = await renderWithStations();
+
+    expect(element.querySelector('.explore-page__map-controls [aria-label="Zoom"]')).toBeNull();
+    expect(element.querySelector('app-stations-map .leaflet-control-zoom')).not.toBeNull();
   });
 
   it('locates the user on "Meinen Standort verwenden" and searches around the position', async () => {
@@ -361,7 +527,7 @@ describe('ExplorePage', () => {
       .flush([carrefourStation]);
     await context.settle();
     expect(stationTitles(element)).toEqual(['Carrefour Market']);
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+    expect(textOf(resultSummaryElement(element))).toBe(
       '1 Tankstelle im Umkreis von 5 km um Dein Standort'
     );
     expect(locateButton.getAttribute('aria-busy')).toBe('false');
@@ -382,10 +548,16 @@ describe('ExplorePage', () => {
     );
     expect(stationTitles(element)).toHaveLength(3);
 
-    getButton(element, 'Hinweis schließen').click();
+    document.body.append(element);
+    const dismissButton = getButton(element, 'Hinweis schließen');
+    dismissButton.focus();
+    dismissButton.click();
     await context.settle();
 
     expect(element.querySelector('main [role="alert"]')).toBeNull();
+    // The closed notice took the focus with it; the locate button is where it came from.
+    expect(document.activeElement).toBe(getButton(element, 'Meinen Standort verwenden'));
+    document.body.replaceChildren();
   });
 
   it('stars a station and persists it', async () => {
@@ -398,6 +570,64 @@ describe('ExplorePage', () => {
     expect(getButton(element, 'Favorit: Carrefour Market').getAttribute('aria-pressed')).toBe(
       'true'
     );
+    context.httpTesting.expectOne(stationLookupUrl('fr-75005002')).flush({
+      stations: [withoutDistance(carrefourStation)],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [],
+    });
+    await context.settle();
+
+    const favorites = element.querySelector('app-favorites-row section');
+    expect(textOf(favorites?.querySelector('h2'))).toBe('Favoriten');
+    expect(textOf(favorites?.querySelector('li a'))).toContain('Carrefour Market');
+    expect(favorites?.querySelector('li a')?.getAttribute('href')).toBe('/stations/fr-75005002');
+  });
+
+  it('places the favorites above the list and opens the settings from the sheet header', async () => {
+    TestBed.resetTestingModule();
+    context = configurePageTest({ storage: new FakeStorage({ favoriteIDs: '["fr-75001001"]' }) });
+    const { element } = await renderWithStations();
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001')).flush({
+      stations: [withoutDistance(totalStation)],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [],
+    });
+    await context.settle();
+
+    const favorites = element.querySelector('app-favorites-row section');
+    const list = element.querySelector('app-station-list');
+    expect(favorites?.compareDocumentPosition(list as Node)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // The distance is measured from the search center, like in the list.
+    expect(textOf(favorites?.querySelector('li a'))).toMatch(/km$/);
+    const settingsLink = element.querySelector('app-bottom-sheet a[aria-label="Einstellungen"]');
+    expect(settingsLink?.getAttribute('href')).toBe('/settings');
+  });
+
+  it('holds the place of the favorites while they load for the first time, not on a reload', async () => {
+    TestBed.resetTestingModule();
+    context = configurePageTest({ storage: new FakeStorage({ favoriteIDs: '["fr-75001001"]' }) });
+    const { element } = await renderWithStations();
+    const favoritesPlaceholders = () =>
+      element.querySelector('app-favorites-row app-skeleton-rows[aria-hidden="true"]');
+
+    expect(favoritesPlaceholders()).not.toBeNull();
+    // One favorite, one placeholder: no card stands for a favorite that is not there.
+    expect(element.querySelectorAll('app-favorites-row .skeleton-rows__card')).toHaveLength(1);
+    const favoritesAnswer = {
+      stations: [withoutDistance(totalStation)],
+      unavailableIdentifiers: [],
+      failedIdentifiers: [],
+    };
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001')).flush(favoritesAnswer);
+    await context.settle();
+    expect(favoritesPlaceholders()).toBeNull();
+
+    TestBed.inject(FavoriteStationsResource).refreshIfLoaded();
+    await context.settle();
+
+    expect(favoritesPlaceholders()).toBeNull();
+    expect(textOf(element.querySelector('app-favorites-row li a'))).toContain('TotalEnergies');
+    context.httpTesting.expectOne(stationLookupUrl('fr-75001001')).flush(favoritesAnswer);
   });
 
   it('offers a search in the area the map was moved to and searches there', async () => {
@@ -423,7 +653,7 @@ describe('ExplorePage', () => {
     await context.settle();
     expect(areaSearchButton()).toBeUndefined();
     expect(placeSearchInput(element).placeholder).toBe('Position auf Karte');
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
+    expect(textOf(resultSummaryElement(element))).toBe(
       '1 Tankstelle im Umkreis von 5 km um die Kartenmitte'
     );
   });
@@ -531,7 +761,10 @@ describe('ExplorePage', () => {
 
     const emptyMessage = 'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.';
     // Shown and announced once, by the result summary, so browse mode does not read it twice.
-    expect(textOf(element.querySelector('main')).split('Keine Tankstellen')).toHaveLength(2);
+    expect(accessibleTextOf(element.querySelector('main')).split('Keine Tankstellen')).toHaveLength(
+      2
+    );
+    expect(textOf(shownResultSummaryElement(element))).toBe(emptyMessage);
     const announcingRegions = [...element.querySelectorAll('main [role="status"]')].filter(region =>
       textOf(region).includes('Keine Tankstellen')
     );

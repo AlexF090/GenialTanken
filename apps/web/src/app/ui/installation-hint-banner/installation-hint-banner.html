@@ -1,0 +1,29 @@
+<section class="installation-hint" [attr.aria-labelledby]="headingIdentifier">
+  <div class="installation-hint__bar">
+    <img class="installation-hint__icon" src="icons/icon-192.png" alt="" />
+    <h2 class="installation-hint__heading" [id]="headingIdentifier">
+      <span translate="no">{{ applicationName }}</span> als App
+    </h2>
+    @if (offer() === 'install-dialog') {
+      <button type="button" class="text-button" (click)="installRequested.emit()">
+        Installieren
+      </button>
+    } @else {
+      <button
+        type="button"
+        class="text-button"
+        [attr.aria-expanded]="areStepsShown()"
+        [attr.aria-controls]="stepsIdentifier"
+        (click)="toggleSteps()">
+        So geht’s
+      </button>
+    }
+    <app-close-button label="Hinweis schließen" (pressed)="dismissed.emit()" />
+  </div>
+  @if (offer() === 'home-screen-steps') {
+    <p class="installation-hint__steps" [id]="stepsIdentifier" [hidden]="!areStepsShown()">
+      Tippe auf <app-icon name="ios-share" class="installation-hint__share-icon" />&nbsp;Teilen und
+      dann auf „Zum Home-Bildschirm“.
+    </p>
+  }
+</section>

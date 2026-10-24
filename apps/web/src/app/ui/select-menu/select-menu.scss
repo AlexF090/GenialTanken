@@ -45,7 +45,7 @@
   @include materials.floating-material(var(--shadow-menu));
   color: var(--color-text);
   // Not inherited from the button's look
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-tight);
   transform-origin: top left;

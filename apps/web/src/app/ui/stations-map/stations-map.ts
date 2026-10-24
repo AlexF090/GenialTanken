@@ -1,6 +1,7 @@
 import {
   afterNextRender,
   ChangeDetectionStrategy,
+  computed,
   Component,
   DestroyRef,
   effect,
@@ -95,6 +96,11 @@ export class StationsMap {
   private readonly mapboxAccessToken = inject(CONFIGURED_MAPBOX_ACCESS_TOKEN);
   private readonly prefersReducedMotion = injectPrefersReducedMotion();
   private readonly map = signal<L.Map | undefined>(undefined);
+  private readonly zoomRange = signal({ zoom: 0, minimum: 0, maximum: 0 });
+  /** `false` at the maximum zoom, like the map's own zoom buttons turn unavailable there. */
+  readonly canZoomIn = computed(() => this.zoomRange().zoom < this.zoomRange().maximum);
+  /** `false` at the minimum zoom. */
+  readonly canZoomOut = computed(() => this.zoomRange().zoom > this.zoomRange().minimum);
   protected readonly isCoveredByOverlays = signal(false);
   private readonly stationMarkers = new StationMarkerLayer(marker => {
     this.selectFromMap(marker);
@@ -110,6 +116,8 @@ export class StationsMap {
   private hasUserMovedMap = false;
   /** A selected station stays centered while overlays move, until the user moves the map. */
   private hasUserMovedMapSinceReveal = false;
+  /** Only the user's moves away from the search area offer a search there. */
+  private hasUserMovedMapSinceSearch = false;
 
   constructor() {
     const destroyRef = inject(DestroyRef);
@@ -135,7 +143,7 @@ export class StationsMap {
       });
       map.on('moveend', () => {
         this.isMovingProgrammatically = false;
-        if (this.hasUserMovedMap) {
+        if (this.hasUserMovedMapSinceSearch) {
           this.visibleCenterChanged.emit(visibleAreaCenter(map, this.viewportPadding()));
         }
       });
@@ -148,7 +156,11 @@ export class StationsMap {
         });
       }
       L.control
-        .zoom({ position: 'topright', zoomInTitle: 'Hineinzoomen', zoomOutTitle: 'Herauszoomen' })
+        .zoom({
+          position: 'bottomright',
+          zoomInTitle: 'Hineinzoomen',
+          zoomOutTitle: 'Herauszoomen',
+        })
         .addTo(map);
       this.stationMarkers.addTo(map, ({ cluster, isFromKeyboard }) => {
         this.openCluster(map, cluster, isFromKeyboard);
@@ -160,6 +172,15 @@ export class StationsMap {
         },
         destroyRef
       );
+      const updateZoomRange = (): void => {
+        this.zoomRange.set({
+          zoom: map.getZoom(),
+          minimum: map.getMinZoom(),
+          maximum: map.getMaxZoom(),
+        });
+      };
+      map.on('zoomend zoomlevelschange', updateZoomRange);
+      updateZoomRange();
       this.map.set(map);
     });
 
@@ -203,16 +224,20 @@ export class StationsMap {
         circle.remove();
         centerMarker.remove();
       });
-      // A new search area is a fresh start, even after the user moved the map.
-      this.hasUserMovedMap = false;
+      const isFirstSearchArea = previousRadiusInKilometers === undefined;
       const hasRadiusChanged = radiusInKilometers !== previousRadiusInKilometers;
       previousRadiusInKilometers = radiusInKilometers;
-      // The user is already looking at an area they moved the map to; fitting would jump.
+      this.hasUserMovedMapSinceSearch = false;
+      // The user is already looking at an area they moved the map to; fitting would jump, and so
+      // would fitting it again once the overlays change.
       if (center.source === 'map-area' && !hasRadiusChanged) {
         return;
       }
+      // A new search area is a fresh start, even after the user moved the map.
+      this.hasUserMovedMap = false;
+      // Overlays measured after the map was created change the first view before anyone saw it.
       untracked(() => {
-        this.fitSearchArea(map, this.motion());
+        this.fitSearchArea(map, isFirstSearchArea ? { animate: false } : this.motion());
       });
     });
 
@@ -286,6 +311,18 @@ export class StationsMap {
     if (map !== undefined && marker !== undefined) {
       this.reveal(map, marker);
     }
+  }
+
+  /**
+   * For zoom buttons outside the map, e.g. next to the locate button on phones, where the map's
+   * own buttons would hide behind the sheet. Counts as a move of the user like those buttons.
+   */
+  zoomIn(): void {
+    this.map()?.zoomIn(1, this.motion());
+  }
+
+  zoomOut(): void {
+    this.map()?.zoomOut(1, this.motion());
   }
 
   /**
@@ -389,6 +426,7 @@ export class StationsMap {
   private markUserMovement(): void {
     this.hasUserMovedMap = true;
     this.hasUserMovedMapSinceReveal = true;
+    this.hasUserMovedMapSinceSearch = true;
   }
 
   private moveProgrammatically(move: () => void): void {

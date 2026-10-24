@@ -1,13 +1,12 @@
-import { TestBed } from '@angular/core/testing';
 import { OPEN_EXTERNAL_URL } from '../../core/navigation-apps/open-external-url';
 import { renderWithInputs, textOf } from '../../../testing/render-page';
 import { RouteButton } from './route-button';
 
-const render = async (isLabelled = false) => {
+const render = async () => {
   const openedUrls: string[] = [];
   const { element } = await renderWithInputs(
     RouteButton,
-    { destination: { latitude: 48.8532, longitude: 2.3692, name: 'TotalEnergies' }, isLabelled },
+    { destination: { latitude: 48.8532, longitude: 2.3692, name: 'TotalEnergies' } },
     [{ provide: OPEN_EXTERNAL_URL, useValue: (url: string) => openedUrls.push(url) }]
   );
   const select = element.querySelector('select');
@@ -48,11 +47,11 @@ describe('RouteButton', () => {
     expect(select.value).toBe('');
   });
 
-  it('shows "Route" next to the icon only when labelled', async () => {
-    expect((await render()).element.querySelector('.route-button__label')).toBeNull();
-    TestBed.resetTestingModule();
-    expect(textOf((await render(true)).element.querySelector('.route-button__label'))).toBe(
-      'Route'
-    );
+  it('shows "Route" below its icon, hidden from assistive technology', async () => {
+    const { element } = await render();
+    const label = element.querySelector('.action-tile__label');
+
+    expect(textOf(label)).toBe('Route');
+    expect(label?.getAttribute('aria-hidden')).toBe('true');
   });
 });

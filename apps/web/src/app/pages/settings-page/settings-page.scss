@@ -4,6 +4,8 @@
 // iOS settings: inset grouped lists on the grouped background, small section headers above
 // them, a checkmark on the chosen row.
 .settings {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-xl);
 }
 
@@ -27,7 +29,7 @@
   float: none;
   padding: 0 var(--space-md);
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-tight);
 }
@@ -94,7 +96,7 @@
   min-width: 0;
   min-height: var(--layout-touch-target);
   margin: 0;
-  accent-color: var(--color-action);
+  accent-color: var(--color-tint-vivid);
   cursor: pointer;
   touch-action: manipulation;
 }
@@ -102,7 +104,7 @@
 .settings__range-limit {
   flex: none;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
 }
 
 .settings__text {
@@ -111,11 +113,37 @@
 
 .settings__card {
   padding: var(--space-sm) var(--space-md);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
 }
 
 // The link inside inherits weight and wrapping; its colors are the global link colors.
 .settings__link {
   font-weight: var(--font-weight-medium);
   white-space: nowrap;
+}
+
+// Below the scrolling content, clear of the home indicator; takes no space while empty.
+.settings__update--shown {
+  flex: none;
+  padding: var(--space-sm) var(--space-md) calc(var(--safe-area-bottom) + var(--space-md));
+  border-top: var(--border-width-hairline) solid var(--color-hairline);
+}
+
+// Signs the settings like the about screen of an iOS app: icon above the wordmark.
+.settings__about {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding-block-end: var(--space-md);
+  color: var(--color-text);
+}
+
+.settings__app-icon {
+  width: var(--layout-app-icon-size);
+  height: var(--layout-app-icon-size);
+}
+
+.settings__wordmark {
+  font-size: var(--font-size-title-3);
 }

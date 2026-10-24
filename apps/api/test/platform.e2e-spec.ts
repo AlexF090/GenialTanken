@@ -79,6 +79,34 @@ describe('GET /health', () => {
   });
 });
 
+describe('GET /api/wake-up', () => {
+  it('answers without content and without calling the upstream', async () => {
+    const api = await startApplication();
+
+    const response = await api.get('/api/wake-up').expect(204);
+
+    expect(response.text).toBe('');
+    expect(upstream.requests).toHaveLength(0);
+  });
+
+  it('is rate limited like every other api route', async () => {
+    const api = await startApplication({ RATE_LIMIT_REQUESTS_PER_MINUTE: '1' });
+
+    await api.get('/api/wake-up').expect(204);
+    const response = await api.get('/api/wake-up').expect(429);
+
+    expect(strictApiErrorSchema.parse(response.body).statusCode).toBe(429);
+  });
+
+  it('counts its rate limit apart from the station search, like every route', async () => {
+    const api = await startApplication({ RATE_LIMIT_REQUESTS_PER_MINUTE: '1' });
+
+    await api.get('/api/wake-up').expect(204);
+    await api.get('/api/stations').query(PARIS).expect(200);
+    await api.get('/api/wake-up').expect(429);
+  });
+});
+
 describe('OpenAPI document', () => {
   it('documents the stations and places endpoints with the contract schemas', async () => {
     const api = await startApplication();
@@ -88,6 +116,7 @@ describe('OpenAPI document', () => {
     const { paths, components } = openApiDocumentSchema.parse(response.body);
     expect(Object.keys(paths)).toEqual([
       '/health',
+      '/api/wake-up',
       '/api/stations',
       '/api/stations/by-identifiers',
       '/api/stations/{id}',

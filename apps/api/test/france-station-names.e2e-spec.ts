@@ -1,4 +1,4 @@
-import { stationsSchema } from '@genialtanken/contracts';
+import { stationSchema, stationsSchema } from '@genialtanken/contracts';
 import {
   FRENCH_RECORDS_PATH,
   frenchStationPagePath,
@@ -76,6 +76,18 @@ describe('French station names', () => {
     expect(namesOf(response.body)).toContainEqual({ id: 'fr-75012010', name: null });
     expect(elapsedInMilliseconds).toBeGreaterThanOrEqual(TIME_BUDGET_IN_MILLISECONDS - 50);
     expect(elapsedInMilliseconds).toBeLessThan(SLOW_PAGE_DELAY_IN_MILLISECONDS / 2);
+  });
+
+  it('answers a station detail within the time budget and leaves a slow page without name', async () => {
+    stationPages.respondTo(RAPEE_STATION_PAGE_PATH, {
+      ...RAPEE_STATION_PAGE,
+      delayInMilliseconds: SLOW_PAGE_DELAY_IN_MILLISECONDS,
+    });
+    const api = await startApplication();
+
+    const response = await api.get(`/api/stations/fr-${String(RAPEE_RECORD_ID)}`).expect(200);
+
+    expect(stationSchema.parse(response.body)).toMatchObject({ id: 'fr-75012010', name: null });
   });
 
   it('starts no further page requests once the time budget is spent', async () => {

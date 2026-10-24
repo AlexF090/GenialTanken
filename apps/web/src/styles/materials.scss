@@ -2,8 +2,11 @@
 // path):
 //   @use 'materials';
 //   .search-field { @include materials.floating-material; }
+// Where the materials turn opaque (`tokens.scss`), `--material-edge` draws a hairline around it.
+// While focused, `--focus-ring-halo` adds the halo of the focus ring (`focus-ring.scss`).
 @mixin floating-material($shadow: var(--shadow-floating), $material: var(--material-menu)) {
   background: $material;
-  box-shadow: $shadow;
+  // `0 0` draws nothing while unfocused.
+  box-shadow: var(--focus-ring-halo, 0 0), var(--material-edge-shadow), $shadow;
   backdrop-filter: var(--material-blur);
 }

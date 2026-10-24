@@ -1,4 +1,4 @@
-import type { ElementRef } from '@angular/core';
+import type { ElementRef, TemplateRef } from '@angular/core';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -16,9 +16,12 @@ import { pluralize } from '../../core/formatting/pluralize';
 import { uniqueIdentifier } from '../../core/dom/unique-identifier';
 
 /**
- * Search field floating over the map, like the search bar of Apple Maps: suggestions open below
- * it while typing (combobox with a listbox, ARIA 1.2 pattern). Content projected with the
- * `placeSearchAccessory` attribute sits at its end, e.g. the radius menu.
+ * Search field like the search bar of Apple Maps (combobox with a listbox, ARIA 1.2 pattern).
+ * The host renders the suggestions where there is room for them, through `suggestionsTemplate`
+ * and `NgTemplateOutlet`, e.g. in the sheet above the on-screen keyboard instead of a popover
+ * the keyboard would cover. Render them at all times, so `aria-controls` always points to the
+ * listbox; it is hidden while closed. The field keeps the focus when a place is chosen or the
+ * search is canceled; the host moves it elsewhere where that should dismiss the keyboard.
  */
 @Component({
   selector: 'app-place-search-field',
@@ -33,11 +36,22 @@ export class PlaceSearchField {
   readonly suggestions = input.required<readonly Place[]>();
   /** Shown in place of suggestions, e.g. that nothing matched or the search failed. */
   readonly statusMessage = input<string>();
+  /** Shown in place of the suggestions while there are none, e.g. what can be searched. */
+  readonly hint = input<string>();
+  /**
+   * Shows "Abbrechen" next to the field, which leaves the search like Escape does. Until then the
+   * suggestions stay when the field loses the focus, e.g. when the keyboard is dismissed.
+   */
+  readonly isCancelable = input(false);
+
+  readonly searchStarted = output();
+  readonly canceled = output();
 
   readonly placeSelected = output<Place>();
   readonly cleared = output();
 
   private readonly inputElement = viewChild.required<ElementRef<HTMLInputElement>>('input');
+  readonly suggestionsTemplate = viewChild.required<TemplateRef<unknown>>('suggestionList');
 
   protected readonly identifier = uniqueIdentifier('place-search');
   protected readonly listboxIdentifier = `${this.identifier}-listbox`;
@@ -101,6 +115,11 @@ export class PlaceSearchField {
         return;
       }
       case 'Escape':
+        if (this.isCancelable()) {
+          event.preventDefault();
+          this.cancel();
+          return;
+        }
         if (this.isListOpen()) {
           event.preventDefault();
           this.isListRequested.set(false);
@@ -111,8 +130,10 @@ export class PlaceSearchField {
     }
   }
 
-  protected closeList(): void {
-    this.isListRequested.set(false);
+  protected closeListUnlessCancelable(): void {
+    if (!this.isCancelable()) {
+      this.isListRequested.set(false);
+    }
   }
 
   /** Keeps the focus in the field while a suggestion is pressed, so blur does not close the list. */
@@ -123,8 +144,11 @@ export class PlaceSearchField {
   protected select(place: Place): void {
     this.isListRequested.set(false);
     this.placeSelected.emit(place);
-    // Like on iOS: choosing a result dismisses the keyboard.
-    this.inputElement().nativeElement.blur();
+  }
+
+  protected cancel(): void {
+    this.isListRequested.set(false);
+    this.canceled.emit();
   }
 
   protected clear(): void {

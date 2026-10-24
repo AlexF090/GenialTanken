@@ -14,6 +14,7 @@
 .page-header {
   padding-top: var(--safe-area-top);
   background-color: var(--material-bar);
+  box-shadow: var(--material-edge-shadow);
   backdrop-filter: var(--material-blur);
 }
 

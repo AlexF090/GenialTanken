@@ -16,45 +16,44 @@ const withMap = (callback: (map: L.Map) => void): void => {
 };
 
 describe('createCenterMarker', () => {
-  const tooltipText = (center: SearchCenter): string => {
-    let text = '';
+  const renderCenter = (center: SearchCenter, inspect: (container: HTMLElement) => void): void => {
     withMap(map => {
       createCenterMarker(center).addTo(map);
-      text = textOf(map.getContainer().querySelector('.leaflet-tooltip'));
+      inspect(map.getContainer());
     });
-    return text;
   };
 
-  it('labels a searched place with its name, without parsing it as HTML', () => {
-    expect(
-      tooltipText({
-        latitude: 48.86,
-        longitude: 2.34,
-        label: '<b>Gare du Nord</b>',
-        source: 'place',
-      })
-    ).toBe('<b>Gare du Nord</b>');
+  it('marks a searched place with a pin named for screen readers, without parsing it as HTML', () => {
+    renderCenter(
+      { latitude: 48.86, longitude: 2.34, label: '<b>Gare du Nord</b>', source: 'place' },
+      container => {
+        const pin = container.querySelector('.location-pin');
+        expect(pin?.getAttribute('role')).toBe('img');
+        expect(pin?.getAttribute('aria-label')).toBe('<b>Gare du Nord</b>');
+        expect(pin?.querySelector('b')).toBeNull();
+      }
+    );
   });
 
-  it('greets the user at their own position', () => {
-    expect(
-      tooltipText({
-        latitude: 48.86,
-        longitude: 2.34,
-        label: 'Dein Standort',
-        source: 'own-position',
-      })
-    ).toBe('Du bist hier!');
+  it('shows no label on the map that could cover price tags', () => {
+    renderCenter(
+      { latitude: 48.86, longitude: 2.34, label: 'Eiffelturm, Paris', source: 'place' },
+      container => {
+        expect(container.querySelector('.leaflet-tooltip')).toBeNull();
+        expect(textOf(container)).not.toContain('Eiffelturm, Paris');
+      }
+    );
   });
 
-  it('leaves the center of a moved map area unlabeled', () => {
-    expect(
-      tooltipText({
-        latitude: 48.86,
-        longitude: 2.34,
-        label: 'Kartenmitte',
-        source: 'map-area',
-      })
-    ).toBe('');
+  it('shows the own position as a dot named for screen readers', () => {
+    renderCenter(
+      { latitude: 48.86, longitude: 2.34, label: 'Dein Standort', source: 'own-position' },
+      container => {
+        const dot = container.querySelector('.own-position-dot');
+        expect(dot?.getAttribute('role')).toBe('img');
+        expect(dot?.getAttribute('aria-label')).toBe('Dein Standort');
+        expect(container.querySelector('.location-pin')).toBeNull();
+      }
+    );
   });
 });

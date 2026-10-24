@@ -1,32 +1,64 @@
 <ng-template #closeButton>
-  <button
-    type="button"
-    class="icon-button station-card__close"
-    aria-label="Schließen"
-    (click)="close()">
-    <span class="station-card__close-circle"><app-icon name="close" /></span>
-  </button>
+  <app-close-button class="station-card__close" (pressed)="close()" />
 </ng-template>
 
 <section class="station-card" aria-label="Tankstelle">
+  <!-- Rendered empty with the card and filled afterwards: screen readers announce changes of a live region, not the text it appears with. -->
+  <p class="visually-hidden" role="status">
+    @if (announcesLoading()) {
+      Tankstelle wird geladen …
+      @if (showsColdStartHint()) {
+        {{ coldStartHint }}
+      }
+    }
+  </p>
   @if (station(); as station) {
     <app-station-detail
       [station]="station"
       [fuelType]="fuelType()"
       [isFavorite]="isFavorite()"
       [today]="today()"
-      (favoriteToggled)="toggleFavorite()">
+      [canShare]="canShare"
+      (favoriteToggled)="toggleFavorite()"
+      (shareRequested)="share(station)">
       <ng-container ngProjectAs="[stationDetailActions]" [ngTemplateOutlet]="closeButton" />
     </app-station-detail>
-    <!-- The Licence Ouverte requires the credit wherever French prices show; France is the only country for now. -->
-    <app-data-source-credit />
   } @else {
     <div class="station-card__pending">
-      <app-loading-state [isLoading]="isLoading()" label="Tankstelle wird geladen …" />
-      @if (errorMessage(); as message) {
-        <p class="message message--error" role="alert">{{ message }}</p>
+      <div class="station-card__pending-heading">
+        @if (isLoading()) {
+          <span class="station-card__skeleton-identity" aria-hidden="true">
+            <span class="skeleton-block station-card__skeleton-title"></span>
+            <span class="skeleton-block station-card__skeleton-subtitle"></span>
+          </span>
+        }
+        @if (errorMessage(); as message) {
+          <div class="station-card__failure">
+            <p class="message message--error" role="alert">{{ message }}</p>
+            <button type="button" class="button button--quiet" (click)="retry()">
+              Erneut versuchen
+            </button>
+          </div>
+        }
+        <ng-container [ngTemplateOutlet]="closeButton" />
+      </div>
+      @if (isLoading()) {
+        <!-- The rest of the card's outline below its title: the action tiles, then the prices. -->
+        <div class="station-card__skeleton" aria-hidden="true">
+          <span class="station-card__skeleton-tiles">
+            @for (tile of skeletonTiles; track tile) {
+              <span class="skeleton-block station-card__skeleton-tile"></span>
+            }
+          </span>
+          <span class="station-card__skeleton-section">
+            <span class="skeleton-block station-card__skeleton-section-title"></span>
+            <app-skeleton-rows variant="price" [count]="3" />
+          </span>
+          @if (showsColdStartHint()) {
+            <p class="station-card__cold-start-hint">{{ coldStartHint }}</p>
+          }
+        </div>
       }
-      <ng-container [ngTemplateOutlet]="closeButton" />
     </div>
   }
 </section>

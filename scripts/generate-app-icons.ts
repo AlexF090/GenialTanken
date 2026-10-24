@@ -27,23 +27,26 @@ const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const iconSourceDirectory = `${repositoryRoot}apps/web/icon-source/`;
 const publicDirectory = `${repositoryRoot}apps/web/public/`;
 const iconOutputDirectory = `${publicDirectory}icons/`;
-const chalkColor = '#F3F5F4';
+/** The darkest stop of the icon's background gradient. */
+const iconBackgroundColor = '#111111';
 
+/** The full-bleed master of the brand; iOS rounds the corners of the touch icon itself. */
 const appIcon = `${iconSourceDirectory}app-icon.svg`;
+const roundedIcon = `${iconSourceDirectory}app-icon-rounded.svg`;
 const maskableIcon = `${iconSourceDirectory}app-icon-maskable.svg`;
 const favicon = `${publicDirectory}favicon.svg`;
 
 const targets: IconTarget[] = [
-  { source: appIcon, output: 'icon-192.png', sizeInPixels: 192 },
-  { source: appIcon, output: 'icon-512.png', sizeInPixels: 512 },
+  { source: roundedIcon, output: 'icon-192.png', sizeInPixels: 192 },
+  { source: roundedIcon, output: 'icon-512.png', sizeInPixels: 512 },
   { source: maskableIcon, output: 'icon-maskable-192.png', sizeInPixels: 192 },
   { source: maskableIcon, output: 'icon-maskable-512.png', sizeInPixels: 512 },
-  // iOS rounds the corners itself, so the full-bleed variant avoids a double rounding.
+  // iOS rounds the corners itself, so the full-bleed master avoids a double rounding.
   {
-    source: maskableIcon,
+    source: appIcon,
     output: 'apple-touch-icon-180.png',
     sizeInPixels: 180,
-    backgroundColor: chalkColor,
+    backgroundColor: iconBackgroundColor,
   },
   {
     source: `${iconSourceDirectory}shortcut-favorites.svg`,

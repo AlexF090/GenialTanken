@@ -1,0 +1,28 @@
+@use 'materials';
+
+// One capsule with a hairline between the buttons, like the zoom buttons of the map from 48rem.
+:host {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-pill);
+  @include materials.floating-material(var(--shadow-floating-control));
+}
+
+.zoom-controls__button {
+  position: relative;
+  color: var(--color-text);
+  font-size: var(--font-size-title-2);
+
+  &[aria-disabled='true'] {
+    cursor: default;
+    opacity: var(--opacity-disabled);
+  }
+
+  & + &::before {
+    content: '';
+    position: absolute;
+    inset: 0 var(--space-xs) auto;
+    height: var(--border-width-hairline);
+    background-color: var(--color-hairline);
+  }
+}

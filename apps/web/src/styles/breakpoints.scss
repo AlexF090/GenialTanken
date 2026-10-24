@@ -1,7 +1,7 @@
 // Window size classes, mirrored in `src/app/core/layout/breakpoints.ts`. Keep both in sync.
-//   compact   < 48rem         phones: bottom navigation, list and map as separate views
-//   medium    48rem – 64rem   small tablets: navigation rail
-//   expanded  ≥ 64rem         list and map side by side
+//   compact   < 48rem         phones: the list is a bottom sheet over the full-screen map
+//   medium    48rem – 64rem   small tablets: a floating side panel over the map
+//   expanded  ≥ 64rem         the same with a wider panel
 //
 // Usage in a component stylesheet (`src/styles` is an include path):
 //   @use 'breakpoints';
@@ -38,3 +38,10 @@ $expanded-media-query: '(width >= #{$expanded-minimum-width})';
     @content;
   }
 }
+
+// Container widths (`@container`) at which a component stacks what sits side by side, e.g. with
+// large text or at 400 % zoom (1.4.10). Container queries cannot read custom properties.
+$favorites-row-stacking-width: 20rem;
+// Below it large text (or a narrow window) leaves no room beside the price tile of a list row.
+$station-row-stacking-width: 19rem;
+$opening-times-stacking-width: 18rem;

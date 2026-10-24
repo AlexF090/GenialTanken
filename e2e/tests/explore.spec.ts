@@ -10,12 +10,14 @@ import {
   openExplore,
   openSettings,
   pageHeading,
+  settingsDialog,
   quaiDeLaRapeeStation,
   resultSummary,
   rueBailleulStation,
   stationRowButton,
   stationCard,
   stationCards,
+  stationList,
   stationsMap,
   test,
   useOwnPosition,
@@ -140,7 +142,17 @@ const refreshedStationSchema = z.looseObject({
   pricesInEuro: z.record(z.string(), z.number().nullable()),
 });
 
-const sortOptions = (page: Page) => page.getByRole('group', { name: 'Sortierung', exact: true });
+/** Opens the sort menu through its chip in the filter row and chooses an order. */
+const chooseSortOrder = async (page: Page, order: 'Entfernung' | 'Preis'): Promise<void> => {
+  await page.getByRole('button', { name: /^Sortierung: / }).click();
+  await page
+    .getByRole('menu', { name: 'Sortierung', exact: true })
+    .getByRole('menuitemradio', { name: order, exact: true })
+    .click();
+  await expect(
+    page.getByRole('button', { name: `Sortierung: ${order}`, exact: true })
+  ).toBeVisible();
+};
 
 test.describe('explore page', () => {
   test('starts at the Eiffel Tower without asking for the own position', async ({ page }) => {
@@ -167,8 +179,10 @@ test.describe('explore page', () => {
     await expect(favoriteButton(card, rueBailleulStation)).toHaveAttribute('aria-pressed', 'false');
 
     const map = stationsMap(page);
-    await expect(map.getByText(eiffelTower.label, { exact: true })).toBeVisible();
-    await expect(map.getByText('Du bist hier!', { exact: true })).toHaveCount(0);
+    // Only a pin: a label there would cover price tags, and the search field names the place.
+    await expect(map.getByRole('img', { name: eiffelTower.label, exact: true })).toBeVisible();
+    await expect(map.getByText(eiffelTower.label, { exact: true })).toHaveCount(0);
+    await expect(map.getByRole('img', { name: 'Dein Standort' })).toHaveCount(0);
     await expect(
       page.getByRole('link', { name: 'Preisdaten: prix-carburants.gouv.fr (öffnet in neuem Tab)' })
     ).toHaveAttribute('href', 'https://www.prix-carburants.gouv.fr/');
@@ -199,7 +213,9 @@ test.describe('explore page', () => {
       boulevardDeLHopitalStation.distance,
       boulevardVincentAuriolStation.distance,
     ]);
-    await expect(stationsMap(page).getByText('Du bist hier!', { exact: true })).toBeVisible();
+    // A dot without a permanent label, so it never covers the price tags of nearby stations.
+    await expect(stationsMap(page).getByRole('img', { name: 'Dein Standort' })).toBeVisible();
+    await expect(stationsMap(page).getByRole('tooltip')).toHaveCount(0);
     await expect(stationsMap(page).getByText(eiffelTower.label, { exact: true })).toHaveCount(0);
   });
 
@@ -225,7 +241,7 @@ test.describe('explore page', () => {
     await openExplore(page);
     await stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation).click();
     await openSettings(page);
-    await expect(page.getByText('Radius: 5 km')).toBeVisible();
+    await expect(settingsDialog(page).getByText('Radius: 5 km')).toBeVisible();
 
     expect(errors).toEqual([]);
   });
@@ -274,13 +290,12 @@ test.describe('explore page', () => {
       await useOwnPosition(page);
       await expect(stationCards(page)).toHaveCount(4);
 
-      const byDistance = sortOptions(page).getByRole('radio', { name: 'Entfernung', exact: true });
-      const byPrice = sortOptions(page).getByRole('radio', { name: 'Preis', exact: true });
-      await expect(byDistance).toBeChecked();
+      await expect(
+        page.getByRole('button', { name: 'Sortierung: Entfernung', exact: true })
+      ).toBeVisible();
       await expect(stationCards(page)).toContainText(['2,680 €', '2,391 €', '2,250 €', '2,250 €']);
 
-      await byPrice.check();
-      await expect(byDistance).not.toBeChecked();
+      await chooseSortOrder(page, 'Preis');
       // Equal prices keep their distance order.
       await expect(stationCards(page)).toContainText([
         boulevardDeLHopitalStation.title,
@@ -289,7 +304,7 @@ test.describe('explore page', () => {
         rueBailleulStation.title,
       ]);
 
-      await byDistance.check();
+      await chooseSortOrder(page, 'Entfernung');
       await expect(stationCards(page)).toContainText([
         rueBailleulStation.title,
         quaiDeLaRapeeStation.title,
@@ -371,12 +386,21 @@ test.describe('explore page', () => {
         stationCard(page, rueBailleulStation),
         rueBailleulStation
       );
-      await expect(listButton).toHaveAttribute('aria-pressed', 'false');
+      await expect(listButton).not.toHaveAttribute('aria-current', 'true');
+      // The fill tells the price level; the selection must not repaint it.
+      const tagFill = (): Promise<string> =>
+        marker.evaluate(element => {
+          const tag = element.querySelector('.price-tag');
+          return tag === null ? '' : getComputedStyle(tag).backgroundImage;
+        });
+      const fillBeforeSelection = await tagFill();
+      expect(fillBeforeSelection).toContain('gradient');
 
       await marker.click();
 
-      await expect(listButton).toHaveAttribute('aria-pressed', 'true');
+      await expect(listButton).toHaveAttribute('aria-current', 'true');
       await expect(marker).toHaveAttribute('aria-pressed', 'true');
+      expect(await tagFill()).toBe(fillBeforeSelection);
     });
 
     for (const key of ACTIVATION_KEYS) {
@@ -396,7 +420,7 @@ test.describe('explore page', () => {
         await page.keyboard.press(key);
 
         await expect(marker).toHaveAttribute('aria-pressed', 'true');
-        await expect(listButton).toHaveAttribute('aria-pressed', 'true');
+        await expect(listButton).toHaveAttribute('aria-current', 'true');
       });
 
       test(`${key} on a focused cluster zooms into it and focuses its cheapest station`, async ({
@@ -452,16 +476,16 @@ test.describe('explore page', () => {
       );
       await listButton.click();
 
-      await expect(listButton).toHaveAttribute('aria-pressed', 'true');
+      await expect(listButton).toHaveAttribute('aria-current', 'true');
       await expect(marker).toBeVisible();
       await expect(marker).toHaveAttribute('aria-pressed', 'true');
       await expect(
         stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation)
-      ).toHaveAttribute('aria-pressed', 'false');
+      ).not.toHaveAttribute('aria-current', 'true');
 
       await listButton.click();
 
-      await expect(listButton).toHaveAttribute('aria-pressed', 'true');
+      await expect(listButton).toHaveAttribute('aria-current', 'true');
       await expect(marker).toHaveAttribute('aria-pressed', 'true');
     });
 
@@ -469,14 +493,24 @@ test.describe('explore page', () => {
       const searchField = page.getByRole('combobox', { name: 'Ort suchen' });
       await expect(searchField).toHaveAttribute('placeholder', 'Position auf Karte');
       await searchField.pressSequentially('Bastille');
-      const suggestions = page.getByRole('listbox', { name: 'Orte' }).getByRole('option');
+      // In the side panel instead of the list, below the field
+      const suggestions = page
+        .getByRole('region', { name: 'Tankstellen', exact: true })
+        .getByRole('listbox', { name: 'Orte' })
+        .getByRole('option');
       await expect(suggestions.first()).toContainText('Bastille');
+      await expect(stationList(page)).toBeHidden();
       await suggestions.first().click();
+      await expect(stationList(page)).toBeVisible();
 
       await expect(resultSummary(page)).toContainText('um Bastille');
       await expect(searchField).toHaveValue('Bastille');
 
+      // Like on iOS, clearing the field starts a new search; "Abbrechen" returns to the list.
       await page.getByRole('button', { name: 'Suche löschen' }).click();
+      await expect(searchField).toBeFocused();
+      await expect(searchField).toHaveValue('');
+      await page.getByRole('button', { name: 'Abbrechen', exact: true }).click();
       await expect(resultSummary(page)).toContainText('um die Kartenmitte');
       await expect(searchField).toHaveValue('');
     });

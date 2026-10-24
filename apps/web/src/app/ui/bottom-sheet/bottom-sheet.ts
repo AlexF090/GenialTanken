@@ -41,7 +41,8 @@ interface DragState {
 
 /**
  * List container that floats over the map on phones with three snap positions (peek, half,
- * full) and becomes a static side panel from 48rem. The content is never inert: screen readers
+ * full), from the bottom edge of the window up to just below the status bar, and becomes a
+ * floating side panel from 48rem. The content is never inert: screen readers
  * reach it in every position, and focusing it from peek opens the sheet to half.
  */
 @Component({
@@ -69,13 +70,18 @@ export class BottomSheet {
 
   private readonly sheetHeight = signal(0);
   private readonly peekHeight = signal(0);
+  private readonly windowHeight = signal(0);
   private readonly dragHeight = signal<number | null>(null);
   private readonly direction = signal<SnapDirection>('up');
   private dragState: DragState | undefined;
   private suppressesNextClick = false;
 
   private readonly heights = computed(() =>
-    snapHeights({ sheetHeight: this.sheetHeight(), peekHeight: this.peekHeight() })
+    snapHeights({
+      sheetHeight: this.sheetHeight(),
+      peekHeight: this.peekHeight(),
+      windowHeight: this.windowHeight(),
+    })
   );
   private readonly settledVisibleHeight = computed(() => this.heights()[this.snapPosition()]);
   private readonly visibleHeight = computed(() => this.dragHeight() ?? this.settledVisibleHeight());
@@ -221,12 +227,16 @@ export class BottomSheet {
     this.dragHeight.set(null);
   }
 
-  /** Keyboard and screen reader users must not land on content hidden below the screen. */
+  /**
+   * Keyboard and screen reader users must not land on content hidden below the screen. A modal
+   * dialog opened from the content (the settings) shows over the page, not in the sheet.
+   */
   protected revealFocusedContent(event: FocusEvent): void {
     if (
       this.isCompactViewport() &&
       this.snapPosition() === 'peek' &&
-      event.target instanceof Node &&
+      event.target instanceof Element &&
+      event.target.closest('dialog[open]') === null &&
       this.content().nativeElement.contains(event.target)
     ) {
       this.moveTo('half');
@@ -243,8 +253,19 @@ export class BottomSheet {
   }
 
   private measure(): void {
-    this.sheetHeight.set(this.sheet().nativeElement.offsetHeight);
-    // Handle and header stay visible at peek; the content starts right below them.
-    this.peekHeight.set(this.content().nativeElement.offsetTop);
+    const sheet = this.sheet().nativeElement;
+    this.sheetHeight.set(sheet.offsetHeight);
+    // Fixed to the window: top and height add up to the window's height, plus the strip below
+    // the window that iOS leaves and the sheet reaches into (its negative `bottom`).
+    const bottom = Number.parseFloat(getComputedStyle(sheet).bottom);
+    this.windowHeight.set(
+      sheet.offsetTop + sheet.offsetHeight + (Number.isNaN(bottom) ? 0 : Math.min(bottom, 0))
+    );
+    // Handle and header stay visible at peek; the content starts right below them. The sheet
+    // reaches under the home indicator, so peek shows that strip (its bottom padding) as well.
+    const safeAreaBottom = Number.parseFloat(getComputedStyle(sheet).paddingBottom);
+    this.peekHeight.set(
+      this.content().nativeElement.offsetTop + (Number.isNaN(safeAreaBottom) ? 0 : safeAreaBottom)
+    );
   }
 }

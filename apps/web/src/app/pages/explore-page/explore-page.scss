@@ -1,64 +1,48 @@
 @use 'breakpoints';
 @use 'visually-hidden';
 @use 'materials';
-@use 'typography';
 
-// Full-height page: the map fills it, the station panel floats over it (phones) or stands next
-// to it (from 48rem). The page has no page header, so it absorbs the top safe area itself.
+// Below this width of the header the filter chips wrap instead of scrolling sideways.
+$narrow-header-width: 22rem;
+
+// The map fills the whole window, under the status bar and the browser's bars too; sheet (phones)
+// or side panel (from 48rem) and the map controls float over it. Everything is fixed to the
+// window, so the document never scrolls and no `100dvh` jumps while the browser's bars come and go.
+// It reaches below the layout viewport where iOS ends that short of the screen.
 :host {
-  height: var(--layout-page-height);
+  position: fixed;
+  inset: 0 0 calc(-1 * var(--layout-viewport-gap-bottom));
   overflow: hidden;
 }
 
-.explore-page {
-  position: relative;
-  height: 100%;
-
-  @include breakpoints.medium-and-up {
-    display: grid;
-    grid-template-columns:
-      minmax(var(--layout-panel-width-minimum), var(--layout-panel-width-maximum))
-      minmax(0, 1fr);
-
-    @include breakpoints.expanded {
-      grid-template-columns: var(--layout-panel-width-expanded) minmax(0, 1fr);
-    }
-  }
-}
-
+.explore-page,
 .explore-page__map {
-  @include breakpoints.compact {
-    position: absolute;
-    inset: var(--safe-area-top) 0 0;
-  }
-
-  @include breakpoints.medium-and-up {
-    grid-row: 1;
-    grid-column: 2;
-    height: 100%;
-  }
+  position: absolute;
+  inset: 0;
 }
 
-// Floats over the top of the map. Below the sheet: a fully opened sheet covers it, like the
-// map controls of Apple Maps.
-.explore-page__search {
-  z-index: var(--layer-map-search);
-  display: flex;
-  flex-direction: column;
+// Over the top of the map, below the status bar scrim: the locate button on the right, "In diesem
+// Bereich suchen" centered and notices below them, like the map controls of Apple Maps. From
+// 48rem they stand in the map area right of the side panel.
+.explore-page__map-controls {
+  position: absolute;
+  z-index: var(--layer-map-controls);
+  display: grid;
+  grid-template-columns: var(--layout-touch-target) minmax(0, 1fr) var(--layout-touch-target);
   gap: var(--space-xs);
+  align-items: start;
   pointer-events: none;
 
   @include breakpoints.compact {
-    position: absolute;
-    inset: calc(var(--safe-area-top) + var(--space-xs)) var(--space-xs) auto;
+    inset: calc(var(--safe-area-top) + var(--space-sm))
+      calc(var(--safe-area-right) + var(--space-xs)) auto
+      calc(var(--safe-area-left) + var(--space-xs));
   }
 
   @include breakpoints.medium-and-up {
-    grid-row: 1;
-    grid-column: 2;
-    align-self: start;
-    width: min(var(--layout-search-width-maximum), 100% - 2 * var(--space-md));
-    margin: calc(var(--safe-area-top) + var(--space-md)) var(--space-md);
+    inset: calc(var(--safe-area-top) + var(--layout-panel-inset))
+      calc(var(--safe-area-right) + var(--layout-panel-inset)) auto
+      calc(var(--safe-area-left) + 2 * var(--layout-panel-inset) + var(--layout-panel-width));
   }
 
   > * {
@@ -66,32 +50,27 @@
   }
 }
 
-.explore-page__search--covered {
+.explore-page__map-controls--covered {
   visibility: hidden;
 }
 
-.explore-page__search-bar {
-  display: flex;
-  gap: var(--space-xs);
-  align-items: center;
+.explore-page__area-search,
+.explore-page__locate {
+  grid-row: 1;
+  @include materials.floating-material(var(--shadow-floating-control));
 }
 
-.explore-page__place-search {
-  flex: 1;
-  min-width: 0;
-}
-
-// Capsule below the search field, like "Search here" in Apple Maps.
+// Capsule like "Search here" in Apple Maps.
 .explore-page__area-search {
-  align-self: center;
+  grid-column: 2;
+  justify-self: center;
   min-height: var(--layout-touch-target);
   margin: 0;
-  padding: 0 var(--space-md);
+  padding: var(--space-2xs) var(--space-md);
   border: 0;
   border-radius: var(--radius-pill);
-  @include materials.floating-material;
   color: var(--color-action-text);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
   font-weight: var(--font-weight-bold);
   cursor: pointer;
   touch-action: manipulation;
@@ -105,21 +84,9 @@
   }
 }
 
-// Inside the search capsule, set off by a hairline like a second segment.
-.explore-page__radius {
-  flex: none;
-  padding-inline: var(--space-sm) var(--space-xs);
-  border-left: var(--border-width-hairline) solid var(--color-hairline);
-  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
-  color: var(--color-action-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  white-space: nowrap;
-}
-
 // Map button like the location button of Apple Maps; filled while centered on the own position.
 .explore-page__locate {
-  @include materials.floating-material;
+  grid-column: 3;
 
   &[aria-busy='true'] {
     cursor: progress;
@@ -128,30 +95,52 @@
 }
 
 .explore-page__locate--active {
-  background: var(--color-action);
-  color: var(--color-on-action);
+  background: var(--color-tint-vivid);
+  color: var(--color-on-tint-vivid);
 }
 
-.explore-page__refresh {
-  margin-inline-start: auto;
+// Below the locate button.
+.explore-page__zoom {
+  grid-row: 2;
+  grid-column: 3;
 }
 
+// From 48rem a glass card floating over the map, inset from the window edges; on phones the
+// bottom sheet positions itself.
 .explore-page__panel {
   @include breakpoints.medium-and-up {
-    grid-row: 1;
-    grid-column: 1;
-    min-height: 0;
-    padding-top: var(--safe-area-top);
-    background-color: var(--color-surface);
+    position: absolute;
+    top: calc(var(--safe-area-top) + var(--layout-panel-inset));
+    bottom: calc(var(--safe-area-bottom) + var(--layout-panel-inset));
+    left: calc(var(--safe-area-left) + var(--layout-panel-inset));
+    z-index: var(--layer-sheet);
+    width: var(--layout-panel-width);
   }
 }
 
 .explore-page__header {
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
-  padding: 0 var(--space-md) var(--space-sm);
+  gap: var(--space-xs);
+  padding: 0 var(--space-md) var(--space-xs);
   border-bottom: var(--border-width-hairline) solid var(--color-hairline);
+  container-type: inline-size;
+}
+
+// Takes no room above an open card unless the offline notice shows.
+.explore-page__header--behind-card {
+  padding-block: 0;
+  border-bottom: 0;
+}
+
+// Its children stay items of the header's column, with its gaps.
+.explore-page__header-controls {
+  display: contents;
+}
+
+// Stays in the accessibility tree while empty, so the notice is announced, but takes no gap.
+.explore-page__offline:empty {
+  @include visually-hidden.visually-hidden;
 }
 
 // Phones: the map is the page's heading, the title only names it for assistive technology.
@@ -160,39 +149,45 @@
     @include visually-hidden.visually-hidden;
   }
 
-  // Large title, like the first screen of an iOS app
+  // The wordmark in place of the large title of the first screen of an iOS app
   @include breakpoints.medium-and-up {
-    padding-block-end: var(--space-2xs);
-    @include typography.large-title;
+    display: flex;
+    padding-block: var(--space-2xs) var(--space-xs);
+    color: var(--color-text);
+    font-size: var(--font-size-title-1);
+    line-height: var(--line-height-tight);
   }
 }
 
-.explore-page__toolbar {
+// Never wraps: the field gives way, so the settings button stays next to it down to 320px.
+.explore-page__search-row {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
   gap: var(--space-xs);
+  align-items: center;
 }
 
-// Tinted capsule like an iOS pull-down button; opens the fuel menu.
-.explore-page__fuel {
-  flex: none;
-  padding-inline: var(--space-sm) var(--space-xs);
-  border-radius: var(--radius-pill);
-  background-color: color-mix(in srgb, var(--color-action) 14%, transparent);
-  color: var(--color-action-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-tight);
+.explore-page__place-search {
+  flex: 1;
 }
 
-.explore-page__chevron {
-  font-size: var(--icon-size-sm);
-}
+// One row that scrolls sideways when the chips do not fit, padded so focus rings are not cut
+// off. In narrow sheets, or with large text (the query is in rem), the chips wrap instead, so
+// nothing hides beyond the edge (1.4.10 Reflow). The row takes the height of the capsules only;
+// their touch targets reach into the gaps around it.
+.explore-page__filters {
+  display: flex;
+  gap: var(--space-xs);
+  margin: calc(-1 * (var(--space-xs) + var(--layout-chip-overhang))) calc(-1 * var(--space-md));
+  padding: var(--space-xs) var(--space-md);
+  overflow-x: auto;
+  scroll-padding-inline: var(--space-md);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
 
-.explore-page__summary {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  @container (width < #{$narrow-header-width}) {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
 }
 
 .explore-page__credit {

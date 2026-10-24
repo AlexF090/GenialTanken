@@ -56,21 +56,24 @@
   height: var(--layout-grabber-height);
   border-radius: var(--radius-pill);
   background-color: var(--color-border-control);
+  box-shadow: var(--shadow-grabber);
 }
 
-// Phones: floats over the map above the bottom navigation. The sheet always keeps its full
-// height and slides down by the hidden part, so dragging only changes `transform`.
+// Phones: floats over the map down to the bottom edge of the window, under the home indicator.
+// The sheet always keeps its full height and slides down by the hidden part, so dragging only
+// changes `transform`. Fully opened it ends just below the status bar.
 @include breakpoints.compact {
   .bottom-sheet {
     position: fixed;
     inset-inline: 0;
-    top: calc(var(--safe-area-top) + var(--space-xl));
-    bottom: calc(var(--layout-navigation-height) + var(--safe-area-bottom));
-    // Below the navigation, which covers the part of the sheet that slid down
+    top: calc(var(--safe-area-top) + var(--space-sm));
+    bottom: calc(-1 * var(--layout-viewport-gap-bottom));
     z-index: var(--layer-sheet);
     padding-inline: var(--safe-area-left) var(--safe-area-right);
+    // Keeps the end of the content clear of the home indicator
+    padding-block-end: var(--safe-area-bottom);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    @include materials.floating-material($material: var(--material-sheet));
+    @include materials.floating-material(var(--shadow-sheet), var(--material-sheet));
     transform: translateY(var(--bottom-sheet-offset, 0));
 
     &--animated {
@@ -78,10 +81,15 @@
     }
   }
 
-  // Keeps the end of the list and focused rows scrollable into the visible part of the sheet
+  // Keeps the end of the list and focused rows scrollable into the visible part of the sheet,
+  // above an on-screen keyboard too
   .bottom-sheet__content {
-    padding-block-end: var(--bottom-sheet-settled-offset, 0);
-    scroll-padding-block-end: var(--bottom-sheet-settled-offset, 0);
+    --bottom-sheet-covered-end: calc(
+      var(--bottom-sheet-settled-offset, 0px) + var(--layout-keyboard-inset)
+    );
+
+    padding-block-end: var(--bottom-sheet-covered-end);
+    scroll-padding-block-end: var(--bottom-sheet-covered-end);
   }
 
   .bottom-sheet--dragging {
@@ -89,7 +97,8 @@
   }
 }
 
-// Larger windows: a static side panel next to the map
+// Larger windows: a glass card floating over the map, as tall as its host, with its own
+// scrolling content
 @include breakpoints.medium-and-up {
   :host,
   .bottom-sheet {
@@ -97,7 +106,9 @@
   }
 
   .bottom-sheet {
-    border-inline-end: var(--border-width-hairline) solid var(--color-hairline);
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    @include materials.floating-material(var(--shadow-panel), var(--material-sheet));
   }
 
   .bottom-sheet__handle {
@@ -106,5 +117,11 @@
 
   .bottom-sheet__header {
     padding-block-start: var(--space-md);
+  }
+
+  // A tablet's on-screen keyboard covers the lower part of the panel.
+  .bottom-sheet__content {
+    padding-block-end: var(--layout-keyboard-inset);
+    scroll-padding-block-end: var(--layout-keyboard-inset);
   }
 }

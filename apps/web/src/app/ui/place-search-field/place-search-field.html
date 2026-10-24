@@ -15,9 +15,10 @@
       [attr.aria-activedescendant]="activeOptionIdentifier()"
       [placeholder]="placeholder()"
       [value]="query()"
+      (focus)="searchStarted.emit()"
       (input)="handleInput(input.value)"
       (keydown)="handleKeydown($event)"
-      (blur)="closeList()" />
+      (blur)="closeListUnlessCancelable()" />
     @if (query() !== '') {
       <button
         type="button"
@@ -27,15 +28,24 @@
         <app-icon name="close" />
       </button>
     }
-    <ng-content select="[placeSearchAccessory]" />
   </div>
+  @if (isCancelable()) {
+    <button type="button" class="text-button place-search-field__cancel" (click)="cancel()">
+      Abbrechen
+    </button>
+  }
+  <p class="visually-hidden" role="status">{{ announcement() }}</p>
+</div>
 
-  <div class="place-search-field__results" [hidden]="!isListOpen()">
+<!-- Rendered by the host where there is room, e.g. in the sheet above the keyboard. -->
+<ng-template #suggestionList>
+  <div class="place-search-field__results">
     <ul
       class="place-search-field__listbox"
       role="listbox"
       aria-label="Orte"
-      [id]="listboxIdentifier">
+      [id]="listboxIdentifier"
+      [hidden]="!isListOpen()">
       @for (place of suggestions(); track place.id; let index = $index) {
         <li
           role="option"
@@ -46,7 +56,9 @@
           (pointerdown)="keepFocus($event)"
           (click)="select(place)"
           (keydown.enter)="select(place)">
-          <app-icon name="place" class="place-search-field__option-icon" />
+          <span class="place-search-field__option-icon">
+            <app-icon name="place" />
+          </span>
           <span class="place-search-field__option-text">
             <span class="place-search-field__option-name">{{ place.name }}</span
             ><span class="visually-hidden">, </span>
@@ -55,9 +67,11 @@
         </li>
       }
     </ul>
-    @if (statusMessage(); as message) {
+    @if (isListOpen() && statusMessage(); as message) {
       <p class="place-search-field__status">{{ message }}</p>
     }
+    @if (!isListOpen() && hint(); as hintText) {
+      <p class="place-search-field__hint">{{ hintText }}</p>
+    }
   </div>
-  <p class="visually-hidden" role="status">{{ announcement() }}</p>
-</div>
+</ng-template>

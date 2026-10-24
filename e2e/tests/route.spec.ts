@@ -1,4 +1,5 @@
-import { expect, rueBailleulStation, stationCard, test } from '../fixtures.ts';
+import type { Page } from '@playwright/test';
+import { expect, rueBailleulStation, stationCard, stationList, test } from '../fixtures.ts';
 
 declare global {
   interface Window {
@@ -21,13 +22,14 @@ test.describe('route to a station', () => {
     });
   });
 
-  const routeSelect = (page: Parameters<typeof stationCard>[0]) =>
-    stationCard(page, rueBailleulStation).getByRole('combobox', {
+  // Only the card of a station offers the route, not its row in the list.
+  const routeSelect = (page: Page) =>
+    page.getByRole('article').getByRole('combobox', {
       name: `Route zu ${rueBailleulStation.title}`,
       exact: true,
     });
 
-  const lastOpenedUrl = async (page: Parameters<typeof stationCard>[0]): Promise<URL> => {
+  const lastOpenedUrl = async (page: Page): Promise<URL> => {
     await expect.poll(() => page.evaluate(() => window.openedUrls?.length)).toBeGreaterThan(0);
     const urls = await page.evaluate(() => window.openedUrls ?? []);
     const url = urls.at(-1);
@@ -38,7 +40,7 @@ test.describe('route to a station', () => {
   };
 
   test('opens Apple Karten with the station as destination', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(`/stations/${rueBailleulStation.id}`);
     await routeSelect(page).selectOption({ label: 'Apple Karten' });
 
     const url = await lastOpenedUrl(page);
@@ -48,7 +50,7 @@ test.describe('route to a station', () => {
   });
 
   test('opens Google Maps with the station as destination', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(`/stations/${rueBailleulStation.id}`);
     await routeSelect(page).selectOption({ label: 'Google Maps' });
 
     const url = await lastOpenedUrl(page);
@@ -58,12 +60,21 @@ test.describe('route to a station', () => {
   });
 
   test('opens Waze with the station as destination', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(`/stations/${rueBailleulStation.id}`);
     await routeSelect(page).selectOption({ label: 'Waze' });
 
     const url = await lastOpenedUrl(page);
     expect(url.origin).toBe('https://waze.com');
     expect(url.searchParams.get('ll')).toBe(rueBailleulCoordinates);
     expect(url.searchParams.get('navigate')).toBe('yes');
+  });
+
+  test('is offered by the card only, not by the rows of the list', async ({ page }) => {
+    await page.goto('/');
+    await expect(stationCard(page, rueBailleulStation)).toBeVisible();
+    await expect(stationList(page).getByRole('combobox')).toHaveCount(0);
+
+    await page.goto(`/stations/${rueBailleulStation.id}`);
+    await expect(routeSelect(page)).toBeVisible();
   });
 });

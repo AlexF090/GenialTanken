@@ -9,21 +9,42 @@ import type { SnapHeights } from './bottom-sheet-snap';
 const heights: SnapHeights = { peek: 100, half: 400, full: 800 };
 
 describe('snapHeights', () => {
-  it('derives half from the sheet height and keeps the order peek ≤ half ≤ full', () => {
-    expect(snapHeights({ sheetHeight: 800, peekHeight: 120 })).toEqual({
+  it('opens half to 55 % of the window, like Apple Maps, and keeps peek ≤ half ≤ full', () => {
+    expect(snapHeights({ sheetHeight: 800, peekHeight: 120, windowHeight: 860 })).toEqual({
       peek: 120,
-      half: 400,
+      half: 473,
       full: 800,
     });
   });
 
-  it('never lets half drop below peek or peek exceed the sheet', () => {
-    expect(snapHeights({ sheetHeight: 200, peekHeight: 150 })).toEqual({
+  it('keeps half two list rows above peek, raising it on low windows such as landscape phones', () => {
+    expect(snapHeights({ sheetHeight: 360, peekHeight: 180, windowHeight: 390 })).toEqual({
+      peek: 180,
+      half: 316,
+      full: 360,
+    });
+  });
+
+  it('lets half meet full when the sheet has no room for two rows above peek', () => {
+    expect(snapHeights({ sheetHeight: 250, peekHeight: 180, windowHeight: 270 })).toEqual({
+      peek: 180,
+      half: 250,
+      full: 250,
+    });
+  });
+
+  it('never lets half drop below peek, exceed the sheet, or peek exceed the sheet', () => {
+    expect(snapHeights({ sheetHeight: 200, peekHeight: 150, windowHeight: 220 })).toEqual({
       peek: 150,
-      half: 150,
+      half: 200,
       full: 200,
     });
-    expect(snapHeights({ sheetHeight: 100, peekHeight: 150 })).toEqual({
+    expect(snapHeights({ sheetHeight: 300, peekHeight: 100, windowHeight: 1000 })).toEqual({
+      peek: 100,
+      half: 300,
+      full: 300,
+    });
+    expect(snapHeights({ sheetHeight: 100, peekHeight: 150, windowHeight: 120 })).toEqual({
       peek: 100,
       half: 100,
       full: 100,

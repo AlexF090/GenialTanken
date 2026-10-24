@@ -1,7 +1,12 @@
+@use 'breakpoints';
+
 // Design tokens after Apple's Human Interface Guidelines: system colors and font, translucent
 // materials over the map, soft corners.
 // Every color token carries its light and dark value via `light-dark()`, resolved against the
-// `color-scheme` set below. Contrast ratios (WCAG 2.2) are recorded next to the pairs that matter.
+// `color-scheme` set below. Contrast ratios (WCAG 2.2) are recorded next to the pairs that matter:
+// text keeps 7:1 (1.4.6 AAA), non-text such as focus rings and control borders 3:1 (1.4.11).
+// Translucent materials count with their worst backdrop: light ones over black, dark ones over
+// white.
 
 // Color scheme: `index.html` and `ColorSchemeController` set `data-color-scheme` on <html>.
 // Without the attribute (script blocked or not yet run) the operating system decides.
@@ -26,48 +31,145 @@
   --color-canvas: light-dark(#f2f2f7, #000000);
   --color-surface: light-dark(#ffffff, #1c1c1e);
 
-  // Text (label / secondary label): light 15.2 / 17.0 and dark 21.0 / 17.0 on canvas / surface
+  // Text (label / secondary label): light 15.2 / 17.0 and dark 21.0 / 17.0 on canvas / surface;
+  // at least 13.4 (light) and 11.4 (dark) on every material and highlight
   --color-text: light-dark(#1c1c1e, #ffffff);
-  // Darker than the iOS secondary label so small text keeps 4.5:1: light 4.7 / 5.2, dark 9.5 / 7.7
-  --color-text-secondary: light-dark(#6c6c70, #aeaeb2);
+  // Darker (light) and lighter (dark) than the iOS secondary label so small text keeps 7:1:
+  // light 8.3 / 9.2, dark 13.8 / 11.2 on canvas / surface; at least 7.3 (light) and 7.5 (dark) on
+  // materials and the menu highlight over them
+  --color-text-secondary: light-dark(#47474c, #d1d1d6);
 
-  // Tab bar and other bars: a translucent material over the content. Inactive items: light 5.0,
-  // dark 5.9 on the opaque bar. Also the browser UI color: keep the `theme-color` meta elements
-  // in `index.html` in sync.
-  --color-chrome: light-dark(rgb(249 249 249 / 94%), rgb(29 29 29 / 94%));
-  --color-on-chrome: var(--color-action-text);
-  --color-on-chrome-secondary: light-dark(#6c6c70, #98989f);
+  // Browser UI color (`theme-color` in `index.html`; keep them in sync) and the opaque fallback
+  // of the materials. The manifest's `theme_color` is the icon's indigo on purpose, so the launch
+  // screen matches the icon.
+  --color-chrome: light-dark(rgb(249 249 249 / 96%), rgb(29 29 29 / 96%));
+  --color-chrome-opaque: light-dark(#f9f9f9, #1d1d1d);
 
-  // Tint (iOS blue, darkened for text contrast). Filled actions: white text 5.8, dark 7.4
-  --color-action: light-dark(#0062cc, #409cff);
-  --color-action-hover: light-dark(#0052ab, #66b0ff);
-  --color-on-action: light-dark(#ffffff, #000000);
-  // Links and plain buttons: light 5.8 / 5.2, dark 6.0 / 7.4 on surface / canvas
-  --color-action-text: var(--color-action);
-  --color-action-text-hover: var(--color-action-hover);
+  // Brand: the indigo of the app icon and the wordmark (`apps/web/icon-source`); the gradient is
+  // the drop of the icon. Filled with it, light uses the deep end of the drop with white text
+  // (`--color-on-brand`) 8.7, dark a pale indigo with dark text 11.0, the only way to keep 7:1 on
+  // the dark sheet and its grey fills.
+  --color-brand-gradient-start: #5e5ce6;
+  --color-brand-gradient-end: #3a37b8;
+  --color-brand: light-dark(var(--color-brand-gradient-end), #cdccff);
+  --color-on-brand: light-dark(#ffffff, #1d1d1d);
+  // "Tanken" and the drop of the wordmark. A logotype is exempt from contrast minimums; it still
+  // keeps light 8.7 / 7.8, dark 11.1 / 13.7 on surface / canvas.
+  --color-wordmark-accent: var(--color-brand);
 
-  // Focus ring (non-text, ≥ 3:1): the tint
-  --color-focus-ring: var(--color-action);
-  --color-focus-ring-on-chrome: var(--color-focus-ring);
+  // Filled controls with text are the brand indigo: white text 8.7 in light (hover 10.9), dark
+  // text 11.0 in dark (hover 12.8). The text alone marks them, so their edge needs no contrast
+  // (1.4.11).
+  --color-action: var(--color-brand);
+  --color-action-hover: light-dark(#2e2b99, #dedeff);
+  --color-on-action: var(--color-on-brand);
+  // Links and plain buttons: light a little deeper than the fill, so it keeps 7:1 on the grey
+  // fills too. Light 9.9 / 8.8 on surface / canvas, at least 8.1 on materials (bar 8.1), the grey
+  // fill (7.9), the menu highlight (7.7) and the tint below (8.1). Dark the brand itself: 11.1 /
+  // 13.7, at least 9.2 on materials, 7.7 on the grey fill, 7.4 on the menu highlight and 9.5 on
+  // the tint. Hover light 12.2, dark 13.0 on surface.
+  --color-action-text: light-dark(#3330a8, var(--color-brand));
+  --color-action-text-hover: light-dark(#27248c, var(--color-action-hover));
+  // Tint for everything without text: icons, spinners, the search center pin, filled icon
+  // buttons. The brand: light against surface / canvas 8.7 / 7.8, at least 6.8 on materials, the
+  // grey fill and the menu highlight, 7.1 on the tint below; dark 11.1 / 13.7, at least 7.4.
+  // Icons on it: white 8.7 (light), dark 11.0 (dark).
+  --color-tint-vivid: var(--color-wordmark-accent);
+  --color-on-tint-vivid: var(--color-on-brand);
+  // Opaque indigo wash behind tinted capsules and hints; dark mixes the vivid start of the drop,
+  // because the pale brand would wash out to grey. Text on it light 13.9 / secondary 7.6 / link
+  // 8.1; dark 14.6 / 9.6 / 9.5.
+  --color-action-tint: light-dark(
+    color-mix(in srgb, var(--color-brand) 12%, #ffffff),
+    color-mix(in srgb, var(--color-brand-gradient-start) 16%, #1c1c1e)
+  );
 
-  // Reserved for the cheapest price only, like a green price in Apple Maps: text on it light 5.2,
-  // dark 10.4; the edge separates it from white surfaces
-  --color-highlight: light-dark(#1e7d36, #30d158);
+  // Focus ring (non-text, ≥ 3:1): the link color. Light against surface / canvas 9.9 / 8.8, on
+  // the tint 8.1; dark 11.1 / 13.7 and 9.5 on the tint. The halo in the surface color on both
+  // sides of it keeps it visible on any backdrop, including a filled control of nearly the same
+  // indigo it surrounds, and map tiles.
+  --color-focus-ring: var(--color-action-text);
+  --color-focus-ring-halo: var(--color-surface);
+  // Ring of a selected price tag on the map: the focus ring's color around a gap
+  --color-selection-ring: var(--color-focus-ring);
+  --color-selection-ring-gap: var(--color-surface);
+
+  // Reserved for the cheapest price only. Light a deep green with white text (7.8), dark the
+  // vivid iOS green with black text (10.4), which stays apart from the dark green tint of the low
+  // prices. Green and the indigo of the brand and the selection lie about 100° of hue apart, so
+  // the cheapest price never reads as selected. Against the surface light 7.8, dark 8.4.
+  --color-highlight: light-dark(#0f5f27, #30d158);
   --color-on-highlight: light-dark(#ffffff, #000000);
   --color-highlight-edge: var(--color-highlight);
 
-  // Price levels on the map, cheap to dear: a tint with a colored edge. Text on the tints: light
-  // 14.4 / 14.7 / 13.3, dark 13.5 / 13.4 / 15.5. Edges against the surface: light 5.2 / 4.3 / 6.2,
-  // dark 8.4 / 9.5 / 6.0. Color only repeats what the price says.
-  --color-price-low: light-dark(#d9f2df, #12351d);
-  --color-price-low-edge: var(--color-highlight);
-  --color-price-medium: light-dark(#fdedc8, #3d2c08);
-  --color-price-medium-edge: light-dark(#c25e00, #ffb340);
-  --color-price-high: light-dark(#fddcd8, #421616);
-  --color-price-high-edge: var(--color-error);
+  // Price levels on the map and in the list, cheap to dear: a tint of iOS green, orange and red
+  // (the plastic fills below) with a colored edge. Edges against the surface: light 4.4 / 4.3 /
+  // 5.4, dark 8.4 / 8.3 / 5.0. Color only repeats what the price says.
+  --color-price-low-edge: light-dark(#248a3d, #30d158);
+  --color-price-medium-edge: light-dark(#c55a00, #ff9f0a);
+  --color-price-high-edge: light-dark(#d70015, #ff453a);
 
-  // Errors: light 5.3 / 6.2, dark 5.8 / 6.0 on error surface / surface
-  --color-error: light-dark(#c4001a, #ff6961);
+  // Plastic price tags and tiles, like iOS buttons and Wallet passes: every fill runs from a
+  // lighter top to a deeper bottom (the bottom also fills the tag's pointer). Text against top /
+  // bottom: low light 13.7 / 11.0, dark 7.7 / 11.3; medium light 13.7 / 11.0, dark 7.7 / 11.3;
+  // high light 11.9 / 9.0, dark 9.7 / 13.6; cheapest light 7.4 / 10.4, dark 12.6 / 7.7;
+  // neutral light 17.0 / 15.2, dark 13.9 / 17.0 (secondary
+  // text dark 9.2 / 11.2). Flat fills under `prefers-contrast: more` and forced colors.
+  --color-price-low-top: light-dark(#caf0d4, #2f5c3b);
+  --color-price-low-bottom: light-dark(#abdbb7, #1b4226);
+  --color-price-medium-top: light-dark(#ffe3bc, #6a4e26);
+  --color-price-medium-bottom: light-dark(#edcb9a, #4d3613);
+  --color-price-high-top: light-dark(#ffcbc9, #6a3533);
+  --color-price-high-bottom: light-dark(#edadaa, #4d201e);
+  --color-highlight-top: light-dark(#116328, #5ce27e);
+  --color-highlight-bottom: light-dark(#0a4a1d, #26b44a);
+  --color-price-neutral-top: light-dark(#ffffff, #2c2c2e);
+  --color-price-neutral-bottom: light-dark(#f2f2f7, #1c1c1e);
+  --gradient-price-low: linear-gradient(var(--color-price-low-top), var(--color-price-low-bottom));
+  --gradient-price-medium: linear-gradient(
+    var(--color-price-medium-top),
+    var(--color-price-medium-bottom)
+  );
+  --gradient-price-high: linear-gradient(
+    var(--color-price-high-top),
+    var(--color-price-high-bottom)
+  );
+  --gradient-price-cheapest: linear-gradient(
+    var(--color-highlight-top),
+    var(--color-highlight-bottom)
+  );
+  --gradient-price-neutral: linear-gradient(
+    var(--color-price-neutral-top),
+    var(--color-price-neutral-bottom)
+  );
+  // The light catching the top edge of a plastic fill or control (decorative)
+  --color-gloss: light-dark(rgb(255 255 255 / 45%), rgb(255 255 255 / 12%));
+
+  // Depth of controls: a sheen from the top fades out over the control's own fill. Text keeps
+  // its contrast on the lighter top: chips light 16.0, dark 10.6; tinted tiles light 9.0, dark
+  // 8.0 (hover light 11.2, dark 9.3). Filled controls run from a lighter indigo down to the brand:
+  // text against top / bottom light 7.3 / 8.7, dark 12.8 / 11.0; hover light 8.7 / 10.9, dark
+  // 14.3 / 12.8; pressed light 8.7 / 10.9, dark 11.0 / 9.3.
+  --color-control-sheen: light-dark(rgb(255 255 255 / 55%), rgb(255 255 255 / 6%));
+  --gradient-control-sheen: linear-gradient(var(--color-control-sheen), transparent);
+  --gradient-action: linear-gradient(light-dark(#4643c4, #dedeff), var(--color-action));
+  --gradient-action-hover: linear-gradient(
+    light-dark(var(--color-brand), #ebebff),
+    var(--color-action-hover)
+  );
+  --gradient-action-pressed: linear-gradient(var(--color-action), light-dark(#2e2b99, #bbbaff));
+  // Draws the edge of a control only where contrast comes first (see below)
+  --color-control-edge: transparent;
+  // Fine light edge along the top of glass sheets and floating controls (decorative)
+  --color-material-highlight: light-dark(rgb(255 255 255 / 60%), rgb(255 255 255 / 8%));
+
+  // A favorite's filled star: iOS system yellow with an edge that carries the contrast (light
+  // 5.2 against the surface, 4.3 on the tint; dark the yellow itself, 12.1 / 10.4)
+  --color-favorite: light-dark(#ffcc00, #ffd60a);
+  --color-favorite-edge: light-dark(#b25000, #ffd60a);
+
+  // Errors: light 7.1 / 8.4, dark 7.2 / 7.6 on error surface / surface
+  --color-error: light-dark(#a00016, #ff8c85);
   --color-error-surface: light-dark(#fde8ea, #3a1416);
 
   // Lines: separators between rows (decorative), control borders mark inputs (≥ 3:1;
@@ -75,24 +177,60 @@
   --color-hairline: light-dark(#c6c6c8, #38383a);
   --color-border-control: light-dark(#848489, #8e8e93);
 
-  // Map: the own position is the blue dot known from Apple Maps
-  --color-own-position: #007aff;
+  // Map: the own position stays the blue dot known from Apple Maps and every other map app. Its
+  // hue (211°) lies 30° from the brand indigo (241°), and it is far more saturated than the pale
+  // dark indigo, so it never reads as a selection. Against surface light 4.0, dark 4.7.
+  --color-own-position: light-dark(#007aff, #0a84ff);
+  // Accuracy halo around the own position; decoration, the dot itself carries the meaning
+  --color-own-position-halo: color-mix(in srgb, var(--color-own-position) 18%, transparent);
+
+  // Search radius on the map: a thin outline in the text color, the area inside only faintly
+  // tinted. Opacities, because they must override Leaflet's `stroke-opacity`/`fill-opacity`
+  // attributes. Outline against the tiles: light 6.3 on white, 5.9 on OpenStreetMap land; dark
+  // 8.1 on the inverted tiles (non-text, needs 3:1).
+  --opacity-search-radius-outline: 0.7;
+  --opacity-search-radius-fill: 0.05;
+
+  // Behind the map attribution (OpenStreetMap requires it visible): nearly opaque, so its small
+  // text keeps 7:1 on every tile from white to black: secondary text light at least 8.1, dark
+  // 9.5; links light 8.6, dark 9.4. Opaque with `opaque-materials`.
+  --color-map-attribution-background: color-mix(in srgb, var(--color-surface) 94%, transparent);
 
   // The only shadow color; used by `--shadow-floating`
   --color-shadow: light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 50%));
   --color-scrim: light-dark(rgb(0 0 0 / 20%), rgb(0 0 0 / 48%));
 
-  // Materials: translucent, blurred layers floating above the map and the content
-  --material-menu: light-dark(rgb(255 255 255 / 90%), rgb(44 44 46 / 90%));
-  // Nearly opaque, so the list stays readable over busy map tiles
-  --material-sheet: light-dark(rgb(255 255 255 / 92%), rgb(28 28 30 / 92%));
+  // Materials: translucent, blurred layers floating above the map and the content. Nearly
+  // opaque, so text keeps 7:1 over any backdrop. `--material-edge` is a hairline that only the
+  // opaque fallback below draws.
+  --material-menu: light-dark(rgb(255 255 255 / 95%), rgb(32 32 34 / 95%));
+  --material-sheet: light-dark(rgb(255 255 255 / 96%), rgb(28 28 30 / 97%));
   // Bars on the grouped background, e.g. the page header with its large title
-  --material-bar: light-dark(rgb(242 242 247 / 92%), rgb(0 0 0 / 92%));
+  --material-bar: light-dark(rgb(242 242 247 / 96%), rgb(0 0 0 / 96%));
   --material-blur: blur(20px) saturate(180%);
-  // Segmented control: grey track, raised thumb for the chosen segment (the label marks it too)
+  --material-edge: transparent;
+  --material-edge-shadow: 0 0 0 var(--border-width-hairline) var(--material-edge);
+  // Segmented control: grey track, raised thumb for the chosen segment (the bold label and the
+  // shadow mark it too). Text on the thumb: light 17.0, dark 7.4
   --color-segmented-track: light-dark(rgb(118 118 128 / 12%), rgb(118 118 128 / 24%));
-  --color-segmented-thumb: light-dark(#ffffff, #636366);
-  --color-menu-highlight: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 10%));
+  --color-segmented-thumb: light-dark(#ffffff, #555558);
+  --color-menu-highlight: light-dark(rgb(0 0 0 / 6%), rgb(255 255 255 / 7%));
+  // Selected list row, like a selected cell in iOS: a grey fill (green would read as "cheap")
+  // and a leading bar in the link color, so the selection does not rest on the fill alone. Over
+  // the sheet text 14.8 / 12.8, secondary 8.0 / 8.4, links 7.9 / 7.7 (light / dark); the bar
+  // keeps the same 7.9 / 7.7 against the fill.
+  --color-selection: light-dark(rgb(118 118 128 / 12%), rgb(118 118 128 / 24%));
+  --color-selection-indicator: var(--color-action-text);
+  // Grey fill of the search bar and the filter chips in the sheet (iOS tertiary fill). Text on it
+  // over the sheet: light 14.8, dark 12.8; secondary text light 8.0, dark 8.4; links light 7.9,
+  // dark 7.7. Labels on it still use the text colors, which keep the larger margin
+  --color-search-field: var(--color-segmented-track);
+  // Placeholder of content loading for the first time (`.skeleton-block`), pulsing between the
+  // two fills. Decorative, so no contrast minimum; still heavier than the tertiary fill (12 %),
+  // which vanished over the translucent sheet in light. An edge in --color-border-control draws
+  // it under more contrast and forced colors
+  --color-skeleton: light-dark(rgb(118 118 128 / 20%), rgb(118 118 128 / 32%));
+  --color-skeleton-pulse: light-dark(rgb(118 118 128 / 12%), rgb(118 118 128 / 22%));
 
   // Spacing
   --space-3xs: 0.125rem;
@@ -116,14 +254,16 @@
   // like Apple Maps and Wallet. Sizes follow the iOS text styles at the default Dynamic Type size.
   --font-family-ui: -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
   --font-family-numerals: ui-rounded, 'SF Pro Rounded', var(--font-family-ui);
-  // Caption 1, footnote, subheadline, body, title 3, title 2, large title
-  --font-size-xs: 0.75rem;
+  // Named after the iOS text styles. In `rem`, so every size follows the text size of iOS
+  // (Dynamic Type, see `styles.scss`) and of the browser.
+  --font-size-caption-1: 0.75rem;
   --font-size-footnote: 0.8125rem;
-  --font-size-sm: 0.9375rem;
-  --font-size-md: 1.0625rem;
-  --font-size-lg: 1.25rem;
-  --font-size-xl: 1.375rem;
-  --font-size-2xl: 2.125rem;
+  --font-size-subheadline: 0.9375rem;
+  --font-size-body: 1.0625rem;
+  --font-size-title-3: 1.25rem;
+  --font-size-title-2: 1.375rem;
+  --font-size-title-1: 1.75rem;
+  --font-size-large-title: 2.125rem;
   --font-size-price-hero: clamp(3rem, 2.25rem + 3.5vw, 4.5rem);
   --font-size-price-list: 1.5rem;
   --font-size-price-tag: 1rem;
@@ -131,7 +271,8 @@
   --font-weight-medium: 500;
   --font-weight-bold: 600;
   --font-weight-price: 600;
-  --line-height-base: 1.45;
+  // 1.5 for body text (1.4.8 AAA)
+  --line-height-base: 1.5;
   --line-height-tight: 1.2;
   --line-height-numerals: 1;
   // Tighter tracking for large text, like SF Pro at display sizes
@@ -145,6 +286,12 @@
   --border-width-hairline: 1px;
   --border-width-thin: 1px;
   --border-width-focus: 3px;
+  --border-width-focus-halo: 2px;
+  // Leading bar of a selected list row
+  --border-width-selection-indicator: 4px;
+  // Outline of a filled icon glyph, e.g. the favorite star, in units of the 24-unit icon grid.
+  // Drawn below the fill, so half of it shows.
+  --border-width-icon-outline: 2px;
   // Outlines drawn on the map, e.g. the search radius
   --border-width-map-outline: 1.5px;
   --focus-offset: 2px;
@@ -153,6 +300,40 @@
   --shadow-floating: 0 1px 2px var(--color-shadow), 0 6px 20px var(--color-shadow);
   --shadow-menu:
     0 0 0 var(--border-width-hairline) var(--color-hairline), 0 10px 40px var(--color-shadow);
+  // Plastic price tags on the map: a gloss line at the top, a contact shadow and a soft one;
+  // the selected tag floats higher. List tiles sit on the sheet, so their shadow stays short.
+  --shadow-price-tag:
+    inset 0 1px 0 var(--color-gloss), 0 1px 1px var(--color-shadow), 0 4px 12px var(--color-shadow);
+  --shadow-price-tag-raised:
+    inset 0 1px 0 var(--color-gloss), 0 2px 3px var(--color-shadow), 0 10px 24px var(--color-shadow);
+  // A selected tag keeps its fill and gets an indigo ring around a surface gap (non-text, ≥ 3:1):
+  // the ring against light map tiles at least 6.1 (water), against the gap 9.9; against dark tiles
+  // at least 7.4, the gap 11.1.
+  --shadow-price-tag-selected:
+    0 0 0 var(--border-width-focus-halo) var(--color-selection-ring-gap),
+    0 0 0 calc(var(--border-width-focus-halo) + var(--border-width-focus))
+      var(--color-selection-ring),
+    var(--shadow-price-tag-raised);
+  --shadow-price-tile: inset 0 1px 0 var(--color-gloss), 0 1px 2px var(--color-shadow);
+  // Raised controls (chips, round buttons, action tiles, filled buttons) and their pressed state,
+  // which sinks into the surface
+  --shadow-control:
+    inset 0 1px 0 var(--color-gloss), 0 0 0 var(--border-width-hairline) var(--color-control-edge),
+    0 1px 1px var(--color-shadow), 0 2px 6px var(--color-shadow);
+  --shadow-control-pressed:
+    inset 0 1px 2px var(--color-shadow),
+    0 0 0 var(--border-width-hairline) var(--color-control-edge);
+  // Glass over the map: the phone sheet casts upwards, the side panel all around; both catch the
+  // light along their top edge. Floating map controls get the same edge.
+  --shadow-sheet:
+    inset 0 1px 0 var(--color-material-highlight), 0 -1px 2px var(--color-shadow),
+    0 -8px 32px var(--color-shadow);
+  --shadow-panel:
+    inset 0 1px 0 var(--color-material-highlight), 0 1px 2px var(--color-shadow),
+    0 12px 40px var(--color-shadow);
+  --shadow-floating-control: inset 0 1px 0 var(--color-material-highlight), var(--shadow-floating);
+  // The grabber is pressed into the sheet
+  --shadow-grabber: inset 0 1px 1px var(--color-shadow);
   // Lifts the chosen segment of a segmented control off its track
   --shadow-segmented-thumb: 0 1px 3px var(--color-shadow);
 
@@ -163,48 +344,142 @@
   --icon-size-sm: 1.25rem;
   --icon-size-md: 1.5rem;
   --icon-size-lg: 2.25rem;
+  // The app icon where the app signs a screen, e.g. the settings
+  --layout-app-icon-size: 4rem;
 
   // Layout
   --layout-touch-target: 2.75rem;
-  --layout-rail-width: 5rem;
+  // Capsule of a filter chip, smaller than its touch target, which overhangs it above and below
+  --layout-chip-height: 2.25rem;
+  --layout-chip-overhang: calc((var(--layout-touch-target) - var(--layout-chip-height)) / 2);
+  // An action of a station card (route, favorite, share): icon above its label
+  --layout-action-tile-height: 3.75rem;
   --layout-header-height: 6.25rem;
-  --layout-navigation-height: 4.5rem;
   --layout-content-max-width: 48rem;
-  // Station panel next to the map: fluid between minimum and maximum on medium screens, fixed on
-  // expanded ones
+  // Station panel floating over the map from 48rem (`--layout-panel-width`): fluid between minimum
+  // and maximum on medium screens, fixed on expanded ones
   --layout-panel-width-minimum: 20rem;
   --layout-panel-width-maximum: 24rem;
   --layout-panel-width-expanded: 26rem;
+  --layout-panel-width: clamp(
+    var(--layout-panel-width-minimum),
+    40vw,
+    var(--layout-panel-width-maximum)
+  );
+  // Gap between the floating side panel (from 48rem) and the window edges
+  --layout-panel-inset: var(--space-md);
   --layout-fuel-badge-width: 3.125rem;
   --layout-fuel-badge-height: 2.125rem;
-  --layout-price-column-width: 6.5rem;
-  --layout-spinner-size: 1.5rem;
+  // Price tile of a list row: wide enough for "2,25⁰ €", so the station names line up
+  --layout-price-tile-width: 7rem;
   // The iOS grabber of a sheet: 36 × 5 points
   --layout-grabber-width: 2.25rem;
   --layout-grabber-height: 0.3125rem;
   --layout-search-width-maximum: 28rem;
   --layout-menu-width-minimum: 12rem;
   --layout-map-minimum-height: 20rem;
+  // A dialog such as the settings: page sheet on phones, centered card from 48rem
+  --layout-dialog-width-maximum: 32rem;
+  // A favorite in the horizontal row of the explore sheet
+  --layout-favorite-card-width: 9.5rem;
+  // Height of the on-screen keyboard over the window, written by `injectKeyboardInset()`
+  // (`core/layout/visual-viewport.ts`); 0 where the browser resizes the layout for it instead.
+  --layout-keyboard-inset: 0px;
+  // Height of the strip of the screen below the layout viewport, which iOS 26 leaves in apps
+  // opened from the home screen, written by `injectViewportGapBottom()`
+  // (`core/layout/viewport-gap.ts`); everything fixed to the bottom of the window reaches down by it.
+  --layout-viewport-gap-bottom: 0px;
   --safe-area-top: env(safe-area-inset-top, 0);
   --safe-area-right: env(safe-area-inset-right, 0);
   --safe-area-bottom: env(safe-area-inset-bottom, 0);
   --safe-area-left: env(safe-area-inset-left, 0);
 
-  // Stacking: above Leaflet panes and controls (max. 1000). From bottom to top: the search over
-  // the map, the sheet (a fully opened one covers the search), the navigation and page header,
-  // the skip link.
+  // Stacking: above Leaflet panes and controls (max. 1000). From bottom to top: the map controls
+  // (locate, area search), the sheet (a fully opened one covers the map controls), the page header, app-wide notices (new version), the skip link.
   --layer-chrome: 1100;
-  --layer-map-search: calc(var(--layer-chrome) - 2);
+  --layer-map-controls: calc(var(--layer-chrome) - 2);
   --layer-sheet: calc(var(--layer-chrome) - 1);
-  --layer-skip-link: calc(var(--layer-chrome) + 1);
+  --layer-notice: calc(var(--layer-chrome) + 1);
+  --layer-skip-link: calc(var(--layer-chrome) + 2);
+  // Within one component: behind its parent's content (e.g. a pseudo-element under the board of
+  // a price tag), and above its siblings (e.g. a focused button whose ring overlaps them)
+  --layer-behind-parent: -1;
+  --layer-above-siblings: 1;
 
   // Motion
   --duration-short: 150ms;
   --duration-medium: 250ms;
-  // One turn of the loading spinner
+  // One turn of the busy refresh icon
   --duration-spin: 1s;
+  // One fade of the skeleton placeholders between their two fills
+  --duration-pulse: 1.2s;
+  // Skeleton placeholders stay invisible this long, so quick answers never flash grey
+  --delay-skeleton-appearance: 300ms;
   --easing-standard: cubic-bezier(0.2, 0, 0, 1);
   // Map price tags: the cheapest a little larger than the others, the selected one the largest
   --scale-marker-cheapest: 1.1;
   --scale-marker-selected: 1.15;
+  // A centered dialog (from 48rem) grows into place from slightly smaller as it opens
+  --scale-dialog-entrance: 0.96;
+}
+
+:root {
+  @include breakpoints.expanded {
+    --layout-panel-width: var(--layout-panel-width-expanded);
+  }
+}
+
+// Opaque materials where translucency hurts legibility or is not drawn: on request of the user
+// (reduced transparency, more contrast) and without `backdrop-filter`. A hairline takes over the
+// separation the blur gave.
+@mixin opaque-materials {
+  --color-chrome: var(--color-chrome-opaque);
+  --material-menu: var(--color-surface);
+  --material-sheet: var(--color-surface);
+  --material-bar: var(--color-canvas);
+  --material-blur: none;
+  --material-edge: var(--color-border-control);
+  --color-map-attribution-background: var(--color-surface);
+}
+
+:root {
+  // Flat fills: no gradient, sheen or gloss where contrast or system colors come first; controls
+  // draw their edge instead
+  @media (prefers-contrast: more), (forced-colors: active) {
+    --gradient-control-sheen: none;
+    --gradient-action: none;
+    --gradient-action-hover: none;
+    --gradient-action-pressed: none;
+    --color-material-highlight: transparent;
+    --color-control-edge: var(--color-border-control);
+    --gradient-price-low: none;
+    --gradient-price-medium: none;
+    --gradient-price-high: none;
+    --gradient-price-cheapest: none;
+    --gradient-price-neutral: none;
+    --color-gloss: transparent;
+  }
+}
+
+:root {
+  @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+    @include opaque-materials;
+  }
+
+  @supports not (backdrop-filter: blur(1px)) {
+    @include opaque-materials;
+  }
+
+  // Windows high contrast: system colors replace every token; the edge stays visible.
+  @media (forced-colors: active) {
+    --color-chrome: Canvas;
+    --material-menu: Canvas;
+    --material-sheet: Canvas;
+    --material-bar: Canvas;
+    --material-blur: none;
+    --material-edge: CanvasText;
+    --color-map-attribution-background: Canvas;
+    --color-focus-ring: Highlight;
+    --color-focus-ring-halo: Canvas;
+  }
 }

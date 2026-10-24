@@ -1,29 +1,67 @@
 # Response headers of the static assets (Cloudflare Workers). Copied unchanged into
 # dist/web/browser by the Angular build. They do not apply to the Worker's /api responses.
-# Headers of all matching rules are combined.
+# Headers of all matching rules are combined; `! Name` removes a header set by a broader rule.
 
+# Everything revalidates on every request unless a rule below allows longer caching. Deep
+# links, unknown paths and trailing-slash variants get index.html through
+# `not_found_handling: single-page-application`, but rules match the requested path, not the
+# file served, so only a default for every path keeps index.html from going stale. Every rule
+# below removes the inherited Cache-Control first.
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(self), camera=(), microphone=()
+  Cache-Control: no-cache
 
 /manifest.webmanifest
   Content-Type: application/manifest+json
+  ! Cache-Control
   Cache-Control: public, max-age=3600
 
 # Angular emits scripts and styles with a content hash (outputHashing: all), and
 # fonts and images referenced from styles land hashed in /media/.
 /*.js
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 /*.css
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 /media/*
+  ! Cache-Control
   Cache-Control: public, max-age=31536000, immutable
 
 # Icons keep stable names, so they may only be cached briefly.
 /icons/*
+  ! Cache-Control
   Cache-Control: public, max-age=86400
 /favicon.svg
+  ! Cache-Control
   Cache-Control: public, max-age=86400
 /favicon.ico
+  ! Cache-Control
   Cache-Control: public, max-age=86400
+
+# The service worker and its manifest decide which app version runs, so the browser must
+# revalidate them on every request; `/*.js` would otherwise make the workers immutable for a
+# year. index.html (also served for `/`) is what the service worker compares against the
+# manifest; the default above already covers it, the explicit rules keep a broader rule added
+# later from sneaking in a long cache time.
+/ngsw-worker.js
+  ! Cache-Control
+  Cache-Control: no-cache
+/safety-worker.js
+  ! Cache-Control
+  Cache-Control: no-cache
+# Legacy name of the safety worker, emitted by the build as well.
+/worker-basic.min.js
+  ! Cache-Control
+  Cache-Control: no-cache
+/ngsw.json
+  ! Cache-Control
+  Cache-Control: no-cache
+/index.html
+  ! Cache-Control
+  Cache-Control: no-cache
+/
+  ! Cache-Control
+  Cache-Control: no-cache

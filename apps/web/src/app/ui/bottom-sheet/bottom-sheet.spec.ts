@@ -19,6 +19,7 @@ import { FakeResizeObserver } from '../../../testing/fake-resize-observer';
       (heightChanged)="heights.push($event)">
       <p bottomSheetHeader>12 Tankstellen</p>
       <a href="/stations/1">TotalEnergies</a>
+      <dialog open aria-label="Einstellungen"><button type="button">Fertig</button></dialog>
     </app-bottom-sheet>
   `,
 })
@@ -47,7 +48,7 @@ const render = async ({ isCompact }: { isCompact: boolean }) => {
   return { fixture, element, handle, host: fixture.componentInstance };
 };
 
-/** A sheet of 800 px whose handle and header take 100 px. */
+/** A sheet of 800 px, 100 px below the top of the window, whose handle and header take 100 px. */
 const layOut = async (element: HTMLElement, settle: () => Promise<unknown>) => {
   const sheet = element.querySelector('section');
   const content = element.querySelector('.bottom-sheet__content');
@@ -55,6 +56,7 @@ const layOut = async (element: HTMLElement, settle: () => Promise<unknown>) => {
     throw new Error('BottomSheet rendered no sheet');
   }
   Object.defineProperty(sheet, 'offsetHeight', { value: 800 });
+  Object.defineProperty(sheet, 'offsetTop', { value: 100 });
   Object.defineProperty(content, 'offsetTop', { value: 100 });
   FakeResizeObserver.latest?.resize();
   await settle();
@@ -142,6 +144,16 @@ describe('BottomSheet', () => {
     expect(handle.getAttribute('aria-label')).toBe('Liste verkleinern');
   });
 
+  it('peeks with the strip under the home indicator in addition to handle and header', async () => {
+    const { element, fixture } = await render({ isCompact: true });
+    const sheet = element.querySelector('section');
+    sheet?.style.setProperty('padding-bottom', '34px');
+
+    await layOut(element, () => fixture.whenStable());
+
+    expect(sheet?.style.getPropertyValue('--bottom-sheet-offset')).toBe('666px');
+  });
+
   it('opens to half when focus moves into the content at peek', async () => {
     const { fixture, element, host } = await render({ isCompact: true });
 
@@ -151,6 +163,15 @@ describe('BottomSheet', () => {
     expect(host.snapPosition()).toBe('half');
   });
 
+  it('stays down when the focus moves into an open dialog over the page', async () => {
+    const { fixture, element, host } = await render({ isCompact: true });
+
+    element.querySelector<HTMLElement>('dialog button')?.focus();
+    await fixture.whenStable();
+
+    expect(host.snapPosition()).toBe('peek');
+  });
+
   it('reports the visible height after each snap', async () => {
     const { fixture, element, handle, host } = await render({ isCompact: true });
     await layOut(element, () => fixture.whenStable());
@@ -158,7 +179,28 @@ describe('BottomSheet', () => {
     handle.click();
     await fixture.whenStable();
 
-    expect(host.heights.slice(-2)).toEqual([100, 400]);
+    expect(host.heights.slice(-2)).toEqual([100, 495]);
+  });
+
+  it('opens half to a share of the window, not of the screen strip below it', async () => {
+    const { fixture, element, handle, host } = await render({ isCompact: true });
+    const sheet = element.querySelector('section');
+    const content = element.querySelector('.bottom-sheet__content');
+    if (sheet === null || !(content instanceof HTMLElement)) {
+      throw new Error('BottomSheet rendered no sheet');
+    }
+    // A window of 900 px; the sheet reaches 60 px further down into the gap iOS leaves below it.
+    sheet.style.bottom = '-60px';
+    Object.defineProperty(sheet, 'offsetHeight', { value: 860 });
+    Object.defineProperty(sheet, 'offsetTop', { value: 100 });
+    Object.defineProperty(content, 'offsetTop', { value: 100 });
+    FakeResizeObserver.latest?.resize();
+    await fixture.whenStable();
+
+    handle.click();
+    await fixture.whenStable();
+
+    expect(host.heights.at(-1)).toBe(495);
   });
 
   it('slides down by the hidden part of the sheet', async () => {
@@ -186,7 +228,7 @@ describe('BottomSheet', () => {
     await fixture.whenStable();
 
     expect(host.snapPosition()).toBe('half');
-    expect(sheet.style.getPropertyValue('--bottom-sheet-offset')).toBe('400px');
+    expect(sheet.style.getPropertyValue('--bottom-sheet-offset')).toBe('305px');
   });
 
   it('carries a quick flick on to the next position', async () => {

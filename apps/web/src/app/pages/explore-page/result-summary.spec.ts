@@ -1,6 +1,6 @@
 import { DEFAULT_SEARCH_CENTER } from '../../core/search-center/search-center';
 import type { SearchCenter } from '../../core/search-center/search-center';
-import { describeEmptyResult, describeResult } from './result-summary';
+import { describeEmptyResult, describeResult, describeResultBriefly } from './result-summary';
 
 const MAP_AREA: SearchCenter = {
   latitude: 48.8532,
@@ -29,6 +29,16 @@ describe('describeResult', () => {
     expect(describeResult(2, 5, MAP_AREA)).toBe(
       '2 Tankstellen im Umkreis von 5\u00a0km um die Kartenmitte'
     );
+  });
+});
+
+describe('describeResultBriefly', () => {
+  it('names count and radius on one short line that never breaks', () => {
+    expect(describeResultBriefly(4, 5)).toBe('4\u00a0Tankstellen\u00a0·\u00a05\u00a0km');
+  });
+
+  it('uses the singular for a single station', () => {
+    expect(describeResultBriefly(1, 10)).toBe('1\u00a0Tankstelle\u00a0·\u00a010\u00a0km');
   });
 });
 

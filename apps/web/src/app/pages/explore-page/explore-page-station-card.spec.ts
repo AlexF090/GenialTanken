@@ -2,7 +2,13 @@ import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { StationsMap } from '../../ui/stations-map/stations-map';
-import { configurePageTest, getButton, hostElementOf, textOf } from '../../../testing/render-page';
+import {
+  accessibleTextOf,
+  configurePageTest,
+  getButton,
+  hostElementOf,
+  textOf,
+} from '../../../testing/render-page';
 import type { PageTestContext } from '../../../testing/render-page';
 import {
   essoStation,
@@ -16,6 +22,7 @@ import { STATIONS_URL, stationsUrl, stationUrl } from '../../../testing/api-urls
 import {
   childComponent,
   EIFFEL_TOWER_E5_URL,
+  resultSummaryElement,
   selectedStationTitles,
 } from './explore-page-test-helpers';
 
@@ -57,14 +64,30 @@ describe('ExplorePage with a station card', () => {
     await context.settle();
 
     await navigate(`/stations/${totalStation.id}`);
-    context.httpTesting.expectOne(TOTAL_DETAILS_URL).flush(withoutDistance(totalStation));
-    await context.settle();
+    // The station is among the results, so the card needs no request of its own.
+    context.httpTesting.expectNone(TOTAL_DETAILS_URL);
 
     expect(listContainer(element)?.hidden).toBe(true);
     expect(textOf(element.querySelector('app-station-detail-page h2'))).toBe('TotalEnergies');
     expect(childComponent(harness.fixture, StationsMap).selectedStationIdentifier()).toBe(
       totalStation.id
     );
+  });
+
+  it('keeps the page heading and the offline notice while a card is open', async () => {
+    const { element, navigate } = await openAt('/');
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
+    await context.settle();
+
+    await navigate(`/stations/${totalStation.id}`);
+
+    const heading = element.querySelector('main h1');
+    expect(heading?.closest('[hidden]')).toBeNull();
+    expect(accessibleTextOf(heading)).toBe('GenialTanken');
+    expect(
+      element.querySelector('.explore-page__place-search')?.closest('[hidden]')
+    ).not.toBeNull();
+    expect(element.querySelector('.explore-page__offline')?.closest('[hidden]')).toBeNull();
   });
 
   it('returns to the list with the station still selected when the card closes', async () => {
@@ -100,7 +123,7 @@ describe('ExplorePage with a station card', () => {
     await context.settle();
     await harness.fixture.whenStable();
 
-    const summary = element.querySelector('main app-bottom-sheet [role="status"]');
+    const summary = resultSummaryElement(element);
     expect(document.activeElement).toBe(summary);
     expect(textOf(summary)).toBe(
       'Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden.'
@@ -120,8 +143,8 @@ describe('ExplorePage with a station card', () => {
     sheetContent.scrollTop = 120;
 
     await navigate(`/stations/${totalStation.id}`);
-    context.httpTesting.expectOne(TOTAL_DETAILS_URL).flush(withoutDistance(totalStation));
-    await context.settle();
+    // The station is among the results, so the card needs no request of its own.
+    context.httpTesting.expectNone(TOTAL_DETAILS_URL);
     expect(sheetContent.scrollTop).toBe(0);
 
     await navigate('/');
@@ -140,7 +163,7 @@ describe('ExplorePage with a station card', () => {
     await context.settle();
 
     expect(router.url).toBe(`/stations/${carrefourStation.id}`);
-    context.httpTesting.expectOne(stationUrl(carrefourStation.id));
+    context.httpTesting.expectNone(stationUrl(carrefourStation.id));
   });
 
   it('moves the search to a station outside the results, named after it', async () => {
@@ -152,9 +175,7 @@ describe('ExplorePage with a station card', () => {
     context.httpTesting.expectOne(stationsUrl(essoStation.address)).flush([essoStation]);
     await context.settle();
 
-    expect(textOf(element.querySelector('main app-bottom-sheet [role="status"]'))).toBe(
-      '1 Tankstelle im Umkreis von 5 km um Esso'
-    );
+    expect(textOf(resultSummaryElement(element))).toBe('1 Tankstelle im Umkreis von 5 km um Esso');
     context.httpTesting.expectNone(request => request.url === STATIONS_URL);
   });
 });

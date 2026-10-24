@@ -1,8 +1,6 @@
-<span class="route-button" [class.route-button--labelled]="isLabelled()">
-  <app-icon name="directions" class="route-button__icon" />
-  @if (isLabelled()) {
-    <span class="route-button__label" aria-hidden="true">Route</span>
-  }
+<span class="route-button action-tile action-tile--primary">
+  <app-icon name="directions" />
+  <span class="action-tile__label" aria-hidden="true">Route</span>
   <select
     #select
     class="route-button__select"

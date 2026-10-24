@@ -7,14 +7,18 @@ import {
   MINIMUM_RADIUS_IN_KILOMETERS,
 } from '@genialtanken/contracts';
 import type { ColorSchemePreference } from '@genialtanken/contracts';
+import { ApplicationUpdateStore } from '../../core/application-update/application-update-store';
 import { uniqueIdentifier } from '../../core/dom/unique-identifier';
+import { injectCloseToExplore } from '../../core/navigation/close-to-explore';
 import { fuelTypeOptions } from '../../core/fuel-type-labels';
 import type { LabeledOption } from '../../core/labeled-option';
 import { SettingsStore } from '../../core/settings/settings-store';
 import type { Settings } from '../../core/settings/settings-store';
 import { Icon } from '../../ui/icon/icon';
 import { ExternalLink } from '../../ui/external-link/external-link';
-import { PageHeader } from '../../ui/page-header/page-header';
+import { SheetDialog } from '../../ui/sheet-dialog/sheet-dialog';
+import { UpdateNotice } from '../../ui/update-notice/update-notice';
+import { Wordmark } from '../../ui/wordmark/wordmark';
 
 type SearchSettings = Pick<Settings, 'fuelType' | 'radiusInKilometers'>;
 
@@ -24,16 +28,22 @@ const COLOR_SCHEME_LABELS: Record<ColorSchemePreference, string> = {
   dark: 'Dunkel',
 };
 
-/** Changes apply immediately and persist; there is nothing to submit. */
+/**
+ * A modal sheet over the explore page, so map and list stay where they were. Changes apply
+ * immediately and persist; there is nothing to submit. Closing returns to the list.
+ */
 @Component({
   selector: 'app-settings-page',
-  imports: [PageHeader, FormField, Icon, KilometersPipe, ExternalLink],
+  imports: [SheetDialog, FormField, Icon, KilometersPipe, ExternalLink, UpdateNotice, Wordmark],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',
 })
 export class SettingsPage {
   private readonly settingsStore = inject(SettingsStore);
+  private readonly closeToExplore = injectCloseToExplore();
+  private readonly applicationUpdate = inject(ApplicationUpdateStore);
+  protected readonly pendingReload = this.applicationUpdate.pendingReload;
 
   protected readonly fuelTypeOptions = fuelTypeOptions('short');
   protected readonly colorSchemeOptions: readonly LabeledOption<ColorSchemePreference>[] =
@@ -64,6 +74,14 @@ export class SettingsPage {
         this.settingsStore.update({ fuelType, radiusInKilometers });
       }
     });
+  }
+
+  protected reloadApplication(): void {
+    void this.applicationUpdate.reload();
+  }
+
+  protected close(): void {
+    this.closeToExplore();
   }
 
   protected selectColorScheme(colorScheme: ColorSchemePreference): void {

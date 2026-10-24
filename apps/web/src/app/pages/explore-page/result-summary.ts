@@ -16,6 +16,14 @@ export const describeResult = (
 ): string =>
   `${describeStationCount(stationCount)} im Umkreis von ${formatKilometers(radiusInKilometers)} um ${describeCenter(center)}`;
 
+/**
+ * "3 Tankstellen · 5 km": the visible line under the filters, where the search field already
+ * names the place. Screen readers get `describeResult` instead. Non-breaking spaces throughout, so
+ * the line never breaks around "·".
+ */
+export const describeResultBriefly = (stationCount: number, radiusInKilometers: number): string =>
+  `${String(stationCount)}\u00a0${pluralize(stationCount, 'Tankstelle', 'Tankstellen')}\u00a0·\u00a0${formatKilometers(radiusInKilometers)}`;
+
 /** "Keine Tankstellen mit Preis für E5 im Umkreis von 5 km gefunden." */
 export const describeEmptyResult = (fuelLabel: string, radiusInKilometers: number): string =>
   `Keine Tankstellen mit Preis für ${fuelLabel} im Umkreis von ${formatKilometers(radiusInKilometers)} gefunden.`;

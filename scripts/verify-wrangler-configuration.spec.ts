@@ -29,6 +29,12 @@ describe('findWranglerConfigurationProblems', () => {
     expect(findWranglerConfigurationProblems(text)).toEqual([]);
   });
 
+  it('accepts cron triggers', () => {
+    const text = '{ "name": "genialtanken", "triggers": { "crons": ["*/10 * * * *"] } }';
+
+    expect(findWranglerConfigurationProblems(text)).toEqual([]);
+  });
+
   it('accepts trailing commas', () => {
     expect(findWranglerConfigurationProblems('{ "name": "genialtanken", }')).toEqual([]);
   });

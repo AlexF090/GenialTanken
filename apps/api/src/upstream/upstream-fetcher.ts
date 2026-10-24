@@ -24,6 +24,13 @@ export interface UpstreamJsonRequest<Schema extends z.ZodType> extends UpstreamR
   schema: Schema;
 }
 
+/** An answer together with the time it came from the upstream, also when served from the cache. */
+export interface UpstreamAnswer<Body> {
+  body: Body;
+  /** `Date.now()` when the upstream answered. */
+  fetchedAt: number;
+}
+
 interface BodyFormat<Body> {
   accept: string;
   cacheNamespace: string;
@@ -48,12 +55,20 @@ export class UpstreamFetcher {
   ) {}
 
   /** Validates the answer with the schema; a 404 is a failure like any other. */
-  async fetchJson<Schema extends z.ZodType>({
+  async fetchJson<Schema extends z.ZodType>(
+    request: UpstreamJsonRequest<Schema>
+  ): Promise<z.infer<Schema>> {
+    const { body } = await this.fetchJsonAnswer(request);
+    return body;
+  }
+
+  /** Like `fetchJson`, for callers that must know how old a cached answer is. */
+  async fetchJsonAnswer<Schema extends z.ZodType>({
     schema,
     ...request
-  }: UpstreamJsonRequest<Schema>): Promise<z.infer<Schema>> {
+  }: UpstreamJsonRequest<Schema>): Promise<UpstreamAnswer<z.infer<Schema>>> {
     const { pathname } = request.url;
-    const body = await this.fetchCached(request, {
+    const answer = await this.fetchCached(request, {
       accept: 'application/json',
       cacheNamespace: 'upstream-json',
       read: async response => {
@@ -66,15 +81,16 @@ export class UpstreamFetcher {
         return parsed.data;
       },
     });
-    if (body === undefined) {
+    if (answer === undefined) {
       throw new UpstreamError(`GET ${pathname} responded with status ${String(NOT_FOUND_STATUS)}`);
     }
-    return body;
+    return answer;
   }
 
   /** For data sources without a JSON API, e.g. HTML pages; resolves to `undefined` on 404. */
   async fetchText(request: UpstreamRequest): Promise<string | undefined> {
-    return this.fetchCached(request, TEXT_FORMAT);
+    const answer = await this.fetchCached(request, TEXT_FORMAT);
+    return answer?.body;
   }
 
   private async fetchCached<Body>(
@@ -85,9 +101,9 @@ export class UpstreamFetcher {
       signal,
     }: UpstreamRequest,
     { accept, cacheNamespace, read }: BodyFormat<Body>
-  ): Promise<Body | undefined> {
+  ): Promise<UpstreamAnswer<Body> | undefined> {
     const cacheKey = toCacheKey(cacheNamespace, url.toString());
-    const cached = await this.cache.get<Body>(cacheKey);
+    const cached = await this.cache.get<UpstreamAnswer<Body>>(cacheKey);
     if (cached !== undefined) {
       return cached;
     }
@@ -101,6 +117,7 @@ export class UpstreamFetcher {
     if (response === undefined) {
       return undefined;
     }
+    const fetchedAt = Date.now();
     let body: Body;
     try {
       body = await read(response);
@@ -108,7 +125,8 @@ export class UpstreamFetcher {
       throw error instanceof UpstreamError ? error : toUpstreamError(url, error, signal);
     }
 
-    await this.cache.set(cacheKey, body, cacheTimeToLiveInMilliseconds);
-    return body;
+    const answer = { body, fetchedAt };
+    await this.cache.set(cacheKey, answer, cacheTimeToLiveInMilliseconds);
+    return answer;
   }
 }

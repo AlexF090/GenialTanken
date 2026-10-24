@@ -1,8 +1,25 @@
-<app-page-header title="Favoriten" />
-<main class="page-content favorites">
+<section class="favorites" [attr.aria-labelledby]="titleIdentifier">
+  <div class="favorites__header">
+    <button type="button" class="favorites__back" (click)="close()">
+      <app-icon name="chevron-left" class="favorites__back-icon" />Zurück
+    </button>
+    <h2 #title [id]="titleIdentifier" class="favorites__title" tabindex="-1">Favoriten</h2>
+  </div>
+
+  <!-- Rendered empty with the page and filled afterwards: screen readers announce changes of a live region, not the text it appears with. The placeholders are silent. -->
+  <div class="favorites__loading visually-hidden" role="status">
+    @if (announcesLoading()) {
+      Favoriten werden geladen …
+    }
+  </div>
+
   @if (hasFavorites()) {
-    <h2 #contentHeading class="visually-hidden" tabindex="-1">Gespeicherte Tankstellen</h2>
-    <app-loading-state [isLoading]="isLoading()" label="Favoriten werden geladen …" />
+    <!-- Always rendered, so screen readers announce the notice when the connection drops. -->
+    <div class="favorites__offline" role="status">
+      @if (offlineMessage(); as message) {
+        <p class="message">{{ message }}</p>
+      }
+    </div>
     @if (errorMessage(); as message) {
       <p class="message message--error" role="alert">{{ message }}</p>
     }
@@ -20,19 +37,25 @@
       [fuelType]="fuelType()"
       [favoriteStationIdentifiers]="favoriteStationIdentifiers()"
       (favoriteToggled)="toggleFavorite($event)" />
+    <!-- Only before the first favorites: a reload keeps them in view. -->
+    @if (isLoading() && stations().length === 0) {
+      <app-skeleton-rows class="favorites__list" [count]="placeholderCount()" />
+    }
     @if (showsFrenchPrices()) {
       <app-data-source-credit />
     }
   } @else {
     <div class="empty-favorites">
-      <h2 #contentHeading class="empty-favorites__title" tabindex="-1">
+      <h3 #emptyStateHeading class="empty-favorites__title" tabindex="-1">
         Keine Favoriten gespeichert
-      </h2>
+      </h3>
       <p class="empty-favorites__text">
         Tippe bei einer Tankstelle auf den Stern. Sie erscheint dann hier mit ihren aktuellen
         Preisen, ganz ohne Suche.
       </p>
-      <a class="button" routerLink="/">Tankstellen erkunden</a>
+      <a class="button" [href]="exploreHref" (click)="closeFromLink($event)"
+        >Tankstellen erkunden</a
+      >
     </div>
   }
-</main>
+</section>
