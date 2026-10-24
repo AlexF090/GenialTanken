@@ -155,7 +155,8 @@ Every visit starts centered on the Eiffel Tower in Paris. The app asks for your 
 | `UPSTREAM_TIMEOUT_IN_MILLISECONDS`                     | `8000`                                | Timeout per upstream request                                                                                                                  |
 | `CACHE_TIME_TO_LIVE_IN_SECONDS`                        | `300`                                 | Cache lifetime of upstream responses                                                                                                          |
 | `CACHE_MAXIMUM_ENTRIES`                                | `5000`                                | Maximum number of in-memory cache entries; the least recently used are evicted beyond it                                                      |
-| `RATE_LIMIT_REQUESTS_PER_MINUTE`                       | `60`                                  | Requests per client and minute                                                                                                                |
+| `FRANCE_SEARCHED_RECORDS_MAXIMUM_ENTRIES`              | `2000`                                | Records kept from recent French searches for detail and favorites lookups, apart from the cache; the oldest are evicted beyond it             |
+| `RATE_LIMIT_REQUESTS_PER_MINUTE`                       | `60`                                  | Requests per client, route and minute                                                                                                         |
 | `PROXY_SHARED_SECRET`                                  | _(unset)_                             | Shared with the Cloudflare Worker (same name there, at least 32 characters); only then is the forwarded client address used for rate limiting |
 
 Invalid values stop the API at startup with a clear message. The API does not read `.env` files; export variables or use `node --env-file`.
