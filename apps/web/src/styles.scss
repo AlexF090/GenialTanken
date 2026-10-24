@@ -25,19 +25,6 @@ html {
   background-color: var(--color-surface);
 }
 
-// The window of an installed iOS app ends one status bar height short of the screen, which leaves
-// a strip below the page. `min()` caps the height at the large viewport so the page never scrolls
-// (WebKit bug 316008).
-@media (display-mode: standalone) {
-  html {
-    min-height: min(100lvh, calc(100% + env(safe-area-inset-top)));
-  }
-
-  body {
-    min-height: 100%;
-  }
-}
-
 // Dynamic Type: on iOS the root font follows the text size chosen in the system settings, so every
 // `rem` grows with it. Only on touch devices (`-webkit-touch-callout` is iOS only): on macOS the
 // system body style is 13px and would shrink the whole app.
@@ -52,6 +39,19 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+}
+
+// The window of an installed iOS app ends one status bar height short of the screen, which leaves
+// a strip below the page. `min()` caps the height at the large viewport so the page never scrolls
+// (WebKit bug 316008).
+@media (display-mode: standalone) {
+  html {
+    min-height: min(100lvh, calc(100% + env(safe-area-inset-top)));
+  }
+
+  body {
+    min-height: 100%;
+  }
 }
 
 body {
