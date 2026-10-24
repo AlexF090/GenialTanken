@@ -22,7 +22,7 @@
 
 // Large title of the first screen of an iOS app or a page
 @mixin large-title {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-large-title);
   font-weight: var(--font-weight-bold);
   letter-spacing: var(--letter-spacing-large-title);
 }

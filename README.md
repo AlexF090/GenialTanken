@@ -10,6 +10,11 @@ Live: https://genialtanken.alexf090.workers.dev
 
 Find the cheapest fuel nearby: current prices of the gas stations around you as a list or on a map, filtered by fuel type and radius (up to 30 km).
 
+- **Map first, like Apple Maps:** a full-screen map with price tags under a draggable sheet (a floating side panel on larger screens) that holds the place search, filter chips for fuel, radius and sort order, your favorites and the station list. A station opens as a card with route, favorite and share actions; settings open as a dialog over the map.
+- **Installable and offline-ready:** a service worker keeps the app itself, never the prices, so the installed app opens offline, says so and reloads the prices once you are back online; a notice offers a reload when a new version is out.
+- **Accessible:** built for WCAG 2.2 AAA, with 7:1 text contrast, a two-tone focus ring, 44 px touch targets, Dynamic Type on iOS and opaque surfaces when you ask for reduced transparency or more contrast.
+- **Quick to start:** the API sleeps on its free tier; the app wakes it on start, and a cron trigger keeps it awake during the day.
+
 GenialTanken started as a React capstone project and is being rebuilt with Angular and NestJS. See [ROADMAP.md](ROADMAP.md) for decisions and next steps.
 
 ## Screenshots
@@ -18,7 +23,7 @@ GenialTanken started as a React capstone project and is being rebuilt with Angul
 
 ![GenialTanken on three phones: the map with price tags above the station list at half height, the details card of a station with its prices per fuel, and the same explore view in dark mode](docs/images/product-mobile.jpg)
 
-The images show the live app with real prices. To regenerate them, run `node e2e/product-shots/capture-product-shots.ts` (details in the script header).
+The images show the live app with real prices; they predate the redesign above and are refreshed once it is deployed to production. To regenerate them, run `node e2e/product-shots/capture-product-shots.ts` (details in the script header).
 
 ## Architecture
 
@@ -150,7 +155,8 @@ Every visit starts centered on the Eiffel Tower in Paris. The app asks for your 
 | `UPSTREAM_TIMEOUT_IN_MILLISECONDS`                     | `8000`                                | Timeout per upstream request                                                                                                                  |
 | `CACHE_TIME_TO_LIVE_IN_SECONDS`                        | `300`                                 | Cache lifetime of upstream responses                                                                                                          |
 | `CACHE_MAXIMUM_ENTRIES`                                | `5000`                                | Maximum number of in-memory cache entries; the least recently used are evicted beyond it                                                      |
-| `RATE_LIMIT_REQUESTS_PER_MINUTE`                       | `60`                                  | Requests per client and minute                                                                                                                |
+| `FRANCE_SEARCHED_RECORDS_MAXIMUM_ENTRIES`              | `2000`                                | Records kept from recent French searches for detail and favorites lookups, apart from the cache; the oldest are evicted beyond it             |
+| `RATE_LIMIT_REQUESTS_PER_MINUTE`                       | `60`                                  | Requests per client, route and minute                                                                                                         |
 | `PROXY_SHARED_SECRET`                                  | _(unset)_                             | Shared with the Cloudflare Worker (same name there, at least 32 characters); only then is the forwarded client address used for rate limiting |
 
 Invalid values stop the API at startup with a clear message. The API does not read `.env` files; export variables or use `node --env-file`.
@@ -176,14 +182,14 @@ Locally `pnpm preview:web` reads both from `apps/web/.dev.vars` (git-ignored).
 
 - **Unit (Vitest):** contracts schemas, API mappers and parsers, Angular services and components through their public interfaces.
 - **API end-to-end (Supertest):** the real Nest application against fake upstream servers for the French open data, the French station pages and Photon.
-- **Browser end-to-end (Playwright):** web + API + a local stand-in for the French open data API and the Photon place search serving recorded real data, on their own ports (web 4300, API 3100, mock upstream 4110), so a running dev server is never reused. Every request leaving the app fails the run unless it is mocked; a global teardown checks the mock upstream for unexpected requests. A desktop project covers all pages (including axe WCAG 2.2 AA checks in light and dark mode); a phone project (Pixel 7) covers the bottom sheet and repeats the axe checks in the phone viewport.
+- **Browser end-to-end (Playwright):** web + API + a local stand-in for the French open data API and the Photon place search serving recorded real data, on their own ports (web 4300, API 3100, mock upstream 4110), so a running dev server is never reused. Every request leaving the app fails the run unless it is mocked; a global teardown checks the mock upstream for unexpected requests. A desktop project covers all pages (including axe WCAG 2.2 AAA checks in light and dark mode, with more contrast and with reduced transparency); a phone project (Pixel 7) covers the bottom sheet and repeats the axe checks in the phone viewport. A `pwa` project runs against a production build with the service worker (`e2e/pwa-server.ts`, port 4400) and checks the offline start.
 
 ## Deployment
 
 All services run on free tiers:
 
 - **Web:** Cloudflare Worker `genialtanken` with static assets, deployed by GitHub Actions after CI passed: production on `main` (https://genialtanken.alexf090.workers.dev), a preview version per pull request that is ready for review (`https://pr-<number>-genialtanken.alexf090.workers.dev`). CI skips draft pull requests, so open them as drafts and mark them ready when final. The Worker serves the single-page app and forwards `/api/*` to the API (`run_worker_first`).
-- **API:** Render free web service built from `apps/api/Dockerfile` ([render.yaml](render.yaml)); deploys after the GitHub checks of the commit passed. The free tier sleeps after 15 minutes without traffic; the first request can take about a minute, which the web app announces.
+- **API:** Render free web service built from `apps/api/Dockerfile` ([render.yaml](render.yaml)); deploys after the GitHub checks of the commit passed. The free tier sleeps after 15 minutes without traffic and then needs about a minute to start. A cron trigger of the Worker calls `/health` every 10 minutes from 06:00 to midnight Berlin time (about 560 of the 750 free instance hours a month), and the web app calls `/api/wake-up` on start; a request during a cold start shows a hint.
 
 Runbook for settings, secrets, deploys and releases: [docs/deployment.md](docs/deployment.md).
 

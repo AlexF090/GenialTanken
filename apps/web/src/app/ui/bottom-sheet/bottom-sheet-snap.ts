@@ -12,19 +12,35 @@ const VELOCITY_PROJECTION_IN_MILLISECONDS = 200;
 /** Visible height in pixels per snap position. */
 export type SnapHeights = Record<SnapPosition, number>;
 
+/** Half opens the sheet to this share of the window: room for two or three stations. */
+const HALF_SHARE_OF_WINDOW = 0.55;
+
+/** Half shows at least about two rows of the station list more than peek. */
+const MINIMUM_HALF_ABOVE_PEEK_IN_PIXELS = 136;
+
 /**
- * Peek shows the handle and header, half shows half the sheet, full shows all of it. Small
+ * Peek shows the handle and header, half 55 % of the window like the middle detent of Apple
+ * Maps, full all of the sheet. On low windows (landscape phones) half rises to two rows above
+ * peek, so it never lands just above peek; where even that does not fit, half meets full. Small
  * sheets collapse the positions instead of inverting their order.
  */
 export const snapHeights = ({
   sheetHeight,
   peekHeight,
+  windowHeight,
 }: {
   sheetHeight: number;
   peekHeight: number;
+  windowHeight: number;
 }): SnapHeights => {
   const peek = Math.min(peekHeight, sheetHeight);
-  const half = Math.min(Math.max(Math.round(sheetHeight / 2), peek), sheetHeight);
+  const half = Math.min(
+    Math.max(
+      Math.round(windowHeight * HALF_SHARE_OF_WINDOW),
+      peek + MINIMUM_HALF_ABOVE_PEEK_IN_PIXELS
+    ),
+    sheetHeight
+  );
   return { peek, half, full: sheetHeight };
 };
 

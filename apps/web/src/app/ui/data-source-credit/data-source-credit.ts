@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, viewChild } from '@angular/core';
 import { ExternalLink } from '../external-link/external-link';
 
 /**
@@ -23,8 +23,15 @@ import { ExternalLink } from '../external-link/external-link';
 
     .data-source-credit {
       color: var(--color-text-secondary);
-      font-size: var(--font-size-xs);
+      font-size: var(--font-size-caption-1);
     }
   `,
 })
-export class DataSourceCredit {}
+export class DataSourceCredit {
+  private readonly link = viewChild.required(ExternalLink);
+
+  /** E.g. when the notice before it closed and took the focus with it. */
+  focusLink(): void {
+    this.link().focus();
+  }
+}

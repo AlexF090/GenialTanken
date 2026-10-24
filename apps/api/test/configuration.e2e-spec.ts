@@ -25,6 +25,7 @@ describe('Startup configuration', () => {
     ['FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS', '0'],
     ['CACHE_MAXIMUM_ENTRIES', '0'],
     ['CACHE_MAXIMUM_ENTRIES', 'many'],
+    ['FRANCE_SEARCHED_RECORDS_MAXIMUM_ENTRIES', '0'],
     ['PHOTON_BASE_URL', 'not a url'],
     ['PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS', '0'],
     ['WEB_ORIGIN', 'genialtanken'],

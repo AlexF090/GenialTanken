@@ -10,7 +10,7 @@ import {
   stationsQuerySchema,
 } from '@genialtanken/contracts';
 import type { ColorSchemePreference, FuelType } from '@genialtanken/contracts';
-import { BROWSER_STORAGE } from '../browser-storage';
+import { LOCAL_STORAGE } from '../browser-storage';
 import { Logger } from '../logging/logger';
 
 export interface Settings {
@@ -92,7 +92,7 @@ const parseStoredSettings = (serializedSettings: string | null, logger: Logger):
 /** Fuel type, search radius and color scheme chosen by the user, persisted across reloads. */
 @Injectable({ providedIn: 'root' })
 export class SettingsStore {
-  private readonly storage = inject(BROWSER_STORAGE);
+  private readonly storage = inject(LOCAL_STORAGE);
   private readonly logger = inject(Logger);
   private readonly state = signal<Settings>(
     parseStoredSettings(this.storage.getItem(SETTINGS_STORAGE_KEY), this.logger)

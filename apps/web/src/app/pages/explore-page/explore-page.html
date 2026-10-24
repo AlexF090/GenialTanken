@@ -1,47 +1,37 @@
-<main class="explore-page">
+<main class="explore-page" tabindex="-1" [id]="mainContentIdentifier">
+  <app-browser-edge-tint />
+  <!-- Hidden while a fully opened sheet covers them, so the focus never lands behind it. -->
   <div
-    #searchOverlay
-    class="explore-page__search"
-    [class.explore-page__search--covered]="isSearchCoveredBySheet()">
-    <div class="explore-page__search-bar">
-      <app-place-search-field
-        class="explore-page__place-search"
-        [placeholder]="placeSearchPlaceholder()"
-        [query]="placeQuery()"
-        [suggestions]="placeSuggestions()"
-        [statusMessage]="placeSearchStatus()"
-        (queryChange)="searchPlaces($event)"
-        (placeSelected)="choosePlace($event)"
-        (cleared)="clearPlace()">
-        <app-select-menu
-          placeSearchAccessory
-          class="explore-page__radius"
-          label="Radius"
-          [options]="radiusOptions()"
-          [value]="radiusInKilometers()"
-          (valueChange)="chooseRadius($event)">
-          <span class="visually-hidden">Radius: </span>{{ radiusInKilometers() | kilometers }}
-          <app-icon name="chevron-down" class="explore-page__chevron" />
-        </app-select-menu>
-      </app-place-search-field>
-      <button
-        type="button"
-        class="icon-button explore-page__locate"
-        aria-label="Meinen Standort verwenden"
-        [class.explore-page__locate--active]="isAtOwnPosition()"
-        [attr.aria-disabled]="isLocating()"
-        [attr.aria-busy]="isLocating()"
-        (click)="useOwnPosition()">
-        <app-icon name="my-location" />
-      </button>
-    </div>
+    #mapControls
+    class="explore-page__map-controls"
+    [class.explore-page__map-controls--covered]="areMapControlsCovered()">
     @if (isAreaSearchOffered()) {
       <button type="button" class="explore-page__area-search" (click)="searchVisibleArea()">
         In diesem Bereich suchen
       </button>
     }
+    <button
+      #locateButton
+      type="button"
+      class="icon-button explore-page__locate"
+      aria-label="Meinen Standort verwenden"
+      [class.explore-page__locate--active]="isAtOwnPosition()"
+      [attr.aria-disabled]="isLocating()"
+      [attr.aria-busy]="isLocating()"
+      (click)="useOwnPosition()">
+      <app-icon name="my-location" />
+    </button>
+    <!-- On phones the map's own zoom buttons would hide behind the sheet. -->
+    @if (isCompactViewport()) {
+      <app-zoom-controls
+        class="explore-page__zoom"
+        [canZoomIn]="canZoomIn()"
+        [canZoomOut]="canZoomOut()"
+        (zoomInRequested)="zoomIn()"
+        (zoomOutRequested)="zoomOut()" />
+    }
     @if (locationErrorMessage(); as message) {
-      <div class="message message--error toast">
+      <div class="message message--error toast explore-page__toast">
         <p role="alert">{{ message }}</p>
         <button
           type="button"
@@ -55,47 +45,102 @@
   </div>
 
   <app-bottom-sheet
+    #panel
     class="explore-page__panel"
     label="Tankstellen"
     [(snapPosition)]="snapPosition"
+    [contentDragsSheet]="contentDragsSheet()"
     (heightChanged)="updateSheetHeight($event)">
-    <div class="explore-page__header" bottomSheetHeader [hidden]="isStationCardOpen()">
-      <h1 class="explore-page__title" translate="no">{{ applicationName }}</h1>
+    <!-- An open card brings its own visible heading and controls; the page keeps its level 1 heading for navigation, and the offline notice stays. -->
+    <div
+      class="explore-page__header"
+      bottomSheetHeader
+      [class.explore-page__header--behind-card]="isCardOpen()">
+      <h1 class="explore-page__title" translate="no" [class.visually-hidden]="isCardOpen()">
+        <app-wordmark class="explore-page__wordmark" />
+      </h1>
 
-      <div class="explore-page__toolbar">
-        <app-select-menu
-          class="explore-page__fuel"
-          label="Kraftstoff"
-          [options]="fuelTypeOptions"
-          [value]="fuelType()"
-          (valueChange)="chooseFuelType($event)">
-          <span class="visually-hidden">Kraftstoff: </span>{{ fuelLabel() }}
-          <app-icon name="chevron-down" class="explore-page__chevron" />
-        </app-select-menu>
-        <app-sort-order-control [(sortOrder)]="sortOrder" />
-        <button
-          type="button"
-          class="icon-button explore-page__refresh"
-          aria-label="Aktualisieren"
-          (click)="refresh()">
-          <app-icon name="refresh" />
-        </button>
+      <div class="explore-page__header-controls" [hidden]="isCardOpen()">
+        <div class="explore-page__search-row">
+          <app-place-search-field
+            #placeSearchField
+            class="explore-page__place-search"
+            [placeholder]="placeSearchPlaceholder()"
+            [query]="placeQuery()"
+            [suggestions]="placeSuggestions()"
+            [statusMessage]="placeSearchStatus()"
+            hint="Ort, Adresse oder Postleitzahl in Frankreich eingeben."
+            [isCancelable]="isSearching()"
+            (searchStarted)="startSearch()"
+            (canceled)="cancelSearch()"
+            (queryChange)="searchPlaces($event)"
+            (placeSelected)="choosePlace($event)"
+            (cleared)="clearPlace()" />
+          @if (!isSearching()) {
+            <a
+              #settingsLink
+              class="icon-button icon-button--circled"
+              aria-label="Einstellungen"
+              [routerLink]="settingsRoute">
+              <span class="icon-button__circle"><app-icon name="settings-outline" /></span>
+            </a>
+          }
+        </div>
+
+        <div class="explore-page__filters" [hidden]="isSearching()">
+          <app-filter-chip
+            label="Kraftstoff"
+            [options]="fuelTypeOptions"
+            [value]="fuelType()"
+            [face]="fuelLabel()"
+            (valueChange)="chooseFuelType($event)" />
+          <app-filter-chip
+            label="Radius"
+            [options]="radiusOptions()"
+            [value]="radiusInKilometers()"
+            [face]="radiusInKilometers() | kilometers"
+            (valueChange)="chooseRadius($event)" />
+          <app-filter-chip
+            label="Sortierung"
+            [options]="sortOrderOptions"
+            [value]="sortOrder()"
+            [face]="sortOrderLabel()"
+            (valueChange)="sortOrder.set($event)" />
+        </div>
+
+        <!-- The only place that names an empty result, so it is announced once. -->
+        <app-result-summary-line
+          [hidden]="isSearching()"
+          [summary]="resultSummary()"
+          [briefSummary]="briefResultSummary()"
+          [isLoading]="isLoading()"
+          (refreshRequested)="refresh()" />
+
+        @if (stationsErrorMessage(); as message) {
+          <p class="message message--error" role="alert">{{ message }}</p>
+        }
       </div>
 
-      <!-- The only place that names an empty result, so it is shown and announced once. -->
-      <p #resultSummaryElement class="explore-page__summary" role="status" tabindex="-1">
-        {{ resultSummary() }}
-      </p>
-
-      @if (stationsErrorMessage(); as message) {
-        <p class="message message--error" role="alert">{{ message }}</p>
-      }
-      <app-loading-state [isLoading]="isLoading()" />
+      <!-- Always rendered, so screen readers announce the notice when the connection drops. -->
+      <div class="explore-page__offline" role="status">
+        @if (offlineMessage(); as message) {
+          <p class="message">{{ message }}</p>
+        }
+      </div>
     </div>
 
+    <!-- In the sheet above the keyboard instead of a popover below the field, which it would cover. -->
+    <div class="explore-page__suggestions" [hidden]="!isSearching() || isCardOpen()">
+      <ng-container [ngTemplateOutlet]="placeSearchField.suggestionsTemplate()" />
+    </div>
     <router-outlet />
-    <!-- Hidden, not removed, while a station card is open: the list keeps its state. -->
-    <div [hidden]="isStationCardOpen()">
+    <!-- Hidden, not removed, while a card or the search is open: the list keeps its state. -->
+    <div [hidden]="isCardOpen() || isSearching()">
+      <app-favorites-row
+        [stations]="favoriteStationsNearby()"
+        [fuelType]="fuelType()"
+        [isLoading]="favoritesAreLoading()"
+        [favoriteCount]="favoriteStationIdentifiers().size" />
       <app-station-list
         [stations]="stations()"
         [fuelType]="fuelType()"
@@ -103,8 +148,22 @@
         [cheapestStationIdentifiers]="cheapestStationIdentifiers()"
         [selectedStationIdentifier]="selectedStationIdentifier()"
         [selectsOnMap]="true"
+        [insertionAfterRow]="installationHintAfterRow()"
         (stationSelected)="showOnMap($event)"
-        (favoriteToggled)="toggleFavorite($event)" />
+        (favoriteToggled)="toggleFavorite($event)">
+        <!-- After the first stations, which it never hides; not over the placeholders, which it would jump below. -->
+        @if (showsInstallationHint() && installationOffer(); as offer) {
+          <app-installation-hint-banner
+            stationListInsertion
+            [offer]="offer"
+            (installRequested)="installApplication()"
+            (dismissed)="dismissInstallationHint()" />
+        }
+      </app-station-list>
+      <!-- Only before the first stations: a reload keeps them, its state shows in the summary. -->
+      @if (isLoadingFirstStations()) {
+        <app-skeleton-rows />
+      }
       <app-data-source-credit class="explore-page__credit" />
     </div>
   </app-bottom-sheet>

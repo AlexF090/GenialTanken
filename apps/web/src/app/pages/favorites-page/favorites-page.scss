@@ -1,6 +1,66 @@
+@use 'visually-hidden';
+@use 'focus-ring';
+@use 'typography';
+
+:host {
+  display: block;
+}
+
+// Like a guide in Apple Maps: a back button above a large title, the rows below run edge to edge.
+.favorites {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-block: var(--space-2xs) var(--space-lg);
+
+  > :not(.favorites__list) {
+    margin-inline: var(--space-md);
+  }
+}
+
+.favorites__header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+// Text button with a chevron, like the back button of an iOS navigation bar.
+.favorites__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3xs);
+  min-height: var(--layout-touch-target);
+  margin: 0 0 0 calc(-1 * var(--space-xs));
+  padding: 0 var(--space-xs);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-action-text);
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  touch-action: manipulation;
+
+  &:hover {
+    color: var(--color-action-text-hover);
+  }
+}
+
+.favorites__back-icon {
+  font-size: var(--icon-size-md);
+}
+
+.favorites__title {
+  @include typography.large-title;
+
+  // Focused on open only as the starting point for screen readers and keyboards.
+  &:focus {
+    @include focus-ring.no-focus-ring;
+  }
+}
+
 .favorites__list {
   border-top: var(--border-width-hairline) solid var(--color-hairline);
-  background-color: var(--color-surface);
 }
 
 .unavailable-favorites {
@@ -16,11 +76,11 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-sm);
-  padding-top: var(--space-xl);
+  padding-top: var(--space-md);
 }
 
 .empty-favorites__title {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-title-2);
   line-height: var(--line-height-tight);
   text-wrap: balance;
 }
@@ -28,4 +88,9 @@
 .empty-favorites__text {
   margin-bottom: var(--space-xs);
   color: var(--color-text-secondary);
+}
+
+// Stays in the accessibility tree while empty, so the notice is announced, but takes no gap.
+.favorites__offline:empty {
+  @include visually-hidden.visually-hidden;
 }

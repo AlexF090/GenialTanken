@@ -5,22 +5,39 @@ import {
   renderWithInputs,
   textOf,
 } from '../../../testing/render-page';
-import { essoStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
+import {
+  essoStation,
+  totalStation,
+  unbrandedStation,
+  withoutDistance,
+} from '../../../testing/station-fixtures';
+import { OPEN_EXTERNAL_URL } from '../../core/navigation-apps/open-external-url';
 import { StationDetail } from './station-detail';
 
 interface RenderOptions {
   station: Station;
   fuelType?: FuelType;
   isFavorite?: boolean;
+  canShare?: boolean;
 }
 
-const render = async ({ station, fuelType = 'e5', isFavorite = false }: RenderOptions) => {
-  const { fixture, element } = await renderWithInputs(StationDetail, {
-    station: withoutDistance(station),
-    fuelType,
-    isFavorite,
-    today: new Date('2026-10-05T12:00:00'),
-  });
+const render = async ({
+  station,
+  fuelType = 'e5',
+  isFavorite = false,
+  canShare = false,
+}: RenderOptions) => {
+  const { fixture, element } = await renderWithInputs(
+    StationDetail,
+    {
+      station: withoutDistance(station),
+      fuelType,
+      isFavorite,
+      canShare,
+      today: new Date('2026-10-05T12:00:00'),
+    },
+    [{ provide: OPEN_EXTERNAL_URL, useValue: () => undefined }]
+  );
   return { fixture, element, article: element.querySelector('article') };
 };
 
@@ -52,11 +69,54 @@ describe('StationDetail', () => {
   });
 
   it('is an article with title, name and address', async () => {
-    const { article } = await render({ station: essoStation });
+    const { article, element } = await render({ station: essoStation });
 
     expect(textOf(article?.querySelector('h2'))).toBe('Esso');
-    expect(article?.textContent).toContain('Relais Esso Part-Dieu');
-    expect(textOf(article?.querySelector('address'))).toBe('Boulevard Vivier-Merle 19 69003 Lyon');
+    expect(textOf(article?.querySelector('.station-detail__subtitle'))).toBe(
+      'Relais Esso Part-Dieu'
+    );
+    expect(textOf(regionNamed(element, 'Adresse').querySelector('address'))).toBe(
+      'Boulevard Vivier-Merle 19 69003 Lyon'
+    );
+  });
+
+  it('names the city below a station titled by its street, and the full address', async () => {
+    const { article } = await render({ station: unbrandedStation });
+
+    expect(textOf(article?.querySelector('h2'))).toBe('40 Avenue de Flandre');
+    expect(textOf(article?.querySelector('.station-detail__subtitle'))).toBe('75019 Paris');
+    expect(textOf(article?.querySelector('address'))).toBe('40 Avenue de Flandre 75019 Paris');
+  });
+
+  it('offers route and favorite as actions, sharing only where possible', async () => {
+    const { element } = await render({ station: totalStation });
+    const actions = element.querySelector('.station-detail__actions');
+
+    expect(actions?.querySelector('select')?.getAttribute('aria-label')).toBe(
+      'Route zu TotalEnergies'
+    );
+    expect(getButton(element, 'Favorit: TotalEnergies')).toBeTruthy();
+    expect(
+      [...(actions?.querySelectorAll('.action-tile__label') ?? [])].map(label => textOf(label))
+    ).toEqual(['Route', 'Favorit']);
+  });
+
+  it('reports share requests from its share button', async () => {
+    const { fixture, element } = await render({ station: totalStation, canShare: true });
+    const shareRequested = vi.fn();
+    fixture.componentInstance.shareRequested.subscribe(shareRequested);
+
+    getButton(element, 'Teilen').click();
+
+    expect(shareRequested).toHaveBeenCalledOnce();
+  });
+
+  it('credits the French price data below the address', async () => {
+    const { element } = await render({ station: totalStation });
+
+    expect(textOf(regionNamed(element, 'Adresse'))).toContain(
+      'Preisdaten: prix-carburants.gouv.fr'
+    );
   });
 
   it('lists all six fuels with the selected fuel first and marked', async () => {

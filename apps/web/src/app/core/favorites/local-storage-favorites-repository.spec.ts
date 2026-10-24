@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import type { MockInstance } from 'vitest';
 import { FakeStorage } from '../../../testing/fake-storage';
-import { BROWSER_STORAGE } from '../browser-storage';
+import { LOCAL_STORAGE } from '../browser-storage';
 import { Logger } from '../logging/logger';
 import { LocalStorageFavoritesRepository } from './local-storage-favorites-repository';
 
@@ -13,7 +13,7 @@ describe('LocalStorageFavoritesRepository', () => {
 
   const createRepository = (): LocalStorageFavoritesRepository => {
     TestBed.configureTestingModule({
-      providers: [LocalStorageFavoritesRepository, { provide: BROWSER_STORAGE, useValue: storage }],
+      providers: [LocalStorageFavoritesRepository, { provide: LOCAL_STORAGE, useValue: storage }],
     });
     warn = vi.spyOn(TestBed.inject(Logger), 'warn').mockImplementation(() => undefined);
     return TestBed.inject(LocalStorageFavoritesRepository);

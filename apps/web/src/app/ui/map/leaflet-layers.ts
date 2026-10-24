@@ -4,51 +4,51 @@ import type { SearchCenter } from '../../core/search-center/search-center';
 import { L } from './leaflet';
 import { createMarkerElement, ZERO_SIZE } from './marker-elements';
 
-/** Greets the user at their own position on the map. */
-const OWN_POSITION_GREETING = 'Du bist hier!';
+/**
+ * Leaflet stacks markers by their position on the screen plus this offset; price tags, even the
+ * highest-ranked ones, must never be hidden behind the search center.
+ */
+const BELOW_PRICE_TAGS_Z_INDEX_OFFSET = -10_000;
+
+const createNamedMarkerIcon = (
+  element: HTMLElement,
+  accessibleName: string,
+  className: string
+): L.DivIcon => {
+  element.setAttribute('role', 'img');
+  element.setAttribute('aria-label', accessibleName);
+  return L.divIcon({ html: element, className, iconSize: ZERO_SIZE });
+};
 
 /** Teardrop pin whose tip marks the search center. */
-const createPinIcon = (): L.DivIcon => {
+const createPinIcon = (accessibleName: string): L.DivIcon => {
   const pin = createMarkerElement('div', 'location-pin');
   pin.append(createMarkerElement('span', 'location-pin__head'));
-  return L.divIcon({ html: pin, className: 'location-pin-marker', iconSize: ZERO_SIZE });
+  return createNamedMarkerIcon(pin, accessibleName, 'location-pin-marker');
 };
 
-const createOwnPositionIcon = (): L.DivIcon =>
-  L.divIcon({
-    html: createMarkerElement('div', 'own-position-dot'),
-    className: 'own-position-marker',
-    iconSize: ZERO_SIZE,
-  });
+const createOwnPositionIcon = (accessibleName: string): L.DivIcon =>
+  createNamedMarkerIcon(
+    createMarkerElement('div', 'own-position-dot'),
+    accessibleName,
+    'own-position-marker'
+  );
 
 /**
- * Search center with its label; the user's own position is a dot greeting them instead. A center
- * the user moved the map to needs no label: it is where they are looking.
+ * Search center as a pin, the user's own position as a dot, like in Apple Maps. Neither carries a
+ * visible label: it would cover the price tags of the closest stations, and the search field
+ * already names the place.
  */
-export const createCenterMarker = (center: SearchCenter): L.Marker => {
-  const isOwnPosition = center.source === 'own-position';
-  const marker = L.marker([center.latitude, center.longitude], {
-    icon: isOwnPosition ? createOwnPositionIcon() : createPinIcon(),
+export const createCenterMarker = (center: SearchCenter): L.Marker =>
+  L.marker([center.latitude, center.longitude], {
+    icon:
+      center.source === 'own-position'
+        ? createOwnPositionIcon(center.label)
+        : createPinIcon(center.label),
     interactive: false,
     keyboard: false,
+    zIndexOffset: BELOW_PRICE_TAGS_Z_INDEX_OFFSET,
   });
-  if (center.source === 'map-area') {
-    return marker;
-  }
-  const label = createMarkerElement(
-    'span',
-    'center-tooltip__label',
-    isOwnPosition ? OWN_POSITION_GREETING : center.label
-  );
-  return marker.bindTooltip(label, {
-    permanent: true,
-    direction: 'top',
-    // `map.scss` lifts the label above the dot or pin, sized like them in rem.
-    className: isOwnPosition
-      ? 'center-tooltip center-tooltip--above-dot'
-      : 'center-tooltip center-tooltip--above-pin',
-  });
-};
 
 /**
  * Thin outline of the search radius; its bounds are what the map fits into view. `map.scss` sets

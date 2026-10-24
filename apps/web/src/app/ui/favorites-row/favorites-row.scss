@@ -1,0 +1,112 @@
+@use 'breakpoints';
+
+:host {
+  display: block;
+}
+
+// Stacks the cards once a sideways row would leave too little of each one visible (1.4.10).
+$narrow-width: breakpoints.$favorites-row-stacking-width;
+
+.favorites-row {
+  container-type: inline-size;
+  padding-block-start: var(--space-xs);
+}
+
+.favorites-row__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding-inline: var(--space-md) var(--space-2xs);
+}
+
+.favorites-row__heading {
+  font-size: var(--font-size-title-3);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+}
+
+.favorites-row__all {
+  display: inline-flex;
+  align-items: center;
+  min-width: var(--layout-touch-target);
+  min-height: var(--layout-touch-target);
+  padding-inline: var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+}
+
+// Where the list's cards would start.
+.favorites-row__placeholders {
+  padding: var(--space-xs) var(--space-md) var(--space-sm);
+}
+
+// Snaps card by card; the padding leaves room for the focus ring inside the scroll container.
+.favorites-row__list {
+  display: flex;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: var(--space-xs) var(--space-md) var(--space-sm);
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-padding-inline: var(--space-md);
+  scroll-snap-type: x mandatory;
+  list-style: none;
+
+  @container (width <= #{$narrow-width}) {
+    flex-direction: column;
+    overflow-x: visible;
+  }
+}
+
+.favorites-row__item {
+  flex: none;
+  width: var(--layout-favorite-card-width);
+  scroll-snap-align: start;
+
+  @container (width <= #{$narrow-width}) {
+    width: auto;
+  }
+}
+
+// The price is the loudest line, like on the price pylon at the roadside.
+.favorites-row__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: var(--space-sm);
+  border-radius: var(--radius-md);
+  background-color: var(--color-canvas);
+  color: var(--color-text);
+  text-decoration: none;
+  touch-action: manipulation;
+
+  &:hover {
+    color: var(--color-text);
+    background-color: var(--color-menu-highlight);
+  }
+}
+
+.favorites-row__title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: var(--font-size-subheadline);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.favorites-row__price {
+  margin-block-start: auto;
+}
+
+.favorites-row__distance {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-footnote);
+}

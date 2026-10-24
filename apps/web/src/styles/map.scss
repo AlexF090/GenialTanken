@@ -1,4 +1,4 @@
-// Leaflet renders markers, tooltips and controls outside of Angular's view encapsulation, so
+// Leaflet renders markers and controls outside of Angular's view encapsulation, so
 // their styles live here instead of in the map components.
 @use 'breakpoints';
 @use 'typography';
@@ -8,7 +8,6 @@
 $price-levels: low, medium, high;
 
 .leaflet-container {
-  // Shared by the markers and the labels above them.
   --location-pin-size: var(--icon-size-md);
   --own-position-dot-size: var(--icon-size-sm);
 
@@ -35,7 +34,7 @@ $price-levels: low, medium, high;
 
   // The ring is drawn by the board inside, so it follows the selection scale.
   &:focus-visible {
-    outline: none;
+    @include focus-ring.no-focus-ring;
   }
 }
 
@@ -48,9 +47,12 @@ $price-levels: low, medium, high;
 }
 
 .price-tag {
-  --price-tag-background: var(--color-surface);
+  // The background is the bottom of the gradient, so the pointer continues the fill.
+  --price-tag-background: var(--color-price-neutral-bottom);
+  --price-tag-gradient: var(--gradient-price-neutral);
   --price-tag-foreground: var(--color-text);
   --price-tag-edge: var(--color-surface);
+  --price-tag-shadow: var(--shadow-price-tag);
 
   position: relative;
   // Keeps the pointer below the digits without sliding under the map.
@@ -59,19 +61,21 @@ $price-levels: low, medium, high;
   border: var(--border-width-hairline) solid var(--price-tag-edge);
   border-radius: var(--radius-sm);
   background-color: var(--price-tag-background);
+  background-image: var(--price-tag-gradient);
   color: var(--price-tag-foreground);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--price-tag-shadow);
   white-space: nowrap;
   transform-origin: 50% calc(100% + var(--price-tag-pointer-size) / 2);
   transition:
     transform var(--duration-short) var(--easing-standard),
-    background-color var(--duration-short) var(--easing-standard);
+    background-color var(--duration-short) var(--easing-standard),
+    box-shadow var(--duration-short) var(--easing-standard);
 
   // Pointer: a rotated square sharing the board's fill and edge.
   &::after {
     content: '';
     position: absolute;
-    z-index: -1;
+    z-index: var(--layer-behind-parent);
     bottom: calc(var(--price-tag-pointer-size) / -2 - var(--border-width-hairline));
     left: 50%;
     width: var(--price-tag-pointer-size);
@@ -84,6 +88,7 @@ $price-levels: low, medium, high;
 
   &--without-price {
     --price-tag-background: var(--color-canvas);
+    --price-tag-gradient: none;
     --price-tag-foreground: var(--color-text-secondary);
     --price-tag-edge: var(--color-hairline);
   }
@@ -91,36 +96,50 @@ $price-levels: low, medium, high;
   // Tinted from cheap (green) to dear (red) within the prices shown
   @each $level in $price-levels {
     &--#{$level} {
-      --price-tag-background: var(--color-price-#{$level});
+      --price-tag-background: var(--color-price-#{$level}-bottom);
+      --price-tag-gradient: var(--gradient-price-#{$level});
       --price-tag-edge: var(--color-price-#{$level}-edge);
     }
   }
 
   // The cheapest stands out: solid green and a little larger than the others.
   &--cheapest {
-    --price-tag-background: var(--color-highlight);
+    --price-tag-background: var(--color-highlight-bottom);
+    --price-tag-gradient: var(--gradient-price-cheapest);
     --price-tag-foreground: var(--color-on-highlight);
     --price-tag-edge: var(--color-highlight-edge);
 
     transform: scale(var(--scale-marker-cheapest));
   }
 
-  // Tinted like a selected pin in Apple Maps; the surface edge keeps it apart from dark tiles.
+  // Selected: keeps the fill of its price level (a brand fill would hide the price level), gets a
+  // ring with a gap and floats higher. The pointer carries the ring too.
   &--selected {
-    --price-tag-background: var(--color-action);
-    --price-tag-foreground: var(--color-on-action);
-    --price-tag-edge: var(--color-surface);
+    --price-tag-shadow: var(--shadow-price-tag-selected);
+    // Larger, so the pointer reaches out of the ring
+    --price-tag-pointer-size: var(--space-md);
 
     transform: scale(var(--scale-marker-selected));
-  }
 
-  // A selected cheapest station keeps the green as its edge.
-  &--selected.price-tag--cheapest {
-    --price-tag-edge: var(--color-highlight);
+    &::after {
+      border-right-width: var(--border-width-focus);
+      border-bottom-width: var(--border-width-focus);
+      border-color: var(--color-selection-ring);
+      box-shadow: inset calc(-1 * var(--border-width-focus-halo))
+        calc(-1 * var(--border-width-focus-halo)) 0 var(--color-selection-ring-gap);
+    }
   }
 
   .price-tag-marker:hover > & {
     --price-tag-edge: var(--color-border-control);
+  }
+
+  // Forced colors drop box shadows, so the ring becomes an outline there
+  @media (forced-colors: active) {
+    &--selected {
+      outline: var(--border-width-focus) solid Highlight;
+      outline-offset: var(--border-width-focus-halo);
+    }
   }
 
   @each $level in $price-levels {
@@ -133,12 +152,8 @@ $price-levels: low, medium, high;
     --price-tag-edge: var(--color-highlight-edge);
   }
 
-  .price-tag-marker:hover > &--selected {
-    --price-tag-edge: var(--color-surface);
-  }
-
   .price-tag-marker:focus-visible > & {
-    @include focus-ring.focus-ring;
+    @include focus-ring.focus-ring($shadow: var(--price-tag-shadow));
   }
 }
 
@@ -152,7 +167,7 @@ $price-levels: low, medium, high;
 .price-tag__caption,
 .price-cluster__caption {
   display: block;
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption-1);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-numerals);
 }
@@ -169,14 +184,15 @@ $price-levels: low, medium, high;
   align-items: stretch;
   border: var(--border-width-hairline) solid var(--color-hairline);
   border-radius: var(--radius-sm);
-  background-color: var(--color-surface);
+  background-color: var(--color-price-neutral-bottom);
+  background-image: var(--gradient-price-neutral);
   color: var(--color-text);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--shadow-price-tag);
   white-space: nowrap;
   overflow: hidden;
 
   .price-cluster-marker:focus-visible > & {
-    @include focus-ring.focus-ring;
+    @include focus-ring.focus-ring($shadow: var(--shadow-price-tag));
   }
 }
 
@@ -185,9 +201,10 @@ $price-levels: low, medium, high;
   align-items: center;
   padding: var(--space-2xs) var(--space-xs);
   background-color: var(--color-action);
+  background-image: var(--gradient-action);
   color: var(--color-on-action);
   font-family: var(--font-family-numerals);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
   font-weight: var(--font-weight-price);
   font-variant-numeric: tabular-nums;
 }
@@ -203,18 +220,20 @@ $price-levels: low, medium, high;
 
   @each $level in $price-levels {
     .price-cluster--#{$level} & {
-      background-color: var(--color-price-#{$level});
+      background-color: var(--color-price-#{$level}-bottom);
+      background-image: var(--gradient-price-#{$level});
     }
   }
 
   .price-cluster--cheapest & {
-    background-color: var(--color-highlight);
+    background-color: var(--color-highlight-bottom);
+    background-image: var(--gradient-price-cheapest);
     color: var(--color-on-highlight);
   }
 }
 
 .price-cluster__from {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption-1);
   font-weight: var(--font-weight-medium);
 }
 
@@ -243,7 +262,7 @@ $price-levels: low, medium, high;
   height: var(--location-pin-size);
   border: var(--border-width-focus) solid var(--color-surface);
   border-radius: var(--radius-round) var(--radius-round) var(--radius-round) 0;
-  background-color: var(--color-action);
+  background-color: var(--color-tint-vivid);
   box-shadow: var(--shadow-floating);
   transform: rotate(-45deg);
 }
@@ -258,48 +277,44 @@ $price-levels: low, medium, high;
   border-radius: var(--radius-round);
   background-color: var(--color-own-position);
   box-shadow:
-    0 0 0 var(--space-xs) color-mix(in srgb, var(--color-own-position) 18%, transparent),
+    0 0 0 var(--space-xs) var(--color-own-position-halo),
     var(--shadow-floating);
   transform: translate(-50%, -50%);
-}
-
-.leaflet-tooltip.center-tooltip {
-  padding: var(--space-3xs) var(--space-xs);
-  border: none;
-  border-radius: var(--radius-sm);
-  background-color: var(--color-surface);
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  box-shadow: var(--shadow-floating);
-
-  &.leaflet-tooltip-top::before {
-    border-top-color: var(--color-surface);
-  }
-
-  // Leaflet anchors the label at the map point; `translate` composes with Leaflet's `transform`
-  // and lifts it above the marker. The rotated pin head reaches √2 of its size above the tip.
-  &--above-pin {
-    translate: 0 calc(var(--location-pin-size) * -1.414);
-  }
-
-  &--above-dot {
-    translate: 0 calc(var(--own-position-dot-size) / -2 - var(--space-2xs));
-  }
 }
 
 // Search radius: a thin outline, the area inside only faintly tinted.
 .search-radius {
   stroke: var(--color-text);
   stroke-width: var(--border-width-map-outline);
-  stroke-opacity: 0.7;
+  stroke-opacity: var(--opacity-search-radius-outline);
   fill: var(--color-text);
-  fill-opacity: 0.05;
+  fill-opacity: var(--opacity-search-radius-fill);
 }
 
 // Controls
 
-// Phones zoom with two fingers, like Apple Maps; the buttons would crowd the search field.
+// The map reaches under the status bar, the home indicator and the rounded corners; its controls
+// and the attribution stay inside the safe areas.
+app-stations-map {
+  .leaflet-top {
+    top: var(--safe-area-top);
+  }
+
+  .leaflet-right {
+    right: var(--safe-area-right);
+  }
+
+  .leaflet-bottom {
+    bottom: var(--safe-area-bottom);
+  }
+
+  .leaflet-left {
+    left: var(--safe-area-left);
+  }
+}
+
+// On phones the sheet would cover these buttons; the explore page shows its own below the locate
+// button instead. Larger windows show them at the bottom right, like Apple Maps on the Mac.
 app-stations-map .leaflet-control-zoom {
   @include breakpoints.compact {
     display: none;
@@ -317,7 +332,7 @@ app-stations-map .leaflet-control-zoom {
     border-bottom-color: var(--color-hairline);
     background-color: var(--color-surface);
     color: var(--color-text);
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-title-2);
     line-height: var(--layout-touch-target);
 
     &:hover {
@@ -327,7 +342,7 @@ app-stations-map .leaflet-control-zoom {
 
     &:focus-visible {
       position: relative;
-      z-index: 1;
+      z-index: var(--layer-above-siblings);
     }
 
     &:first-child {
@@ -342,12 +357,13 @@ app-stations-map .leaflet-control-zoom {
   }
 }
 
-// OpenStreetMap requires a visible attribution; it stays legible on every tile color.
+// OpenStreetMap requires a visible attribution; its background keeps the small text at 7:1 on
+// every tile color (`--color-map-attribution-background`).
 .leaflet-container .leaflet-control-attribution {
   padding: 0 var(--space-2xs);
-  background-color: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  background-color: var(--color-map-attribution-background);
   color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-caption-1);
 
   a {
     color: var(--color-action-text);

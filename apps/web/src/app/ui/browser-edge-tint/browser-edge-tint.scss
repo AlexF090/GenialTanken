@@ -1,0 +1,32 @@
+// Safari samples the color of a fixed element at the window edge, so it has to be a plain opaque
+// background color: no alpha, no gradient, no backdrop filter. Neither the installed app (the
+// system blur would change) nor a mouse device (no such bars) needs the strips.
+:host {
+  display: none;
+}
+
+@media (pointer: coarse) and (not (display-mode: standalone)) and (not (forced-colors: active)) {
+  :host {
+    display: contents;
+  }
+}
+
+.browser-edge-tint {
+  position: fixed;
+  right: 0;
+  left: 0;
+  z-index: var(--layer-browser-edge-tint);
+  height: var(--layout-browser-edge-tint-height);
+  pointer-events: none;
+
+  &--top {
+    top: 0;
+    background-color: var(--color-chrome-opaque);
+  }
+
+  // The sheet is `--color-surface` at 96 % alpha, so this is its opaque color
+  &--bottom {
+    bottom: 0;
+    background-color: var(--color-surface);
+  }
+}

@@ -1,5 +1,5 @@
 <article class="station-detail">
-  <div class="station-detail__heading">
+  <header class="station-detail__heading">
     <div class="station-detail__identity">
       <h2 #titleHeading class="station-detail__title" translate="no" tabindex="-1">
         {{ title() }}
@@ -7,26 +7,24 @@
       @if (subtitle(); as subtitle) {
         <p class="station-detail__subtitle">{{ subtitle }}</p>
       }
-      <address class="station-detail__address">
-        @for (line of addressLines(); track line) {
-          <span>{{ line }}</span
-          >&ngsp;
-        }
-      </address>
     </div>
-    <div class="station-detail__actions">
-      <app-favorite-button
-        [stationName]="title()"
-        [isFavorite]="isFavorite()"
-        (toggled)="favoriteToggled.emit()" />
-      <ng-content select="[stationDetailActions]" />
-    </div>
-  </div>
+    <ng-content select="[stationDetailActions]" />
+  </header>
 
-  <app-route-button
-    class="station-detail__route"
-    [destination]="destination()"
-    [isLabelled]="true" />
+  <div class="station-detail__actions">
+    <app-route-button [destination]="destination()" />
+    <app-favorite-button
+      appearance="tile"
+      [stationName]="title()"
+      [isFavorite]="isFavorite()"
+      (toggled)="favoriteToggled.emit()" />
+    @if (canShare()) {
+      <button type="button" class="action-tile" (click)="shareRequested.emit()">
+        <app-icon name="ios-share" />
+        <span class="action-tile__label">Teilen</span>
+      </button>
+    }
+  </div>
 
   <section class="station-detail__section" [attr.aria-labelledby]="pricesHeadingIdentifier">
     <h3 [id]="pricesHeadingIdentifier" class="station-detail__section-title">Preise</h3>
@@ -52,15 +50,31 @@
     <h3 [id]="openingTimesHeadingIdentifier" class="station-detail__section-title">
       Öffnungszeiten
     </h3>
-    @if (station().isOpen !== null) {
-      <p class="station-detail__open-status">
-        {{
-          station().isOpen
-            ? 'Die Tankstelle ist geöffnet.'
-            : 'Die Tankstelle hat leider geschlossen.'
-        }}
-      </p>
-    }
-    <app-opening-times [openingTimes]="station().openingTimes" [today]="today()" />
+    <div class="station-detail__group">
+      @if (station().isOpen !== null) {
+        <p class="station-detail__open-status">
+          {{
+            station().isOpen
+              ? 'Die Tankstelle ist geöffnet.'
+              : 'Die Tankstelle hat leider geschlossen.'
+          }}
+        </p>
+      }
+      <app-opening-times [openingTimes]="station().openingTimes" [today]="today()" />
+    </div>
+  </section>
+
+  <section class="station-detail__section" [attr.aria-labelledby]="addressHeadingIdentifier">
+    <h3 [id]="addressHeadingIdentifier" class="station-detail__section-title">Adresse</h3>
+    <div class="station-detail__group">
+      <address class="station-detail__address">
+        @for (line of addressLines(); track line) {
+          <span>{{ line }}</span
+          >&ngsp;
+        }
+      </address>
+    </div>
+    <!-- The Licence Ouverte requires the credit wherever French prices show; France is the only country for now. -->
+    <app-data-source-credit />
   </section>
 </article>

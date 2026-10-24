@@ -61,6 +61,18 @@ describe('describeStationsError', () => {
       message: DEFAULT_MESSAGE,
     },
   ])('describes $description', ({ error, message }) => {
-    expect(describeStationsError(error)).toBe(message);
+    expect(describeStationsError(error, { isOnline: true })).toBe(message);
+  });
+
+  it('explains a request without response by a missing network', () => {
+    expect(describeStationsError(new HttpErrorResponse({ status: 0 }), { isOnline: false })).toBe(
+      'Du bist offline – Preise werden geladen, sobald du wieder verbunden bist.'
+    );
+  });
+
+  it('keeps the message of an answered request while offline', () => {
+    expect(describeStationsError(new HttpErrorResponse({ status: 429 }), { isOnline: false })).toBe(
+      'Zu viele Anfragen. Bitte warte einen Moment und versuche es erneut.'
+    );
   });
 });

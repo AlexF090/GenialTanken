@@ -2,5 +2,5 @@
 
 const MEDIUM_MINIMUM_WIDTH_IN_REM = 48;
 
-/** Phones: bottom navigation, list and map as separate views. */
+/** Phones: the list is a bottom sheet over the full-screen map. */
 export const COMPACT_MEDIA_QUERY = `(width < ${String(MEDIUM_MINIMUM_WIDTH_IN_REM)}rem)`;

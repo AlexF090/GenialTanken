@@ -5,7 +5,8 @@ import { TestBed } from '@angular/core/testing';
 import type { ComponentFixture } from '@angular/core/testing';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import type { Routes } from '@angular/router';
-import { BROWSER_STORAGE } from '../app/core/browser-storage';
+import { provideServiceWorker } from '@angular/service-worker';
+import { LOCAL_STORAGE } from '../app/core/browser-storage';
 import { provideLocalStorageFavorites } from '../app/core/favorites/local-storage-favorites-repository';
 import { GEOLOCATION } from '../app/core/geolocation/geolocation-service';
 import { FakeGeolocation } from './fake-geolocation';
@@ -39,7 +40,12 @@ const afterQueuedMicrotasks = (): Promise<void> =>
 
 /** Providers shared by page tests: real stores and API on top of fake browser seams. */
 export const configurePageTest = (
-  options: { storage?: FakeStorage; routes?: Routes } = {}
+  options: {
+    storage?: FakeStorage;
+    routes?: Routes;
+    /** Replace the defaults above, e.g. a fake `SwUpdate`. */
+    providers?: (Provider | EnvironmentProviders)[];
+  } = {}
 ): PageTestContext => {
   const storage = options.storage ?? new FakeStorage();
   const geolocation = new FakeGeolocation();
@@ -49,8 +55,11 @@ export const configurePageTest = (
       provideHttpClient(),
       provideHttpClientTesting(),
       provideLocalStorageFavorites(),
-      { provide: BROWSER_STORAGE, useValue: storage },
+      // As in app.config.ts, but never registered: the shell injects `SwUpdate`.
+      provideServiceWorker('ngsw-worker.js', { enabled: false }),
+      { provide: LOCAL_STORAGE, useValue: storage },
       { provide: GEOLOCATION, useValue: geolocation },
+      ...(options.providers ?? []),
     ],
   });
   return {
@@ -120,7 +129,10 @@ export const renderWithInputs = async <T>(
 export const textOf = (element: Element | null | undefined): string =>
   (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
 
-/** Text as read by screen readers: content hidden with `aria-hidden` is left out. */
+/**
+ * Text as read by screen readers: content hidden with `aria-hidden` is left out, an image such
+ * as the wordmark reads as its label.
+ */
 export const accessibleTextOf = (element: Element | null | undefined): string => {
   if (element === null || element === undefined) {
     return '';
@@ -131,6 +143,9 @@ export const accessibleTextOf = (element: Element | null | undefined): string =>
   }
   for (const hiddenElement of copy.querySelectorAll('[aria-hidden="true"]')) {
     hiddenElement.remove();
+  }
+  for (const image of copy.querySelectorAll('[role="img"][aria-label]')) {
+    image.replaceWith(image.getAttribute('aria-label') ?? '');
   }
   return textOf(copy);
 };
@@ -148,7 +163,7 @@ export const getButton = (container: HTMLElement, name: RegExp | string): HTMLBu
 
 /** Titles of the station list's rows, in their order. */
 export const stationTitles = (container: HTMLElement): string[] =>
-  [...container.querySelectorAll('main li .station-row__title')].map(title => textOf(title));
+  [...container.querySelectorAll('li .station-row__title')].map(title => textOf(title));
 
 /** The radio button whose label reads `name`. */
 export const getRadio = (container: HTMLElement, name: string): HTMLInputElement => {

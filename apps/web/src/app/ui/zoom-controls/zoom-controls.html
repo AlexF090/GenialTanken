@@ -1,0 +1,16 @@
+<button
+  type="button"
+  class="icon-button zoom-controls__button"
+  aria-label="Hineinzoomen"
+  [attr.aria-disabled]="canZoomIn() ? null : true"
+  (click)="zoomInRequested.emit()">
+  <span aria-hidden="true">+</span>
+</button>
+<button
+  type="button"
+  class="icon-button zoom-controls__button"
+  aria-label="Herauszoomen"
+  [attr.aria-disabled]="canZoomOut() ? null : true"
+  (click)="zoomOutRequested.emit()">
+  <span aria-hidden="true">−</span>
+</button>

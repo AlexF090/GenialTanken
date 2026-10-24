@@ -32,6 +32,8 @@ const FUEL_LABEL = 'Diesel';
 const ROBOTO_STYLESHEET_URL =
   'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=block';
 
+// About a second at 60 Hz, longer than the delay between a click and the zoom it starts
+const SETTLED_FRAMES = 60;
 const rawShotsDirectory = join(tmpdir(), 'genialtanken-product-shots');
 const imagesDirectory = fileURLToPath(new URL('../../docs/images/', import.meta.url));
 const compositionUrl = pathToFileURL(fileURLToPath(new URL('composition.html', import.meta.url)));
@@ -91,18 +93,40 @@ const serveRoboto = async (page: Page): Promise<void> => {
 const waitUntilSettled = async (page: Page): Promise<void> => {
   await expect(stationsMap(page).getByRole('button', { name: /€/ }).first()).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
-  // Leaflet fades tiles in by stepping their inline opacity, which no animation reports.
-  await page.waitForFunction(() => {
-    const tiles = [...document.querySelectorAll<HTMLImageElement>('img.leaflet-tile')];
-    return (
-      tiles.length > 0 &&
-      tiles.every(
-        tile =>
-          tile.complete && tile.naturalWidth > 0 && Number(getComputedStyle(tile).opacity) === 1
-      ) &&
-      document.getAnimations().every(animation => animation.playState !== 'running')
-    );
-  });
+  // Leaflet fades tiles in by stepping their inline opacity, which no animation reports. While it
+  // zooms, it keeps the old level's tiles scaled up until the new level's tiles have loaded.
+  // A click may start the map's zoom or pan only after a first check passed, so the map has to
+  // stay settled, its pane unmoved, for a run of consecutive frames.
+  await page.waitForFunction(
+    requiredFrames => {
+      const tiles = [...document.querySelectorAll<HTMLImageElement>('img.leaflet-tile')];
+      const mapPaneTransform =
+        document.querySelector<HTMLElement>('.leaflet-map-pane')?.style.transform ?? '';
+      const progress = document.documentElement.dataset;
+      const isSettled =
+        tiles.length > 0 &&
+        tiles.every(
+          tile =>
+            tile.complete &&
+            tile.naturalWidth > 0 &&
+            Number(getComputedStyle(tile).opacity) === 1 &&
+            !/scale\((?!1\))/.test(tile.parentElement?.style.transform ?? '')
+        ) &&
+        document.getAnimations().every(animation => animation.playState !== 'running') &&
+        mapPaneTransform === progress.settledMapPaneTransform;
+      const settledFrames = isSettled ? Number(progress.settledFrames ?? 0) + 1 : 0;
+      progress.settledMapPaneTransform = mapPaneTransform;
+      progress.settledFrames = String(settledFrames);
+      if (settledFrames < requiredFrames) {
+        return false;
+      }
+      delete progress.settledFrames;
+      delete progress.settledMapPaneTransform;
+      return true;
+    },
+    SETTLED_FRAMES,
+    { polling: 'raf' }
+  );
 };
 
 const openAtOwnPosition = async (page: Page): Promise<void> => {

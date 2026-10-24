@@ -1,26 +1,34 @@
 @use 'focus-ring';
-@use 'materials';
 
 :host {
   display: block;
+  min-width: 0;
 }
 
 .place-search-field {
-  position: relative;
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
 }
 
-// One capsule: magnifier, input, clear button and the projected accessory (radius menu).
+// One grey capsule like the search bar in the sheet of Apple Maps: magnifier, input, clear button.
 .place-search-field__bar {
   display: flex;
+  flex: 1;
   align-items: center;
+  min-width: 0;
   min-height: var(--layout-touch-target);
   padding-inline: var(--space-sm) var(--space-2xs);
   border-radius: var(--radius-pill);
-  @include materials.floating-material;
+  background-color: var(--color-search-field);
 
   &:focus-within {
     @include focus-ring.focus-ring;
   }
+}
+
+.place-search-field__cancel {
+  font-size: var(--font-size-body);
 }
 
 .place-search-field__icon {
@@ -38,12 +46,13 @@
   border: 0;
   background: none;
   // 1rem at least: iOS zooms into smaller inputs on focus.
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-body);
   text-overflow: ellipsis;
   appearance: none;
 
+  // The capsule around it draws the ring.
   &:focus {
-    outline: none;
+    @include focus-ring.no-focus-ring;
   }
 
   &::placeholder {
@@ -60,26 +69,11 @@
   color: var(--color-text-secondary);
 }
 
-.place-search-field__results {
-  position: absolute;
-  inset: calc(100% + var(--space-xs)) 0 auto;
-  z-index: 1;
-  max-height: 50vh;
-  overflow-y: auto;
-  border-radius: var(--radius-menu);
-  background: var(--material-menu);
-  box-shadow: var(--shadow-menu);
-  backdrop-filter: var(--material-blur);
-
-  &[hidden] {
-    display: none;
-  }
-}
-
 .place-search-field__listbox {
   list-style: none;
 
-  &:empty {
+  &:empty,
+  &[hidden] {
     display: none;
   }
 }
@@ -102,10 +96,18 @@
   }
 }
 
+// Round badge in front of each place, like the result rows of Apple Maps.
 .place-search-field__option-icon {
+  display: inline-flex;
   flex: none;
-  color: var(--color-action-text);
-  font-size: var(--icon-size-md);
+  align-items: center;
+  justify-content: center;
+  width: var(--space-xl);
+  height: var(--space-xl);
+  border-radius: var(--radius-round);
+  background-color: var(--color-tint-vivid);
+  color: var(--color-on-tint-vivid);
+  font-size: var(--icon-size-sm);
 }
 
 .place-search-field__option-text {
@@ -121,13 +123,14 @@
 .place-search-field__option-description {
   overflow: hidden;
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.place-search-field__status {
+.place-search-field__status,
+.place-search-field__hint {
   padding: var(--space-sm) var(--space-md);
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-subheadline);
 }

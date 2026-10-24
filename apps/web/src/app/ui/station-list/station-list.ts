@@ -3,34 +3,38 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  Directive,
   ElementRef,
   inject,
   input,
   output,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import type { FuelType, Station } from '@genialtanken/contracts';
 import { formatDistance } from '../../core/formatting/number-format';
 import { stationRoute } from '../../core/navigation/station-route';
-import { CHEAPEST_PRICE_STANDALONE_LABEL } from '../../core/stations/price-labels';
+import { priceLevelOf, priceRangeOf } from '../../core/stations/price-level';
+import type { PriceRange } from '../../core/stations/price-level';
 import {
   addressLinesBelowTitle,
-  navigationDestinationOf,
   priceInEuro,
   stationTitle,
 } from '../../core/stations/station-display';
-import type { NavigationDestination } from '../../core/navigation-apps/navigation-apps';
 import { FavoriteButton } from '../favorite-button/favorite-button';
 import { Icon } from '../icon/icon';
-import { Price } from '../price/price';
-import { RouteButton } from '../route-button/route-button';
+import { PriceTile } from '../price-tile/price-tile';
+import type { PriceTint } from '../price-tile/price-tile';
 
 interface StationListItem {
   stationIdentifier: string;
-  destination: NavigationDestination;
+  /** Place among all rows, counted from 1, also when the rows are split into two lists. */
+  position: number;
   title: string;
   addressLine: string;
   priceInEuro: number | null;
+  /** Tints the price tile like the station's price tag on the map. */
+  priceTint: PriceTint;
   distance: string | undefined;
   isFavorite: boolean;
   isCheapest: boolean;
@@ -39,10 +43,39 @@ interface StationListItem {
 
 const NO_STATION_IDENTIFIERS: ReadonlySet<string> = new Set();
 
-/** Price board of stations: one hairline-separated row per station, the price loudest. */
+const priceTintOf = (
+  price: number | null,
+  priceRange: PriceRange | undefined,
+  isCheapest: boolean
+): PriceTint => {
+  if (price === null || priceRange === undefined) {
+    return 'without-price';
+  }
+  return isCheapest ? 'cheapest' : priceLevelOf(price, priceRange);
+};
+
+interface StationRowContext {
+  $implicit: StationListItem;
+}
+
+/** Types the row template, so both lists render the same row. */
+@Directive({ selector: 'ng-template[appStationRow]' })
+class StationRowTemplate {
+  static ngTemplateContextGuard(
+    _directive: StationRowTemplate,
+    _context: unknown
+  ): _context is StationRowContext {
+    return true;
+  }
+}
+
+/**
+ * Stations as an iOS list: per row a price tile tinted like the price tags on the map, the
+ * station with distance and address, and its actions.
+ */
 @Component({
   selector: 'app-station-list',
-  imports: [RouterLink, Price, FavoriteButton, Icon, RouteButton],
+  imports: [NgTemplateOutlet, RouterLink, PriceTile, FavoriteButton, Icon, StationRowTemplate],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './station-list.html',
   styleUrl: './station-list.scss',
@@ -58,26 +91,46 @@ export class StationList {
    * detail page. Otherwise the title links to the detail page.
    */
   readonly selectsOnMap = input(false);
+  /**
+   * Shows the content marked `stationListInsertion` after this many rows, or after the list when
+   * it has no more rows than that; without it, after the list.
+   */
+  readonly insertionAfterRow = input<number>();
   readonly favoriteToggled = output<string>();
   readonly stationSelected = output<string>();
 
   protected readonly stationRoute = stationRoute;
-  protected readonly cheapestPriceLabel = CHEAPEST_PRICE_STANDALONE_LABEL;
 
-  protected readonly items = computed<StationListItem[]>(() =>
-    this.stations().map(station => ({
-      stationIdentifier: station.id,
-      destination: navigationDestinationOf(station),
-      title: stationTitle(station),
-      addressLine: addressLinesBelowTitle(station).join(', '),
-      priceInEuro: priceInEuro(station, this.fuelType()),
-      distance:
-        station.distanceInMeters === null ? undefined : formatDistance(station.distanceInMeters),
-      isFavorite: this.favoriteStationIdentifiers().has(station.id),
-      isCheapest: this.cheapestStationIdentifiers().has(station.id),
-      isSelected: station.id === this.selectedStationIdentifier(),
-    }))
+  protected readonly items = computed<StationListItem[]>(() => {
+    const fuelType = this.fuelType();
+    const pricedStations = this.stations().map(station => ({
+      station,
+      price: priceInEuro(station, fuelType),
+    }));
+    const priceRange = priceRangeOf(pricedStations.map(({ price }) => price));
+    return pricedStations.map(({ station, price }, index) => {
+      const isCheapest = this.cheapestStationIdentifiers().has(station.id);
+      return {
+        stationIdentifier: station.id,
+        position: index + 1,
+        title: stationTitle(station),
+        addressLine: addressLinesBelowTitle(station).join(', '),
+        priceInEuro: price,
+        priceTint: priceTintOf(price, priceRange, isCheapest),
+        distance:
+          station.distanceInMeters === null ? undefined : formatDistance(station.distanceInMeters),
+        isFavorite: this.favoriteStationIdentifiers().has(station.id),
+        isCheapest,
+        isSelected: station.id === this.selectedStationIdentifier(),
+      };
+    });
+  });
+
+  protected readonly leadingItems = computed(() =>
+    this.items().slice(0, this.insertionAfterRow() ?? Number.POSITIVE_INFINITY)
   );
+  protected readonly trailingItems = computed(() => this.items().slice(this.leadingItems().length));
+  protected readonly isSplit = computed(() => this.trailingItems().length > 0);
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
@@ -105,6 +158,21 @@ export class StationList {
       return false;
     }
     title.focus({ preventScroll: true });
+    return true;
+  }
+
+  /**
+   * Moves the focus to the star of a station's row, e.g. after unstarring a neighbor removed the
+   * focused one. `false` when the list has no row for the station.
+   */
+  focusFavoriteButton(stationIdentifier: string): boolean {
+    const favoriteButton = this.rowOf(stationIdentifier)?.querySelector<HTMLElement>(
+      'app-favorite-button button'
+    );
+    if (favoriteButton === null || favoriteButton === undefined) {
+      return false;
+    }
+    favoriteButton.focus();
     return true;
   }
 

@@ -1,8 +1,8 @@
-@use 'styles/breakpoints';
 @use 'styles/tokens';
 @use 'styles/map';
 @use 'styles/visually-hidden';
 @use 'styles/focus-ring';
+@use 'styles/skeleton';
 
 *,
 *::before,
@@ -18,10 +18,20 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  // Safari 26 tints its floating toolbar after the page background behind it. The body has no
+  // background of its own, so wherever the window shows past the page (iOS 26 can leave a strip
+  // below the layout viewport of the installed app), it continues the opaque color of the sheet
+  // instead of a grey bar. Pages that want the grouped background set it themselves.
+  background-color: var(--color-surface);
+}
 
-  // Keeps elements focused by keyboard from scrolling behind the sticky bottom navigation.
-  @include breakpoints.compact {
-    scroll-padding-bottom: calc(var(--layout-navigation-height) + var(--safe-area-bottom));
+// Dynamic Type: on iOS the root font follows the text size chosen in the system settings, so every
+// `rem` grows with it. Only on touch devices (`-webkit-touch-callout` is iOS only): on macOS the
+// system body style is 13px and would shrink the whole app.
+@supports (font: -apple-system-body) and (-webkit-touch-callout: none) {
+  html {
+    font: -apple-system-body;
+    font-family: var(--font-family-ui);
   }
 }
 
@@ -31,12 +41,24 @@ body {
   min-height: 100%;
 }
 
+// The window of an installed iOS app ends one status bar height short of the screen, which leaves
+// a strip below the page. `min()` caps the height at the large viewport so the page never scrolls
+// (WebKit bug 316008).
+@media (display-mode: standalone) {
+  html {
+    min-height: min(100lvh, calc(100% + env(safe-area-inset-top)));
+  }
+
+  body {
+    min-height: 100%;
+  }
+}
+
 body {
   font-family: var(--font-family-ui);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-body);
   line-height: var(--line-height-base);
   color: var(--color-text);
-  background-color: var(--color-canvas);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
@@ -57,6 +79,11 @@ fieldset {
   padding: 0;
 }
 
+// Prose stays readable in wide panels (1.4.8 AAA: at most 80 characters per line)
+p {
+  max-inline-size: 80ch;
+}
+
 h1,
 h2,
 h3,
@@ -64,6 +91,9 @@ h4 {
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   text-wrap: balance;
+  // Long German compounds such as "Öffnungszeiten" still fit at large text sizes.
+  hyphens: auto;
+  overflow-wrap: break-word;
 }
 
 a {
@@ -89,12 +119,23 @@ select {
   color: var(--color-text);
 }
 
+// Set by the focus ring on the focused element only; its children must not repeat the halo.
+@property --focus-ring-halo {
+  syntax: '*';
+  inherits: false;
+}
+
 :focus-visible {
   @include focus-ring.focus-ring;
 }
 
 .visually-hidden {
   @include visually-hidden.visually-hidden;
+}
+
+// The `<main>` of every page is the skip link's target only; it is not interactive itself.
+#main-content:focus {
+  @include focus-ring.no-focus-ring;
 }
 
 // Hidden until focused with the keyboard, then pinned to the top left above the chrome.
@@ -112,7 +153,7 @@ select {
 
   // Only when shown: the floating shadow would otherwise peek into the viewport.
   &:focus-visible {
-    box-shadow: var(--shadow-floating);
+    @include focus-ring.focus-ring($shadow: var(--shadow-floating));
     transform: none;
   }
 }
@@ -141,7 +182,14 @@ select {
   padding: var(--space-lg) var(--space-md);
 }
 
-// Primary action: filled with the tint. `.button--quiet` is the outlined secondary action.
+// Pressed state of a raised control: it sinks into the surface. An instant state change, also
+// without motion (the transitions above drop to 0s under reduced motion).
+@mixin pressed-control {
+  box-shadow: var(--shadow-control-pressed);
+  transform: translateY(var(--border-width-hairline));
+}
+
+// Primary action: filled with the brand indigo. `.button--quiet` is the outlined secondary action.
 .button {
   display: inline-flex;
   align-items: center;
@@ -152,18 +200,28 @@ select {
   border: var(--border-width-thin) solid transparent;
   border-radius: var(--radius-sm);
   background-color: var(--color-action);
+  background-image: var(--gradient-action);
   color: var(--color-on-action);
-  font-size: var(--font-size-md);
+  box-shadow: var(--shadow-control);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-medium);
   line-height: var(--line-height-tight);
   text-decoration: none;
   cursor: pointer;
   touch-action: manipulation;
-  transition: background-color var(--duration-short) var(--easing-standard);
+  transition:
+    background-color var(--duration-short) var(--easing-standard),
+    box-shadow var(--duration-short) var(--easing-standard);
 
   &:hover:not(:disabled, [aria-disabled='true']) {
     background-color: var(--color-action-hover);
+    background-image: var(--gradient-action-hover);
     color: var(--color-on-action);
+  }
+
+  &:active:not(:disabled, [aria-disabled='true']) {
+    @include pressed-control;
+    background-image: var(--gradient-action-pressed);
   }
 
   &:disabled,
@@ -175,13 +233,39 @@ select {
   &--quiet {
     border-color: var(--color-border-control);
     background-color: transparent;
+    background-image: none;
     color: var(--color-action-text);
+    box-shadow: none;
 
     &:hover:not(:disabled, [aria-disabled='true']) {
       border-color: var(--color-action-text-hover);
       background-color: var(--color-surface);
+      background-image: none;
       color: var(--color-action-text-hover);
     }
+
+    &:active:not(:disabled, [aria-disabled='true']) {
+      background-image: none;
+    }
+  }
+}
+
+// Plain text button in the tint, like "Cancel" next to an iOS search bar; at least as tall as a
+// touch target.
+.text-button {
+  flex: none;
+  min-height: var(--layout-touch-target);
+  margin: 0;
+  padding: 0 var(--space-2xs);
+  border: 0;
+  background: none;
+  color: var(--color-action-text);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+
+  &:hover {
+    color: var(--color-action-text-hover);
   }
 }
 
@@ -198,7 +282,7 @@ select {
   border: 0;
   border-radius: var(--radius-round);
   background: none;
-  color: var(--color-action-text);
+  color: var(--color-tint-vivid);
   font-size: var(--icon-size-sm);
   text-decoration: none;
   cursor: pointer;
@@ -213,6 +297,92 @@ select {
       color: var(--color-action-text-hover);
     }
   }
+
+  // Grey round button like the close button of an iOS sheet: the circle (`.icon-button__circle`
+  // inside) is smaller than the touch target around it.
+  &--circled {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-body);
+  }
+
+  &__circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--space-xl);
+    height: var(--space-xl);
+    border-radius: var(--radius-round);
+    background-color: var(--color-segmented-track);
+    background-image: var(--gradient-control-sheen);
+    box-shadow: var(--shadow-control);
+
+    .icon-button--circled:active > & {
+      @include pressed-control;
+    }
+  }
+}
+
+// Action of a place card in Apple Maps: an equal-width tile with the icon above its label.
+// Tinted on the opaque tint (8.1 light, 9.5 dark); `--primary` is filled with the brand indigo.
+.action-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3xs);
+  align-items: center;
+  justify-content: center;
+  min-width: var(--layout-touch-target);
+  min-height: var(--layout-action-tile-height);
+  margin: 0;
+  padding: var(--space-xs) var(--space-2xs);
+  border: 0;
+  border-radius: var(--radius-md);
+  background-color: var(--color-action-tint);
+  background-image: var(--gradient-control-sheen);
+  color: var(--color-action-text);
+  box-shadow: var(--shadow-control);
+  font-size: var(--icon-size-md);
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background-color var(--duration-short) var(--easing-standard),
+    color var(--duration-short) var(--easing-standard),
+    box-shadow var(--duration-short) var(--easing-standard);
+
+  &:hover {
+    color: var(--color-action-text-hover);
+  }
+
+  // The route tile is a native select over the icon, so it is pressed through its child too
+  &:active,
+  &:has(:active) {
+    @include pressed-control;
+  }
+
+  &--primary {
+    background-color: var(--color-action);
+    background-image: var(--gradient-action);
+    color: var(--color-on-action);
+
+    &:hover {
+      background-color: var(--color-action-hover);
+      background-image: var(--gradient-action-hover);
+      color: var(--color-on-action);
+    }
+
+    &:active,
+    &:has(:active) {
+      background-image: var(--gradient-action-pressed);
+    }
+  }
+}
+
+.action-tile__label {
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 // Toast: tapping anywhere on it closes it. The close button stretches over the whole toast, so

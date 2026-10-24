@@ -5,7 +5,8 @@ import { OPEN_EXTERNAL_URL } from '../../core/navigation-apps/open-external-url'
 import { Icon } from '../icon/icon';
 
 /**
- * Starts a route to a station in a navigation app of the user's choice. The choice is a native
+ * Starts a route to a station in a navigation app of the user's choice: the filled tile in the
+ * action row of a station card. The choice is a native
  * `<select>` laid invisibly over the button, so phones show their own system picker.
  */
 @Component({
@@ -17,8 +18,6 @@ import { Icon } from '../icon/icon';
 })
 export class RouteButton {
   readonly destination = input.required<NavigationDestination>();
-  /** Shows "Route" next to the icon, e.g. on the detail page; the list shows the icon only. */
-  readonly isLabelled = input(false);
 
   private readonly openExternalUrl = inject(OPEN_EXTERNAL_URL);
   protected readonly apps = NAVIGATION_APPS;

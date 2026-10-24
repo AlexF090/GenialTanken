@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import type { MockInstance } from 'vitest';
 import { FakeStorage, storedSettings } from '../../../testing/fake-storage';
-import { BROWSER_STORAGE } from '../browser-storage';
+import { LOCAL_STORAGE } from '../browser-storage';
 import { Logger } from '../logging/logger';
 import { SETTINGS_STORAGE_KEY, SettingsStore } from './settings-store';
 
@@ -12,7 +12,7 @@ interface CreatedStore {
 
 /** Spies on the warnings before the store exists, because it reads the storage on creation. */
 const createStore = (storage: Storage): CreatedStore => {
-  TestBed.configureTestingModule({ providers: [{ provide: BROWSER_STORAGE, useValue: storage }] });
+  TestBed.configureTestingModule({ providers: [{ provide: LOCAL_STORAGE, useValue: storage }] });
   const warn = vi.spyOn(TestBed.inject(Logger), 'warn').mockImplementation(() => undefined);
   return { store: TestBed.inject(SettingsStore), warn };
 };

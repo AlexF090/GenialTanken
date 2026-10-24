@@ -1,73 +1,86 @@
-<app-page-header title="Einstellungen" />
-<main class="page-content settings">
-  <form class="settings__form" novalidate>
-    <fieldset class="settings__group">
-      <legend class="settings__title">Kraftstoff</legend>
-      <div class="settings__options">
-        @for (option of fuelTypeOptions; track option.value) {
-          <label class="settings__option">
-            {{ option.label }}
-            <input
-              type="radio"
-              class="settings__radio"
-              [value]="option.value"
-              [formField]="searchSettingsForm.fuelType" />
-            <app-icon name="checkmark" class="settings__checkmark" />
-          </label>
-        }
-      </div>
-    </fieldset>
+<app-sheet-dialog title="Einstellungen" (closed)="close()">
+  <div class="settings">
+    <form class="settings__form" novalidate>
+      <fieldset class="settings__group">
+        <legend class="settings__title">Kraftstoff</legend>
+        <div class="settings__options">
+          @for (option of fuelTypeOptions; track option.value) {
+            <label class="settings__option">
+              {{ option.label }}
+              <input
+                type="radio"
+                class="settings__radio"
+                [value]="option.value"
+                [formField]="searchSettingsForm.fuelType" />
+              <app-icon name="checkmark" class="settings__checkmark" />
+            </label>
+          }
+        </div>
+      </fieldset>
 
-    <div class="settings__group">
-      <label class="settings__title" [for]="radiusIdentifier">
-        Radius: {{ searchSettingsModel().radiusInKilometers | kilometers }}
-      </label>
-      <div class="settings__slider-row">
-        <span class="settings__range-limit" aria-hidden="true">{{
-          minimumRadiusInKilometers | kilometers
-        }}</span>
-        <input
-          [id]="radiusIdentifier"
-          class="settings__slider"
-          type="range"
-          step="1"
-          [formField]="searchSettingsForm.radiusInKilometers" />
-        <span class="settings__range-limit" aria-hidden="true">{{
-          maximumRadiusInKilometers | kilometers
-        }}</span>
+      <div class="settings__group">
+        <label class="settings__title" [for]="radiusIdentifier">
+          Radius: {{ searchSettingsModel().radiusInKilometers | kilometers }}
+        </label>
+        <div class="settings__slider-row">
+          <span class="settings__range-limit" aria-hidden="true">{{
+            minimumRadiusInKilometers | kilometers
+          }}</span>
+          <input
+            [id]="radiusIdentifier"
+            class="settings__slider"
+            type="range"
+            step="1"
+            [formField]="searchSettingsForm.radiusInKilometers" />
+          <span class="settings__range-limit" aria-hidden="true">{{
+            maximumRadiusInKilometers | kilometers
+          }}</span>
+        </div>
       </div>
+
+      <fieldset class="settings__group">
+        <legend class="settings__title">Darstellung</legend>
+        <div class="settings__options">
+          @for (option of colorSchemeOptions; track option.value) {
+            <label class="settings__option">
+              {{ option.label }}
+              <input
+                type="radio"
+                class="settings__radio"
+                name="color-scheme"
+                [value]="option.value"
+                [checked]="colorScheme() === option.value"
+                (change)="selectColorScheme(option.value)" />
+              <app-icon name="checkmark" class="settings__checkmark" />
+            </label>
+          }
+        </div>
+      </fieldset>
+    </form>
+
+    <section class="settings__group" [attr.aria-labelledby]="dataSourceHeadingIdentifier">
+      <h2 [id]="dataSourceHeadingIdentifier" class="settings__title">Datenquelle</h2>
+      <p class="settings__text settings__card">
+        Die Preise für Frankreich stammen aus den offenen Daten der französischen Regierung unter
+        der Licence Ouverte 2.0:
+        <app-external-link
+          class="settings__link"
+          href="https://www.prix-carburants.gouv.fr/rubrique/opendata/"
+          >prix-carburants.gouv.fr</app-external-link
+        >. Alle Angaben ohne Gewähr.
+      </p>
+    </section>
+
+    <div class="settings__about">
+      <img class="settings__app-icon" src="icons/icon-192.png" alt="" />
+      <app-wordmark class="settings__wordmark" />
     </div>
-
-    <fieldset class="settings__group">
-      <legend class="settings__title">Darstellung</legend>
-      <div class="settings__options">
-        @for (option of colorSchemeOptions; track option.value) {
-          <label class="settings__option">
-            {{ option.label }}
-            <input
-              type="radio"
-              class="settings__radio"
-              name="color-scheme"
-              [value]="option.value"
-              [checked]="colorScheme() === option.value"
-              (change)="selectColorScheme(option.value)" />
-            <app-icon name="checkmark" class="settings__checkmark" />
-          </label>
-        }
-      </div>
-    </fieldset>
-  </form>
-
-  <section class="settings__group" [attr.aria-labelledby]="dataSourceHeadingIdentifier">
-    <h2 [id]="dataSourceHeadingIdentifier" class="settings__title">Datenquelle</h2>
-    <p class="settings__text settings__card">
-      Die Preise für Frankreich stammen aus den offenen Daten der französischen Regierung unter der
-      Licence Ouverte 2.0:
-      <app-external-link
-        class="settings__link"
-        href="https://www.prix-carburants.gouv.fr/rubrique/opendata/"
-        >prix-carburants.gouv.fr</app-external-link
-      >. Alle Angaben ohne Gewähr.
-    </p>
-  </section>
-</main>
+  </div>
+  <!-- The app-wide notice of a new version is inert behind the modal dialog, so it shows here. -->
+  <app-update-notice
+    sheetDialogFooter
+    class="settings__update"
+    [class.settings__update--shown]="pendingReload() !== undefined"
+    [pendingReload]="pendingReload()"
+    (reloadRequested)="reloadApplication()" />
+</app-sheet-dialog>

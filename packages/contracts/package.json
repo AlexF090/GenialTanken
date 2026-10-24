@@ -5,6 +5,7 @@
   "license": "UNLICENSED",
   "description": "Shared zod schemas and types for the GenialTanken web app and API",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

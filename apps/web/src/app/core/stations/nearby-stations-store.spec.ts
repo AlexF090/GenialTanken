@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ApplicationRef } from '@angular/core';
+import { ApplicationRef, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { Station } from '@genialtanken/contracts';
 import { FakeGeolocation } from '../../../testing/fake-geolocation';
@@ -12,21 +12,25 @@ import {
   unbrandedStation,
   withPrices,
 } from '../../../testing/station-fixtures';
-import { BROWSER_STORAGE } from '../browser-storage';
+import { LOCAL_STORAGE } from '../browser-storage';
 import { GEOLOCATION } from '../geolocation/geolocation-service';
 import { SearchCenterStore } from '../search-center/search-center-store';
 import { SettingsStore } from '../settings/settings-store';
 import { NearbyStationsStore } from './nearby-stations-store';
 import { stationsUrl } from '../../../testing/api-urls';
+import { CURRENT_DATE } from '../time/current-date';
 
 const EIFFEL_TOWER_E5_URL = stationsUrl({ latitude: 48.8584, longitude: 2.2945 });
 const BASTILLE_E5_URL = stationsUrl({ latitude: 48.8532, longitude: 2.3692 });
+const FIRST_ANSWER_TIME = new Date('2026-10-23T12:00:00');
+const SECOND_ANSWER_TIME = new Date('2026-10-23T12:07:00');
 
 describe('NearbyStationsStore', () => {
   let geolocation: FakeGeolocation;
   let httpTesting: HttpTestingController;
   let store: NearbyStationsStore;
   let searchCenter: SearchCenterStore;
+  const clock = signal(FIRST_ANSWER_TIME);
 
   /** Every request is flushed or never sent here, so the app becomes stable without waiting. */
   const settle = async (): Promise<void> => {
@@ -42,12 +46,14 @@ describe('NearbyStationsStore', () => {
 
   beforeEach(() => {
     geolocation = new FakeGeolocation();
+    clock.set(FIRST_ANSWER_TIME);
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: BROWSER_STORAGE, useValue: new FakeStorage() },
+        { provide: LOCAL_STORAGE, useValue: new FakeStorage() },
         { provide: GEOLOCATION, useValue: geolocation },
+        { provide: CURRENT_DATE, useValue: clock.asReadonly() },
       ],
     });
     httpTesting = TestBed.inject(HttpTestingController);
@@ -140,6 +146,34 @@ describe('NearbyStationsStore', () => {
     httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([unbrandedStation]);
     await settle();
     expect(store.stations()).toEqual([unbrandedStation]);
+  });
+
+  it('records when the last answer arrived, not when it was read', async () => {
+    expect(store.loadedAt()).toBeUndefined();
+
+    await loadAtEiffelTower();
+    clock.set(new Date('2026-10-23T12:03:00'));
+
+    expect(store.loadedAt()).toEqual(FIRST_ANSWER_TIME);
+
+    store.refresh();
+    TestBed.tick();
+    expect(store.loadedAt()).toEqual(FIRST_ANSWER_TIME);
+    clock.set(SECOND_ANSWER_TIME);
+    httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([unbrandedStation]);
+    await settle();
+
+    expect(store.loadedAt()).toEqual(SECOND_ANSWER_TIME);
+  });
+
+  it('has no load time while a failed request leaves it without stations', async () => {
+    TestBed.tick();
+    httpTesting
+      .expectOne(EIFFEL_TOWER_E5_URL)
+      .flush(null, { status: 502, statusText: 'Bad Gateway' });
+    await settle();
+
+    expect(store.loadedAt()).toBeUndefined();
   });
 
   it('marks every station tied at the lowest price of the selected fuel type', async () => {

@@ -12,13 +12,16 @@ import type { FuelType, Station } from '@genialtanken/contracts';
 import { uniqueIdentifier } from '../../core/dom/unique-identifier';
 import { FUEL_TYPE_LABELS } from '../../core/fuel-type-labels';
 import {
-  addressLinesBelowTitle,
+  addressLinesOf,
+  formatCityLine,
   navigationDestinationOf,
   priceInEuro,
   stationSubtitle,
   stationTitle,
 } from '../../core/stations/station-display';
+import { DataSourceCredit } from '../data-source-credit/data-source-credit';
 import { FavoriteButton } from '../favorite-button/favorite-button';
+import { Icon } from '../icon/icon';
 import { OpeningTimes } from '../opening-times/opening-times';
 import { Price } from '../price/price';
 import { RouteButton } from '../route-button/route-button';
@@ -30,10 +33,13 @@ interface FuelPrice {
   isSelected: boolean;
 }
 
-/** Details of one station with all its prices; the user's fuel leads the price board. */
+/**
+ * A station as a place card of Apple Maps: name, the actions route, favorite and share, then the
+ * price board led by the user's fuel, the opening times and the address.
+ */
 @Component({
   selector: 'app-station-detail',
-  imports: [FavoriteButton, OpeningTimes, Price, RouteButton],
+  imports: [DataSourceCredit, FavoriteButton, Icon, OpeningTimes, Price, RouteButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './station-detail.html',
   styleUrl: './station-detail.scss',
@@ -45,16 +51,29 @@ export class StationDetail {
   readonly isFavorite = input.required<boolean>();
   /** Marks today in the opening times. */
   readonly today = input.required<Date>();
+  /** Offers "Teilen", where the browser has a share sheet. */
+  readonly canShare = input(false);
   readonly favoriteToggled = output();
+  readonly shareRequested = output();
 
   private readonly titleHeading = viewChild.required<ElementRef<HTMLElement>>('titleHeading');
   protected readonly pricesHeadingIdentifier = uniqueIdentifier('prices-heading');
   protected readonly openingTimesHeadingIdentifier = uniqueIdentifier('opening-times-heading');
+  protected readonly addressHeadingIdentifier = uniqueIdentifier('address-heading');
 
   protected readonly title = computed(() => stationTitle(this.station()));
   protected readonly destination = computed(() => navigationDestinationOf(this.station()));
-  protected readonly subtitle = computed(() => stationSubtitle(this.station()));
-  protected readonly addressLines = computed(() => addressLinesBelowTitle(this.station()));
+  /** The station's name, otherwise its city; never a repetition of the title. */
+  protected readonly subtitle = computed(() => {
+    const station = this.station();
+    const name = stationSubtitle(station);
+    if (name !== undefined) {
+      return name;
+    }
+    const cityLine = formatCityLine(station);
+    return cityLine === '' || cityLine === this.title() ? undefined : cityLine;
+  });
+  protected readonly addressLines = computed(() => addressLinesOf(this.station()));
   protected readonly fuelPrices = computed<FuelPrice[]>(() => {
     const selectedFuelType = this.fuelType();
     const fuelPrices = FUEL_TYPES.map(fuelType => ({

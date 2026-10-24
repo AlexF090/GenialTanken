@@ -1,5 +1,6 @@
+import { AxeBuilder } from '@axe-core/playwright';
 import { test as base, expect } from '@playwright/test';
-import type { Locator, Page } from '@playwright/test';
+import type { BrowserContext, Locator, Page } from '@playwright/test';
 
 /**
  * Stations of `data/france-stations.json` as the app shows them for a user at the centre of
@@ -70,18 +71,18 @@ const transparentPixelPng = Buffer.from(
  * the API that the mock upstream does not know fail the run in `global-teardown.ts`.
  */
 const mockExternalServices = async (
-  page: Page,
+  target: Page | BrowserContext,
   applicationOrigin: string,
   unmockedRequests: string[]
 ): Promise<void> => {
-  await page.route(
+  await target.route(
     url => url.origin !== applicationOrigin,
     async route => {
       unmockedRequests.push(`${route.request().method()} ${route.request().url()}`);
       await route.abort('blockedbyclient');
     }
   );
-  await page.route(
+  await target.route(
     url => url.protocol === 'https:' && /^([a-z]\.)?tile\.openstreetmap\.org$/.test(url.hostname),
     route => route.fulfill({ body: transparentPixelPng, contentType: 'image/png' })
   );
@@ -101,7 +102,47 @@ export const test = base.extend({
   },
 });
 
+/**
+ * For the `pwa` project: the same mocks on the browser context. Requests of the service worker
+ * (it fetches map tiles on behalf of the page) only pass through context routes in Chromium.
+ */
+export const serviceWorkerTest = base.extend({
+  geolocation: parisCenter,
+  permissions: ['geolocation'],
+  context: async ({ context, baseURL }, use) => {
+    if (!baseURL) {
+      throw new Error('baseURL must be configured in playwright.config.ts');
+    }
+    const unmockedRequests: string[] = [];
+    await mockExternalServices(context, new URL(baseURL).origin, unmockedRequests);
+    await use(context);
+    expect(unmockedRequests, 'every request outside the app origin must be mocked').toEqual([]);
+  },
+});
+
 export { expect };
+
+/**
+ * For the `pwa` project: loads the app and waits until the service worker controls the page and
+ * has cached the app shell (its debug page lists an installed version only after every prefetch
+ * file is stored).
+ */
+export const installServiceWorker = async (page: Page): Promise<void> => {
+  await page.goto('/');
+  await expect(resultSummary(page)).toContainText(eiffelTower.label);
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+  });
+  await page.reload();
+  await expect
+    .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
+    .toBe(true);
+  await expect
+    .poll(() => page.evaluate(async () => (await fetch('/ngsw/state')).text()), {
+      timeout: 30_000,
+    })
+    .toContain('=== Version ');
+};
 
 /** The level 1 heading that names the current page. */
 export const pageHeading = (page: Page, name: string): Locator =>
@@ -111,9 +152,6 @@ export const pageHeading = (page: Page, name: string): Locator =>
 export const expectColorScheme = async (page: Page, scheme: 'light' | 'dark'): Promise<void> => {
   await expect(page.locator('html')).toHaveAttribute('data-color-scheme', scheme);
 };
-
-export const mainNavigation = (page: Page): Locator =>
-  page.getByRole('navigation', { name: 'Hauptnavigation' });
 
 /** The station list of the explore and favorites pages. */
 export const stationList = (page: Page): Locator =>
@@ -127,7 +165,10 @@ export const stationCard = (page: Page, station: FixtureStation): Locator =>
 export const favoriteButton = (container: Locator, station: FixtureStation): Locator =>
   container.getByRole('button', { name: `Favorit: ${station.title}`, exact: true });
 
-/** On the explore page the title of a row is a toggle button that shows the station on the map. */
+/**
+ * On the explore page the title of a row is a button that shows the station on the map; the row of
+ * the selected station is `aria-current`.
+ */
 export const stationRowButton = (container: Locator, station: FixtureStation): Locator =>
   container.getByRole('button', { name: station.title, exact: true });
 
@@ -149,10 +190,69 @@ export const sheetHandle = (page: Page): Locator =>
     .getByRole('region', { name: 'Tankstellen', exact: true })
     .getByRole('button', { name: /^Liste (vergrößern|verkleinern)$/ });
 
-/** Opens the explore page through the navigation, keeping the app state of the current visit. */
+/** The settings open as a modal dialog over the explore page. */
+export const settingsDialog = (page: Page): Locator =>
+  page.getByRole('dialog', { name: 'Einstellungen', exact: true });
+
+/** Title of the list of all favorites. */
+export const favoritesHeading = (page: Page): Locator =>
+  favoritesList(page).getByRole('heading', { level: 2, name: 'Favoriten', exact: true });
+
+/** All favorites, shown in the explore sheet instead of the stations; it has a back button. */
+export const favoritesList = (page: Page): Locator =>
+  page
+    .getByRole('region', { name: 'Favoriten', exact: true })
+    .filter({ has: page.getByRole('button', { name: 'Zurück', exact: true }) });
+
+/** The favorites row above the stations in the explore sheet; it links to all favorites. */
+export const favoritesRow = (page: Page): Locator =>
+  page
+    .getByRole('region', { name: 'Favoriten', exact: true })
+    .filter({ has: page.getByRole('link', { name: 'Alle Favoriten', exact: true }) });
+
+/** A station's card, shown in the explore sheet instead of the stations. */
+export const openedStationCard = (page: Page): Locator =>
+  page.getByRole('region', { name: 'Tankstelle', exact: true });
+
+/** The round settings button in the header of the explore sheet. */
+export const settingsButton = (page: Page): Locator =>
+  page.getByRole('region', { name: 'Tankstellen', exact: true }).getByRole('link', {
+    name: 'Einstellungen',
+    exact: true,
+  });
+
+/**
+ * Returns to the list of the explore page the way a user does, keeping the app state of the
+ * current visit: closes the settings dialog, the favorites or a station's card, or follows the
+ * link of the 404 page. There is no navigation bar; the sheet is the app.
+ *
+ * The URL decides what is open, not a visibility check: right after `page.goto` the lazy route
+ * may not have rendered yet, and `isVisible()` does not wait for it. The clicks below do.
+ */
 export const openExplore = async (page: Page): Promise<void> => {
-  await mainNavigation(page).getByRole('link', { name: 'Erkunden', exact: true }).click();
+  const pathname = new URL(page.url()).pathname;
+  if (pathname === '/settings') {
+    const dialog = settingsDialog(page);
+    await dialog.getByRole('button', { name: 'Schließen', exact: true }).click();
+    await expect(dialog).toBeHidden();
+  } else if (pathname === '/favorites') {
+    await favoritesList(page).getByRole('button', { name: 'Zurück', exact: true }).click();
+  } else if (pathname.startsWith('/stations/')) {
+    await openedStationCard(page).getByRole('button', { name: 'Schließen', exact: true }).click();
+  } else if (pathname !== '/') {
+    await page.getByRole('link', { name: 'Zur Karte', exact: true }).click();
+  }
+  await expect(page).toHaveURL('/');
   await expect(pageHeading(page, 'GenialTanken')).toBeVisible();
+};
+
+/** Opens the list of all favorites through "Alle" of the favorites row; needs a favorite. */
+export const openFavorites = async (page: Page): Promise<void> => {
+  if (!(await favoritesRow(page).isVisible())) {
+    await openExplore(page);
+  }
+  await favoritesRow(page).getByRole('link', { name: 'Alle Favoriten', exact: true }).click();
+  await expect(favoritesHeading(page)).toBeVisible();
 };
 
 /**
@@ -168,13 +268,19 @@ export const useOwnPosition = async (
 };
 
 /**
- * Opens the settings through the navigation. The router attaches the page before its first
- * change detection binds the form, so the test waits for the bound radius label (its first
- * binding) before interacting; otherwise the input is ignored (Angular error NG0950).
+ * Opens the settings dialog through the round button of the sheet header. The router attaches
+ * the page before its first change detection binds the form, so the test waits for the bound
+ * radius label (its first binding) before interacting; otherwise the input is ignored (Angular
+ * error NG0950).
  */
 export const openSettings = async (page: Page): Promise<void> => {
-  await mainNavigation(page).getByRole('link', { name: 'Einstellungen', exact: true }).click();
-  await expect(page.getByRole('slider', { name: /^Radius: \d+ km$/ })).toBeVisible();
+  if (!(await settingsButton(page).isVisible())) {
+    await openExplore(page);
+  }
+  await settingsButton(page).click();
+  await expect(
+    settingsDialog(page).getByRole('slider', { name: /^Radius: \d+ km$/ })
+  ).toBeVisible();
 };
 
 export const fuelOptions = (page: Page): Locator =>
@@ -215,3 +321,98 @@ export const storedFavoriteIdentifiers = (page: Page): Promise<unknown> =>
     (storageKey): unknown => JSON.parse(localStorage.getItem(storageKey) ?? 'null'),
     FAVORITE_IDENTIFIERS_STORAGE_KEY
   );
+
+/** The card in the explore sheet that suggests adding the app to the home screen. */
+export const installationHint = (page: Page): Locator =>
+  page.getByRole('region', { name: 'GenialTanken als App', exact: true });
+
+/**
+ * Makes the browser look like Safari on iOS, which adds web apps to the home screen through its
+ * Share menu and alone knows `navigator.standalone`. On a touch device (the `mobile` project) the
+ * explore sheet then suggests those steps; Chromium never shows the hint on its own in tests.
+ */
+export const suggestHomeScreenSteps = async (page: Page): Promise<void> => {
+  await page.addInitScript(() => {
+    Object.defineProperty(Navigator.prototype, 'standalone', {
+      configurable: true,
+      get: () => false,
+    });
+  });
+};
+
+export interface TouchPoint {
+  x: number;
+  y: number;
+}
+
+export interface SwipeOptions {
+  /** Number of touch moves between the start and the end point. */
+  steps?: number;
+  /** Pause between two moves, so the gesture has a speed a test can reason about. */
+  stepDelayInMilliseconds?: number;
+  /** When false the finger stays on the screen; the returned function lifts it. */
+  release?: boolean;
+}
+
+/**
+ * Swipes one finger from one point to another through the Chromium DevTools protocol, which
+ * sends real touch events (Playwright's own touchscreen can only tap). Returns a function that
+ * lifts the finger; it does nothing when the swipe released already.
+ */
+export const swipe = async (
+  page: Page,
+  from: TouchPoint,
+  to: TouchPoint,
+  { steps = 10, stepDelayInMilliseconds = 0, release = true }: SwipeOptions = {}
+): Promise<() => Promise<void>> => {
+  const session = await page.context().newCDPSession(page);
+  let isFingerDown = true;
+  const liftFinger = async (): Promise<void> => {
+    if (!isFingerDown) {
+      return;
+    }
+    isFingerDown = false;
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await session.detach();
+  };
+
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [from] });
+  for (let step = 1; step <= steps; step++) {
+    if (stepDelayInMilliseconds > 0) {
+      await page.evaluate(
+        delay => new Promise<void>(resolve => setTimeout(resolve, delay)),
+        stepDelayInMilliseconds
+      );
+    }
+    const progress = step / steps;
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [
+        {
+          x: from.x + (to.x - from.x) * progress,
+          y: from.y + (to.y - from.y) * progress,
+        },
+      ],
+    });
+  }
+  if (release) {
+    await liftFinger();
+  }
+  return liftFinger;
+};
+
+// `wcag2aaa` adds the enhanced contrast rule (1.4.6).
+const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag2aaa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+/** Scans the page in its current state with axe for violations of WCAG 2.2 up to AAA. */
+export const expectNoAccessibilityViolations = async (page: Page): Promise<void> => {
+  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+
+  expect(
+    results.violations.map(violation => ({
+      rule: violation.id,
+      impact: violation.impact,
+      targets: violation.nodes.map(node => node.target.join(' ')),
+    }))
+  ).toEqual([]);
+};

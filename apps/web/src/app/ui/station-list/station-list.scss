@@ -1,73 +1,109 @@
+@use 'breakpoints';
 @use 'focus-ring';
 
-// An iOS list: rows separated by a hairline inset from the leading edge, prices aligned on the
-// right.
+$narrow-width: breakpoints.$station-row-stacking-width;
+
+// An iOS list: the price tile leads, separators are inset to the text like in Apple Maps.
 .station-list {
+  container: station-list / inline-size;
   list-style: none;
 }
 
 .station-row {
   position: relative;
   display: grid;
-  // Actions top right, price bottom right where the eye ends the row. The price stays first in
-  // the markup, so screen readers hear it right after the station.
-  grid-template-areas:
-    'details actions'
-    'details price';
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: var(--space-md);
-  row-gap: var(--space-2xs);
+  grid-template-areas: 'price details actions';
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-xs) var(--space-sm);
   padding: var(--space-sm) var(--space-md);
-  background: linear-gradient(var(--color-hairline), var(--color-hairline)) no-repeat right bottom /
-    calc(100% - var(--space-md)) var(--border-width-hairline);
   transition: background-color var(--duration-short) var(--easing-standard);
+
+  // Separator from the start of the text to the trailing edge
+  &::before {
+    content: '';
+    grid-row: 1;
+    grid-column: details / -1;
+    align-self: end;
+    height: var(--border-width-hairline);
+    margin-block-end: calc(-1 * var(--space-sm));
+    margin-inline-end: calc(-1 * var(--space-md));
+    background-color: var(--color-hairline);
+  }
 
   &:hover {
     background-color: var(--color-menu-highlight);
   }
 
-  // Marker bar of the station shown on the map
-  &--selected {
-    background-color: color-mix(in srgb, var(--color-action) 10%, transparent);
+  // The station shown on the map: grey like a selected cell in iOS, plus a leading bar
+  &--selected,
+  &--selected:hover {
+    background-color: var(--color-selection);
+  }
+
+  &--selected::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: var(--border-width-selection-indicator);
+    border-start-end-radius: var(--radius-pill);
+    border-end-end-radius: var(--radius-pill);
+    background-color: var(--color-selection-indicator);
+    pointer-events: none;
+
+    // The grey fill disappears in forced colors; the bar stays in the system's selection color.
+    @media (forced-colors: active) {
+      forced-color-adjust: none;
+      background-color: Highlight;
+    }
+  }
+}
+
+// The station moves below the tile.
+@container station-list (width < #{$narrow-width}) {
+  .station-row {
+    grid-template-areas:
+      'price actions'
+      'details details';
+    grid-template-columns: minmax(0, 1fr) auto;
 
     &::before {
-      content: '';
-      position: absolute;
-      inset-block: 0;
-      inset-inline-start: 0;
-      width: var(--space-2xs);
-      background-color: var(--color-action);
+      grid-row: 2;
+      grid-column: 1 / -1;
     }
+  }
+
+  .station-row__price {
+    justify-self: start;
   }
 }
 
 .station-row__details {
   display: flex;
   flex-direction: column;
+  gap: var(--space-3xs);
   grid-area: details;
   min-width: 0;
 }
 
 .station-row__title {
   display: block;
-  max-width: 100%;
   margin: 0;
   padding: 0;
   border: 0;
   background: none;
-  overflow: hidden;
   font-family: inherit;
   text-align: start;
   cursor: pointer;
   color: var(--color-text);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   text-decoration: none;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 
-  // The whole row opens the details; the actions sit above this layer
+  // The whole row is the control; the actions sit above this layer.
   &::after {
     content: '';
     position: absolute;
@@ -80,7 +116,7 @@
   }
 
   &:focus-visible {
-    outline: none;
+    @include focus-ring.no-focus-ring;
 
     &::after {
       @include focus-ring.inset-focus-ring;
@@ -88,56 +124,28 @@
   }
 }
 
-.station-row__line {
+.station-row__secondary {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-// Below the name, smaller like a footnote: the title already says which station it is.
-.station-row__address {
-  font-size: var(--font-size-footnote);
+  font-size: var(--font-size-subheadline);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
 }
 
 .station-row__distance {
-  color: var(--color-text);
-  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .station-row__price {
-  display: flex;
-  flex-direction: column;
   grid-area: price;
-  align-items: flex-end;
-  align-self: end;
-  justify-self: end;
-  min-width: var(--layout-price-column-width);
-  padding: var(--space-2xs) var(--space-xs);
-  border: var(--border-width-hairline) solid transparent;
-  border-radius: var(--radius-sm);
-  color: var(--color-text);
-}
-
-// The green is reserved for the cheapest price and always comes with its label
-.station-row--cheapest .station-row__price {
-  border-color: var(--color-highlight-edge);
-  background-color: var(--color-highlight);
-  color: var(--color-on-highlight);
-}
-
-.station-row__cheapest-label {
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-bold);
-  line-height: var(--line-height-tight);
 }
 
 .station-row__actions {
+  // Above the title's area that makes the whole row the control
   position: relative;
-  z-index: 1;
+  z-index: var(--layer-above-siblings);
   display: flex;
   grid-area: actions;
-  justify-self: end;
-  align-self: start;
-  // Optically aligns the icons with the title and keeps the touch targets from padding the row
-  margin-block-start: calc(-1 * var(--space-xs));
+  // Aligns the icons with the padding of the row while keeping their 44px touch targets
   margin-inline-end: calc((var(--icon-size-md) - var(--layout-touch-target)) / 2);
 }

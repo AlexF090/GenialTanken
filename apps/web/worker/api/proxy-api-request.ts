@@ -1,3 +1,4 @@
+import { isAllowedApiOrigin } from './api-origin.ts';
 import { createApiRequest } from './create-api-request.ts';
 
 /** Worker variables and secrets the API proxy reads (production and preview). */
@@ -17,20 +18,9 @@ export const UPSTREAM_UNAVAILABLE_MESSAGE = 'The fuel price service is unavailab
 const HTTP_STATUS_INTERNAL_SERVER_ERROR = 500;
 const HTTP_STATUS_BAD_GATEWAY = 502;
 
-/** Plain http is only allowed for a local API during `wrangler dev`. */
-const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]']);
-
 /** Same body shape as the API's own errors, so the web app handles both alike. */
 const errorResponse = (statusCode: number, message: string): Response =>
   Response.json({ statusCode, message }, { status: statusCode });
-
-const isAllowedApiOrigin = (value: string | undefined): value is string => {
-  if (value === undefined || !URL.canParse(value)) {
-    return false;
-  }
-  const { protocol, hostname } = new URL(value);
-  return protocol === 'https:' || (protocol === 'http:' && LOCAL_HOSTNAMES.has(hostname));
-};
 
 /** Forwards a web app request to the API and turns proxy failures into JSON errors. */
 export const proxyApiRequest = async (

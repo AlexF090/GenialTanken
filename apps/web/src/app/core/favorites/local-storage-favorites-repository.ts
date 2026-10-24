@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import type { Provider } from '@angular/core';
-import { BROWSER_STORAGE } from '../browser-storage';
+import { LOCAL_STORAGE } from '../browser-storage';
 import { Logger } from '../logging/logger';
 import { FavoritesRepository } from './favorites-repository';
 
@@ -15,7 +15,7 @@ const isStringArray = (value: unknown): value is string[] =>
 
 @Injectable()
 export class LocalStorageFavoritesRepository extends FavoritesRepository {
-  private readonly storage = inject(BROWSER_STORAGE);
+  private readonly storage = inject(LOCAL_STORAGE);
   private readonly logger = inject(Logger);
 
   load(): readonly string[] {

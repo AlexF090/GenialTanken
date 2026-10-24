@@ -3,6 +3,7 @@
   class="bottom-sheet"
   [class.bottom-sheet--animated]="isMeasured() && !isDragging()"
   [class.bottom-sheet--dragging]="isDragging()"
+  [class.bottom-sheet--content-leads]="contentLeadsToSheet()"
   [style.--bottom-sheet-offset.px]="offset()"
   [style.--bottom-sheet-settled-offset.px]="settledOffset()"
   [attr.aria-label]="label()"

@@ -11,6 +11,10 @@ export const formatStreetLine = (station: Station): string =>
 export const formatCityLine = (station: Station): string =>
   [station.address.postalCode, station.address.city].filter(hasText).join(' ');
 
+/** Street and city, e.g. in the address section of a station's card. */
+export const addressLinesOf = (station: Station): string[] =>
+  [formatStreetLine(station), formatCityLine(station)].filter(line => line !== '');
+
 /** Brand, otherwise name, otherwise the address — French open data has neither brand nor name. */
 export const stationTitle = (station: Station): string => {
   if (hasText(station.brand)) {
