@@ -20,3 +20,9 @@ allowBuilds:
   '@scarf/scarf': false
   # Binary comes from its platform package; the postinstall would only install the hooks again
   lefthook: false
+
+overrides:
+  # @nestjs/platform-express 12.2.0 still pins multer 2.4.0 (GHSA-q7qp-rjg7-q26m, fixed in 2.5.0)
+  multer: 2.5.0
+  # express 5.3.0 allows ^2.3.0; 2.3.x is vulnerable (GHSA-27r3-jxmh-p828, fixed in 2.4.0)
+  body-parser: 2.4.0
