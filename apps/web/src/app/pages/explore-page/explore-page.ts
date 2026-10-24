@@ -273,6 +273,9 @@ export class ExplorePage {
     },
   });
   protected readonly isSearching = this.searchMode.isSearching;
+  protected readonly contentDragsSheet = computed(
+    () => !this.isSearching() && this.openedStationIdentifier() === undefined
+  );
   protected readonly areMapControlsCovered = computed(
     () => this.isCompactViewport() && this.snapPosition() === 'full'
   );

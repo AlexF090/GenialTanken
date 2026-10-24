@@ -191,6 +191,17 @@ describe('ExplorePage on a phone', () => {
     vi.useRealTimers();
   });
 
+  it('lets the list lead the sheet except while searching', async () => {
+    const { fixture, element } = await renderWithStations();
+    const sheet = childComponent(fixture, BottomSheet);
+
+    expect(sheet.contentDragsSheet()).toBe(true);
+
+    await startSearch(element);
+
+    expect(sheet.contentDragsSheet()).toBe(false);
+  });
+
   it('zooms the map with buttons below the locate button', async () => {
     const { fixture, element } = await renderWithStations();
     const stationsMap = childComponent(fixture, StationsMap);

@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { BottomSheet } from '../../ui/bottom-sheet/bottom-sheet';
 import { StationsMap } from '../../ui/stations-map/stations-map';
 import {
   accessibleTextOf,
@@ -72,6 +73,19 @@ describe('ExplorePage with a station card', () => {
     expect(childComponent(harness.fixture, StationsMap).selectedStationIdentifier()).toBe(
       totalStation.id
     );
+  });
+
+  it('keeps the list from leading the sheet while a card is open', async () => {
+    const { harness, navigate } = await openAt('/');
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
+    await context.settle();
+    const sheet = childComponent(harness.fixture, BottomSheet);
+
+    expect(sheet.contentDragsSheet()).toBe(true);
+
+    await navigate(`/stations/${totalStation.id}`);
+
+    expect(sheet.contentDragsSheet()).toBe(false);
   });
 
   it('keeps the page heading and the offline notice while a card is open', async () => {

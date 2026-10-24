@@ -49,6 +49,7 @@
     class="explore-page__panel"
     label="Tankstellen"
     [(snapPosition)]="snapPosition"
+    [contentDragsSheet]="contentDragsSheet()"
     (heightChanged)="updateSheetHeight($event)">
     <!-- An open card brings its own visible heading and controls; the page keeps its level 1 heading for navigation, and the offline notice stays. -->
     <div
