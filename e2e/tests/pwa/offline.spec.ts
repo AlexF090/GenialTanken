@@ -1,7 +1,7 @@
-import type { Page } from '@playwright/test';
 import {
   eiffelTower,
   expect,
+  installServiceWorker,
   pageHeading,
   resultSummary,
   serviceWorkerTest as test,
@@ -13,27 +13,6 @@ const OFFLINE_MESSAGE = 'Du bist offline – Preise werden geladen, sobald du wi
 test.describe.configure({ timeout: 90_000 });
 
 const isStationsRequest = (url: string): boolean => new URL(url).pathname === '/api/stations';
-
-/**
- * Loads the app, waits until the service worker controls the page and has cached the app shell
- * (its debug page lists an installed version only after every prefetch file is stored).
- */
-const installServiceWorker = async (page: Page): Promise<void> => {
-  await page.goto('/');
-  await expect(resultSummary(page)).toContainText(eiffelTower.label);
-  await page.evaluate(async () => {
-    await navigator.serviceWorker.ready;
-  });
-  await page.reload();
-  await expect
-    .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
-    .toBe(true);
-  await expect
-    .poll(() => page.evaluate(async () => (await fetch('/ngsw/state')).text()), {
-      timeout: 30_000,
-    })
-    .toContain('=== Version ');
-};
 
 test('the service worker takes control after the first visit', async ({ page }) => {
   await installServiceWorker(page);

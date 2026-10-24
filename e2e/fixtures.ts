@@ -122,6 +122,28 @@ export const serviceWorkerTest = base.extend({
 
 export { expect };
 
+/**
+ * For the `pwa` project: loads the app and waits until the service worker controls the page and
+ * has cached the app shell (its debug page lists an installed version only after every prefetch
+ * file is stored).
+ */
+export const installServiceWorker = async (page: Page): Promise<void> => {
+  await page.goto('/');
+  await expect(resultSummary(page)).toContainText(eiffelTower.label);
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+  });
+  await page.reload();
+  await expect
+    .poll(() => page.evaluate(() => navigator.serviceWorker.controller !== null))
+    .toBe(true);
+  await expect
+    .poll(() => page.evaluate(async () => (await fetch('/ngsw/state')).text()), {
+      timeout: 30_000,
+    })
+    .toContain('=== Version ');
+};
+
 /** The level 1 heading that names the current page. */
 export const pageHeading = (page: Page, name: string): Locator =>
   page.getByRole('heading', { level: 1, name });
@@ -143,7 +165,10 @@ export const stationCard = (page: Page, station: FixtureStation): Locator =>
 export const favoriteButton = (container: Locator, station: FixtureStation): Locator =>
   container.getByRole('button', { name: `Favorit: ${station.title}`, exact: true });
 
-/** On the explore page the title of a row is a toggle button that shows the station on the map. */
+/**
+ * On the explore page the title of a row is a button that shows the station on the map; the row of
+ * the selected station is `aria-current`.
+ */
 export const stationRowButton = (container: Locator, station: FixtureStation): Locator =>
   container.getByRole('button', { name: station.title, exact: true });
 

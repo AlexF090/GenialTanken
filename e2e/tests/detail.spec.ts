@@ -124,7 +124,7 @@ test.describe('station card', () => {
 
     await expect(page).toHaveURL('/');
     const rowButton = stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation);
-    await expect(rowButton).toHaveAttribute('aria-pressed', 'true');
+    await expect(rowButton).toHaveAttribute('aria-current', 'true');
     await expect(rowButton).toBeFocused();
   });
 

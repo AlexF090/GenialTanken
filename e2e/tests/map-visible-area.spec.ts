@@ -21,10 +21,10 @@ const sidePanel = (page: Page): Locator =>
  */
 const expectSearchAreaCenteredRightOfPanel = async (page: Page): Promise<void> => {
   const viewportWidth = page.viewportSize()?.width ?? 0;
-  const panelBox = await boxOf(sidePanel(page));
-  const visibleAreaMiddle = (panelBox.x + panelBox.width + viewportWidth) / 2;
   const radiusCircle = page.locator('path.search-radius');
   await expect(async () => {
+    const panelBox = await boxOf(sidePanel(page));
+    const visibleAreaMiddle = (panelBox.x + panelBox.width + viewportWidth) / 2;
     const circleBox = await boxOf(radiusCircle);
     const circleMiddle = circleBox.x + circleBox.width / 2;
     expect(Math.abs(circleMiddle - visibleAreaMiddle)).toBeLessThanOrEqual(TOLERANCE_IN_PIXELS);

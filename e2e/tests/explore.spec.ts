@@ -386,7 +386,7 @@ test.describe('explore page', () => {
         stationCard(page, rueBailleulStation),
         rueBailleulStation
       );
-      await expect(listButton).toHaveAttribute('aria-pressed', 'false');
+      await expect(listButton).not.toHaveAttribute('aria-current', 'true');
       // The fill tells the price level; the selection must not repaint it.
       const tagFill = (): Promise<string> =>
         marker.evaluate(element => {
@@ -398,7 +398,7 @@ test.describe('explore page', () => {
 
       await marker.click();
 
-      await expect(listButton).toHaveAttribute('aria-pressed', 'true');
+      await expect(listButton).toHaveAttribute('aria-current', 'true');
       await expect(marker).toHaveAttribute('aria-pressed', 'true');
       expect(await tagFill()).toBe(fillBeforeSelection);
     });
@@ -420,7 +420,7 @@ test.describe('explore page', () => {
         await page.keyboard.press(key);
 
         await expect(marker).toHaveAttribute('aria-pressed', 'true');
-        await expect(listButton).toHaveAttribute('aria-pressed', 'true');
+        await expect(listButton).toHaveAttribute('aria-current', 'true');
       });
 
       test(`${key} on a focused cluster zooms into it and focuses its cheapest station`, async ({
@@ -476,16 +476,16 @@ test.describe('explore page', () => {
       );
       await listButton.click();
 
-      await expect(listButton).toHaveAttribute('aria-pressed', 'true');
+      await expect(listButton).toHaveAttribute('aria-current', 'true');
       await expect(marker).toBeVisible();
       await expect(marker).toHaveAttribute('aria-pressed', 'true');
       await expect(
         stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation)
-      ).toHaveAttribute('aria-pressed', 'false');
+      ).not.toHaveAttribute('aria-current', 'true');
 
       await listButton.click();
 
-      await expect(listButton).toHaveAttribute('aria-pressed', 'true');
+      await expect(listButton).toHaveAttribute('aria-current', 'true');
       await expect(marker).toHaveAttribute('aria-pressed', 'true');
     });
 

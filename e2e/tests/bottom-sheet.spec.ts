@@ -167,7 +167,7 @@ test.describe('bottom sheet on a phone', () => {
 
     await expect(sheetHandle(page)).toHaveAttribute('aria-expanded', 'true');
     const listButton = stationRowButton(stationCard(page, rueBailleulStation), rueBailleulStation);
-    await expect(listButton).toHaveAttribute('aria-pressed', 'true');
+    await expect(listButton).toHaveAttribute('aria-current', 'true');
     await expectShownOnScreen(page, listButton);
   });
 

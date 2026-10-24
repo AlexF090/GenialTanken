@@ -75,7 +75,9 @@ export default defineConfig({
         WEB_ORIGIN: baseURL,
         RATE_LIMIT_REQUESTS_PER_MINUTE: '10000',
       },
-      reuseExistingServer: !isContinuousIntegration,
+      // Never reused: a running API keeps its caches (searched records, places) from an earlier
+      // run, so a test could pass on data it did not ask for.
+      reuseExistingServer: false,
       timeout: SERVER_START_TIMEOUT_IN_MILLISECONDS,
     },
     {
@@ -97,7 +99,9 @@ export default defineConfig({
       cwd: repositoryRoot,
       url: `http://localhost:${String(PWA_PORT)}`,
       env: { E2E_PWA_PORT: String(PWA_PORT), E2E_API_PORT: String(API_PORT) },
-      reuseExistingServer: !isContinuousIntegration,
+      // Never reused: a running server would serve the build of an earlier run, not the app as
+      // it is now. `ng serve` above watches the sources, so reusing it stays current.
+      reuseExistingServer: false,
       timeout: SERVER_START_TIMEOUT_IN_MILLISECONDS,
     },
   ],
