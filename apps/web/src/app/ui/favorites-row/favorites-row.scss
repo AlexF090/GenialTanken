@@ -1,9 +1,11 @@
+@use 'breakpoints';
+
 :host {
   display: block;
 }
 
 // Stacks the cards once a sideways row would leave too little of each one visible (1.4.10).
-$narrow-width: 20rem;
+$narrow-width: breakpoints.$favorites-row-stacking-width;
 
 .favorites-row {
   container-type: inline-size;

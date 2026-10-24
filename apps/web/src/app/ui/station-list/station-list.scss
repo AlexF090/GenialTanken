@@ -1,8 +1,7 @@
 @use 'focus-ring';
 
-// The levels of `PriceLevel` (`src/app/core/stations/price-level.ts`), cheap to dear, tinted like
-// the price tags on the map (`styles/map.scss`)
-$price-levels: low, medium, high;
+// Below this width large text (or a narrow window) leaves no room beside the price tile.
+$narrow-width: 19rem;
 
 // An iOS list: the price tile leads, separators are inset to the text like in Apple Maps.
 .station-list {
@@ -61,8 +60,8 @@ $price-levels: low, medium, high;
   }
 }
 
-// Large text (or a narrow window) leaves no room beside the tile: the station moves below it.
-@container station-list (width < 19rem) {
+// The station moves below the tile.
+@container station-list (width < #{$narrow-width}) {
   .station-row {
     grid-template-areas:
       'price actions'
@@ -137,60 +136,14 @@ $price-levels: low, medium, high;
   white-space: nowrap;
 }
 
-// Price tile: tinted from cheap to dear within the prices shown. The color only repeats what the
-// price says; the cheapest is solid green and named in words.
 .station-row__price {
-  --price-tile-background: var(--color-canvas);
-  --price-tile-gradient: none;
-  --price-tile-foreground: var(--color-text);
-  --price-tile-shadow: none;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3xs);
   grid-area: price;
-  min-inline-size: var(--layout-price-tile-width);
-  min-block-size: var(--layout-touch-target);
-  padding: var(--space-xs);
-  border-radius: var(--radius-md);
-  background-color: var(--price-tile-background);
-  background-image: var(--price-tile-gradient);
-  color: var(--price-tile-foreground);
-  box-shadow: var(--price-tile-shadow);
-
-  // Plastic like the price tags on the map
-  @each $level in $price-levels {
-    &--#{$level} {
-      --price-tile-background: var(--color-price-#{$level}-bottom);
-      --price-tile-gradient: var(--gradient-price-#{$level});
-      --price-tile-shadow: var(--shadow-price-tile);
-    }
-  }
-
-  &--cheapest {
-    --price-tile-background: var(--color-highlight-bottom);
-    --price-tile-gradient: var(--gradient-price-cheapest);
-    --price-tile-foreground: var(--color-on-highlight);
-    --price-tile-shadow: var(--shadow-price-tile);
-  }
-
-  &--without-price {
-    --price-tile-foreground: var(--color-text-secondary);
-  }
-}
-
-.station-row__cheapest-label {
-  font-size: var(--font-size-caption-1);
-  font-weight: var(--font-weight-medium);
-  line-height: var(--line-height-numerals);
-  text-align: center;
 }
 
 .station-row__actions {
+  // Above the title's area that makes the whole row the control
   position: relative;
-  z-index: 1;
+  z-index: var(--layer-above-siblings);
   display: flex;
   grid-area: actions;
   // Aligns the icons with the padding of the row while keeping their 44px touch targets

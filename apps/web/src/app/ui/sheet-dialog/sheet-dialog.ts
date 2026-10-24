@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { uniqueIdentifier } from '../../core/dom/unique-identifier';
-import { Icon } from '../icon/icon';
+import { CloseButton } from '../close-button/close-button';
 
 /**
  * Modal page sheet around the native `<dialog>`, opened with `showModal()` as soon as it renders:
@@ -26,7 +26,7 @@ import { Icon } from '../icon/icon';
  */
 @Component({
   selector: 'app-sheet-dialog',
-  imports: [Icon],
+  imports: [CloseButton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './sheet-dialog.html',
   styleUrl: './sheet-dialog.scss',

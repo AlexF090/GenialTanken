@@ -1,7 +1,10 @@
 import type { Routes } from '@angular/router';
 import { APPLICATION_NAME } from './core/application-name';
-import { FAVORITES_ROUTE_PATH, SETTINGS_ROUTE_PATH } from './core/navigation/explore-routes';
-import { STATION_ROUTE_PATH } from './core/navigation/station-route';
+import {
+  FAVORITES_ROUTE_PATH,
+  SETTINGS_ROUTE_PATH,
+  STATION_ROUTE_PATH,
+} from './core/navigation/explore-routes';
 
 export const routes: Routes = [
   // The map used to be a page of its own; it is part of the start page now.

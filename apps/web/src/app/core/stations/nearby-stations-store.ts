@@ -8,6 +8,7 @@ import { describeStationsError } from './stations-error-message';
 import { StationsApi } from './stations-api';
 import type { StationsSearch } from './stations-api';
 import { resourceValueOr } from '../resource-value-or';
+import { injectLoadedAt } from '../time/loaded-at';
 
 const isSameSearch = (first: StationsSearch, second: StationsSearch): boolean =>
   isSamePosition(first, second) &&
@@ -45,6 +46,8 @@ export class NearbyStationsStore {
   }
 
   readonly stations = computed(() => resourceValueOr(this.stationsResource, []));
+  /** When the shown stations arrived, to tell whether their prices are outdated. */
+  readonly loadedAt = injectLoadedAt(this.stationsResource);
   readonly hasLoaded = computed(() => this.stationsResource.hasValue());
   readonly isLoading = computed(
     () => this.stationsResource.isLoading() || this.searchCenter.isLocating()

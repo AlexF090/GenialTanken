@@ -553,6 +553,36 @@ describe('StationsMap', () => {
       expect(visibleCenters).toHaveLength(1);
     });
 
+    it('tells whether it can zoom further in and out', async () => {
+      const { fixture, map } = await render([]);
+      expect(fixture.componentInstance.canZoomIn()).toBe(true);
+      expect(fixture.componentInstance.canZoomOut()).toBe(true);
+
+      map.setZoom(map.getMaxZoom(), { animate: false });
+      expect(fixture.componentInstance.canZoomIn()).toBe(false);
+      expect(fixture.componentInstance.canZoomOut()).toBe(true);
+
+      map.setZoom(map.getMinZoom(), { animate: false });
+      expect(fixture.componentInstance.canZoomIn()).toBe(true);
+      expect(fixture.componentInstance.canZoomOut()).toBe(false);
+    });
+
+    it('zooms in and out on request, as a move of the user', async () => {
+      const { fixture, map, visibleCenters } = await render([]);
+      const initialZoom = map.getZoom();
+
+      fixture.componentInstance.zoomIn();
+      await vi.waitFor(() => {
+        expect(map.getZoom()).toBe(initialZoom + 1);
+      });
+      fixture.componentInstance.zoomOut();
+      await vi.waitFor(() => {
+        expect(map.getZoom()).toBe(initialZoom);
+      });
+
+      expect(visibleCenters.length).toBeGreaterThan(0);
+    });
+
     it('reports the center of the visible map once the user moved it with the keyboard', async () => {
       const { element, visibleCenters } = await render([]);
       const container = element.querySelector<HTMLElement>('.stations-map');
@@ -575,6 +605,32 @@ describe('StationsMap', () => {
       await nextAnimationFrame();
       fixture.componentRef.setInput('radiusInKilometers', 10);
       await fixture.whenStable();
+
+      expect(visibleCenters).toEqual([]);
+    });
+
+    it('reports no moves of its own after a search in the visible area', async () => {
+      const { fixture, map, visibleCenters } = await render([totalStation, carrefourStation]);
+      map.fire('dragstart');
+      map.setView([48.87, 2.33], map.getZoom(), { animate: false });
+      fixture.componentRef.setInput('center', {
+        latitude: 48.87,
+        longitude: 2.33,
+        label: 'Kartenmitte',
+        source: 'map-area',
+      });
+      await fixture.whenStable();
+      visibleCenters.length = 0;
+      let moveEndCount = 0;
+      map.on('moveend', () => {
+        moveEndCount += 1;
+      });
+
+      fixture.componentRef.setInput('selectedStationIdentifier', totalStation.id);
+      await fixture.whenStable();
+      await vi.waitFor(() => {
+        expect(moveEndCount).toBeGreaterThan(0);
+      });
 
       expect(visibleCenters).toEqual([]);
     });

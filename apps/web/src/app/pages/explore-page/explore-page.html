@@ -11,6 +11,7 @@
       </button>
     }
     <button
+      #locateButton
       type="button"
       class="icon-button explore-page__locate"
       aria-label="Meinen Standort verwenden"
@@ -20,6 +21,15 @@
       (click)="useOwnPosition()">
       <app-icon name="my-location" />
     </button>
+    <!-- On phones the map's own zoom buttons would hide behind the sheet. -->
+    @if (isCompactViewport()) {
+      <app-zoom-controls
+        class="explore-page__zoom"
+        [canZoomIn]="canZoomIn()"
+        [canZoomOut]="canZoomOut()"
+        (zoomInRequested)="zoomIn()"
+        (zoomOutRequested)="zoomOut()" />
+    }
     @if (locationErrorMessage(); as message) {
       <div class="message message--error toast explore-page__toast">
         <p role="alert">{{ message }}</p>
@@ -40,66 +50,77 @@
     label="Tankstellen"
     [(snapPosition)]="snapPosition"
     (heightChanged)="updateSheetHeight($event)">
-    <div class="explore-page__header" bottomSheetHeader [hidden]="isCardOpen()">
-      <h1 class="explore-page__title" translate="no">
+    <!-- An open card brings its own visible heading and controls; the page keeps its level 1 heading for navigation, and the offline notice stays. -->
+    <div
+      class="explore-page__header"
+      bottomSheetHeader
+      [class.explore-page__header--behind-card]="isCardOpen()">
+      <h1 class="explore-page__title" translate="no" [class.visually-hidden]="isCardOpen()">
         <app-wordmark class="explore-page__wordmark" />
       </h1>
 
-      <div class="explore-page__search-row">
-        <app-place-search-field
-          #placeSearchField
-          class="explore-page__place-search"
-          [placeholder]="placeSearchPlaceholder()"
-          [query]="placeQuery()"
-          [suggestions]="placeSuggestions()"
-          [statusMessage]="placeSearchStatus()"
-          hint="Ort, Adresse oder Postleitzahl in Frankreich eingeben."
-          [isCancelable]="isSearching()"
-          (searchStarted)="startSearch()"
-          (canceled)="cancelSearch()"
-          (queryChange)="searchPlaces($event)"
-          (placeSelected)="choosePlace($event)"
-          (cleared)="clearPlace()" />
-        @if (!isSearching()) {
-          <a
-            #settingsLink
-            class="icon-button icon-button--circled"
-            aria-label="Einstellungen"
-            [routerLink]="settingsRoute">
-            <span class="icon-button__circle"><app-icon name="settings-outline" /></span>
-          </a>
+      <div class="explore-page__header-controls" [hidden]="isCardOpen()">
+        <div class="explore-page__search-row">
+          <app-place-search-field
+            #placeSearchField
+            class="explore-page__place-search"
+            [placeholder]="placeSearchPlaceholder()"
+            [query]="placeQuery()"
+            [suggestions]="placeSuggestions()"
+            [statusMessage]="placeSearchStatus()"
+            hint="Ort, Adresse oder Postleitzahl in Frankreich eingeben."
+            [isCancelable]="isSearching()"
+            (searchStarted)="startSearch()"
+            (canceled)="cancelSearch()"
+            (queryChange)="searchPlaces($event)"
+            (placeSelected)="choosePlace($event)"
+            (cleared)="clearPlace()" />
+          @if (!isSearching()) {
+            <a
+              #settingsLink
+              class="icon-button icon-button--circled"
+              aria-label="Einstellungen"
+              [routerLink]="settingsRoute">
+              <span class="icon-button__circle"><app-icon name="settings-outline" /></span>
+            </a>
+          }
+        </div>
+
+        <div class="explore-page__filters" [hidden]="isSearching()">
+          <app-filter-chip
+            label="Kraftstoff"
+            [options]="fuelTypeOptions"
+            [value]="fuelType()"
+            [face]="fuelLabel()"
+            (valueChange)="chooseFuelType($event)" />
+          <app-filter-chip
+            label="Radius"
+            [options]="radiusOptions()"
+            [value]="radiusInKilometers()"
+            [face]="radiusInKilometers() | kilometers"
+            (valueChange)="chooseRadius($event)" />
+          <app-filter-chip
+            label="Sortierung"
+            [options]="sortOrderOptions"
+            [value]="sortOrder()"
+            [face]="sortOrderLabel()"
+            (valueChange)="sortOrder.set($event)" />
+        </div>
+
+        <div class="explore-page__summary-line" [hidden]="isSearching()">
+          <!-- The only place that names an empty result, so it is shown and announced once. -->
+          <p #resultSummaryElement class="explore-page__summary" role="status" tabindex="-1">
+            {{ resultSummary() }}
+          </p>
+          <button type="button" class="text-button explore-page__refresh" (click)="refresh()">
+            Aktualisieren
+          </button>
+        </div>
+
+        @if (stationsErrorMessage(); as message) {
+          <p class="message message--error" role="alert">{{ message }}</p>
         }
-      </div>
-
-      <div class="explore-page__filters" [hidden]="isSearching()">
-        <app-filter-chip
-          label="Kraftstoff"
-          [options]="fuelTypeOptions"
-          [value]="fuelType()"
-          [face]="fuelLabel()"
-          (valueChange)="chooseFuelType($event)" />
-        <app-filter-chip
-          label="Radius"
-          [options]="radiusOptions()"
-          [value]="radiusInKilometers()"
-          [face]="radiusInKilometers() | kilometers"
-          (valueChange)="chooseRadius($event)" />
-        <app-filter-chip
-          label="Sortierung"
-          [options]="sortOrderOptions"
-          [value]="sortOrder()"
-          [face]="sortOrderLabel()"
-          (valueChange)="sortOrder.set($event)" />
-      </div>
-
-      <div class="explore-page__summary-line" [hidden]="isSearching()">
-        <!-- The only place that names an empty result, so it is shown and announced once. -->
-        <p #resultSummaryElement class="explore-page__summary" role="status" tabindex="-1">
-          {{ resultSummary() }}
-        </p>
-        <button type="button" class="text-button explore-page__refresh" (click)="refresh()">
-          Aktualisieren
-        </button>
+        <app-loading-state [isLoading]="isLoading()" />
       </div>
 
       <!-- Always rendered, so screen readers announce the notice when the connection drops. -->
@@ -108,10 +129,6 @@
           <p class="message">{{ message }}</p>
         }
       </div>
-      @if (stationsErrorMessage(); as message) {
-        <p class="message message--error" role="alert">{{ message }}</p>
-      }
-      <app-loading-state [isLoading]="isLoading()" />
     </div>
 
     <!-- In the sheet above the keyboard instead of a popover below the field, which it would cover. -->

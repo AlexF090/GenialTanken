@@ -138,14 +138,14 @@ describe('StationList', () => {
     expect(
       items.map(item =>
         [...(item.querySelector('.station-row__price')?.classList ?? [])].filter(name =>
-          name.startsWith('station-row__price--')
+          name.startsWith('price-tile--')
         )
       )
     ).toEqual([
-      ['station-row__price--cheapest'],
-      ['station-row__price--medium'],
-      ['station-row__price--high'],
-      ['station-row__price--without-price'],
+      ['price-tile--cheapest'],
+      ['price-tile--medium'],
+      ['price-tile--high'],
+      ['price-tile--without-price'],
     ]);
   });
 
@@ -157,9 +157,9 @@ describe('StationList', () => {
 
     expect(accessibleTextOf(items[0])).not.toContain('Günstigster Preis');
     expect(accessibleTextOf(items[1])).toContain('Günstigster Preis');
-    expect(
-      textOf(items[1]?.querySelector('[aria-hidden="true"].station-row__cheapest-label'))
-    ).toBe('günstigst');
+    expect(textOf(items[1]?.querySelector('[aria-hidden="true"].price-tile__cheapest-label'))).toBe(
+      'günstigst'
+    );
   });
 
   it('marks favorites and reports star toggles with the station id', async () => {
@@ -221,8 +221,10 @@ describe('StationList', () => {
     const totalButton = getButton(element, 'TotalEnergies');
     const carrefourButton = getButton(element, 'Carrefour Market');
 
-    expect(totalButton.getAttribute('aria-pressed')).toBe('false');
-    expect(carrefourButton.getAttribute('aria-pressed')).toBe('true');
+    // Selecting is not a toggle: the selected row is the current one, like a selected list cell.
+    expect(totalButton.hasAttribute('aria-pressed')).toBe(false);
+    expect(totalButton.hasAttribute('aria-current')).toBe(false);
+    expect(carrefourButton.getAttribute('aria-current')).toBe('true');
     expect(
       element.querySelector('a[aria-label="Details: TotalEnergies"]')?.getAttribute('href')
     ).toBe('/stations/fr-75001001');
@@ -269,6 +271,25 @@ describe('StationList', () => {
     const previouslyFocused = document.activeElement;
 
     const isFocused = fixture.componentInstance.focusStation(carrefourStation.id);
+
+    expect(isFocused).toBe(false);
+    expect(document.activeElement).toBe(previouslyFocused);
+  });
+
+  it('focuses the star of a station', async () => {
+    const { fixture } = await render({ stations: [totalStation, carrefourStation] });
+
+    const isFocused = fixture.componentInstance.focusFavoriteButton(carrefourStation.id);
+
+    expect(isFocused).toBe(true);
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Favorit: Carrefour Market');
+  });
+
+  it('leaves the focus alone when asked for the star of a station it does not list', async () => {
+    const { fixture } = await render({ stations: [totalStation] });
+    const previouslyFocused = document.activeElement;
+
+    const isFocused = fixture.componentInstance.focusFavoriteButton(carrefourStation.id);
 
     expect(isFocused).toBe(false);
     expect(document.activeElement).toBe(previouslyFocused);

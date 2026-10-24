@@ -13,6 +13,7 @@ import {
   RELOAD_PAGE,
 } from './core/application-update/application-update-store';
 import { SESSION_STORAGE } from './core/browser-storage';
+import { LIVE_REGION_REGISTRATION_DELAY_IN_MILLISECONDS } from './ui/update-notice/update-notice';
 
 describe('App', () => {
   let context: PageTestContext;
@@ -189,6 +190,13 @@ describe('App', () => {
       vi.useRealTimers();
     });
 
+    /** A notice fills its status region a moment after the region renders. */
+    const settleAnnouncement = async () => {
+      await context.settle();
+      vi.advanceTimersByTime(LIVE_REGION_REGISTRATION_DELAY_IN_MILLISECONDS);
+      await context.settle();
+    };
+
     it('keeps an empty status region until a new version is ready', async () => {
       const element = await navigateTo('/unknown');
 
@@ -210,9 +218,10 @@ describe('App', () => {
     });
 
     it('activates the new version and reloads on request', async () => {
+      vi.useFakeTimers();
       const element = await navigateTo('/unknown');
       serviceWorkerUpdate.announceReadyVersion();
-      await context.settle();
+      await settleAnnouncement();
 
       notices(element).querySelector('button')?.click();
       await context.settle();
@@ -222,10 +231,11 @@ describe('App', () => {
     });
 
     it('asks for a reload by hand once reloading on its own did not repair the cache', async () => {
+      vi.useFakeTimers();
       const element = await navigateTo('/unknown');
 
       serviceWorkerUpdate.unrecoverable.next({ type: 'UNRECOVERABLE_STATE', reason: 'evicted' });
-      await context.settle();
+      await settleAnnouncement();
 
       expect(reloadPage).not.toHaveBeenCalled();
       expect(notices(element).querySelector('p')?.textContent).toBe(
@@ -238,11 +248,12 @@ describe('App', () => {
     });
 
     it('shows the notice inside the open settings dialog, which makes the page inert', async () => {
+      vi.useFakeTimers();
       const element = await navigateTo('/settings');
       context.httpTesting.match(() => true);
 
       serviceWorkerUpdate.announceReadyVersion();
-      await context.settle();
+      await settleAnnouncement();
 
       const dialog = element.querySelector('dialog');
       expect(dialog?.querySelector('[role="status"]')?.textContent).toContain(
@@ -255,13 +266,14 @@ describe('App', () => {
     });
 
     it('shows the notice over the page again once the settings close', async () => {
+      vi.useFakeTimers();
       const element = await navigateTo('/settings');
       context.httpTesting.match(() => true);
       serviceWorkerUpdate.announceReadyVersion();
-      await context.settle();
+      await settleAnnouncement();
 
       await TestBed.inject(Router).navigateByUrl('/');
-      await context.settle();
+      await settleAnnouncement();
 
       expect(element.querySelector<HTMLElement>('.shell__notices')?.hidden).toBe(false);
       expect(textOf(notices(element))).toContain('Neue Version verfügbar');

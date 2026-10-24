@@ -7,7 +7,7 @@ import { textOf } from '../../../testing/render-page';
 export const EIFFEL_TOWER_E5_URL = stationsUrl({ latitude: 48.8584, longitude: 2.2945 });
 
 export const selectedStationTitles = (element: HTMLElement): string[] =>
-  [...element.querySelectorAll('main li .station-row__title[aria-pressed="true"]')].map(title =>
+  [...element.querySelectorAll('main li .station-row__title[aria-current="true"]')].map(title =>
     textOf(title)
   );
 

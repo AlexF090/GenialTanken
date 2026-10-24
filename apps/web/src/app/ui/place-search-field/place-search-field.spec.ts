@@ -171,7 +171,7 @@ describe('PlaceSearchField', () => {
 
     expect(host.selectedPlaces).toEqual([lyonPlace]);
     expect(isListShown()).toBe(false);
-    expect(document.activeElement).not.toBe(combobox());
+    expect(document.activeElement).toBe(combobox());
   });
 
   it('chooses a suggestion by click', async () => {
@@ -215,8 +215,8 @@ describe('PlaceSearchField', () => {
     expect(document.activeElement).toBe(combobox());
   });
 
-  it('offers "Abbrechen" only when cancelable and leaves the field with it', async () => {
-    const { element, fixture, combobox, isListShown, type, host } = await render();
+  it('offers "Abbrechen" only when cancelable and reports it', async () => {
+    const { element, fixture, isListShown, type, host } = await render();
     expect(element.querySelector('.place-search-field__cancel')).toBeNull();
     host.isCancelable.set(true);
     await type('Bast');
@@ -228,7 +228,6 @@ describe('PlaceSearchField', () => {
 
     expect(host.cancelCount).toBe(1);
     expect(isListShown()).toBe(false);
-    expect(document.activeElement).not.toBe(combobox());
   });
 
   it('cancels with Escape when cancelable, even with the suggestions open', async () => {
@@ -242,6 +241,19 @@ describe('PlaceSearchField', () => {
 
     expect(host.cancelCount).toBe(1);
     expect(isListShown()).toBe(false);
-    expect(document.activeElement).not.toBe(combobox());
+    expect(document.activeElement).toBe(combobox());
+  });
+
+  it('keeps the suggestions when leaving the field while cancelable', async () => {
+    const { fixture, combobox, isListShown, type, host } = await render();
+    host.isCancelable.set(true);
+    await type('Bast');
+    host.suggestions.set([bastillePlace]);
+    await fixture.whenStable();
+
+    combobox().blur();
+    await fixture.whenStable();
+
+    expect(isListShown()).toBe(true);
   });
 });

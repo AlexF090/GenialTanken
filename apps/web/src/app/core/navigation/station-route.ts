@@ -1,12 +1,8 @@
 import { computed } from '@angular/core';
 import type { Signal } from '@angular/core';
 import type { UrlTree } from '@angular/router';
-import { injectCurrentUrl, pathSegmentsOf } from './current-url';
-
-const STATIONS_SEGMENT = 'stations';
-
-/** Route of a station's card, as a child of the explore page. */
-export const STATION_ROUTE_PATH = `${STATIONS_SEGMENT}/:id`;
+import { injectCurrentUrl } from './current-url';
+import { pathSegmentsOf, STATIONS_SEGMENT } from './explore-routes';
 
 /** Commands for `routerLink` or `Router.navigate` that open the card of a station. */
 export const stationRoute = (stationIdentifier: string): string[] => [

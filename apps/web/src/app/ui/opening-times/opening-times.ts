@@ -49,6 +49,8 @@ interface OpeningDay {
     </ul>
   `,
   styles: `
+    @use 'breakpoints';
+
     :host {
       display: block;
       container-type: inline-size;
@@ -94,7 +96,7 @@ interface OpeningDay {
     }
 
     // Large text leaves no room beside the day: the hours move below it.
-    @container (width < 18rem) {
+    @container (width < #{breakpoints.$opening-times-stacking-width}) {
       .opening-times,
       .opening-times__day {
         grid-template-columns: minmax(0, 1fr);

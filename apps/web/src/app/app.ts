@@ -6,9 +6,8 @@ import {
   inject,
   ViewEncapsulation,
 } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Router, RouterOutlet } from '@angular/router';
 import { ApplicationUpdateStore } from './core/application-update/application-update-store';
-import { injectCurrentUrl } from './core/navigation/current-url';
 import { isRouteOpen, SETTINGS_ROUTE_PATH } from './core/navigation/explore-routes';
 import { MAIN_CONTENT_IDENTIFIER } from './core/navigation/main-content';
 import { UpdateNotice } from './ui/update-notice/update-notice';
@@ -68,12 +67,15 @@ import { UpdateNotice } from './ui/update-notice/update-notice';
 export class App {
   private readonly document = inject(DOCUMENT);
   private readonly applicationUpdate = inject(ApplicationUpdateStore);
-  private readonly currentUrl = injectCurrentUrl();
+  private readonly router = inject(Router);
   protected readonly mainContentIdentifier = MAIN_CONTENT_IDENTIFIER;
   protected readonly pendingReload = this.applicationUpdate.pendingReload;
-  protected readonly isSettingsOpen = computed(() =>
-    isRouteOpen(this.currentUrl(), SETTINGS_ROUTE_PATH)
-  );
+  // The router's own signal instead of `injectCurrentUrl`, which would pull RxJS interop into
+  // the initial bundle; it changes at the same moment, right before `NavigationEnd`.
+  protected readonly isSettingsOpen = computed(() => {
+    const url = this.router.lastSuccessfulNavigation()?.finalUrl;
+    return url !== undefined && isRouteOpen(url, SETTINGS_ROUTE_PATH);
+  });
 
   protected reloadApplication(): void {
     void this.applicationUpdate.reload();

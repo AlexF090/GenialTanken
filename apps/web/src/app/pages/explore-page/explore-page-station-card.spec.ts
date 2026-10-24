@@ -2,7 +2,13 @@ import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { StationsMap } from '../../ui/stations-map/stations-map';
-import { configurePageTest, getButton, hostElementOf, textOf } from '../../../testing/render-page';
+import {
+  accessibleTextOf,
+  configurePageTest,
+  getButton,
+  hostElementOf,
+  textOf,
+} from '../../../testing/render-page';
 import type { PageTestContext } from '../../../testing/render-page';
 import {
   essoStation,
@@ -66,6 +72,22 @@ describe('ExplorePage with a station card', () => {
     expect(childComponent(harness.fixture, StationsMap).selectedStationIdentifier()).toBe(
       totalStation.id
     );
+  });
+
+  it('keeps the page heading and the offline notice while a card is open', async () => {
+    const { element, navigate } = await openAt('/');
+    context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
+    await context.settle();
+
+    await navigate(`/stations/${totalStation.id}`);
+
+    const heading = element.querySelector('main h1');
+    expect(heading?.closest('[hidden]')).toBeNull();
+    expect(accessibleTextOf(heading)).toBe('GenialTanken');
+    expect(
+      element.querySelector('.explore-page__place-search')?.closest('[hidden]')
+    ).not.toBeNull();
+    expect(element.querySelector('.explore-page__offline')?.closest('[hidden]')).toBeNull();
   });
 
   it('returns to the list with the station still selected when the card closes', async () => {

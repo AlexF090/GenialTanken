@@ -1,7 +1,15 @@
+import { Location } from '@angular/common';
+import { provideLocationMocks } from '@angular/common/testing';
 import { TestBed } from '@angular/core/testing';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { FakeStorage, storedSettings } from '../../../testing/fake-storage';
-import { configurePageTest, getRadio, renderComponent, textOf } from '../../../testing/render-page';
+import {
+  configurePageTest,
+  getButton,
+  getRadio,
+  renderComponent,
+  textOf,
+} from '../../../testing/render-page';
 import type { PageTestContext } from '../../../testing/render-page';
 import { Router } from '@angular/router';
 import { SettingsPage } from './settings-page';
@@ -170,16 +178,44 @@ describe('SettingsPage', () => {
     expect(element.querySelector('main, h1, header')).toBeNull();
   });
 
-  it('returns to the explore page when it closes', async () => {
-    context = configurePageTest({ routes: [{ path: 'settings', children: [] }] });
-    const router = TestBed.inject(Router);
-    await router.navigateByUrl('/settings');
-    const { fixture, element } = await renderComponent(SettingsPage);
-    await fixture.whenStable();
+  describe('closing', () => {
+    const renderOpened = async (urls: string[]) => {
+      context = configurePageTest({
+        routes: [
+          { path: '', children: [] },
+          { path: 'settings', children: [] },
+        ],
+        providers: [provideLocationMocks()],
+      });
+      for (const url of urls) {
+        await TestBed.inject(Router).navigateByUrl(url);
+      }
+      const rendered = await renderComponent(SettingsPage);
+      await rendered.fixture.whenStable();
+      return { ...rendered, location: TestBed.inject(Location) };
+    };
 
-    element.querySelector('dialog')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    await fixture.whenStable();
+    it('goes back to the explore page it was opened from', async () => {
+      const { element, location } = await renderOpened(['/', '/settings']);
 
-    expect(router.url).toBe('/');
+      getButton(element, 'Schließen').click();
+      await context.settle();
+
+      expect(location.path() || '/').toBe('/');
+      location.forward();
+      expect(location.path()).toBe('/settings');
+    });
+
+    it('replaces a deep link with the explore page, so Back does not open it again', async () => {
+      const { element, location } = await renderOpened(['/settings']);
+
+      getButton(element, 'Schließen').click();
+      await context.settle();
+      await context.settle();
+
+      expect(TestBed.inject(Router).url).toBe('/');
+      location.back();
+      expect(location.path()).not.toBe('/settings');
+    });
   });
 });

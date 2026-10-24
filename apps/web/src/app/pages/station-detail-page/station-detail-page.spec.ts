@@ -1,5 +1,7 @@
 import { MILLISECONDS_PER_MINUTE } from '@genialtanken/contracts';
-import { Component } from '@angular/core';
+import { Location } from '@angular/common';
+import { provideLocationMocks } from '@angular/common/testing';
+import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import type { Station } from '@genialtanken/contracts';
@@ -13,12 +15,20 @@ import {
   textOf,
 } from '../../../testing/render-page';
 import type { PageTestContext } from '../../../testing/render-page';
-import { essoStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
+import {
+  carrefourStation,
+  essoStation,
+  totalStation,
+  withoutDistance,
+  withPrices,
+} from '../../../testing/station-fixtures';
+import { KNOWN_STATION_SOURCES } from '../../core/stations/known-stations';
+import { RECONNECT_DELAY_IN_MILLISECONDS } from '../../core/network/network-status';
 import { StationDetailPage } from './station-detail-page';
 import { STATIONS_URL, stationLookupUrl, stationUrl } from '../../../testing/api-urls';
 import { FakeStorage, storedFavorites } from '../../../testing/fake-storage';
 import { FAVORITES_STORAGE_KEY } from '../../core/favorites/local-storage-favorites-repository';
-import { SETTINGS_STORAGE_KEY } from '../../core/settings/settings-store';
+import { SETTINGS_STORAGE_KEY, SettingsStore } from '../../core/settings/settings-store';
 import { Logger } from '../../core/logging/logger';
 import { FavoriteStationsResource } from '../../core/favorites/favorite-stations-resource';
 import { SHARE } from '../../core/sharing/share';
@@ -54,10 +64,11 @@ describe('StationDetailPage', () => {
   });
 
   afterEach(() => {
-    context.httpTesting.verify();
-    vi.restoreAllMocks();
+    // First, so a failing verify does not leave fake timers to the next tests.
     vi.useRealTimers();
+    vi.restoreAllMocks();
     document.body.replaceChildren();
+    context.httpTesting.verify();
   });
 
   it('shows brand, name, address, open status, opening times and all prices', async () => {
@@ -154,13 +165,16 @@ describe('StationDetailPage', () => {
   });
 
   describe('for a station the app already loaded', () => {
+    const priceBoardOf = (element: HTMLElement) =>
+      element.querySelector('.price-board')?.textContent ?? '';
+
     it('shows a station of the search results at once, without asking the API again', async () => {
       const { element } = await renderStation(totalStation.id, [totalStation, essoStation]);
 
-      context.httpTesting.expectNone(stationUrl('fr-75001001'));
+      context.httpTesting.verify();
       expect(element.textContent).not.toContain('wird geladen');
       expect(textOf(element.querySelector('article h2'))).toBe('TotalEnergies');
-      expect(element.querySelector('.price-board')?.textContent).toContain('1,859 €');
+      expect(priceBoardOf(element)).toContain('1,859 €');
       expect(getButton(element, 'Favorit: TotalEnergies')).toBeDefined();
       expect(textOf(document.activeElement)).toBe('TotalEnergies');
     });
@@ -181,7 +195,165 @@ describe('StationDetailPage', () => {
 
       const { element } = await renderStation(essoStation.id);
 
-      context.httpTesting.expectNone(stationUrl('fr-69003001'));
+      context.httpTesting.verify();
+      expect(textOf(element.querySelector('article h2'))).toBe('Esso');
+    });
+
+    it('shows the station of the card that was open at once', async () => {
+      TestBed.inject(OpenedStationStore).open(withoutDistance(carrefourStation), undefined);
+
+      const { element } = await renderStation(carrefourStation.id);
+
+      context.httpTesting.verify();
+      expect(textOf(element.querySelector('article h2'))).toBe('Carrefour Market');
+    });
+
+    it('follows the search results when they refresh', async () => {
+      const { element } = await renderStation(totalStation.id, [totalStation]);
+
+      TestBed.inject(NearbyStationsStore).refresh();
+      await context.settle();
+      context.httpTesting
+        .expectOne(request => request.url === STATIONS_URL)
+        .flush([withPrices(totalStation, { e5: 1.749 })]);
+      await context.settle();
+
+      expect(priceBoardOf(element)).toContain('1,749 €');
+      expect(priceBoardOf(element)).not.toContain('1,859 €');
+    });
+
+    it('stays without loading when a new search leaves the station out', async () => {
+      const { element } = await renderStation(totalStation.id, [totalStation]);
+
+      TestBed.inject(SettingsStore).update({ radiusInKilometers: 2 });
+      await context.settle();
+      context.httpTesting.expectOne(request => request.url === STATIONS_URL).flush([essoStation]);
+      await context.settle();
+
+      context.httpTesting.verify();
+      expect(element.textContent).not.toContain('wird geladen');
+      expect(textOf(element.querySelector('article h2'))).toBe('TotalEnergies');
+      expect(TestBed.inject(OpenedStationStore).station()?.id).toBe(totalStation.id);
+    });
+
+    describe('from search results of the running app', () => {
+      const SEARCHED_AT = new Date('2026-10-23T12:00:00');
+
+      const renderAfterMinutes = async (minutes: number) => {
+        vi.useFakeTimers({ now: SEARCHED_AT });
+        await loadNearbyStations([totalStation]);
+        vi.advanceTimersByTime(minutes * MILLISECONDS_PER_MINUTE);
+        const fixture = TestBed.createComponent(StationDetailPage);
+        document.body.append(hostElementOf(fixture));
+        fixture.componentRef.setInput('id', totalStation.id);
+        await context.settle();
+        return hostElementOf(fixture);
+      };
+
+      it('asks the API for nothing within five minutes of the search', async () => {
+        const element = await renderAfterMinutes(4);
+
+        context.httpTesting.verify();
+        expect(priceBoardOf(element)).toContain('1,859 €');
+        expect(TestBed.inject(OpenedStationStore).loadedAt()).toEqual(SEARCHED_AT);
+      });
+
+      it('refreshes the prices in the background once the search is older', async () => {
+        const element = await renderAfterMinutes(6);
+
+        expect(element.textContent).not.toContain('wird geladen');
+        expect(priceBoardOf(element)).toContain('1,859 €');
+
+        context.httpTesting
+          .expectOne(stationUrl(totalStation.id))
+          .flush(withoutDistance(withPrices(totalStation, { e5: 1.749 })));
+        await context.settle();
+
+        expect(priceBoardOf(element)).toContain('1,749 €');
+        expect(TestBed.inject(OpenedStationStore).loadedAt()).toEqual(
+          new Date(SEARCHED_AT.getTime() + 6 * MILLISECONDS_PER_MINUTE)
+        );
+      });
+    });
+
+    describe('with a known load time', () => {
+      const NOW = new Date('2026-10-23T12:00:00');
+      const knownResults = signal<readonly Station[]>([totalStation]);
+      const loadedAt = signal<Date | undefined>(undefined);
+
+      const renderKnownStation = async (minutesAgo: number) => {
+        vi.useFakeTimers({ now: NOW, toFake: ['Date'] });
+        loadedAt.set(new Date(NOW.getTime() - minutesAgo * MILLISECONDS_PER_MINUTE));
+        TestBed.resetTestingModule();
+        context = configurePageTest({
+          routes: [{ path: '', component: EmptyPage }],
+          providers: [
+            {
+              provide: KNOWN_STATION_SOURCES,
+              useValue: [{ stations: knownResults, loadedAt }],
+            },
+          ],
+        });
+        const fixture = TestBed.createComponent(StationDetailPage);
+        document.body.append(hostElementOf(fixture));
+        fixture.componentRef.setInput('id', totalStation.id);
+        await context.settle();
+        return hostElementOf(fixture);
+      };
+
+      it('asks the API for nothing while the prices are current', async () => {
+        const element = await renderKnownStation(4);
+
+        context.httpTesting.verify();
+        expect(priceBoardOf(element)).toContain('1,859 €');
+      });
+
+      it('shows outdated prices at once and replaces them with fresh ones', async () => {
+        const element = await renderKnownStation(60);
+
+        expect(element.textContent).not.toContain('wird geladen');
+        expect(priceBoardOf(element)).toContain('1,859 €');
+
+        context.httpTesting
+          .expectOne(stationUrl(totalStation.id))
+          .flush(withoutDistance(withPrices(totalStation, { e5: 1.749 })));
+        await context.settle();
+
+        expect(priceBoardOf(element)).toContain('1,749 €');
+      });
+
+      it('keeps the outdated prices when the refresh fails', async () => {
+        const element = await renderKnownStation(60);
+
+        context.httpTesting
+          .expectOne(stationUrl(totalStation.id))
+          .flush(
+            { statusCode: 502, message: 'Bad Gateway' },
+            { status: 502, statusText: 'Bad Gateway' }
+          );
+        await context.settle();
+
+        expect(priceBoardOf(element)).toContain('1,859 €');
+        expect(element.querySelector('[role="alert"]')).toBeNull();
+      });
+    });
+  });
+
+  describe('moving on to another station', () => {
+    it('no longer counts the previous station as opened while the next one loads', async () => {
+      const { fixture, element } = await renderStation(totalStation.id, [totalStation]);
+      const openedStation = TestBed.inject(OpenedStationStore);
+
+      fixture.componentRef.setInput('id', essoStation.id);
+      await context.settle();
+
+      expect(openedStation.station()).toBeUndefined();
+      expect(element.querySelector('article')).toBeNull();
+
+      context.httpTesting.expectOne(stationUrl(essoStation.id)).flush(withoutDistance(essoStation));
+      await context.settle();
+
+      expect(openedStation.station()?.id).toBe(essoStation.id);
       expect(textOf(element.querySelector('article h2'))).toBe('Esso');
     });
   });
@@ -211,6 +383,27 @@ describe('StationDetailPage', () => {
       expect(textOf(element.querySelector('article h2'))).toBe('TotalEnergies');
       expect(element.querySelector('[role="alert"]')).toBeNull();
     });
+  });
+
+  it('loads a station that failed offline once the connection is back', async () => {
+    vi.useFakeTimers();
+    const { element } = await renderStation(totalStation.id);
+    window.dispatchEvent(new Event('offline'));
+    context.httpTesting
+      .expectOne(stationUrl('fr-75001001'))
+      .error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+    await context.settle();
+
+    window.dispatchEvent(new Event('online'));
+    await context.settle();
+    vi.advanceTimersByTime(RECONNECT_DELAY_IN_MILLISECONDS);
+    await context.settle();
+    context.httpTesting.expectOne(stationUrl('fr-75001001')).flush(withoutDistance(totalStation));
+    // The search results around the card reload as well.
+    context.httpTesting.expectOne(request => request.url === STATIONS_URL).flush([]);
+    await context.settle();
+
+    expect(textOf(element.querySelector('article h2'))).toBe('TotalEnergies');
   });
 
   it('explains an unknown station', async () => {
@@ -250,18 +443,53 @@ describe('StationDetailPage', () => {
     expect(openedStation.station()).toBeUndefined();
   });
 
-  it('returns to the list with the close button and with Escape', async () => {
-    const { element } = await renderStation(totalStation.id);
-    context.httpTesting.expectOne(stationUrl('fr-75001001')).flush(withoutDistance(totalStation));
-    await context.settle();
-    const navigateByUrl = vi.spyOn(TestBed.inject(Router), 'navigateByUrl');
+  describe('closing', () => {
+    const renderOpenedCard = async (urls: string[]) => {
+      TestBed.resetTestingModule();
+      context = configurePageTest({
+        routes: [
+          { path: '', component: EmptyPage },
+          { path: 'stations/:id', component: EmptyPage },
+        ],
+        providers: [provideLocationMocks()],
+      });
+      for (const url of urls) {
+        await TestBed.inject(Router).navigateByUrl(url);
+      }
+      const rendered = await renderStation(totalStation.id, [totalStation]);
+      return { ...rendered, location: TestBed.inject(Location) };
+    };
 
-    getButton(element, 'Schließen').click();
-    element
-      .querySelector('section')
-      ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    it('goes back to the list it was opened from, with the close button', async () => {
+      const { element, location } = await renderOpenedCard(['/', '/stations/fr-75001001']);
 
-    expect(navigateByUrl.mock.calls).toEqual([['/'], ['/']]);
+      getButton(element, 'Schließen').click();
+
+      expect(location.path() || '/').toBe('/');
+      location.forward();
+      expect(location.path()).toBe('/stations/fr-75001001');
+    });
+
+    it('goes back to the list with Escape', async () => {
+      const { element, location } = await renderOpenedCard(['/', '/stations/fr-75001001']);
+
+      element
+        .querySelector('section')
+        ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+      expect(location.path() || '/').toBe('/');
+    });
+
+    it('replaces a shared link with the list, so Back does not open the card again', async () => {
+      const { element, location } = await renderOpenedCard(['/stations/fr-75001001']);
+
+      getButton(element, 'Schließen').click();
+      await context.settle();
+
+      expect(TestBed.inject(Router).url).toBe('/');
+      location.back();
+      expect(location.path()).not.toBe('/stations/fr-75001001');
+    });
   });
 
   it('can be closed while it is still loading', async () => {

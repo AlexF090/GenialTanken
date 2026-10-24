@@ -4,8 +4,8 @@ import type { ViewportPadding } from '../../ui/map/map-viewport';
 export interface ExploreOverlays {
   isCompactViewport: boolean;
   /**
-   * Bottom edge of the map controls (locate button, area search, notices): the status bar and
-   * the controls above it are covered.
+   * Bottom edge of the map controls (locate button, zoom buttons on phones, area search,
+   * notices): the status bar and the controls above it are covered.
    */
   mapControlsBottom: number;
   /** Height of the settled bottom sheet over the bottom of the map (phones). */

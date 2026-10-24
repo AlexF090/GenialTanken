@@ -20,7 +20,8 @@ import { uniqueIdentifier } from '../../core/dom/unique-identifier';
  * The host renders the suggestions where there is room for them, through `suggestionsTemplate`
  * and `NgTemplateOutlet`, e.g. in the sheet above the on-screen keyboard instead of a popover
  * the keyboard would cover. Render them at all times, so `aria-controls` always points to the
- * listbox; it is hidden while closed.
+ * listbox; it is hidden while closed. The field keeps the focus when a place is chosen or the
+ * search is canceled; the host moves it elsewhere where that should dismiss the keyboard.
  */
 @Component({
   selector: 'app-place-search-field',
@@ -37,7 +38,10 @@ export class PlaceSearchField {
   readonly statusMessage = input<string>();
   /** Shown in place of the suggestions while there are none, e.g. what can be searched. */
   readonly hint = input<string>();
-  /** Shows "Abbrechen" next to the field, which leaves the search like Escape does. */
+  /**
+   * Shows "Abbrechen" next to the field, which leaves the search like Escape does. Until then the
+   * suggestions stay when the field loses the focus, e.g. when the keyboard is dismissed.
+   */
   readonly isCancelable = input(false);
 
   readonly searchStarted = output();
@@ -126,8 +130,10 @@ export class PlaceSearchField {
     }
   }
 
-  protected closeList(): void {
-    this.isListRequested.set(false);
+  protected closeListUnlessCancelable(): void {
+    if (!this.isCancelable()) {
+      this.isListRequested.set(false);
+    }
   }
 
   /** Keeps the focus in the field while a suggestion is pressed, so blur does not close the list. */
@@ -138,13 +144,10 @@ export class PlaceSearchField {
   protected select(place: Place): void {
     this.isListRequested.set(false);
     this.placeSelected.emit(place);
-    // Like on iOS: choosing a result dismisses the keyboard.
-    this.inputElement().nativeElement.blur();
   }
 
   protected cancel(): void {
     this.isListRequested.set(false);
-    this.inputElement().nativeElement.blur();
     this.canceled.emit();
   }
 

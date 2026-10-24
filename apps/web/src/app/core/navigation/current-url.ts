@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import type { Signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, PRIMARY_OUTLET, Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
 import type { UrlTree } from '@angular/router';
 import { filter, map, startWith } from 'rxjs';
 
@@ -21,7 +21,3 @@ export const injectCurrentUrl = (): Signal<UrlTree> => {
     { requireSync: true }
   );
 };
-
-/** Paths of the primary outlet's segments, e.g. `['stations', 'fr-75001001']`. */
-export const pathSegmentsOf = (url: UrlTree): string[] =>
-  url.root.children[PRIMARY_OUTLET]?.segments.map(segment => segment.path) ?? [];

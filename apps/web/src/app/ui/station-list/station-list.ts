@@ -12,12 +12,8 @@ import { RouterLink } from '@angular/router';
 import type { FuelType, Station } from '@genialtanken/contracts';
 import { formatDistance } from '../../core/formatting/number-format';
 import { stationRoute } from '../../core/navigation/station-route';
-import {
-  CHEAPEST_PRICE_SHORT_LABEL,
-  CHEAPEST_PRICE_STANDALONE_LABEL,
-} from '../../core/stations/price-labels';
 import { priceLevelOf, priceRangeOf } from '../../core/stations/price-level';
-import type { PriceLevel, PriceRange } from '../../core/stations/price-level';
+import type { PriceRange } from '../../core/stations/price-level';
 import {
   addressLinesBelowTitle,
   priceInEuro,
@@ -25,7 +21,8 @@ import {
 } from '../../core/stations/station-display';
 import { FavoriteButton } from '../favorite-button/favorite-button';
 import { Icon } from '../icon/icon';
-import { Price } from '../price/price';
+import { PriceTile } from '../price-tile/price-tile';
+import type { PriceTint } from '../price-tile/price-tile';
 
 interface StationListItem {
   stationIdentifier: string;
@@ -39,9 +36,6 @@ interface StationListItem {
   isCheapest: boolean;
   isSelected: boolean;
 }
-
-/** The cheapest price is solid green, every other price tinted by its level. */
-type PriceTint = PriceLevel | 'cheapest' | 'without-price';
 
 const NO_STATION_IDENTIFIERS: ReadonlySet<string> = new Set();
 
@@ -62,7 +56,7 @@ const priceTintOf = (
  */
 @Component({
   selector: 'app-station-list',
-  imports: [RouterLink, Price, FavoriteButton, Icon],
+  imports: [RouterLink, PriceTile, FavoriteButton, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './station-list.html',
   styleUrl: './station-list.scss',
@@ -82,14 +76,15 @@ export class StationList {
   readonly stationSelected = output<string>();
 
   protected readonly stationRoute = stationRoute;
-  protected readonly cheapestPriceLabel = CHEAPEST_PRICE_STANDALONE_LABEL;
-  protected readonly cheapestPriceShortLabel = CHEAPEST_PRICE_SHORT_LABEL;
 
   protected readonly items = computed<StationListItem[]>(() => {
     const fuelType = this.fuelType();
-    const priceRange = priceRangeOf(this.stations().map(station => priceInEuro(station, fuelType)));
-    return this.stations().map(station => {
-      const price = priceInEuro(station, fuelType);
+    const pricedStations = this.stations().map(station => ({
+      station,
+      price: priceInEuro(station, fuelType),
+    }));
+    const priceRange = priceRangeOf(pricedStations.map(({ price }) => price));
+    return pricedStations.map(({ station, price }) => {
       const isCheapest = this.cheapestStationIdentifiers().has(station.id);
       return {
         stationIdentifier: station.id,
@@ -132,6 +127,21 @@ export class StationList {
       return false;
     }
     title.focus({ preventScroll: true });
+    return true;
+  }
+
+  /**
+   * Moves the focus to the star of a station's row, e.g. after unstarring a neighbor removed the
+   * focused one. `false` when the list has no row for the station.
+   */
+  focusFavoriteButton(stationIdentifier: string): boolean {
+    const favoriteButton = this.rowOf(stationIdentifier)?.querySelector<HTMLElement>(
+      'app-favorite-button button'
+    );
+    if (favoriteButton === null || favoriteButton === undefined) {
+      return false;
+    }
+    favoriteButton.focus();
     return true;
   }
 

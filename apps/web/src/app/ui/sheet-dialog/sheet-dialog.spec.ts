@@ -35,6 +35,14 @@ const pressEscape = (target: Element): void => {
   target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 };
 
+/** Browsers fire `close` in a task of its own. */
+const closeEventOf = (dialog: HTMLDialogElement): Promise<void> =>
+  new Promise(resolve => {
+    dialog.addEventListener('close', () => {
+      resolve();
+    });
+  });
+
 describe('SheetDialog', () => {
   it('opens as a modal dialog named by its heading, with the content inside', async () => {
     const { dialog } = await render();
@@ -54,22 +62,24 @@ describe('SheetDialog', () => {
     expect(document.activeElement?.getAttribute('aria-label')).toBe('Schließen');
   });
 
-  it('closes on Escape, reports it and returns the focus to the trigger', async () => {
+  // That the browser returns the focus to the trigger, Playwright checks (`settings.spec.ts`).
+  it('closes on Escape and reports it', async () => {
     const { fixture, dialog } = await render();
+    const closeEvent = closeEventOf(dialog);
 
-    pressEscape(dialog);
-    await fixture.whenStable();
+    pressEscape(document.activeElement ?? dialog);
+    await closeEvent;
 
     expect(dialog.hasAttribute('open')).toBe(false);
     expect(fixture.componentInstance.closedCount).toBe(1);
-    expect(textOf(document.activeElement)).toBe('Öffnen');
   });
 
   it('closes with its close button', async () => {
     const { fixture, dialog } = await render();
+    const closeEvent = closeEventOf(dialog);
 
     getButton(dialog, 'Schließen').click();
-    await fixture.whenStable();
+    await closeEvent;
 
     expect(dialog.hasAttribute('open')).toBe(false);
     expect(fixture.componentInstance.closedCount).toBe(1);

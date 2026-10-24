@@ -23,6 +23,7 @@ import { ExplorePage } from './explore-page';
 import { PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS } from './place-search';
 import { PLACES_URL, placesUrl, stationLookupUrl, stationsUrl } from '../../../testing/api-urls';
 import { SETTINGS_STORAGE_KEY } from '../../core/settings/settings-store';
+import { RECONNECT_DELAY_IN_MILLISECONDS } from '../../core/network/network-status';
 import {
   childComponent,
   EIFFEL_TOWER_E5_URL,
@@ -245,6 +246,67 @@ describe('ExplorePage', () => {
     );
   });
 
+  describe('focus while searching places', () => {
+    afterEach(() => {
+      document.body.replaceChildren();
+    });
+
+    /** Focus only reaches elements in the document. */
+    const renderAttached = async () => {
+      const rendered = await renderWithStations();
+      document.body.append(rendered.element);
+      return rendered;
+    };
+
+    const typeInto = async (input: HTMLInputElement, query: string) => {
+      input.focus();
+      input.value = query;
+      input.dispatchEvent(new Event('input'));
+      await context.settle();
+    };
+
+    it('keeps the focus in the field when Escape ends the search', async () => {
+      const { element } = await renderAttached();
+      const input = placeSearchInput(element);
+      await typeInto(input, 'Bas');
+
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+      await context.settle();
+
+      expect(document.activeElement).toBe(input);
+      expect(element.querySelector('app-station-list')?.closest('[hidden]')).toBeNull();
+    });
+
+    it('moves the focus to the result summary when the focused "Abbrechen" goes away', async () => {
+      const { element } = await renderAttached();
+      await typeInto(placeSearchInput(element), 'Bas');
+      const cancelButton = getButton(element, 'Abbrechen');
+
+      cancelButton.focus();
+      cancelButton.click();
+      await context.settle();
+
+      expect(document.activeElement).toBe(resultSummaryElement(element));
+    });
+
+    it('keeps the suggestions when the field loses the focus', async () => {
+      const { element } = await renderAttached();
+      vi.useFakeTimers();
+      const input = placeSearchInput(element);
+      await typeInto(input, 'Bastille');
+      await waitForTypingPause();
+      await context.settle();
+      context.httpTesting.expectOne(placesUrl('Bastille')).flush([bastillePlace]);
+      await context.settle();
+
+      input.blur();
+      await context.settle();
+
+      expect(element.querySelector('[role="listbox"]')?.hasAttribute('hidden')).toBe(false);
+      expect(element.querySelector('app-station-list')?.closest('[hidden]')).not.toBeNull();
+    });
+  });
+
   it('keeps searching around the place but drops its name when the search is cleared', async () => {
     const { element } = await renderWithStations();
     TestBed.inject(SearchCenterStore).usePlace(bastillePlace);
@@ -367,13 +429,23 @@ describe('ExplorePage', () => {
     );
     expect(element.querySelector('[role="alert"]')).toBeNull();
 
+    vi.useFakeTimers();
     window.dispatchEvent(new Event('online'));
+    await context.settle();
+    await vi.advanceTimersByTimeAsync(RECONNECT_DELAY_IN_MILLISECONDS);
     await context.settle();
     context.httpTesting.expectOne(EIFFEL_TOWER_E5_URL).flush([totalStation]);
     await context.settle();
 
     expect(textOf(offlineNotice)).toBe('');
     expect(stationTitles(element)).toEqual(['TotalEnergies']);
+  });
+
+  it('leaves zooming to the buttons of the map from 48rem', async () => {
+    const { element } = await renderWithStations();
+
+    expect(element.querySelector('.explore-page__map-controls [aria-label="Zoom"]')).toBeNull();
+    expect(element.querySelector('app-stations-map .leaflet-control-zoom')).not.toBeNull();
   });
 
   it('locates the user on "Meinen Standort verwenden" and searches around the position', async () => {
@@ -418,10 +490,16 @@ describe('ExplorePage', () => {
     );
     expect(stationTitles(element)).toHaveLength(3);
 
-    getButton(element, 'Hinweis schließen').click();
+    document.body.append(element);
+    const dismissButton = getButton(element, 'Hinweis schließen');
+    dismissButton.focus();
+    dismissButton.click();
     await context.settle();
 
     expect(element.querySelector('main [role="alert"]')).toBeNull();
+    // The closed notice took the focus with it; the locate button is where it came from.
+    expect(document.activeElement).toBe(getButton(element, 'Meinen Standort verwenden'));
+    document.body.replaceChildren();
   });
 
   it('stars a station and persists it', async () => {

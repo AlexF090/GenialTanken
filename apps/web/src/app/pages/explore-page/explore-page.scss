@@ -2,6 +2,9 @@
 @use 'visually-hidden';
 @use 'materials';
 
+// Below this width of the header the filter chips wrap instead of scrolling sideways.
+$narrow-header-width: 22rem;
+
 // The map fills the whole window, under the status bar and the browser's bars too; sheet (phones)
 // or side panel (from 48rem) and the map controls float over it. Everything is fixed to the
 // window, so the document never scrolls and no `100dvh` jumps while the browser's bars come and go.
@@ -95,10 +98,10 @@
   color: var(--color-on-tint-vivid);
 }
 
-.explore-page__toast {
-  grid-column: 1 / -1;
-  justify-self: center;
-  width: min(100%, var(--layout-search-width-maximum));
+// Below the locate button.
+.explore-page__zoom {
+  grid-row: 2;
+  grid-column: 3;
 }
 
 // From 48rem a glass card floating over the map, inset from the window edges; on phones the
@@ -121,6 +124,17 @@
   padding: 0 var(--space-md) var(--space-xs);
   border-bottom: var(--border-width-hairline) solid var(--color-hairline);
   container-type: inline-size;
+}
+
+// Takes no room above an open card unless the offline notice shows.
+.explore-page__header--behind-card {
+  padding-block: 0;
+  border-bottom: 0;
+}
+
+// Its children stay items of the header's column, with its gaps.
+.explore-page__header-controls {
+  display: contents;
 }
 
 // Stays in the accessibility tree while empty, so the notice is announced, but takes no gap.
@@ -168,7 +182,7 @@
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
 
-  @container (width < 22rem) {
+  @container (width < #{$narrow-header-width}) {
     flex-wrap: wrap;
     overflow-x: visible;
   }

@@ -1,5 +1,5 @@
 <section class="installation-hint" [attr.aria-labelledby]="headingIdentifier">
-  <img class="installation-hint__icon" src="icons/icon-192.png" alt="" width="48" height="48" />
+  <img class="installation-hint__icon" src="icons/icon-192.png" alt="" />
   <div class="installation-hint__text">
     <h2 class="installation-hint__heading" [id]="headingIdentifier">
       <span translate="no">{{ applicationName }}</span> als App
@@ -19,11 +19,8 @@
       </p>
     }
   </div>
-  <button
-    type="button"
-    class="icon-button icon-button--circled installation-hint__dismiss"
-    aria-label="Hinweis schließen"
-    (click)="dismissed.emit()">
-    <span class="icon-button__circle"><app-icon name="close" /></span>
-  </button>
+  <app-close-button
+    class="installation-hint__dismiss"
+    label="Hinweis schließen"
+    (pressed)="dismissed.emit()" />
 </section>

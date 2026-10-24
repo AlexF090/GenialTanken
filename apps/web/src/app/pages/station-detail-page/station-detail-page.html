@@ -1,11 +1,5 @@
 <ng-template #closeButton>
-  <button
-    type="button"
-    class="icon-button icon-button--circled station-card__close"
-    aria-label="Schließen"
-    (click)="close()">
-    <span class="icon-button__circle"><app-icon name="close" /></span>
-  </button>
+  <app-close-button class="station-card__close" (pressed)="close()" />
 </ng-template>
 
 <section class="station-card" aria-label="Tankstelle">

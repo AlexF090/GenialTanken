@@ -19,6 +19,7 @@ import { FakeResizeObserver } from '../../../testing/fake-resize-observer';
       (heightChanged)="heights.push($event)">
       <p bottomSheetHeader>12 Tankstellen</p>
       <a href="/stations/1">TotalEnergies</a>
+      <dialog open aria-label="Einstellungen"><button type="button">Fertig</button></dialog>
     </app-bottom-sheet>
   `,
 })
@@ -159,6 +160,15 @@ describe('BottomSheet', () => {
     await fixture.whenStable();
 
     expect(host.snapPosition()).toBe('half');
+  });
+
+  it('stays down when the focus moves into an open dialog over the page', async () => {
+    const { fixture, element, host } = await render({ isCompact: true });
+
+    element.querySelector<HTMLElement>('dialog button')?.focus();
+    await fixture.whenStable();
+
+    expect(host.snapPosition()).toBe('peek');
   });
 
   it('reports the visible height after each snap', async () => {

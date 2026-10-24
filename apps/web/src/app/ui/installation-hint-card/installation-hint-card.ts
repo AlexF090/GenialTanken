@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
 import { APPLICATION_NAME } from '../../core/application-name';
 import { uniqueIdentifier } from '../../core/dom/unique-identifier';
 import type { InstallationOffer } from '../../core/installation/installation-hint';
+import { CloseButton } from '../close-button/close-button';
 import { Icon } from '../icon/icon';
 
 /**
@@ -10,7 +11,7 @@ import { Icon } from '../icon/icon';
  */
 @Component({
   selector: 'app-installation-hint-card',
-  imports: [Icon],
+  imports: [CloseButton, Icon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './installation-hint-card.html',
   styleUrl: './installation-hint-card.scss',

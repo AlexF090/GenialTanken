@@ -25,10 +25,16 @@ import { bastillePlace } from '../../../testing/place-fixtures';
 import { placesUrl, stationsUrl } from '../../../testing/api-urls';
 import { ExplorePage } from './explore-page';
 import { PLACE_SEARCH_DEBOUNCE_IN_MILLISECONDS } from './place-search';
-import { childComponent, EIFFEL_TOWER_E5_URL, placeSearchInput } from './explore-page-test-helpers';
+import {
+  childComponent,
+  EIFFEL_TOWER_E5_URL,
+  placeSearchInput,
+  resultSummaryElement,
+} from './explore-page-test-helpers';
 
 describe('ExplorePage on a phone', () => {
   let context: PageTestContext;
+  let fakeMatchMedia: FakeMatchMedia;
 
   afterEach(() => {
     vi.useRealTimers();
@@ -38,9 +44,8 @@ describe('ExplorePage on a phone', () => {
   });
 
   beforeEach(() => {
-    TestBed.overrideProvider(MATCH_MEDIA, {
-      useValue: new FakeMatchMedia([COMPACT_MEDIA_QUERY]).matchMedia,
-    });
+    fakeMatchMedia = new FakeMatchMedia([COMPACT_MEDIA_QUERY]);
+    TestBed.overrideProvider(MATCH_MEDIA, { useValue: fakeMatchMedia.matchMedia });
     context = configurePageTest();
   });
 
@@ -127,8 +132,9 @@ describe('ExplorePage on a phone', () => {
   });
 
   it.each(['Abbrechen', 'Escape'] as const)(
-    'returns to the previous position and the search center on %s',
+    'returns to the previous position and the search center on %s and dismisses the keyboard',
     async action => {
+      fakeMatchMedia.setMatches(TOUCH_DEVICE_MEDIA_QUERY, true);
       const { fixture, element } = await renderWithStations();
       const sheet = childComponent(fixture, BottomSheet);
       sheet.snapPosition.set('peek');
@@ -148,7 +154,7 @@ describe('ExplorePage on a phone', () => {
 
       expect(sheet.snapPosition()).toBe('peek');
       expect(input.value).toBe('');
-      expect(document.activeElement).not.toBe(input);
+      expect(document.activeElement).toBe(resultSummaryElement(element));
       expect(isListShown(element)).toBe(true);
       expect(
         element.querySelector('app-bottom-sheet a[aria-label="Einstellungen"]')
@@ -156,7 +162,8 @@ describe('ExplorePage on a phone', () => {
     }
   );
 
-  it('lowers the sheet to half when a place is chosen', async () => {
+  it('lowers the sheet to half and dismisses the keyboard when a place is chosen', async () => {
+    fakeMatchMedia.setMatches(TOUCH_DEVICE_MEDIA_QUERY, true);
     const { fixture, element } = await renderWithStations();
     vi.useFakeTimers();
     await startSearch(element);
@@ -174,11 +181,55 @@ describe('ExplorePage on a phone', () => {
 
     expect(childComponent(fixture, BottomSheet).snapPosition()).toBe('half');
     expect(isListShown(element)).toBe(true);
+    expect(document.activeElement).toBe(resultSummaryElement(element));
     context.httpTesting
       .expectOne(stationsUrl({ latitude: 48.8532, longitude: 2.3692 }))
       .flush([carrefourStation]);
     await context.settle();
     vi.useRealTimers();
+  });
+
+  it('zooms the map with buttons below the locate button', async () => {
+    const { fixture, element } = await renderWithStations();
+    const stationsMap = childComponent(fixture, StationsMap);
+    const zoomIn = vi.spyOn(stationsMap, 'zoomIn');
+    const zoomOut = vi.spyOn(stationsMap, 'zoomOut');
+    const zoomGroup = element.querySelector<HTMLElement>(
+      '.explore-page__map-controls [role="group"][aria-label="Zoom"]'
+    );
+    if (zoomGroup === null) {
+      throw new Error('No zoom buttons');
+    }
+
+    getButton(zoomGroup, 'Hineinzoomen').click();
+    getButton(zoomGroup, 'Herauszoomen').click();
+
+    expect(zoomIn).toHaveBeenCalledOnce();
+    expect(zoomOut).toHaveBeenCalledOnce();
+  });
+
+  it('marks "Hineinzoomen" unavailable at the maximum zoom and ignores it there', async () => {
+    const { fixture, element } = await renderWithStations();
+    const stationsMap = childComponent(fixture, StationsMap);
+    const zoomInButton = getButton(element, 'Hineinzoomen');
+    expect(zoomInButton.hasAttribute('aria-disabled')).toBe(false);
+
+    // Zooms in step by step until the map reaches its maximum.
+    await vi.waitFor(
+      async () => {
+        zoomInButton.click();
+        await context.settle();
+        expect(zoomInButton.getAttribute('aria-disabled')).toBe('true');
+      },
+      { timeout: 5000, interval: 10 }
+    );
+    const zoomIn = vi.spyOn(stationsMap, 'zoomIn');
+    zoomInButton.click();
+
+    // Stays in the tab order, so the focus does not jump away at the end of the range.
+    expect(zoomInButton.disabled).toBe(false);
+    expect(zoomIn).not.toHaveBeenCalled();
+    expect(getButton(element, 'Herauszoomen').hasAttribute('aria-disabled')).toBe(false);
   });
 
   it('hides the map controls while the fully opened sheet covers them', async () => {
@@ -243,10 +294,16 @@ describe('ExplorePage in the browser of an iPhone', () => {
   it('closes the suggestion for good', async () => {
     const { element } = await render();
 
-    getButton(element, 'Hinweis schließen').click();
+    document.body.append(element);
+    const dismissButton = getButton(element, 'Hinweis schließen');
+    dismissButton.focus();
+    dismissButton.click();
     await context.settle();
 
     expect(element.querySelector('app-installation-hint-card')).toBeNull();
     expect(context.storage.getItem(INSTALLATION_HINT_STORAGE_KEY)).toBe('dismissed');
+    // The closed hint took the focus with it; it continues just above, at the result summary.
+    expect(document.activeElement).toBe(resultSummaryElement(element));
+    document.body.replaceChildren();
   });
 });

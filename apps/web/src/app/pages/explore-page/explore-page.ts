@@ -1,12 +1,10 @@
 import {
-  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
   ElementRef,
   inject,
-  Injector,
   linkedSignal,
   signal,
   untracked,
@@ -62,9 +60,13 @@ import { PlaceSearchField } from '../../ui/place-search-field/place-search-field
 import { StatusBarScrim } from '../../ui/status-bar-scrim/status-bar-scrim';
 import { StationList } from '../../ui/station-list/station-list';
 import { StationsMap } from '../../ui/stations-map/stations-map';
+import { ZoomControls } from '../../ui/zoom-controls/zoom-controls';
+import { recoverFocusWhenChanged } from './focus-recovery';
 import { mapViewportPaddingFor } from './map-viewport-padding';
 import { injectPlaceSearch } from './place-search';
 import { describeEmptyResult, describeResult } from './result-summary';
+import { injectSearchMode } from './search-mode';
+import { focusSettingsLinkAfterSettings } from './settings-link-focus';
 import { injectSheetFollowsCard, isSameCard } from './sheet-follows-card';
 import type { SheetCard } from './sheet-follows-card';
 
@@ -99,6 +101,7 @@ const FUEL_TYPE_OPTIONS = fuelTypeOptions('long');
     StatusBarScrim,
     KilometersPipe,
     Wordmark,
+    ZoomControls,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './explore-page.html',
@@ -109,13 +112,14 @@ export class ExplorePage {
   private readonly searchCenter = inject(SearchCenterStore);
   private readonly settings = inject(SettingsStore);
   private readonly favorites = inject(FavoritesStore);
-  private readonly isCompactViewport = inject(Viewport).isCompactViewport;
+  protected readonly isCompactViewport = inject(Viewport).isCompactViewport;
   private readonly stationsMap = viewChild.required(StationsMap);
   // Optional: an effect reads them before the first render when the page opens with a card.
   private readonly bottomSheet = viewChild(BottomSheet);
   private readonly stationList = viewChild(StationList);
   private readonly favoritesRow = viewChild(FavoritesRow);
   private readonly settingsLink = viewChild<ElementRef<HTMLElement>>('settingsLink');
+  private readonly locateButton = viewChild.required<ElementRef<HTMLElement>>('locateButton');
   private readonly mapControls = viewChild.required<ElementRef<HTMLElement>>('mapControls');
   private readonly panel = viewChild.required<string, ElementRef<HTMLElement>>('panel', {
     read: ElementRef<HTMLElement>,
@@ -248,13 +252,13 @@ export class ExplorePage {
 
   protected readonly snapPosition = signal<SnapPosition>('half');
   private readonly sheetHeightInPixels = signal(0);
-  /**
-   * While the field of the place search is in use, its suggestions replace the list, like in
-   * Apple Maps; on phones the sheet opens fully above the keyboard.
-   */
-  protected readonly isSearching = signal(false);
-  /** Where the sheet returns to when the search is canceled. */
-  private snapPositionBeforeSearch: SnapPosition = 'half';
+  private readonly searchMode = injectSearchMode({
+    snapPosition: this.snapPosition,
+    focusAfterSearch: () => {
+      this.focusResultSummary();
+    },
+  });
+  protected readonly isSearching = this.searchMode.isSearching;
   protected readonly areMapControlsCovered = computed(
     () => this.isCompactViewport() && this.snapPosition() === 'full'
   );
@@ -288,34 +292,25 @@ export class ExplorePage {
         if (closedCard.kind === 'favorites' && this.favoritesRow()?.focusAllLink() === true) {
           return;
         }
-        this.resultSummaryElement()?.nativeElement.focus({ preventScroll: true });
+        this.focusResultSummary();
       },
     });
     this.showOpenedStationOnMap();
-    this.focusSettingsLinkAfterSettings();
+    focusSettingsLinkAfterSettings({
+      isSettingsOpen: this.isSettingsOpen,
+      isCardOpen: this.isCardOpen,
+      settingsLink: () => this.settingsLink()?.nativeElement,
+    });
+    // Closing a notice removes its focused button; the focus returns to where the notice belongs.
+    recoverFocusWhenChanged(this.locationErrorMessage, () => this.locateButton().nativeElement);
+    recoverFocusWhenChanged(
+      this.installationOffer,
+      () => this.resultSummaryElement()?.nativeElement
+    );
   }
 
-  /**
-   * The dialog returns the focus to what opened it, but not when it was the first thing shown
-   * (deep link) or the browser's back button closed it. The settings link is where it opens again.
-   */
-  private focusSettingsLinkAfterSettings(): void {
-    const injector = inject(Injector);
-    let wasSettingsOpen = false;
-    effect(() => {
-      const isSettingsOpen = this.isSettingsOpen();
-      const hasClosed = wasSettingsOpen && !isSettingsOpen;
-      wasSettingsOpen = isSettingsOpen;
-      if (!hasClosed || untracked(this.isCardOpen)) {
-        return;
-      }
-      afterNextRender(
-        () => {
-          this.settingsLink()?.nativeElement.focus({ preventScroll: true });
-        },
-        { injector }
-      );
-    });
+  private focusResultSummary(): void {
+    this.resultSummaryElement()?.nativeElement.focus({ preventScroll: true });
   }
 
   /**
@@ -350,38 +345,23 @@ export class ExplorePage {
   }
 
   protected startSearch(): void {
-    if (this.isSearching()) {
-      return;
-    }
-    this.isSearching.set(true);
-    this.snapPositionBeforeSearch = this.snapPosition();
-    if (this.isCompactViewport()) {
-      this.snapPosition.set('full');
-    }
+    this.searchMode.start();
   }
 
   protected searchPlaces(query: string): void {
-    this.startSearch();
+    this.searchMode.start();
     this.placeSearch.search(query);
   }
 
-  /** "Abbrechen" or Escape: the field shows the search center again and the sheet goes back. */
+  /** "Abbrechen" or Escape: the field shows the search center again. */
   protected cancelSearch(): void {
     this.placeSearch.cancel();
-    this.endSearch(this.snapPositionBeforeSearch);
+    this.searchMode.cancel();
   }
 
-  /** The sheet steps down to half, so the map shows the stations around the place. */
   protected choosePlace(place: Place): void {
     this.placeSearch.choose(place);
-    this.endSearch('half');
-  }
-
-  private endSearch(snapPosition: SnapPosition): void {
-    this.isSearching.set(false);
-    if (this.isCompactViewport()) {
-      this.snapPosition.set(snapPosition);
-    }
+    this.searchMode.finishWithChoice();
   }
 
   protected clearPlace(): void {
@@ -450,6 +430,22 @@ export class ExplorePage {
     this.listSelectedStationIdentifier.set(stationIdentifier);
     if (this.isCompactViewport() && this.snapPosition() === 'full') {
       this.snapPosition.set('half');
+    }
+  }
+
+  /** At the end of the zoom range the buttons stay focusable but do nothing, like the map's own. */
+  protected readonly canZoomIn = computed(() => this.stationsMap().canZoomIn());
+  protected readonly canZoomOut = computed(() => this.stationsMap().canZoomOut());
+
+  protected zoomIn(): void {
+    if (this.canZoomIn()) {
+      this.stationsMap().zoomIn();
+    }
+  }
+
+  protected zoomOut(): void {
+    if (this.canZoomOut()) {
+      this.stationsMap().zoomOut();
     }
   }
 

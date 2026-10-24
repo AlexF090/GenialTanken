@@ -10,7 +10,7 @@
             type="button"
             class="station-row__title"
             translate="no"
-            [attr.aria-pressed]="item.isSelected"
+            [attr.aria-current]="item.isSelected ? true : null"
             (click)="stationSelected.emit(item.stationIdentifier)">
             {{ item.title }}
           </button>
@@ -33,15 +33,11 @@
         </span>
       </div>
       <!-- After the station in reading order, so screen readers hear the price right after its name; shown first. -->
-      <div class="station-row__price" [class]="'station-row__price--' + item.priceTint">
-        <app-price size="list" [priceInEuro]="item.priceInEuro" />
-        @if (item.isCheapest) {
-          <span class="visually-hidden">{{ cheapestPriceLabel }}</span>
-          <span class="station-row__cheapest-label" aria-hidden="true">{{
-            cheapestPriceShortLabel
-          }}</span>
-        }
-      </div>
+      <app-price-tile
+        class="station-row__price"
+        [priceInEuro]="item.priceInEuro"
+        [tint]="item.priceTint"
+        [isCheapest]="item.isCheapest" />
       <div class="station-row__actions">
         <app-favorite-button
           [stationName]="item.title"

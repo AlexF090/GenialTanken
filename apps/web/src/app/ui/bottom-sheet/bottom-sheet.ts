@@ -222,12 +222,16 @@ export class BottomSheet {
     this.dragHeight.set(null);
   }
 
-  /** Keyboard and screen reader users must not land on content hidden below the screen. */
+  /**
+   * Keyboard and screen reader users must not land on content hidden below the screen. A modal
+   * dialog opened from the content (the settings) shows over the page, not in the sheet.
+   */
   protected revealFocusedContent(event: FocusEvent): void {
     if (
       this.isCompactViewport() &&
       this.snapPosition() === 'peek' &&
-      event.target instanceof Node &&
+      event.target instanceof Element &&
+      event.target.closest('dialog[open]') === null &&
       this.content().nativeElement.contains(event.target)
     ) {
       this.moveTo('half');

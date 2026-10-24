@@ -22,8 +22,10 @@
     display: none;
   }
 
+  // Full width, so in landscape the content keeps clear of the notch and the rounded corners.
   @include breakpoints.compact {
     inset: calc(var(--safe-area-top) + var(--space-md)) 0 0;
+    padding-inline: var(--safe-area-left) var(--safe-area-right);
     height: auto;
     max-height: none;
     border-bottom: 0;
@@ -39,9 +41,18 @@
     }
   }
 
+  // Centered in the part of the window that system bars, notch and keyboard leave free.
   @include breakpoints.medium-and-up {
-    width: min(var(--layout-dialog-width-maximum), 100% - 2 * var(--space-lg));
-    max-height: calc(100dvh - 2 * var(--space-xl));
+    inset: var(--safe-area-top) var(--safe-area-right)
+      calc(var(--safe-area-bottom) + var(--layout-keyboard-inset)) var(--safe-area-left);
+    width: min(
+      var(--layout-dialog-width-maximum),
+      100% - var(--safe-area-left) - var(--safe-area-right) - 2 * var(--space-lg)
+    );
+    max-height: calc(
+      100dvh - var(--safe-area-top) - var(--safe-area-bottom) - var(--layout-keyboard-inset) - 2 *
+        var(--space-xl)
+    );
     margin: auto;
     border-radius: var(--radius-lg);
     transition:
@@ -50,7 +61,7 @@
 
     @starting-style {
       opacity: 0;
-      transform: scale(0.96);
+      transform: scale(var(--scale-dialog-entrance));
     }
   }
 

@@ -1,5 +1,5 @@
 import { DefaultUrlSerializer } from '@angular/router';
-import { FAVORITES_ROUTE_PATH, isRouteOpen } from './explore-routes';
+import { FAVORITES_ROUTE_PATH, isRouteOpen, pathSegmentsOf } from './explore-routes';
 
 const parse = (url: string) => new DefaultUrlSerializer().parse(url);
 
@@ -15,4 +15,21 @@ describe('isRouteOpen', () => {
       expect(isRouteOpen(parse(url), FAVORITES_ROUTE_PATH)).toBe(false);
     }
   );
+});
+
+describe('pathSegmentsOf', () => {
+  it('lists the paths of the primary outlet', () => {
+    expect(pathSegmentsOf(parse('/stations/fr-75001001?source=list#top'))).toEqual([
+      'stations',
+      'fr-75001001',
+    ]);
+  });
+
+  it('is empty for the root', () => {
+    expect(pathSegmentsOf(parse('/'))).toEqual([]);
+  });
+
+  it('leaves out secondary outlets', () => {
+    expect(pathSegmentsOf(parse('/favorites(popup:settings)'))).toEqual(['favorites']);
+  });
 });

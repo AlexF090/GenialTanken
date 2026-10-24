@@ -1,6 +1,5 @@
 import { KilometersPipe } from '../../core/formatting/kilometers-pipe';
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
 import { form, FormField, max, min } from '@angular/forms/signals';
 import {
   COLOR_SCHEME_PREFERENCES,
@@ -10,6 +9,7 @@ import {
 import type { ColorSchemePreference } from '@genialtanken/contracts';
 import { ApplicationUpdateStore } from '../../core/application-update/application-update-store';
 import { uniqueIdentifier } from '../../core/dom/unique-identifier';
+import { injectCloseToExplore } from '../../core/navigation/close-to-explore';
 import { fuelTypeOptions } from '../../core/fuel-type-labels';
 import type { LabeledOption } from '../../core/labeled-option';
 import { SettingsStore } from '../../core/settings/settings-store';
@@ -41,6 +41,7 @@ const COLOR_SCHEME_LABELS: Record<ColorSchemePreference, string> = {
 })
 export class SettingsPage {
   private readonly settingsStore = inject(SettingsStore);
+  private readonly closeToExplore = injectCloseToExplore();
   private readonly applicationUpdate = inject(ApplicationUpdateStore);
   protected readonly pendingReload = this.applicationUpdate.pendingReload;
 
@@ -75,14 +76,12 @@ export class SettingsPage {
     });
   }
 
-  private readonly router = inject(Router);
-
   protected reloadApplication(): void {
     void this.applicationUpdate.reload();
   }
 
   protected close(): void {
-    void this.router.navigateByUrl('/');
+    this.closeToExplore();
   }
 
   protected selectColorScheme(colorScheme: ColorSchemePreference): void {

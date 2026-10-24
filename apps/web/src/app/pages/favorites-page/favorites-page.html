@@ -43,7 +43,9 @@
         Tippe bei einer Tankstelle auf den Stern. Sie erscheint dann hier mit ihren aktuellen
         Preisen, ganz ohne Suche.
       </p>
-      <a class="button" routerLink="/">Tankstellen erkunden</a>
+      <a class="button" [href]="exploreHref" (click)="closeFromLink($event)"
+        >Tankstellen erkunden</a
+      >
     </div>
   }
 </section>

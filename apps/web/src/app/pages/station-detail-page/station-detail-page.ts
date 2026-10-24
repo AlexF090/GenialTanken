@@ -8,6 +8,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   untracked,
   viewChild,
 } from '@angular/core';
@@ -16,20 +17,28 @@ import { Router } from '@angular/router';
 import type { Station } from '@genialtanken/contracts';
 import { FavoritesStore } from '../../core/favorites/favorites-store';
 import { NetworkStatus, reloadWhenReconnected } from '../../core/network/network-status';
-import { KnownStations } from '../../core/stations/known-stations';
+import { isOutdated, KnownStations } from '../../core/stations/known-stations';
+import type { KnownStation } from '../../core/stations/known-stations';
 import { OpenedStationStore } from '../../core/stations/opened-station-store';
 import { SettingsStore } from '../../core/settings/settings-store';
 import { describeStationsError } from '../../core/stations/stations-error-message';
 import { StationsApi } from '../../core/stations/stations-api';
 import { CURRENT_DATE } from '../../core/time/current-date';
+import { injectLoadedAt } from '../../core/time/loaded-at';
 import { Logger } from '../../core/logging/logger';
+import { injectCloseToExplore } from '../../core/navigation/close-to-explore';
 import { stationRoute } from '../../core/navigation/station-route';
 import { isShareCanceled, SHARE } from '../../core/sharing/share';
 import { addressLinesOf, stationTitle } from '../../core/stations/station-display';
-import { Icon } from '../../ui/icon/icon';
+import { CloseButton } from '../../ui/close-button/close-button';
 import { LoadingState } from '../../ui/loading-state/loading-state';
 import { StationDetail } from '../../ui/station-detail/station-detail';
 import { resourceValueOr } from '../../core/resource-value-or';
+
+interface ShownStation {
+  readonly stationIdentifier: string;
+  readonly knownStation: KnownStation | undefined;
+}
 
 /**
  * One station as a card in the explore page's sheet (or side panel), like a place in Apple Maps:
@@ -37,7 +46,7 @@ import { resourceValueOr } from '../../core/resource-value-or';
  */
 @Component({
   selector: 'app-station-detail-page',
-  imports: [StationDetail, LoadingState, Icon, NgTemplateOutlet],
+  imports: [StationDetail, LoadingState, CloseButton, NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './station-detail-page.html',
   styleUrl: './station-detail-page.scss',
@@ -50,30 +59,55 @@ export class StationDetailPage {
   readonly id = input.required<string>();
 
   private readonly router = inject(Router);
+  private readonly closeToExplore = injectCloseToExplore();
   private readonly stationDetail = viewChild(StationDetail);
   private readonly favorites = inject(FavoritesStore);
   private readonly knownStations = inject(KnownStations);
   private readonly knownStation = computed(() => this.knownStations.find(this.id()));
+  protected readonly today = inject(CURRENT_DATE);
   /**
-   * Only a station the app has not loaded yet is requested, e.g. from a shared link. Decided once
-   * per station, so the request neither starts nor stops when the known stations change.
+   * Requested only for a station the app has not loaded yet (e.g. from a shared link) or whose
+   * known prices are outdated; those show meanwhile. Decided once per station (`untracked`), so
+   * the request neither starts nor stops when the known stations change.
    */
   private readonly stationResource = inject(StationsApi).stationByIdentifier(() => {
     const stationIdentifier = this.id();
-    return untracked(() => this.knownStations.find(stationIdentifier)) === undefined
+    const knownStation = untracked(this.knownStation);
+    return knownStation === undefined || isOutdated(knownStation, untracked(this.today))
       ? stationIdentifier
       : undefined;
   });
+  private readonly stationLoadedAt = injectLoadedAt(this.stationResource);
   private readonly isOnline = inject(NetworkStatus).isOnline;
   private readonly shareSheet = inject(SHARE);
   private readonly document = inject(DOCUMENT);
   private readonly logger = inject(Logger);
 
-  protected readonly station = computed(
-    () => resourceValueOr(this.stationResource, undefined) ?? this.knownStation()
-  );
+  /**
+   * The loaded station, else the known one. It stays when a new search leaves the station out,
+   * and never shows the previous station while the next one loads.
+   */
+  private readonly shownStation = linkedSignal<ShownStation, KnownStation | undefined>({
+    source: () => {
+      const loadedStation = resourceValueOr(this.stationResource, undefined);
+      return {
+        stationIdentifier: this.id(),
+        knownStation:
+          loadedStation === undefined
+            ? this.knownStation()
+            : { station: loadedStation, loadedAt: this.stationLoadedAt() },
+      };
+    },
+    computation: ({ stationIdentifier, knownStation }, previous) => {
+      if (knownStation?.station.id === stationIdentifier) {
+        return knownStation;
+      }
+      const previousStation: KnownStation | undefined = previous?.value;
+      return previousStation?.station.id === stationIdentifier ? previousStation : undefined;
+    },
+  });
+  protected readonly station = computed(() => this.shownStation()?.station);
   protected readonly fuelType = inject(SettingsStore).fuelType;
-  protected readonly today = inject(CURRENT_DATE);
   protected readonly isLoading = this.stationResource.isLoading;
   protected readonly errorMessage = computed(() => {
     const error = this.stationResource.error();
@@ -88,9 +122,11 @@ export class StationDetailPage {
     reloadWhenReconnected(this.stationResource);
     const openedStation = inject(OpenedStationStore);
     effect(() => {
-      const station = this.station();
-      if (station !== undefined) {
-        openedStation.open(station);
+      const shownStation = this.shownStation();
+      if (shownStation === undefined) {
+        openedStation.close();
+      } else {
+        openedStation.open(shownStation.station, shownStation.loadedAt);
       }
     });
     inject(DestroyRef).onDestroy(() => {
@@ -146,6 +182,6 @@ export class StationDetailPage {
   }
 
   protected close(): void {
-    void this.router.navigateByUrl('/');
+    this.closeToExplore();
   }
 }
