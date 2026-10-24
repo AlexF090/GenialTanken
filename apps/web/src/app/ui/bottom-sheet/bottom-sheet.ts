@@ -23,20 +23,42 @@ import {
   steppedSnapPosition,
 } from './bottom-sheet-snap';
 import type { SnapDirection, SnapPosition } from './bottom-sheet-snap';
+import { contentGestureDecision, wheelTarget } from './bottom-sheet-gesture';
+import type { ContentGestureDecision, WheelLock } from './bottom-sheet-gesture';
 import { uniqueIdentifier } from '../../core/dom/unique-identifier';
 
 /** Movement in pixels below which a press on the handle counts as a click, not a drag. */
 const DRAG_THRESHOLD_IN_PIXELS = 4;
 
+/** A mouse or touch click this soon after a touch that dragged the sheet is not meant for the content. */
+const CLICK_SUPPRESSION_IN_MILLISECONDS = 400;
+
+/** A pause this long before release means the finger stopped, so the release flings nothing. */
+const STALE_VELOCITY_IN_MILLISECONDS = 100;
+
+/** The vertical movement of a finger or pointer that drags the sheet. */
 interface DragState {
-  pointerId: number;
-  startPointerY: number;
+  startY: number;
   startVisibleHeight: number;
-  lastPointerY: number;
+  lastY: number;
   lastTimestamp: number;
   /** Pixels per millisecond, positive while the sheet grows. */
   velocity: number;
+}
+
+interface HandleDrag {
+  pointerId: number;
   hasMoved: boolean;
+  drag: DragState;
+}
+
+interface ContentGesture {
+  startX: number;
+  startScrollTop: number;
+  decision: ContentGestureDecision;
+  /** Where the finger went down; only a click on this element can follow the swipe. */
+  startTarget: EventTarget | null;
+  drag: DragState;
 }
 
 /**
@@ -56,6 +78,11 @@ export class BottomSheet {
   /** Accessible name of the sheet region, e.g. "Tankstellen". */
   readonly label = input.required<string>();
   /**
+   * Whether swiping or scrolling the list moves the sheet between its positions. The page turns
+   * it off where the list must not lead, e.g. while searching.
+   */
+  readonly contentDragsSheet = input(true);
+  /**
    * Height in pixels the sheet covers at the bottom of the map after it settled; 0 when it is a
    * side panel. Use it as bottom padding when fitting the map to its markers.
    */
@@ -73,8 +100,11 @@ export class BottomSheet {
   private readonly windowHeight = signal(0);
   private readonly dragHeight = signal<number | null>(null);
   private readonly direction = signal<SnapDirection>('up');
-  private dragState: DragState | undefined;
+  private handleDrag: HandleDrag | undefined;
+  private contentGesture: ContentGesture | undefined;
   private suppressesNextClick = false;
+  private contentClickSuppression: { until: number; target: EventTarget | null } | undefined;
+  private wheelLock: WheelLock | undefined;
 
   private readonly heights = computed(() =>
     snapHeights({
@@ -91,6 +121,12 @@ export class BottomSheet {
   protected readonly offset = computed(() => this.sheetHeight() - this.visibleHeight());
   protected readonly settledOffset = computed(
     () => this.sheetHeight() - this.settledVisibleHeight()
+  );
+  protected readonly isContentDraggingEnabled = computed(
+    () => this.isCompactViewport() && this.contentDragsSheet()
+  );
+  protected readonly contentLeadsToSheet = computed(
+    () => this.isContentDraggingEnabled() && this.snapPosition() !== 'full'
   );
   protected readonly isExpanded = computed(() => this.snapPosition() !== 'peek');
   private readonly nextActivation = computed(() =>
@@ -114,6 +150,7 @@ export class BottomSheet {
         },
         destroyRef
       );
+      this.listenToContent(destroyRef);
     });
 
     let lastEmittedHeight: number | undefined;
@@ -170,60 +207,41 @@ export class BottomSheet {
     if (event.currentTarget instanceof Element) {
       event.currentTarget.setPointerCapture(event.pointerId);
     }
-    this.dragState = {
+    this.handleDrag = {
       pointerId: event.pointerId,
-      startPointerY: event.clientY,
-      startVisibleHeight: this.visibleHeight(),
-      lastPointerY: event.clientY,
-      lastTimestamp: event.timeStamp,
-      velocity: 0,
       hasMoved: false,
+      drag: this.beginDrag(event.clientY, event.timeStamp),
     };
   }
 
   protected drag(event: PointerEvent): void {
-    const state = this.dragState;
+    const state = this.handleDrag;
     if (state?.pointerId !== event.pointerId) {
       return;
     }
-    const distance = event.clientY - state.startPointerY;
-    if (!state.hasMoved && Math.abs(distance) < DRAG_THRESHOLD_IN_PIXELS) {
+    if (!state.hasMoved && Math.abs(event.clientY - state.drag.startY) < DRAG_THRESHOLD_IN_PIXELS) {
       return;
     }
     state.hasMoved = true;
-    const elapsed = event.timeStamp - state.lastTimestamp;
-    if (elapsed > 0) {
-      state.velocity = (state.lastPointerY - event.clientY) / elapsed;
-    }
-    state.lastPointerY = event.clientY;
-    state.lastTimestamp = event.timeStamp;
-    const { peek, full } = this.heights();
-    this.dragHeight.set(Math.min(Math.max(state.startVisibleHeight - distance, peek), full));
+    this.moveDrag(state.drag, event.clientY, event.timeStamp);
   }
 
   protected endDrag(event: PointerEvent): void {
-    const state = this.dragState;
+    const state = this.handleDrag;
     if (state?.pointerId !== event.pointerId) {
       return;
     }
-    this.dragState = undefined;
-    const dragHeight = this.dragHeight();
-    this.dragHeight.set(null);
-    if (!state.hasMoved || dragHeight === null) {
+    this.handleDrag = undefined;
+    if (!state.hasMoved) {
+      this.dragHeight.set(null);
       return;
     }
     this.suppressesNextClick = true;
-    this.moveTo(
-      nearestSnapPosition({
-        visibleHeight: dragHeight,
-        velocity: state.velocity,
-        heights: this.heights(),
-      })
-    );
+    this.settleDrag(state.drag, event.timeStamp);
   }
 
   protected cancelDrag(): void {
-    this.dragState = undefined;
+    this.handleDrag = undefined;
     this.dragHeight.set(null);
   }
 
@@ -240,6 +258,209 @@ export class BottomSheet {
       this.content().nativeElement.contains(event.target)
     ) {
       this.moveTo('half');
+    }
+  }
+
+  private beginDrag(clientY: number, timeStamp: number): DragState {
+    return {
+      startY: clientY,
+      startVisibleHeight: this.visibleHeight(),
+      lastY: clientY,
+      lastTimestamp: timeStamp,
+      velocity: 0,
+    };
+  }
+
+  private moveDrag(state: DragState, clientY: number, timeStamp: number): void {
+    const elapsed = timeStamp - state.lastTimestamp;
+    if (elapsed > 0) {
+      state.velocity = (state.lastY - clientY) / elapsed;
+    }
+    state.lastY = clientY;
+    state.lastTimestamp = timeStamp;
+    const { peek, full } = this.heights();
+    this.dragHeight.set(
+      Math.min(Math.max(state.startVisibleHeight - (clientY - state.startY), peek), full)
+    );
+  }
+
+  private settleDrag(state: DragState, releaseTimeStamp: number): void {
+    if (releaseTimeStamp - state.lastTimestamp > STALE_VELOCITY_IN_MILLISECONDS) {
+      state.velocity = 0;
+    }
+    const dragHeight = this.dragHeight();
+    this.dragHeight.set(null);
+    if (dragHeight === null) {
+      return;
+    }
+    this.moveTo(
+      nearestSnapPosition({
+        visibleHeight: dragHeight,
+        velocity: state.velocity,
+        heights: this.heights(),
+      })
+    );
+  }
+
+  /**
+   * The touchmove and wheel listeners are not passive: a claimed swipe and a wheel step must keep
+   * the list from scrolling, which a passive listener cannot do.
+   */
+  private listenToContent(destroyRef: DestroyRef): void {
+    const content = this.content().nativeElement;
+    const listen = <Type extends keyof HTMLElementEventMap>(
+      type: Type,
+      listener: (event: HTMLElementEventMap[Type]) => void,
+      options?: AddEventListenerOptions
+    ): void => {
+      content.addEventListener(type, listener, options);
+      destroyRef.onDestroy(() => {
+        content.removeEventListener(type, listener, options);
+      });
+    };
+    listen('touchstart', event => {
+      this.startContentGesture(event);
+    });
+    listen(
+      'touchmove',
+      event => {
+        this.moveContentGesture(event);
+      },
+      { passive: false }
+    );
+    listen('touchend', event => {
+      this.endContentGesture(event);
+    });
+    listen('touchcancel', () => {
+      this.cancelContentGesture();
+    });
+    listen(
+      'wheel',
+      event => {
+        this.stepWithWheel(event);
+      },
+      { passive: false }
+    );
+    listen(
+      'click',
+      event => {
+        this.swallowClickAfterDrag(event);
+      },
+      { capture: true }
+    );
+  }
+
+  private startContentGesture(event: TouchEvent): void {
+    this.abandonContentGesture();
+    const touch = event.touches[0];
+    if (!this.isContentDraggingEnabled() || event.touches.length !== 1 || touch === undefined) {
+      return;
+    }
+    this.contentGesture = {
+      startX: touch.clientX,
+      startScrollTop: this.content().nativeElement.scrollTop,
+      decision: 'undecided',
+      startTarget: event.target,
+      drag: this.beginDrag(touch.clientY, event.timeStamp),
+    };
+  }
+
+  private moveContentGesture(event: TouchEvent): void {
+    const gesture = this.contentGesture;
+    const touch = event.touches[0];
+    if (gesture === undefined) {
+      return;
+    }
+    if (event.touches.length !== 1 || touch === undefined) {
+      this.abandonContentGesture();
+      return;
+    }
+    if (gesture.decision === 'undecided') {
+      gesture.decision = contentGestureDecision({
+        position: this.snapPosition(),
+        startScrollTop: gesture.startScrollTop,
+        dx: touch.clientX - gesture.startX,
+        dy: touch.clientY - gesture.drag.startY,
+        threshold: DRAG_THRESHOLD_IN_PIXELS,
+      });
+      // A touch the browser already scrolls with cannot be taken over any more.
+      if (gesture.decision === 'claim' && !event.cancelable) {
+        gesture.decision = 'release';
+      }
+    }
+    if (gesture.decision !== 'claim') {
+      return;
+    }
+    event.preventDefault();
+    this.moveDrag(gesture.drag, touch.clientY, event.timeStamp);
+  }
+
+  private endContentGesture(event: TouchEvent): void {
+    const gesture = this.contentGesture;
+    this.contentGesture = undefined;
+    if (gesture?.decision !== 'claim') {
+      return;
+    }
+    this.contentClickSuppression = {
+      until: event.timeStamp + CLICK_SUPPRESSION_IN_MILLISECONDS,
+      target: gesture.startTarget,
+    };
+    this.settleDrag(gesture.drag, event.timeStamp);
+  }
+
+  /** A second finger ends the swipe where it is: the sheet snaps from its current height. */
+  private abandonContentGesture(): void {
+    const gesture = this.contentGesture;
+    if (gesture?.decision !== 'claim') {
+      this.cancelContentGesture();
+      return;
+    }
+    this.contentGesture = undefined;
+    gesture.drag.velocity = 0;
+    this.settleDrag(gesture.drag, gesture.drag.lastTimestamp);
+  }
+
+  private cancelContentGesture(): void {
+    this.contentGesture = undefined;
+    this.dragHeight.set(null);
+  }
+
+  private swallowClickAfterDrag(event: MouseEvent): void {
+    const suppression = this.contentClickSuppression;
+    this.contentClickSuppression = undefined;
+    if (
+      suppression === undefined ||
+      event.detail === 0 ||
+      event.timeStamp > suppression.until ||
+      !(suppression.target instanceof Node) ||
+      !(event.target instanceof Node) ||
+      !suppression.target.contains(event.target)
+    ) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  private stepWithWheel(event: WheelEvent): void {
+    if (!this.isContentDraggingEnabled()) {
+      return;
+    }
+    const { target, swallow, lock } = wheelTarget({
+      position: this.snapPosition(),
+      scrollTop: this.content().nativeElement.scrollTop,
+      deltaY: event.deltaY,
+      deltaMode: event.deltaMode,
+      ctrlKey: event.ctrlKey,
+      timeStamp: event.timeStamp,
+      lock: this.wheelLock,
+    });
+    this.wheelLock = lock;
+    if (swallow) {
+      event.preventDefault();
+    }
+    if (target !== null) {
+      this.moveTo(target);
     }
   }
 

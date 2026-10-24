@@ -25,6 +25,7 @@
   overscroll-behavior: none;
   // No `touch-action: pan-y` here: it would also stop a pinch-zoomed page from panning sideways
   // over the list, and `overflow-x: hidden` already keeps the list itself from moving sideways.
+  // Below the full position the list does not scroll natively (see `--content-leads`).
 }
 
 .bottom-sheet__handle {
@@ -90,6 +91,12 @@
 
     padding-block-end: var(--bottom-sheet-covered-end);
     scroll-padding-block-end: var(--bottom-sheet-covered-end);
+  }
+
+  // Below full a vertical swipe on the list moves the sheet instead of scrolling: without native
+  // vertical panning the touch events stay cancelable, and the list only scrolls at full.
+  .bottom-sheet--content-leads .bottom-sheet__content {
+    touch-action: pan-x pinch-zoom;
   }
 
   .bottom-sheet--dragging {
