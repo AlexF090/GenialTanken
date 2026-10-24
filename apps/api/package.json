@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Backend-for-frontend for GenialTanken in front of the French fuel price open data",
   "private": true,
   "license": "UNLICENSED",
