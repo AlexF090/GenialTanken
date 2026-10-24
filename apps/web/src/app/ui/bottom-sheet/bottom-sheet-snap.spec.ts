@@ -17,10 +17,26 @@ describe('snapHeights', () => {
     });
   });
 
+  it('keeps half two list rows above peek, raising it on low windows such as landscape phones', () => {
+    expect(snapHeights({ sheetHeight: 360, peekHeight: 180, windowHeight: 390 })).toEqual({
+      peek: 180,
+      half: 316,
+      full: 360,
+    });
+  });
+
+  it('lets half meet full when the sheet has no room for two rows above peek', () => {
+    expect(snapHeights({ sheetHeight: 250, peekHeight: 180, windowHeight: 270 })).toEqual({
+      peek: 180,
+      half: 250,
+      full: 250,
+    });
+  });
+
   it('never lets half drop below peek, exceed the sheet, or peek exceed the sheet', () => {
     expect(snapHeights({ sheetHeight: 200, peekHeight: 150, windowHeight: 220 })).toEqual({
       peek: 150,
-      half: 150,
+      half: 200,
       full: 200,
     });
     expect(snapHeights({ sheetHeight: 300, peekHeight: 100, windowHeight: 1000 })).toEqual({

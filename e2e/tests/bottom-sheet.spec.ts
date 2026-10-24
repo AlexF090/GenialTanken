@@ -34,6 +34,16 @@ const offsetBelowWindow = async (page: Page, element: Locator): Promise<number> 
   return elementBox.y - viewport.height;
 };
 
+const renderedBox = async (
+  element: Locator
+): Promise<{ x: number; y: number; width: number; height: number }> => {
+  const box = await element.boundingBox();
+  if (box === null) {
+    throw new Error('The element must be rendered.');
+  }
+  return box;
+};
+
 /**
  * The sheet height comes from measured, fractional element heights, so at peek the list may
  * start up to a device pixel above the bottom edge; that is not visible.
@@ -362,6 +372,41 @@ test.describe('installation hint in the browser of an iPhone', () => {
     await page.reload();
     await expect(resultSummary(page)).toContainText(eiffelTower.label);
     await expect(installationHint(page)).toHaveCount(0);
+  });
+
+  test('sits after the third station and leaves the list whole once closed', async ({ page }) => {
+    await chooseFuel(page, 'Diesel');
+    await openExplore(page);
+    await useOwnPosition(page);
+    const hint = installationHint(page);
+    const furtherStations = page
+      .getByRole('main')
+      .getByRole('list', { name: 'Weitere Tankstellen', exact: true });
+    await expect(stationCards(page)).toHaveCount(3);
+    await expect(furtherStations.getByRole('listitem').first()).toBeAttached();
+
+    // The sheet may still be moving, so the boxes are compared once it settled.
+    await expect
+      .poll(async () => {
+        const [thirdStationBox, hintBox, fourthStationBox] = await Promise.all([
+          renderedBox(stationCards(page).nth(2)),
+          renderedBox(hint),
+          renderedBox(furtherStations.getByRole('listitem').first()),
+        ]);
+        return (
+          thirdStationBox.y + thirdStationBox.height <= hintBox.y &&
+          hintBox.y + hintBox.height <= fourthStationBox.y
+        );
+      })
+      .toBe(true);
+
+    const closeButton = hint.getByRole('button', { name: 'Hinweis schließen', exact: true });
+    await closeButton.click();
+    await expect(hint).toHaveCount(0);
+    await expect(furtherStations).toHaveCount(0);
+    await expect(stationCards(page).nth(3)).toBeVisible();
+    // The focus continues at the station that followed the hint.
+    await expect(stationCards(page).nth(3).getByRole('button').first()).toBeFocused();
   });
 
   test('has no WCAG 2.2 AAA violations, in the dark too', async ({ page }) => {

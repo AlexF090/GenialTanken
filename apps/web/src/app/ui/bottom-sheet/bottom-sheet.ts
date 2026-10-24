@@ -255,8 +255,12 @@ export class BottomSheet {
   private measure(): void {
     const sheet = this.sheet().nativeElement;
     this.sheetHeight.set(sheet.offsetHeight);
-    // Fixed and reaching the bottom of the window: its top and height add up to the window's.
-    this.windowHeight.set(sheet.offsetTop + sheet.offsetHeight);
+    // Fixed to the window: top and height add up to the window's height, plus the strip below
+    // the window that iOS leaves and the sheet reaches into (its negative `bottom`).
+    const bottom = Number.parseFloat(getComputedStyle(sheet).bottom);
+    this.windowHeight.set(
+      sheet.offsetTop + sheet.offsetHeight + (Number.isNaN(bottom) ? 0 : Math.min(bottom, 0))
+    );
     // Handle and header stay visible at peek; the content starts right below them. The sheet
     // reaches under the home indicator, so peek shows that strip (its bottom padding) as well.
     const safeAreaBottom = Number.parseFloat(getComputedStyle(sheet).paddingBottom);

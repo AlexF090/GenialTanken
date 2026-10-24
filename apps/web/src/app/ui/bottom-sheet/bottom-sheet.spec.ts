@@ -182,6 +182,27 @@ describe('BottomSheet', () => {
     expect(host.heights.slice(-2)).toEqual([100, 495]);
   });
 
+  it('opens half to a share of the window, not of the screen strip below it', async () => {
+    const { fixture, element, handle, host } = await render({ isCompact: true });
+    const sheet = element.querySelector('section');
+    const content = element.querySelector('.bottom-sheet__content');
+    if (sheet === null || !(content instanceof HTMLElement)) {
+      throw new Error('BottomSheet rendered no sheet');
+    }
+    // A window of 900 px; the sheet reaches 60 px further down into the gap iOS leaves below it.
+    sheet.style.bottom = '-60px';
+    Object.defineProperty(sheet, 'offsetHeight', { value: 860 });
+    Object.defineProperty(sheet, 'offsetTop', { value: 100 });
+    Object.defineProperty(content, 'offsetTop', { value: 100 });
+    FakeResizeObserver.latest?.resize();
+    await fixture.whenStable();
+
+    handle.click();
+    await fixture.whenStable();
+
+    expect(host.heights.at(-1)).toBe(495);
+  });
+
   it('slides down by the hidden part of the sheet', async () => {
     const { fixture, element } = await render({ isCompact: true });
     const sheet = await layOut(element, () => fixture.whenStable());

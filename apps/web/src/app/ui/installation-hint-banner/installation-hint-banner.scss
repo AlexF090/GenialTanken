@@ -1,8 +1,8 @@
-// A slim tinted strip at the end of the sheet, like the tips Apple shows in its own apps; it
-// never pushes the stations down.
+// A slim tinted strip between the stations, like the tips Apple shows in its own apps; it never
+// pushes the nearest stations down.
 :host {
   display: block;
-  padding: var(--space-sm) var(--space-md) 0;
+  padding: var(--space-sm) var(--space-md);
 }
 
 .installation-hint {
