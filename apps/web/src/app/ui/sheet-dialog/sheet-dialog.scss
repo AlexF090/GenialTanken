@@ -24,7 +24,8 @@
 
   // Full width, so in landscape the content keeps clear of the notch and the rounded corners.
   @include breakpoints.compact {
-    inset: calc(var(--safe-area-top) + var(--space-md)) 0 0;
+    inset: calc(var(--safe-area-top) + var(--space-md)) 0
+      calc(-1 * var(--layout-viewport-gap-bottom));
     padding-inline: var(--safe-area-left) var(--safe-area-right);
     height: auto;
     max-height: none;

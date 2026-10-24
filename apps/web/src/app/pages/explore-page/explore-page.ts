@@ -31,6 +31,7 @@ import { injectOpenedStationIdentifier, stationRoute } from '../../core/navigati
 import { InstallationHint } from '../../core/installation/installation-hint';
 import { observeElementBounds } from '../../core/layout/observe-element-bounds';
 import { Viewport } from '../../core/layout/viewport';
+import { injectViewportGapBottom } from '../../core/layout/viewport-gap';
 import { injectKeyboardInset } from '../../core/layout/visual-viewport';
 import { NetworkStatus } from '../../core/network/network-status';
 import { shouldOfferAreaSearch } from '../../core/search-center/area-search';
@@ -280,6 +281,7 @@ export class ExplorePage {
 
   constructor() {
     injectKeyboardInset();
+    injectViewportGapBottom();
     injectSheetFollowsCard({
       openedCard: this.openedCard,
       bottomSheet: this.bottomSheet,

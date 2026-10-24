@@ -49,7 +49,7 @@ import { UpdateNotice } from './ui/update-notice/update-notice';
     .shell__notices {
       position: fixed;
       right: calc(var(--safe-area-right) + var(--space-md));
-      bottom: calc(var(--safe-area-bottom) + var(--space-md));
+      bottom: calc(var(--safe-area-bottom) + var(--space-md) - var(--layout-viewport-gap-bottom));
       left: calc(var(--safe-area-left) + var(--space-md));
       z-index: var(--layer-notice);
       // The empty region spans the width; only the notice itself takes taps.

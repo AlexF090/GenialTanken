@@ -3,6 +3,7 @@ import type {
   ObservedVisualViewport,
   VisualViewportEventType,
 } from '../app/core/layout/visual-viewport';
+import type { ScreenSize, StandaloneWindow } from '../app/core/layout/viewport-gap';
 
 class FakeObservedVisualViewport implements ObservedVisualViewport {
   height: number;
@@ -44,7 +45,7 @@ export class FakeKeyboardAwareWindow implements KeyboardAwareWindow {
   scrollY = 0;
   readonly scrollCalls: [number, number][] = [];
 
-  constructor(readonly innerHeight: number) {
+  constructor(public innerHeight: number) {
     this.visualViewport = new FakeObservedVisualViewport(innerHeight);
   }
 
@@ -79,5 +80,28 @@ export class FakeKeyboardAwareWindow implements KeyboardAwareWindow {
     this.visualViewport.offsetTop = offsetTop;
     this.visualViewport.dispatch('resize');
     this.visualViewport.dispatch('scroll');
+  }
+}
+
+/**
+ * An app opened from the home screen of an iPhone, whose layout viewport fills the screen until
+ * iOS leaves it short at the bottom.
+ */
+export class FakeStandaloneWindow extends FakeKeyboardAwareWindow implements StandaloneWindow {
+  readonly innerWidth: number;
+
+  constructor(readonly screen: ScreenSize) {
+    super(screen.height);
+    this.innerWidth = screen.width;
+  }
+
+  /** Ends the layout viewport, and the visual viewport with it, `pixels` above the screen bottom. */
+  shrinkLayoutViewport(pixels: number, { notify = true }: { notify?: boolean } = {}): void {
+    const shrinkage = this.innerHeight - (this.screen.height - pixels);
+    this.innerHeight -= shrinkage;
+    this.visualViewport.height -= shrinkage;
+    if (notify) {
+      this.visualViewport.dispatch('resize');
+    }
   }
 }

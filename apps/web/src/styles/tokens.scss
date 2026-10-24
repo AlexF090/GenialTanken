@@ -384,6 +384,10 @@
   // Height of the on-screen keyboard over the window, written by `injectKeyboardInset()`
   // (`core/layout/visual-viewport.ts`); 0 where the browser resizes the layout for it instead.
   --layout-keyboard-inset: 0px;
+  // Height of the strip of the screen below the layout viewport, which iOS 26 leaves in apps
+  // opened from the home screen, written by `injectViewportGapBottom()`
+  // (`core/layout/viewport-gap.ts`); everything fixed to the bottom of the window reaches down by it.
+  --layout-viewport-gap-bottom: 0px;
   --safe-area-top: env(safe-area-inset-top, 0);
   --safe-area-right: env(safe-area-inset-right, 0);
   --safe-area-bottom: env(safe-area-inset-bottom, 0);

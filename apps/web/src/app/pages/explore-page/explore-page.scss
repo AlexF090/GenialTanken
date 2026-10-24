@@ -8,9 +8,10 @@ $narrow-header-width: 22rem;
 // The map fills the whole window, under the status bar and the browser's bars too; sheet (phones)
 // or side panel (from 48rem) and the map controls float over it. Everything is fixed to the
 // window, so the document never scrolls and no `100dvh` jumps while the browser's bars come and go.
+// It reaches below the layout viewport where iOS ends that short of the screen.
 :host {
   position: fixed;
-  inset: 0;
+  inset: 0 0 calc(-1 * var(--layout-viewport-gap-bottom));
   overflow: hidden;
 }
 

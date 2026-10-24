@@ -17,7 +17,10 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  // Safari 26 tints its floating toolbar after the page background behind it.
+  // Safari 26 tints its floating toolbar after the page background behind it. The body has no
+  // background of its own, so wherever the window shows past the page (iOS 26 can leave a strip
+  // below the layout viewport of the installed app), it continues the opaque color of the sheet
+  // instead of a grey bar. Pages that want the grouped background set it themselves.
   background-color: var(--color-surface);
 }
 
@@ -42,7 +45,6 @@ body {
   font-size: var(--font-size-body);
   line-height: var(--line-height-base);
   color: var(--color-text);
-  background-color: var(--color-canvas);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
