@@ -59,7 +59,6 @@ import { isSameViewportPadding } from '../../ui/map/map-viewport';
 import type { ViewportPadding } from '../../ui/map/map-viewport';
 import { PlaceSearchField } from '../../ui/place-search-field/place-search-field';
 import { ResultSummaryLine } from '../../ui/result-summary-line/result-summary-line';
-import { StatusBarScrim } from '../../ui/status-bar-scrim/status-bar-scrim';
 import { StationList } from '../../ui/station-list/station-list';
 import { StationsMap } from '../../ui/stations-map/stations-map';
 import { ZoomControls } from '../../ui/zoom-controls/zoom-controls';
@@ -104,7 +103,6 @@ const INSTALLATION_HINT_AFTER_ROW = 3;
     SkeletonRows,
     StationList,
     StationsMap,
-    StatusBarScrim,
     KilometersPipe,
     Wordmark,
     ZoomControls,

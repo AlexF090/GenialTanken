@@ -199,13 +199,6 @@
   // The only shadow color; used by `--shadow-floating`
   --color-shadow: light-dark(rgb(0 0 0 / 12%), rgb(0 0 0 / 50%));
   --color-scrim: light-dark(rgb(0 0 0 / 20%), rgb(0 0 0 / 48%));
-  // Behind the status bar, where the map reaches under it. Dark in both schemes: the installed
-  // app asks for `black-translucent`, so iOS always draws the status bar text white. Fades out
-  // towards the map (`--color-status-bar-scrim-end`) below the safe area; opaque with more
-  // contrast below. 66% black keeps white text at 7.3:1 over a white map tile (60% gave 5.7:1;
-  // checked by scripts/status-bar-scrim-contrast.spec.ts).
-  --color-status-bar-scrim: rgb(0 0 0 / 66%);
-  --color-status-bar-scrim-end: rgb(0 0 0 / 0%);
 
   // Materials: translucent, blurred layers floating above the map and the content. Nearly
   // opaque, so text keeps 7:1 over any backdrop. `--material-edge` is a hairline that only the
@@ -401,11 +394,9 @@
   --safe-area-bottom: env(safe-area-inset-bottom, 0);
   --safe-area-left: env(safe-area-inset-left, 0);
 
-  // Stacking: above Leaflet panes and controls (max. 1000). From bottom to top: the status bar
-  // scrim and the map controls (locate, area search), the sheet (a fully opened one covers the
-  // map controls), the page header, app-wide notices (new version), the skip link.
+  // Stacking: above Leaflet panes and controls (max. 1000). From bottom to top: the map controls
+  // (locate, area search), the sheet (a fully opened one covers the map controls), the page header, app-wide notices (new version), the skip link.
   --layer-chrome: 1100;
-  --layer-status-bar-scrim: calc(var(--layer-chrome) - 3);
   --layer-map-controls: calc(var(--layer-chrome) - 2);
   --layer-sheet: calc(var(--layer-chrome) - 1);
   --layer-notice: calc(var(--layer-chrome) + 1);
@@ -452,11 +443,6 @@
 }
 
 :root {
-  @media (prefers-contrast: more) {
-    --color-status-bar-scrim: rgb(0 0 0);
-    --color-status-bar-scrim-end: rgb(0 0 0);
-  }
-
   // Flat fills: no gradient, sheen or gloss where contrast or system colors come first; controls
   // draw their edge instead
   @media (prefers-contrast: more), (forced-colors: active) {

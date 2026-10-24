@@ -247,14 +247,6 @@ describe('ExplorePage on a phone', () => {
     expect(controls?.classList).not.toContain('explore-page__map-controls--covered');
   });
 
-  it('keeps the status bar legible with a decorative scrim over the map', async () => {
-    const { element } = await renderWithStations();
-
-    const scrim = element.querySelector('app-status-bar-scrim');
-    expect(scrim?.getAttribute('aria-hidden')).toBe('true');
-    expect(scrim?.parentElement?.tagName).toBe('MAIN');
-  });
-
   it('does not suggest the home screen without a browser that supports it', async () => {
     const { element } = await renderComponent(ExplorePage);
     await context.settle();
