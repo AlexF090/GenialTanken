@@ -44,6 +44,11 @@ export const environmentSchema = z.object({
    * not arrived by then are served without name.
    */
   FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS: millisecondsSchema.default(3000),
+  /**
+   * Upper bound of the records kept from recent French searches (up to 100 per search), apart
+   * from the shared cache; the least recently remembered are evicted beyond it.
+   */
+  FRANCE_SEARCHED_RECORDS_MAXIMUM_ENTRIES: positiveIntegerSchema.default(2000),
   /** Photon (komoot) instance behind the place search. */
   PHOTON_BASE_URL: baseUrlSchema('https://photon.komoot.io'),
   /** Place search answers rarely change, so they are cached far longer than fuel prices. */

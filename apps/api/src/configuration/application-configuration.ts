@@ -28,6 +28,10 @@ export class ApplicationConfiguration {
     return this.environment.FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS;
   }
 
+  get franceSearchedRecordsMaximumEntries(): number {
+    return this.environment.FRANCE_SEARCHED_RECORDS_MAXIMUM_ENTRIES;
+  }
+
   get photonBaseUrl(): string {
     return this.environment.PHOTON_BASE_URL;
   }

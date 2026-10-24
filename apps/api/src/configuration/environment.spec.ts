@@ -1,10 +1,11 @@
 import { environmentSchema, parseEnvironment } from './environment.js';
 
 describe('environmentSchema', () => {
-  it('defaults the cache size and the French station details time budget', () => {
+  it('defaults the cache sizes and the French station details time budget', () => {
     const environment = environmentSchema.parse({});
 
     expect(environment.CACHE_MAXIMUM_ENTRIES).toBe(5000);
+    expect(environment.FRANCE_SEARCHED_RECORDS_MAXIMUM_ENTRIES).toBe(2000);
     expect(environment.FRANCE_STATION_DETAILS_TIME_BUDGET_IN_MILLISECONDS).toBe(3000);
   });
 

@@ -63,6 +63,24 @@ describe('UpstreamFetcher', () => {
     expect(requestedPaths).toEqual(['/answer']);
   });
 
+  it('reports when a cached JSON answer was fetched from the upstream', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const fetcher = createFetcher();
+      const url = new URL(`${baseUrl}/answer`);
+      vi.setSystemTime(1_000_000);
+      await fetcher.fetchJsonAnswer({ url, schema: answerSchema });
+      vi.setSystemTime(1_060_000);
+
+      const cachedAnswer = await fetcher.fetchJsonAnswer({ url, schema: answerSchema });
+
+      expect(cachedAnswer).toEqual({ body: { answer: 42 }, fetchedAt: 1_000_000 });
+      expect(requestedPaths).toEqual(['/answer']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('caches the text and the JSON answer of the same URL apart', async () => {
     const fetcher = createFetcher();
     const url = new URL(`${baseUrl}/answer`);
