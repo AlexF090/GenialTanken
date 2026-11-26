@@ -4,6 +4,8 @@
  * into the build output; the next deploy overwrites whatever is on the server.
  */
 
+import { MAP_TILE_ORIGINS } from '../src/app/ui/map/tile-origins.ts';
+
 export interface HtaccessOptions {
   /** Origin the web app is served from, without trailing slash. */
   webOrigin: string;
@@ -69,8 +71,11 @@ const escapeForRegularExpression = (value: string): string =>
  *   at build time. A hash in `style-src` would not help either: with CSP level 3 a hash or nonce
  *   makes browsers ignore `'unsafe-inline'`, which would block exactly these styles. So
  *   `style-src` has no hashes. The risk stays small because scripts remain locked down.
- * - Map tiles come from OpenStreetMap (default) and Mapbox (production token) as images.
- * - The app talks to itself (service worker, manifest) and to the API only.
+ * - Map tiles come from OpenStreetMap (default) and Mapbox (production token) as images. The
+ *   service worker forwards every request of the page with `fetch()`, which `connect-src` of the
+ *   worker script governs, so the tile origins belong there too. Without them the service worker
+ *   answers every tile with 504 and the map stays empty once it controls the page.
+ * - Otherwise the app talks to itself (service worker, manifest) and to the API only.
  */
 export const buildContentSecurityPolicy = ({
   apiOrigin,
@@ -80,9 +85,9 @@ export const buildContentSecurityPolicy = ({
     "default-src 'self'",
     ["script-src 'self'", ...inlineScriptHashes].join(' '),
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https://tile.openstreetmap.org https://api.mapbox.com",
+    ["img-src 'self' data:", ...MAP_TILE_ORIGINS].join(' '),
     "font-src 'self'",
-    `connect-src 'self' ${apiOrigin}`,
+    ["connect-src 'self'", apiOrigin, ...MAP_TILE_ORIGINS].join(' '),
     "worker-src 'self'",
     "manifest-src 'self'",
     "frame-ancestors 'none'",
