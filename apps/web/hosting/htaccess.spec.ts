@@ -52,12 +52,23 @@ const directiveValues = (policy: string, directive: string): string[] => {
 };
 
 describe('buildHtaccess', () => {
-  it('redirects HTTP to the fixed HTTPS address of the web app, never to the raw host header', () => {
-    const start = lines.indexOf('RewriteCond %{HTTPS} !=on');
+  it('redirects HTTP and every other host name to the fixed HTTPS address, never to the raw host header', () => {
+    const start = lines.indexOf('RewriteCond %{HTTPS} !=on [OR]');
 
-    expect(lines[start + 1]).toBe('RewriteCond %{HTTP_HOST} ^genial-tanken\\.appool\\.de$ [NC]');
-    expect(lines[start + 2]).toBe(
-      'RewriteRule ^ https://genial-tanken.appool.de%{REQUEST_URI} [R=301,L,NE]'
+    expect(lines.slice(start, start + 3)).toEqual([
+      'RewriteCond %{HTTPS} !=on [OR]',
+      'RewriteCond %{HTTP_HOST} !^genial-tanken\\.appool\\.de$ [NC]',
+      'RewriteRule ^ https://genial-tanken.appool.de%{REQUEST_URI} [R=301,L,NE]',
+    ]);
+  });
+
+  it('redirects before any other rule, so an alias host never serves the app itself', () => {
+    const canonicalRedirect = lines.indexOf('RewriteCond %{HTTPS} !=on [OR]');
+
+    expect(canonicalRedirect).toBeGreaterThan(-1);
+    expect(canonicalRedirect).toBeLessThan(lines.indexOf('RewriteRule ^ /index.html [L]'));
+    expect(canonicalRedirect).toBeLessThan(
+      lines.findIndex(line => line.startsWith('Redirect 301 /impressum'))
     );
   });
 

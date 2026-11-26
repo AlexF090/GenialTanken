@@ -73,7 +73,8 @@ address still has to lead somewhere, and the Worker does both for free.
   nonce. Scripts stay locked down, which is what matters most.
 - **Privacy.** The browser now contacts Render (USA) directly, so Render sees visitors' IP
   addresses and request parameters, where before only the Worker did. The privacy policy at
-  `/datenschutz` says so and names Hetzner, Render, Photon and the map tile providers.
+  `/datenschutz` says so and names Hetzner, Render, Photon, the map tile providers and Cloudflare,
+  whose Worker still processes requests to the old `workers.dev` address.
 - The Cloudflare secret `PROXY_SHARED_SECRET` and the Render variable of the same name are
   obsolete and can be deleted after the move.
 
