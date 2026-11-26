@@ -26,6 +26,7 @@ export const createTestApplication = async (
       }),
     ],
   }).compile();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-class-instance-assignment -- Nest documents object literals for its option class
   const application = testingModule.createNestApplication<NestExpressApplication>({
     logger: false,
   });

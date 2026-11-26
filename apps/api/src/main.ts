@@ -7,6 +7,7 @@ import { configureApplication } from './configure-application.js';
 const LISTEN_ON_ALL_INTERFACES = '0.0.0.0';
 
 const bootstrap = async (): Promise<void> => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-class-instance-assignment -- Nest documents object literals for its option class
   const application = await NestFactory.create<NestExpressApplication>(AppModule.forRoot(), {
     abortOnError: false,
   });
