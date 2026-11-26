@@ -54,6 +54,12 @@ describe('PrivacyPage', () => {
     expect(text()).toContain('Auftragsverarbeitungsvertrag');
   });
 
+  it('describes the redirect of the old address through Cloudflare', () => {
+    expect(text()).toContain('Cloudflare, Inc.');
+    expect(text()).toContain('workers.dev');
+    expect(text()).toMatch(/weitergeleitet/);
+  });
+
   it('describes the API on Render as a transfer to a third country with its safeguards', () => {
     expect(text()).toContain('Render Services, Inc.');
     expect(text()).toContain('USA');
