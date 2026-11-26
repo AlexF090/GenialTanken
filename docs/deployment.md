@@ -31,10 +31,11 @@ The web app is a static build. `pnpm --filter web build` runs `ng build` and the
   3. Without GitHub: download the artifact (`gh run download <CI run id> -n web-dist`) and upload it by hand as below.
      If the service worker itself is the problem, use the safety worker rollback below.
 - **Manual deploy** (no CI): `pnpm --filter web build`, then upload `apps/web/dist/web/browser/` including the hidden `.htaccess` to the web directory.
-- **Alias `genialtanken.appool.de`:** whoever types the name without hyphen lands on `https://genial-tanken.appool.de` (`301`, path and query kept). The alias only redirects and never serves the app itself, because favorites and settings live in `localStorage`, which belongs to one origin; a second origin would show empty favorites. Set it up once in konsoleH:
-  1. Add the subdomain `genialtanken` to `appool.de` with the same target directory as `genial-tanken` (the `.htaccess` there redirects every foreign host name). If konsoleH offers only a separate directory, put a `.htaccess` with `Redirect 301 / https://genial-tanken.appool.de/` there instead.
-  2. Order a Let's Encrypt certificate for `genialtanken.appool.de`; without it `https://genialtanken.appool.de` fails before Apache can redirect.
-  3. Check: `curl -sI http://genialtanken.appool.de/favorites` and `curl -sI https://genialtanken.appool.de/favorites` both answer `301` with `location: https://genial-tanken.appool.de/favorites`.
+- **Alias `genialtanken.appool.de`:** whoever types the name without hyphen lands on `https://genial-tanken.appool.de` (`301`, path and query kept). The alias only redirects and never serves the app itself, because favorites and settings live in `localStorage`, which belongs to one origin; a second origin would show empty favorites. Set it up once (done on 2026-11-26):
+  1. In konsoleH, add the subdomain `genialtanken` to `appool.de` with the same target directory as `genial-tanken` (the `.htaccess` there redirects every foreign host name).
+  2. The nameservers of `appool.de` are Cloudflare's, so add the DNS records there: `A` and `AAAA` for `genialtanken` with the same addresses as `genial-tanken`, proxy status "DNS only".
+  3. Order a Let's Encrypt certificate for `genialtanken.appool.de`; without it `https://genialtanken.appool.de` fails before Apache can redirect.
+  4. Check: `curl -sI http://genialtanken.appool.de/favorites` and `curl -sI https://genialtanken.appool.de/favorites` both answer `301` with `location: https://genial-tanken.appool.de/favorites`.
 - **Content Security Policy:** scripts only from the own origin plus the two inline scripts of `index.html` by SHA-256 hash (computed from the build, so the hashes follow every build); `connect-src` the own origin and the Render origin (`API_ORIGIN` in `apps/web/src/environments/api-origin.ts`); map tiles from OpenStreetMap and Mapbox. `style-src` allows `'unsafe-inline'` because Angular adds component styles at run time and a static host cannot send a nonce; this is the only exception. A new external service (another tile provider, an analytics script) needs a change in `htaccess.ts` and a test.
 
 ### Service worker and caching
