@@ -1,3 +1,9 @@
+## [2.3.1](https://github.com/AlexF090/GenialTanken/compare/v2.3.0...v2.3.1) (2026-11-26)
+
+### Bug Fixes
+
+* **web:** load map tiles through the service worker and update dependencies ([#50](https://github.com/AlexF090/GenialTanken/issues/50)) ([9ceef11](https://github.com/AlexF090/GenialTanken/commit/9ceef11905ff2ad4a7a5ea4266ac1f80f0a86d44))
+
 ## [2.3.0](https://github.com/AlexF090/GenialTanken/compare/v2.2.0...v2.3.0) (2026-11-26)
 
 ### Features
