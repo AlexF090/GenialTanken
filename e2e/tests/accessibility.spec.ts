@@ -157,6 +157,12 @@ const PAGES: PageUnderTest[] = [
     isReady: page => expect(page.getByRole('region', { name: 'Preise' })).toContainText('2,391 €'),
   },
   {
+    name: 'privacy policy',
+    path: '/datenschutz',
+    isReady: page =>
+      expect(page.getByRole('heading', { level: 2, name: 'Verantwortlicher' })).toBeVisible(),
+  },
+  {
     name: 'not found',
     path: '/does-not-exist',
     isReady: page =>
