@@ -71,6 +71,20 @@
       </p>
     </section>
 
+    <section class="settings__group" [attr.aria-labelledby]="legalHeadingIdentifier">
+      <h2 [id]="legalHeadingIdentifier" class="settings__title">Rechtliches</h2>
+      <p class="settings__text settings__card">
+        <app-external-link class="settings__link" href="https://appool.de/impressum"
+          >Impressum</app-external-link
+        >
+        ·
+        <a class="settings__link" routerLink="/datenschutz">Datenschutz</a>
+        <br />
+        Fragen und Hinweise:
+        <a class="settings__link" href="mailto:genial-tanken@appool.de">genial-tanken@appool.de</a>
+      </p>
+    </section>
+
     <div class="settings__about">
       <img class="settings__app-icon" src="icons/icon-192.png" alt="" />
       <app-wordmark class="settings__wordmark" />

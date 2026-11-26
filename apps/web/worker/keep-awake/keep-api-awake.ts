@@ -1,5 +1,4 @@
-import { isAllowedApiOrigin } from '../api/api-origin.ts';
-import type { ApiProxyEnvironment, FetchImplementation } from '../api/proxy-api-request.ts';
+import { isAllowedApiOrigin } from './api-origin.ts';
 
 /**
  * The free Render instance sleeps after 15 minutes without traffic, and 750 instance hours a
@@ -27,6 +26,14 @@ const berlinHourFormat = new Intl.DateTimeFormat('en-GB', {
   hourCycle: 'h23',
 });
 
+/** Worker variable the cron trigger reads (set in the Cloudflare dashboard, `.dev.vars` locally). */
+export interface KeepAwakeEnvironment {
+  /** Origin of the NestJS API, e.g. `https://genialtanken-api.onrender.com`. */
+  API_ORIGIN?: string;
+}
+
+export type FetchImplementation = (request: Request) => Promise<Response>;
+
 export interface KeepAwakeDependencies {
   fetchImplementation: FetchImplementation;
   now: () => Date;
@@ -49,7 +56,7 @@ const mayEndWithinAwakeHours = (delayStart: Date): boolean =>
  * throws, only logs.
  */
 export const keepApiAwake = async (
-  environment: ApiProxyEnvironment,
+  environment: KeepAwakeEnvironment,
   dependencies: KeepAwakeDependencies
 ): Promise<void> => {
   if (!mayEndWithinAwakeHours(dependencies.now())) {

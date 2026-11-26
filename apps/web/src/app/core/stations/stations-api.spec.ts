@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ApplicationRef, Injector, runInInjectionContext, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { carrefourStation, totalStation, withoutDistance } from '../../../testing/station-fixtures';
+import { API_BASE_URL } from '../http/api-base-url';
 import { StationsApi } from './stations-api';
 import type { StationsSearch } from './stations-api';
 import { UnexpectedResponseError } from '../http/unexpected-response-error';
@@ -252,6 +253,44 @@ describe('StationsApi', () => {
       expect(stations).toEqual([]);
       expect(failures.map(failure => failure.stationIdentifier)).toEqual(['fr-75001001']);
       expect(failures[0]?.error).toBeInstanceOf(UnexpectedResponseError);
+    });
+  });
+
+  describe('with an absolute base URL', () => {
+    beforeEach(() => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          { provide: API_BASE_URL, useValue: 'https://api.example/api' },
+          provideHttpClient(),
+          provideHttpClientTesting(),
+        ],
+      });
+      stationsApi = TestBed.inject(StationsApi);
+      httpTesting = TestBed.inject(HttpTestingController);
+      injector = TestBed.inject(Injector);
+    });
+
+    it('searches, looks up one station and looks up favorites there', async () => {
+      runInInjectionContext(injector, () => {
+        stationsApi.stationsAround(() => PARIS_SEARCH);
+        stationsApi.stationByIdentifier(() => 'fr-75012010');
+      });
+      TestBed.tick();
+      const lookup = stationsApi.loadStationsByIdentifiers(['fr-1']);
+
+      httpTesting
+        .expectOne(
+          'https://api.example/api/stations?latitude=48.8566&longitude=2.3522&radiusInKilometers=5&fuel=e5'
+        )
+        .flush([]);
+      httpTesting
+        .expectOne('https://api.example/api/stations/fr-75012010')
+        .flush(NOT_FOUND_BODY, NOT_FOUND);
+      httpTesting
+        .expectOne('https://api.example/api/stations/by-identifiers?identifiers=fr-1')
+        .flush({ stations: [], unavailableIdentifiers: [], failedIdentifiers: [] });
+      await lookup;
     });
   });
 });

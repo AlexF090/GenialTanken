@@ -27,7 +27,7 @@ import {
   useOwnPosition,
 } from '../fixtures.ts';
 
-const APPLICATION_URL = 'https://genialtanken.alexf090.workers.dev/';
+const APPLICATION_URL = 'https://genial-tanken.appool.de/';
 const FUEL_LABEL = 'Diesel';
 const ROBOTO_STYLESHEET_URL =
   'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=block';

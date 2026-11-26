@@ -1,16 +1,14 @@
 import { httpResource } from '@angular/common/http';
 import type { HttpResourceRef } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import {
   DEFAULT_PLACE_LIMIT,
   MINIMUM_PLACE_QUERY_LENGTH,
   placesSchema,
 } from '@genialtanken/contracts';
 import type { Place } from '@genialtanken/contracts';
+import { API_BASE_URL } from '../http/api-base-url';
 import { parseResponse } from '../http/parse-response';
-
-/** Same origin: dev proxy locally, the Cloudflare Worker in production. */
-const PLACES_URL = '/api/places';
 
 const parsePlaces = (body: unknown): readonly Place[] =>
   parseResponse(placesSchema, body, 'GET /api/places');
@@ -22,6 +20,8 @@ const parsePlaces = (body: unknown): readonly Place[] =>
  */
 @Injectable({ providedIn: 'root' })
 export class PlacesApi {
+  private readonly placesUrl = `${inject(API_BASE_URL)}/places`;
+
   /**
    * Places matching the query; idle while the trimmed query is missing or shorter than
    * {@link MINIMUM_PLACE_QUERY_LENGTH}. Debouncing the query is up to the caller.
@@ -34,7 +34,7 @@ export class PlacesApi {
           return undefined;
         }
         return {
-          url: PLACES_URL,
+          url: this.placesUrl,
           params: { query: trimmedQuery, limit: DEFAULT_PLACE_LIMIT },
         };
       },

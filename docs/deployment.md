@@ -1,73 +1,89 @@
 # Deployment runbook
 
-Everything runs on free tiers: web on Cloudflare Workers (static assets), API on Render, CI on GitHub Actions.
+Web on Hetzner Webhosting (static, Apache), API on Render (free tier), a small Cloudflare Worker (free) for the keep-awake cron and the redirect of the old address, CI on GitHub Actions. Why the web app left Cloudflare: [ADR 0001](adr/0001-leave-cloudflare-proxy.md).
 
-| Part     | Where                                   | Deployed by                                                          |
-| -------- | --------------------------------------- | -------------------------------------------------------------------- |
-| Web      | Cloudflare Worker `genialtanken`        | `deploy-web.yml` after CI passed (production and previews)           |
-| API      | Render web service `genialtanken-api`   | Render after the GitHub checks passed; `release.yml` after a release |
-| Releases | GitHub tags and releases (`v<version>`) | `release.yml` (semantic-release) after CI passed on `main`           |
-
-## Shared proxy secret
-
-`PROXY_SHARED_SECRET` is set under the same name in Cloudflare and in Render. It lets the Worker pass the visitor's address to the API, so the rate limit works per visitor and cannot be spoofed. Generate a value with at least 32 characters, e.g. `openssl rand -base64 48`. To rotate it, set the new value in both places; until both match, the API rate-limits by the connecting Cloudflare address, so visitors share limits.
+| Part     | Where                                         | Deployed by                                                          |
+| -------- | --------------------------------------------- | -------------------------------------------------------------------- |
+| Web      | Hetzner Webhosting, `genial-tanken.appool.de` | `deploy-web.yml` after CI passed on `main` (SFTP)                    |
+| API      | Render web service `genialtanken-api`         | Render after the GitHub checks passed; `release.yml` after a release |
+| Worker   | Cloudflare Worker `genialtanken`              | `deploy-worker.yml` after `deploy-web.yml` succeeded                 |
+| Releases | GitHub tags and releases (`v<version>`)       | `release.yml` (semantic-release) after CI passed on `main`           |
 
 ## Render (API)
 
 - The service comes from the Blueprint [`render.yaml`](../render.yaml) (Render dashboard → **New → Blueprint**): free Docker web service `genialtanken-api`, region Frankfurt, health check `/health`, `autoDeployTrigger: checksPass`.
-- Environment variable: `PROXY_SHARED_SECRET`. All other variables have defaults (see the README).
+- Environment variable `WEB_ORIGIN`: the origins of the web app that CORS allows, comma-separated, no wildcard. During the move `https://genial-tanken.appool.de,https://genialtanken.alexf090.workers.dev`; afterwards only the first. All other variables have defaults (see the README). `PROXY_SHARED_SECRET` is obsolete; delete it in the dashboard.
 - Check: `<service URL>/health` (e.g. `https://genialtanken-api.onrender.com/health`) returns `{"status":"ok",…}`. The free tier sleeps after 15 minutes without traffic; the first request then takes about a minute.
-- Keeping it awake: the Worker's cron trigger (`triggers.crons` `*/5 * * * *` in `wrangler.jsonc`, handler in `apps/web/worker/keep-awake/`) calls `<API_ORIGIN>/health` from 06:00 to midnight Berlin time (daylight saving time included, checked at the time of the call), each time after a random delay of up to 2 minutes, so two calls are at most 7 minutes apart, and 12 when Cloudflare skips a run, below the 15 idle minutes. That is about 18 × 31 ≈ 560 instance hours a month; Render's free tier has 750 per workspace, so a second free service would exceed it. At night the API sleeps; the web app calls `GET /api/wake-up` (answers 204) on start, so the API starts while the browser asks for the location. Cron triggers run only for the deployed production Worker, not for preview versions, and `deploy-web.yml` takes `wrangler.jsonc` from `main`, so a changed schedule takes effect after the merge. Cloudflare logs every run under Worker → Settings → Trigger events; failed health checks are logged, never thrown. The Workers free plan allows 10 ms CPU time per run (waiting does not count) and 15 minutes wall time.
+- CORS check: `curl -si -H 'Origin: https://genial-tanken.appool.de' <service URL>/api/wake-up` answers `204` with `access-control-allow-origin: https://genial-tanken.appool.de`.
+- Rate limit check after the first deploy: the API counts requests per client address behind exactly one proxy hop (`trust proxy` 1). Send more than `RATE_LIMIT_REQUESTS_PER_MINUTE` requests (default 60) to one route from your own connection and expect `429`; then request once from another network (for example a phone on mobile data) and expect `200`. If the second request is `429` as well, Render added a hop and every visitor shares one address; then raise `TRUSTED_PROXY_HOPS` in `apps/api/src/configure-application.ts`.
+- Keeping it awake: the Worker's cron trigger (`triggers.crons` `*/5 * * * *` in `wrangler.jsonc`, handler in `apps/web/worker/keep-awake/`) calls `<API_ORIGIN>/health` from 06:00 to midnight Berlin time (daylight saving time included, checked at the time of the call), each time after a random delay of up to 2 minutes, so two calls are at most 7 minutes apart, and 12 when Cloudflare skips a run, below the 15 idle minutes. That is about 18 × 31 ≈ 560 instance hours a month; Render's free tier has 750 per workspace, so a second free service would exceed it. At night the API sleeps; the web app calls `GET /api/wake-up` (answers 204) on start, so the API starts while the browser asks for the location, and shows a hint while it starts. Cloudflare logs every run under Worker → Settings → Trigger events; failed health checks are logged, never thrown. The Workers free plan allows 10 ms CPU time per run (waiting does not count) and 15 minutes wall time.
 
-## Cloudflare Workers (web)
+## Hetzner Webhosting (web)
 
-The Worker is configured by [`apps/web/wrangler.jsonc`](../apps/web/wrangler.jsonc): it serves the Angular build as a single-page application and runs its code first only for `/api/*`, which it proxies to Render. GitHub Actions deploys it; keep Workers Builds (the Cloudflare Git integration) disconnected, otherwise every push deploys twice.
+The web app is a static build. `pnpm --filter web build` runs `ng build` and then `apps/web/hosting/generate-hosting-files.ts`, which writes `dist/web/browser/.htaccess`: HTTPS on the fixed host, `Redirect 301 /impressum https://appool.de/impressum` (the legal notice lives on appool.de), the SPA fallback to `index.html` for client routes (real files and directories are served as they are; a missing file with an extension is a 404 that shows the app), cache rules, security headers, HSTS without `preload` and the Content Security Policy. The file is generated from `apps/web/hosting/htaccess.ts` (tests in `htaccess.spec.ts`); the next deploy overwrites whatever is on the server.
 
-- Worker → Settings → Variables and secrets:
-  - `API_ORIGIN` (variable): the Render URL. It must be an `https://` URL; plain `http://` is only accepted for `localhost`, `127.0.0.1` and `[::1]` (local `wrangler dev`).
-  - `PROXY_SHARED_SECRET` (secret): in the dashboard or with
-    ```bash
-    pnpm --filter web exec wrangler secret put PROXY_SHARED_SECRET
-    ```
-    Preview versions use the same variables and secrets as production. This is a deliberate trade-off: a pull request's Worker code runs with the production `PROXY_SHARED_SECRET`, so anyone who can push branches to this repository can read it (forks are excluded). Only the owner pushes branches today; give previews their own secret before granting others write access. `wrangler.jsonc` defines no `vars`, and `deploy-web.yml` deploys with `--keep-vars`, so the dashboard value of `API_ORIGIN` survives every deploy.
-- Worker → Settings → Domains & Routes: `workers.dev` and **Preview URLs** stay enabled (pull request previews are aliased version URLs).
-- The deploy token is a Cloudflare API token (template _Edit Cloudflare Workers_, or a custom token with _Account → Workers Scripts → Edit_).
-- Manual deploy and local preview (needs `wrangler login` or `CLOUDFLARE_API_TOKEN`; the preview reads `API_ORIGIN` and `PROXY_SHARED_SECRET` from the git-ignored `apps/web/.dev.vars`):
-  ```bash
-  pnpm deploy:web    # build, then wrangler deploy (production)
-  pnpm preview:web   # build, then wrangler dev: static assets plus the /api proxy locally
-  ```
+- **Deploy:** `deploy-web.yml` runs after a successful CI run for a push to `main`. It downloads the `web-dist` artifact (the build with its `.htaccess`), checks it (no maps, no configuration files, the `.htaccess` names the API origin and the `/impressum` redirect, no placeholders), uploads it with lftp over SFTP (`mirror --reverse --delete`; the host key comes from the secret `SFTP_KNOWN_HOSTS`, the password through `LFTP_PASSWORD` and `--env-password`) and runs a smoke test. The SFTP user is restricted in konsoleH to the web directory of the subdomain, so the server root is the target; `--delete` removes everything else there.
+- **Secrets** (environment `Production`, written exactly like that in the workflows): `SFTP_HOST`, `SFTP_PORT`, `SFTP_USER`, `SFTP_PASSWORD`, `SFTP_KNOWN_HOSTS`.
+- **Smoke test:** `/` answers `200` with `Content-Security-Policy` and `Strict-Transport-Security`; `http://` redirects to `https://`; a client route (`/favorites`, `/stations/fr-75012010`) and `/datenschutz` answer `200` as HTML; `/impressum` redirects with `301` to `https://appool.de/impressum`; `/ngsw.json` and `/ngsw-worker.js` carry `Cache-Control: no-cache`; a missing file answers `404`.
+- **Rollback:** the upload runs before the smoke test, so a red smoke test leaves the new build live; nothing restores the old one by itself (deliberately no staging directory). Fix it forward or go back:
+  1. Fastest: Actions → Deploy web → open the last green run of the previous version → **Re-run all jobs**. A re-run replays the same event, so it downloads the `web-dist` artifact of that older CI run (kept 7 days) and uploads it again, then the smoke test runs again. `workflow_dispatch` cannot start the deploy for an older commit (it always follows the CI run of the dispatched ref).
+  2. Durable: `git revert <commit>` on a branch, merge it to `main` (pull request, as for any change); CI and the deploy then run as usual. Do this in any case, otherwise the next merge brings the bad change back.
+  3. Without GitHub: download the artifact (`gh run download <CI run id> -n web-dist`) and upload it by hand as below.
+     If the service worker itself is the problem, use the safety worker rollback below.
+- **Manual deploy** (no CI): `pnpm --filter web build`, then upload `apps/web/dist/web/browser/` including the hidden `.htaccess` to the web directory.
+- **Content Security Policy:** scripts only from the own origin plus the two inline scripts of `index.html` by SHA-256 hash (computed from the build, so the hashes follow every build); `connect-src` the own origin and the Render origin (`API_ORIGIN` in `apps/web/src/environments/api-origin.ts`); map tiles from OpenStreetMap and Mapbox. `style-src` allows `'unsafe-inline'` because Angular adds component styles at run time and a static host cannot send a nonce; this is the only exception. A new external service (another tile provider, an analytics script) needs a change in `htaccess.ts` and a test.
 
 ### Service worker and caching
 
-The production build contains the Angular service worker (`apps/web/ngsw-config.json`). It keeps the app shell (`index.html`, scripts, styles, manifest) for offline starts and caches icons on first use. It caches no `/api` answers: there are no `dataGroups`, navigations to `/api/**` never get the app shell, and the web app sends API requests with the `ngsw-bypass` header, so they skip the service worker entirely. Navigations go to the network first (`navigationRequestStrategy: freshness`).
+The production build contains the Angular service worker (`apps/web/ngsw-config.json`). It keeps the app shell (`index.html`, scripts, styles, manifest) for offline starts and caches icons on first use. It caches no API answers: there are no `dataGroups`, navigations to `/api/**` never get the app shell, and the web app sends API requests with the `ngsw-bypass` header, so they skip the service worker entirely. Navigations go to the network first (`navigationRequestStrategy: freshness`).
 
-[`apps/web/public/_headers`](../apps/web/public/_headers) sets the cache times of the static assets. Hashed scripts and styles are immutable for a year (`/*.js`), but the service worker files must be revalidated on every request, or browsers would keep an old worker for a year. The same goes for `index.html`: deep links (`/favorites`, `/settings`, `/stations/*`, unknown paths, trailing slashes) get it through the single-page-application fallback, but `_headers` rules match the requested path. So `/*` sets `Cache-Control: no-cache` for every path, and each cacheable rule (hashed scripts and styles, media, icons, manifest) first removes the inherited header (`! Cache-Control`) and sets its own; the service worker files, `/ngsw.json`, `/index.html` and `/` keep explicit `no-cache` rules. `scripts/static-asset-caching.spec.ts` (`pnpm test:scripts`) guards these rules by modeling how Cloudflare combines them. After changing `_headers`, check the served headers on the pull request preview, e.g. `curl -sI https://pr-<number>-genialtanken.alexf090.workers.dev/favorites/ | grep -i cache-control` for `/favorites/`, `/does-not-exist`, `/ngsw-worker.js`, a hashed `/main-*.js` and an icon.
+The `.htaccess` sets the cache times. Hashed scripts and styles (`main-XXXXXXXX.js`) and `/media/` are immutable for a year; icons are cached for a day. `index.html`, `ngsw.json`, `ngsw-worker.js`, `safety-worker.js`, `worker-basic.min.js`, `manifest.webmanifest` and every HTML answer (client routes and the 404 page are `index.html`) revalidate on every request, or browsers would keep an old service worker for a year. `hosting/htaccess.spec.ts` guards this against the file names of a real build. After changing the rules, check the served headers, e.g. `curl -sI https://genial-tanken.appool.de/favorites | grep -i cache-control` for a route, `/ngsw-worker.js`, a hashed `/main-*.js` and an icon.
 
 After a deploy, the service worker finds the new `ngsw.json` when the app starts or navigates, downloads the new version in the background, and the app shows "Neue Version verfügbar" with "Neu laden". The app also checks for a new version whenever it becomes visible again. If the cache is broken, the app reloads on its own, at most once every 10 minutes.
 
-Rollback if a broken service worker is live: copy `safety-worker.js` over `ngsw-worker.js` in the build output and deploy that build:
+Rollback if a broken service worker is live: copy `safety-worker.js` over `ngsw-worker.js` in the build output and deploy that build by hand:
 
 ```bash
 pnpm --filter web build
 cp apps/web/dist/web/browser/safety-worker.js apps/web/dist/web/browser/ngsw-worker.js
-pnpm --filter web run deploy
+# upload apps/web/dist/web/browser/ (with .htaccess) to the web directory
 ```
 
 The safety worker unregisters itself and deletes the service worker caches, so the next load of every visitor comes from the network again. Deploy a regular build afterwards to bring the service worker back.
 
+## Cloudflare Worker (redirect and cron)
+
+The Worker is configured by [`apps/web/wrangler.jsonc`](../apps/web/wrangler.jsonc). It serves no assets and proxies nothing: `fetch` redirects every request of the old `https://genialtanken.alexf090.workers.dev` address with `301` to the same path and query on `https://genial-tanken.appool.de`, answers `/ngsw.json` with `404`, which makes service workers installed from the old address unregister themselves, and answers `/api` and `/api/*` with `410 Gone` (`Cache-Control: no-store`): clients from before the move that still call the API there would otherwise receive the HTML of the web app. The cron trigger is described under Render. GitHub Actions deploys it (`deploy-worker.yml`, configuration from the default branch, `build` sections are rejected by `scripts/verify-wrangler-configuration.ts`); keep Workers Builds (the Cloudflare Git integration) disconnected, otherwise every push deploys twice.
+
+- Worker → Settings → Variables and secrets: `API_ORIGIN` (variable), the Render URL, `https://` only (plain `http://` for `localhost`, `127.0.0.1` and `[::1]` during `wrangler dev`). `PROXY_SHARED_SECRET` is obsolete: delete the secret. `wrangler.jsonc` defines no `vars`, and the deploy uses `--keep-vars`, so the dashboard value survives every deploy.
+- Worker → Settings → Domains & Routes: `workers.dev` stays enabled (it is the address that redirects); Preview URLs are not needed.
+- The deploy token is a Cloudflare API token (template _Edit Cloudflare Workers_, or a custom token with _Account → Workers Scripts → Edit_), stored as `CLOUDFLARE_API_TOKEN` with `CLOUDFLARE_ACCOUNT_ID`.
+- Manual deploy and local run (needs `wrangler login` or `CLOUDFLARE_API_TOKEN`; the cron reads `API_ORIGIN` from the git-ignored `apps/web/.dev.vars`):
+  ```bash
+  pnpm deploy:worker    # wrangler deploy
+  pnpm preview:worker   # wrangler dev
+  ```
+
+## Order of the move
+
+1. Render: set `WEB_ORIGIN` to `https://genial-tanken.appool.de,https://genialtanken.alexf090.workers.dev` (or merge so the Blueprint does) and wait until the API is deployed. Both origins work from now on.
+2. Mapbox: allow `https://genial-tanken.appool.de` in the URL restrictions of the public token.
+3. Merge to `main`. CI builds, `deploy-web.yml` uploads and runs the smoke test; check the app on the new address, including the rate limit check above.
+4. Once the web deploy succeeded, `deploy-worker.yml` deploys the Worker: from then on the old address redirects. It deliberately waits for `deploy-web.yml`, so the old address never redirects to an app that is not there yet.
+5. Afterwards: remove the old origin from `WEB_ORIGIN`, delete `PROXY_SHARED_SECRET` in Render and in Cloudflare, delete the GitHub environment `Preview` and the Mapbox URL of the old address.
+
 ## Mapbox
 
-The public `pk.*` token is restricted to `https://genialtanken.alexf090.workers.dev` (optionally `http://localhost:4200` for local development). Mapbox allows no wildcards, so CI embeds the token only in builds of `main`; pull request previews and local builds without the variable use OpenStreetMap tiles.
+The public `pk.*` token is restricted to `https://genial-tanken.appool.de` (optionally `http://localhost:4200` for local development). Mapbox allows no wildcards, so CI embeds the token only in builds of `main`; other builds without the variable use OpenStreetMap tiles.
 
 ## GitHub settings
 
-- Environments: `preview` and `production` (optionally with required reviewers on `production`).
+- Environment: `Production` (capital P, as in the workflows; optionally with required reviewers). The former `preview` environment is no longer used.
 - Actions secrets and variables:
 
   | Name                     | Kind     | Purpose                                                              |
   | ------------------------ | -------- | -------------------------------------------------------------------- |
-  | `CLOUDFLARE_API_TOKEN`   | secret   | Deploys the Worker                                                   |
+  | `CLOUDFLARE_API_TOKEN`   | secret   | Deploys the Worker (cron and redirect)                               |
   | `CLOUDFLARE_ACCOUNT_ID`  | secret   | Cloudflare account of the Worker                                     |
   | `MAPBOX_ACCESS_TOKEN`    | variable | Public Mapbox token for builds of `main`                             |
   | `RELEASE_TOKEN`          | secret   | Pushes the release commit and tag to the protected `main`            |
@@ -80,10 +96,10 @@ The public `pk.*` token is restricted to `https://genialtanken.alexf090.workers.
 
 ## Deploys
 
-- **Production:** a merge into `main` runs CI; when it passes, `deploy-web.yml` runs `wrangler deploy` to https://genialtanken.alexf090.workers.dev and Render deploys the API.
-- **Previews:** for every pull request that is ready for review, `deploy-web.yml` uploads a Worker version with the alias `pr-<number>` (`https://pr-<number>-genialtanken.alexf090.workers.dev`) and posts the URL as a pull request comment. CI skips drafts, and the deploy runs only when the CI run produced the `web-dist` artifact.
-- `deploy-web.yml` runs from the default branch and takes `apps/web/wrangler.jsonc` and `scripts/verify-wrangler-configuration.ts` only from there, never from the pull request: a configuration with a `build` section could run a command with the deploy secrets.
-- Check production: the web app loads, the list shows stations, and `https://genialtanken.alexf090.workers.dev/api/stations?latitude=48.8566&longitude=2.3522&fuel=e10` answers through the Worker.
+- **Production:** a merge into `main` runs CI; when it passes, `deploy-web.yml` uploads the web app to Hetzner and runs the smoke test, `deploy-worker.yml` deploys the Worker once that succeeded, and Render deploys the API.
+- **No previews:** pull requests are not deployed. CI skips drafts and runs the full pipeline once the pull request is ready.
+- `deploy-web.yml` and `deploy-worker.yml` run from the default branch (`workflow_run`) and react only to successful runs for pushes to `main` (CI, then Deploy web), never to pull requests. `deploy-web.yml` checks out nothing; `deploy-worker.yml` takes `apps/web/wrangler.jsonc` and `scripts/verify-wrangler-configuration.ts` from the default branch: a configuration with a `build` section could run a command with the deploy secrets.
+- Check production: the web app loads at https://genial-tanken.appool.de, the list shows stations (the browser calls `https://genialtanken-api.onrender.com/api/stations?...` directly), and https://genialtanken.alexf090.workers.dev/ redirects there.
 
 ## Releases
 

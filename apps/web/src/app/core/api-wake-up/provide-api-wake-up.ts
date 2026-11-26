@@ -1,8 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, provideAppInitializer } from '@angular/core';
 import type { EnvironmentProviders } from '@angular/core';
-
-export const API_WAKE_UP_URL = '/api/wake-up';
+import { API_BASE_URL } from '../http/api-base-url';
 
 /**
  * The free Render instance of the API sleeps without traffic and needs about a minute to start.
@@ -13,6 +12,6 @@ export const API_WAKE_UP_URL = '/api/wake-up';
 export const provideApiWakeUp = (): EnvironmentProviders =>
   provideAppInitializer(() => {
     inject(HttpClient)
-      .get(API_WAKE_UP_URL)
+      .get(`${inject(API_BASE_URL)}/wake-up`)
       .subscribe({ error: () => undefined });
   });

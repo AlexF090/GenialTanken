@@ -14,7 +14,7 @@ body:
     attributes:
       label: Steps to reproduce
       placeholder: |
-        1. Open https://genialtanken.alexf090.workers.dev
+        1. Open https://genial-tanken.appool.de
         2. Search for …
         3. …
     validations:

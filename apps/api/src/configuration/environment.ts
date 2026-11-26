@@ -12,7 +12,6 @@ const millisecondsSchema = positiveIntegerSchema.max(MAXIMUM_TIMER_DELAY_IN_MILL
 const secondsSchema = positiveIntegerSchema.max(
   Math.floor(MAXIMUM_TIMER_DELAY_IN_MILLISECONDS / MILLISECONDS_PER_SECOND)
 );
-const MINIMUM_PROXY_SHARED_SECRET_LENGTH = 32;
 
 /** An absolute URL without trailing slashes, so paths can be appended directly. */
 const baseUrlSchema = (defaultUrl: string) =>
@@ -20,14 +19,6 @@ const baseUrlSchema = (defaultUrl: string) =>
     .url()
     .default(defaultUrl)
     .transform(url => url.replace(/\/+$/, ''));
-
-/** Treats a blank value like an unset one, as hosting dashboards often store empty strings. */
-const optionalTrimmedString = () =>
-  z
-    .string()
-    .trim()
-    .optional()
-    .transform(value => (value === '' ? undefined : value));
 
 /** Environment variables of the API, validated once at startup. */
 export const environmentSchema = z.object({
@@ -53,6 +44,7 @@ export const environmentSchema = z.object({
   PHOTON_BASE_URL: baseUrlSchema('https://photon.komoot.io'),
   /** Place search answers rarely change, so they are cached far longer than fuel prices. */
   PLACES_CACHE_TIME_TO_LIVE_IN_SECONDS: secondsSchema.default(86_400),
+  /** Origins of the web app allowed by CORS, comma-separated (several during a move). */
   WEB_ORIGIN: z
     .string()
     .default('http://localhost:4200')
@@ -69,19 +61,6 @@ export const environmentSchema = z.object({
   /** Upper bound of the in-memory cache; the least recently used entries are evicted beyond it. */
   CACHE_MAXIMUM_ENTRIES: positiveIntegerSchema.default(5000),
   RATE_LIMIT_REQUESTS_PER_MINUTE: positiveIntegerSchema.default(60),
-  /**
-   * Shared with the Cloudflare Worker; only requests carrying it may name the client
-   * address for the rate limit. Without it every request is limited by its connecting address.
-   */
-  PROXY_SHARED_SECRET: optionalTrimmedString().pipe(
-    z
-      .string()
-      .min(
-        MINIMUM_PROXY_SHARED_SECRET_LENGTH,
-        `must have at least ${String(MINIMUM_PROXY_SHARED_SECRET_LENGTH)} characters`
-      )
-      .optional()
-  ),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

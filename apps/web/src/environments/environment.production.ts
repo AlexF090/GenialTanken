@@ -1,3 +1,4 @@
+import { API_ORIGIN } from './api-origin';
 import type { EnvironmentConfiguration } from './environment-configuration';
 
 /**
@@ -10,4 +11,5 @@ import type { EnvironmentConfiguration } from './environment-configuration';
  */
 export const environment: EnvironmentConfiguration = {
   mapboxAccessToken: typeof MAPBOX_ACCESS_TOKEN === 'string' ? MAPBOX_ACCESS_TOKEN : '',
+  apiBaseUrl: `${API_ORIGIN}/api`,
 };

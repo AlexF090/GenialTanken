@@ -1,16 +1,14 @@
 import { readFileSync } from 'node:fs';
-import { CLIENT_ADDRESS_HEADER, PROXY_SECRET_HEADER } from '@genialtanken/contracts';
 import { z } from 'zod';
 import { FRENCH_RECORDS_PATH } from '../src/fuel-price-providers/france/french-upstream-paths.js';
 import { strictApiErrorSchema } from './support/api-errors.js';
 import { useTestApplication } from './support/create-test-application.js';
-import type { TestApi } from './support/create-test-application.js';
-import type { EnvironmentVariables } from '../src/configuration/environment.js';
 import { useFakeUpstream } from './support/fake-upstream.js';
 import { frenchResponse } from './support/french-records.js';
 import { PARIS } from './support/positions.js';
 
-const ALLOWED_ORIGIN = 'https://genialtanken.alexf090.workers.dev';
+const ALLOWED_ORIGIN = 'https://genial-tanken.appool.de';
+const PREVIOUS_ORIGIN = 'https://genialtanken.alexf090.workers.dev';
 
 const requiredPropertiesSchema = z.object({ required: z.array(z.string()) });
 
@@ -163,7 +161,7 @@ describe('OpenAPI document', () => {
 describe('CORS', () => {
   it('allows the configured web origins', async () => {
     const api = await startApplication({
-      WEB_ORIGIN: `${ALLOWED_ORIGIN},http://localhost:4200`,
+      WEB_ORIGIN: `${ALLOWED_ORIGIN}, ${PREVIOUS_ORIGIN} ,http://localhost:4200`,
     });
 
     const response = await api
@@ -173,6 +171,33 @@ describe('CORS', () => {
       .expect(200);
 
     expect(response.headers['access-control-allow-origin']).toBe(ALLOWED_ORIGIN);
+  });
+
+  it('allows every origin of a list during a move, and only those', async () => {
+    const api = await startApplication({ WEB_ORIGIN: `${ALLOWED_ORIGIN},${PREVIOUS_ORIGIN}` });
+
+    const previous = await api.get('/api/stations').query(PARIS).set('Origin', PREVIOUS_ORIGIN);
+    const current = await api.get('/api/stations').query(PARIS).set('Origin', ALLOWED_ORIGIN);
+    const other = await api.get('/api/stations').query(PARIS).set('Origin', 'https://appool.de');
+
+    expect(previous.headers['access-control-allow-origin']).toBe(PREVIOUS_ORIGIN);
+    expect(current.headers['access-control-allow-origin']).toBe(ALLOWED_ORIGIN);
+    expect(other.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
+  it('answers the preflight of the web app and lets the browser cache it', async () => {
+    const api = await startApplication({ WEB_ORIGIN: ALLOWED_ORIGIN });
+
+    const response = await api
+      .options('/api/stations')
+      .set('Origin', ALLOWED_ORIGIN)
+      .set('Access-Control-Request-Method', 'GET')
+      .set('Access-Control-Request-Headers', 'ngsw-bypass')
+      .expect(204);
+
+    expect(response.headers['access-control-allow-origin']).toBe(ALLOWED_ORIGIN);
+    expect(response.headers['access-control-allow-headers']).toBe('ngsw-bypass');
+    expect(response.headers['access-control-max-age']).toBe('86400');
   });
 
   it('defaults to the local Angular dev server', async () => {
@@ -226,55 +251,19 @@ describe('Rate limit', () => {
       .set('X-Forwarded-For', '203.0.113.9, 172.68.10.1')
       .expect(429);
   });
-});
 
-describe('Rate limit behind the Cloudflare Worker', () => {
-  const PROXY_SHARED_SECRET = 'a-proxy-shared-secret-of-at-least-32-characters';
+  it('ignores client address headers of the former Worker proxy', async () => {
+    const api = await startApplication({ RATE_LIMIT_REQUESTS_PER_MINUTE: '1' });
 
-  const startBehindWorker = (variables: EnvironmentVariables = {}) =>
-    startApplication({ RATE_LIMIT_REQUESTS_PER_MINUTE: '1', PROXY_SHARED_SECRET, ...variables });
-
-  const requestFrom = (api: TestApi, clientAddress: string, secret?: string) => {
-    const pending = api.get('/api/stations').query(PARIS).set(CLIENT_ADDRESS_HEADER, clientAddress);
-    return secret === undefined ? pending : pending.set(PROXY_SECRET_HEADER, secret);
-  };
-
-  it('limits each client separately when the Worker sends the shared secret', async () => {
-    const api = await startBehindWorker();
-
-    await requestFrom(api, '198.51.100.7', PROXY_SHARED_SECRET).expect(200);
-    await requestFrom(api, '2001:db8::1', PROXY_SHARED_SECRET).expect(200);
-    await requestFrom(api, '198.51.100.7', PROXY_SHARED_SECRET).expect(429);
-  });
-
-  it('ignores the client address without the shared secret', async () => {
-    const api = await startBehindWorker();
-
-    await requestFrom(api, '198.51.100.7').expect(200);
-    await requestFrom(api, '203.0.113.9').expect(429);
-  });
-
-  it.each([
-    ['a wrong secret', 'a-wrong-secret-of-at-least-thirty-two-characters'],
-    ['a prefix of the secret', PROXY_SHARED_SECRET.slice(0, 10)],
-  ])('ignores the client address with %s', async (_description, secret) => {
-    const api = await startBehindWorker();
-
-    await requestFrom(api, '198.51.100.7', secret).expect(200);
-    await requestFrom(api, '203.0.113.9', secret).expect(429);
-  });
-
-  it('ignores the client address when no shared secret is configured', async () => {
-    const api = await startBehindWorker({ PROXY_SHARED_SECRET: undefined });
-
-    await requestFrom(api, '198.51.100.7', PROXY_SHARED_SECRET).expect(200);
-    await requestFrom(api, '203.0.113.9', PROXY_SHARED_SECRET).expect(429);
-  });
-
-  it('falls back to the connecting address when the client address is not an IP', async () => {
-    const api = await startBehindWorker();
-
-    await requestFrom(api, 'not-an-address', PROXY_SHARED_SECRET).expect(200);
-    await requestFrom(api, 'another-made-up-address', PROXY_SHARED_SECRET).expect(429);
+    await api
+      .get('/api/stations')
+      .query(PARIS)
+      .set('X-GenialTanken-Client-Address', '198.51.100.7')
+      .expect(200);
+    await api
+      .get('/api/stations')
+      .query(PARIS)
+      .set('X-GenialTanken-Client-Address', '203.0.113.9')
+      .expect(429);
   });
 });

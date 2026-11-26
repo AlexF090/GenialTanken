@@ -2,8 +2,7 @@ import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiNoContentResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 /**
- * The free Render instance sleeps without traffic. The web app calls this on start, through the
- * Worker's `/api` proxy, so the API wakes up while the browser still asks for the location.
+ * The free Render instance sleeps without traffic. The web app calls this on start, so the API wakes up while the browser still asks for the location.
  * Rate limited like every other route; the limit counts per route and client, so the call never
  * uses up the budget of the searches.
  */

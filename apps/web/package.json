@@ -3,15 +3,16 @@
   "version": "2.1.0",
   "scripts": {
     "start": "ng serve",
-    "build": "ng build --define \"MAPBOX_ACCESS_TOKEN='${NG_APP_MAPBOX_ACCESS_TOKEN:-}'\"",
-    "test": "ng test --watch=false && pnpm run test:worker",
+    "build": "ng build --define \"MAPBOX_ACCESS_TOKEN='${NG_APP_MAPBOX_ACCESS_TOKEN:-}'\" && node hosting/generate-hosting-files.ts",
+    "test": "ng test --watch=false && pnpm run test:worker && pnpm run test:hosting",
     "test:watch": "ng test",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.spec.json && tsc --noEmit -p tsconfig.worker.json",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.spec.json && tsc --noEmit -p tsconfig.worker.json && tsc --noEmit -p tsconfig.hosting.json",
     "start:dev": "ng serve",
-    "test:worker": "vitest run --config vitest.worker.config.ts",
+    "test:worker": "vitest run --config vitest.worker.config.ts worker",
+    "test:hosting": "vitest run --config vitest.worker.config.ts hosting",
     "start:container": "ng serve --host 0.0.0.0",
-    "deploy": "wrangler deploy",
-    "preview": "wrangler dev"
+    "deploy:worker": "wrangler deploy",
+    "preview:worker": "wrangler dev"
   },
   "private": true,
   "license": "UNLICENSED",

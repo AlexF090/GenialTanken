@@ -1,23 +1,21 @@
 name: Deploy web
 
-# Runs after CI finished on the default branch's copy of this file (workflow_run
-# always uses the workflow definition from the default branch).
+# Uploads the web app to the Hetzner Webhosting (Apache, static) at
+# https://genial-tanken.appool.de by SFTP. The API on Render and the redirect Worker are deployed
+# separately (Render itself, deploy-worker.yml).
 #
-# Security model: workflow_run executes in the context of the base repository and
-# has access to secrets. This workflow therefore never checks out or executes code
-# from the triggering ref. It only downloads the `web-dist` artifact that the
-# successful CI run produced (static build plus the Worker sources) and uploads it to
-# the Cloudflare Worker `genialtanken`. The wrangler configuration and the script that
-# verifies it come from the default branch, never from the artifact: a configuration from a
-# pull request could declare a custom build command that wrangler would run with the deploy
-# secrets.
-# Runs without that artifact (CI skips all jobs for draft pull requests) skip the
-# deploy instead of failing.
+# Runs after CI finished on the default branch's copy of this file (workflow_run always uses the
+# workflow definition from the default branch).
 #
-# Production (CI on `main`): `wrangler deploy`. Pull requests: `wrangler versions upload`
-# with the preview alias `pr-<number>`, served at
-# https://pr-<number>-genialtanken.alexf090.workers.dev. Version previews serve the static
-# assets and share the production variables and secrets the /api proxy needs.
+# Security model: workflow_run executes in the context of the base repository and has access to
+# secrets. This workflow therefore never checks out or executes code from the triggering ref. It
+# only downloads the `web-dist` artifact that the successful CI run of a push to `main` produced
+# (the built app with its generated .htaccess), checks its shape and uploads it. Pull requests
+# are never deployed and have no preview.
+#
+# The SFTP user is restricted in konsoleH to the web directory of the subdomain, so the server
+# root is the target. `mirror --delete` removes everything on the server that is not in the
+# build.
 on:
   workflow_run:
     workflows: [CI]
@@ -26,141 +24,27 @@ on:
 permissions: {}
 
 concurrency:
-  group: deploy-web-${{ github.event.workflow_run.head_branch }}
+  group: deploy-web
+  # A running upload is never cancelled; a half upload would leave the app without its scripts.
   cancel-in-progress: false
 
 jobs:
-  artifact:
-    name: Check for web build
-    # Only successful CI runs from this repository (pull requests from forks are skipped),
-    # either for pull requests (preview) or for the main branch (production).
+  deploy:
+    name: Upload and verify
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
-      (
-        github.event.workflow_run.event == 'pull_request' ||
-        (
-          github.event.workflow_run.head_branch == 'main' &&
-          contains(fromJSON('["push", "workflow_dispatch"]'), github.event.workflow_run.event)
-        )
-      )
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      # List the artifacts of the triggering CI run.
-      actions: read
-      # Find the pull request of the commit when workflow_run.pull_requests is empty.
-      contents: read
-      pull-requests: read
-    outputs:
-      web-dist-available: ${{ steps.lookup.outputs.web-dist-available }}
-      pull-request-number: ${{ steps.pull-request.outputs.number }}
-    steps:
-      # CI skips every job for draft pull requests, yet such a run may still conclude with
-      # `success`. Without a `web-dist` artifact there is nothing to deploy, so the deploy job is
-      # skipped instead of failing. Only the GitHub API is queried; no code from the ref runs.
-      - name: Look up web-dist artifact
-        id: lookup
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          RUN_IDENTIFIER: ${{ github.event.workflow_run.id }}
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
-              owner,
-              repo,
-              run_id: Number(process.env.RUN_IDENTIFIER),
-              name: 'web-dist',
-            });
-            const isAvailable = data.artifacts.some((artifact) => !artifact.expired);
-            if (!isAvailable) {
-              core.notice('The CI run produced no web-dist artifact (for example a draft pull request); skipping deploy.');
-            }
-            core.setOutput('web-dist-available', String(isAvailable));
-
-      # The preview alias pr-<number> needs the pull request number before the deploy.
-      - name: Determine pull request number
-        id: pull-request
-        if: github.event.workflow_run.event == 'pull_request'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          PULL_REQUEST_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const headSha = process.env.HEAD_SHA;
-
-            let pullRequestNumber = Number(process.env.PULL_REQUEST_NUMBER);
-            if (!pullRequestNumber) {
-              // workflow_run.pull_requests can be empty; fall back to the commit lookup.
-              const { data: pullRequests } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
-                owner,
-                repo,
-                commit_sha: headSha,
-              });
-              const openPullRequest = pullRequests.find((pullRequest) => pullRequest.state === 'open');
-              if (!openPullRequest) {
-                core.notice(`No open pull request found for commit ${headSha}; skipping preview.`);
-                return;
-              }
-              pullRequestNumber = openPullRequest.number;
-            }
-            if (!Number.isSafeInteger(pullRequestNumber) || pullRequestNumber <= 0) {
-              core.setFailed(`Invalid pull request number: ${pullRequestNumber}`);
-              return;
-            }
-            core.setOutput('number', String(pullRequestNumber));
-
-  deploy:
-    name: Deploy to Cloudflare Workers
-    needs: artifact
-    if: >-
-      needs.artifact.outputs.web-dist-available == 'true' &&
-      (github.event.workflow_run.event != 'pull_request' || needs.artifact.outputs.pull-request-number != '')
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+      github.event.workflow_run.head_branch == 'main' &&
+      contains(fromJSON('["push", "workflow_dispatch"]'), github.event.workflow_run.event)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       # Download the artifact of the triggering CI run.
       actions: read
-      # Sparse checkout of the trusted wrangler.jsonc and its verification script from the default branch.
-      contents: read
     environment:
-      name: ${{ github.event.workflow_run.event == 'pull_request' && 'preview' || 'production' }}
-      url: ${{ steps.target.outputs.url }}
-    outputs:
-      url: ${{ steps.target.outputs.url }}
-      version-url: ${{ steps.deploy.outputs.deployment-url }}
+      name: Production
+      url: https://genial-tanken.appool.de
     steps:
-      - name: Determine deploy target
-        id: target
-        env:
-          IS_PULL_REQUEST: ${{ github.event.workflow_run.event == 'pull_request' }}
-          PULL_REQUEST_NUMBER: ${{ needs.artifact.outputs.pull-request-number }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-        run: |
-          if ! printf '%s' "${HEAD_SHA}" | grep -Eq '^[0-9a-f]{40}$'; then
-            echo "::error::Unexpected commit hash '${HEAD_SHA}'."
-            exit 1
-          fi
-          message="commit-${HEAD_SHA}"
-          # --keep-vars: API_ORIGIN is set in Cloudflare, not in wrangler.jsonc; without the flag
-          # wrangler would drop it from the new version. Secrets are kept either way.
-          if [ "${IS_PULL_REQUEST}" != 'true' ]; then
-            echo "command=deploy --config=wrangler.jsonc --keep-vars --message=${message}" >> "$GITHUB_OUTPUT"
-            echo "url=https://genialtanken.alexf090.workers.dev" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # Validated in the artifact job as well; checked again because it reaches a command line.
-          if ! printf '%s' "${PULL_REQUEST_NUMBER}" | grep -Eq '^[1-9][0-9]*$'; then
-            echo "::error::Unexpected pull request number '${PULL_REQUEST_NUMBER}'."
-            exit 1
-          fi
-          alias="pr-${PULL_REQUEST_NUMBER}"
-          echo "command=versions upload --config=wrangler.jsonc --keep-vars --preview-alias=${alias} --message=${message}" >> "$GITHUB_OUTPUT"
-          echo "url=https://${alias}-genialtanken.alexf090.workers.dev" >> "$GITHUB_OUTPUT"
-
       - name: Download web build from CI run
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -169,129 +53,96 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
 
-      # The artifact comes from a CI run of the pull request. Wrangler runs with the Cloudflare token
-      # in this directory, so only the static build and the Worker sources may be present; any
-      # configuration file wrangler or npm would read (wrangler.*, .dev.vars, .env, package.json,
-      # .npmrc) fails the job.
       - name: Verify artifact contents
         working-directory: web-dist
         run: |
-          unexpected_top_level="$(find . -mindepth 1 -maxdepth 1 ! -name dist ! -name worker)"
-          if [ -n "${unexpected_top_level}" ]; then
-            echo "::error::Unexpected entries in web-dist: ${unexpected_top_level}"
+          for required in index.html ngsw.json ngsw-worker.js manifest.webmanifest .htaccess; do
+            if [ ! -s "${required}" ]; then
+              echo "::error::${required} is missing or empty in the web build."
+              exit 1
+            fi
+          done
+          unexpected="$(find . \( -type l -o -name '*.map' -o -name '.env*' -o -name 'wrangler.*' -o -name 'package.json' \))"
+          if [ -n "${unexpected}" ]; then
+            echo "::error::Unexpected files in the web build: ${unexpected}"
             exit 1
           fi
-          if [ ! -f worker/index.ts ]; then
-            echo '::error::worker/index.ts is missing.'
-            exit 1
-          fi
-          unexpected_files="$(find worker ! -type d ! -name '*.ts')"
-          if [ -n "${unexpected_files}" ]; then
-            echo "::error::Only TypeScript sources are allowed in worker/: ${unexpected_files}"
-            exit 1
-          fi
-          if [ ! -f dist/web/browser/index.html ]; then
-            echo '::error::dist/web/browser/index.html is missing.'
-            exit 1
-          fi
+          # The policy must name the API the build calls and the redirect to the legal notice must be there.
+          grep -q "connect-src 'self' https://genialtanken-api.onrender.com" .htaccess
+          grep -q '^Redirect 301 /impressum https://appool.de/impressum$' .htaccess
 
-      # The only files taken from the repository, and only from the default branch: the wrangler
-      # configuration and the script that verifies it.
-      - name: Check out trusted wrangler configuration
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.repository.default_branch }}
-          path: trusted-configuration
-          sparse-checkout: |
-            .nvmrc
-            apps/web/wrangler.jsonc
-            scripts/verify-wrangler-configuration.ts
-          sparse-checkout-cone-mode: false
-          persist-credentials: false
-
-      - name: Install Node.js
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: trusted-configuration/.nvmrc
-
-      # Defense in depth: a `build` section would make wrangler run a shell command with the
-      # deploy secrets, so the trusted configuration must not have one.
-      - name: Verify trusted wrangler configuration
-        env:
-          CONFIGURATION_PATH: trusted-configuration/apps/web/wrangler.jsonc
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      # Blocks placeholders and draft markers in the finished app.
+      - name: Refuse to publish placeholders
+        working-directory: web-dist
         run: |
-          if [ ! -f "${CONFIGURATION_PATH}" ]; then
-            echo "::error::apps/web/wrangler.jsonc is missing on '${DEFAULT_BRANCH}'. Deploys start working once the change that adds it is merged."
+          if grep -rnEi --include='*.html' --include='*.js' --include='*.json' 'PLATZHALTER|ENTWURF|\[TODO\]' .; then
+            echo "::error::The web build contains placeholders or draft markers; resolve them before publishing."
             exit 1
           fi
-          node trusted-configuration/scripts/verify-wrangler-configuration.ts "${CONFIGURATION_PATH}"
-          cp "${CONFIGURATION_PATH}" web-dist/wrangler.jsonc
 
-      - name: Deploy to Cloudflare Workers
-        id: deploy
-        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: 4.144.0
-          # Wrangler bundles worker/index.ts with esbuild (no execution) and uploads
-          # dist/web/browser as static assets, both relative to the trusted wrangler.jsonc.
-          workingDirectory: web-dist
-          command: ${{ steps.target.outputs.command }}
+      - name: Install lftp
+        # Try without apt-get update first (saves time), update only when the package index is stale.
+        run: |
+          sudo apt-get install --yes --no-install-recommends lftp \
+            || { sudo apt-get update && sudo apt-get install --yes --no-install-recommends lftp; }
 
-  comment:
-    name: Post preview URL
-    needs: [artifact, deploy]
-    if: github.event.workflow_run.event == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      pull-requests: write
-    steps:
-      - name: Create or update preview comment
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      - name: Upload by SFTP
         env:
-          PREVIEW_URL: ${{ needs.deploy.outputs.url }}
-          VERSION_URL: ${{ needs.deploy.outputs.version-url }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-          PULL_REQUEST_NUMBER: ${{ needs.artifact.outputs.pull-request-number }}
-        with:
-          script: |
-            const marker = '<!-- genialtanken-web-preview -->';
-            const { owner, repo } = context.repo;
-            const headSha = process.env.HEAD_SHA;
-            const pullRequestNumber = Number(process.env.PULL_REQUEST_NUMBER);
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          SFTP_USER: ${{ secrets.SFTP_USER }}
+          # lftp reads the password from LFTP_PASSWORD with --env-password; it never appears in
+          # a script or on the command line.
+          LFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}
+          SFTP_KNOWN_HOSTS: ${{ secrets.SFTP_KNOWN_HOSTS }}
+        run: |
+          umask 077
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$SFTP_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          cat > "$RUNNER_TEMP/upload.lftp" <<EOF
+          set cmd:fail-exit true
+          set sftp:auto-confirm no
+          set sftp:connect-program "ssh -a -x -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts"
+          set net:max-retries 2
+          set net:timeout 30
+          open --env-password -p ${SFTP_PORT:-22} -u "$SFTP_USER" sftp://$SFTP_HOST
+          mirror --reverse --delete --verbose web-dist/ ./
+          bye
+          EOF
+          lftp -f "$RUNNER_TEMP/upload.lftp"
+          rm -f "$RUNNER_TEMP/upload.lftp"
 
-            const lines = [
-              marker,
-              '### Web preview',
-              '',
-              '| | URL |',
-              '| --- | --- |',
-              `| Pull request preview | ${process.env.PREVIEW_URL} |`,
-            ];
-            if (process.env.VERSION_URL) {
-              lines.push(`| This commit | ${process.env.VERSION_URL} |`);
-            }
-            lines.push(
-              '',
-              `Built from ${headSha}. Previews use OpenStreetMap tiles; the Mapbox token only works on the production domain.`,
-            );
-            const body = lines.join('\n');
-
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner,
-              repo,
-              issue_number: pullRequestNumber,
-              per_page: 100,
-            });
-            const existingComment = comments.find(
-              (comment) => comment.user?.type === 'Bot' && comment.body?.startsWith(marker),
-            );
-
-            if (existingComment) {
-              await github.rest.issues.updateComment({ owner, repo, comment_id: existingComment.id, body });
-            } else {
-              await github.rest.issues.createComment({ owner, repo, issue_number: pullRequestNumber, body });
-            }
+      # Expectations follow apps/web/hosting/htaccess.ts: HTTPS, the legal notice on appool.de,
+      # client routes get index.html with status 200, the service worker files are revalidated.
+      - name: Smoke test
+        run: |
+          fetch_headers() {
+            curl --silent --show-error --head --output - \
+              --retry 5 --retry-delay 5 --retry-all-errors --max-time 20 "$1"
+          }
+          check() {
+            local url="$1" status="$2" header_pattern="$3" headers
+            headers="$(fetch_headers "$url" | tr -d '\r')"
+            if ! printf '%s\n' "$headers" | head -n 1 | grep -qE "^HTTP/[0-9.]+ $status"; then
+              echo "::error::$url: expected status $status, got: $(printf '%s\n' "$headers" | head -n 1)"
+              exit 1
+            fi
+            if [ -n "$header_pattern" ] && ! printf '%s\n' "$headers" | grep -qiE "$header_pattern"; then
+              echo "::error::$url: no header matches $header_pattern"
+              exit 1
+            fi
+            echo "ok: $url ($status)"
+          }
+          # Short wait until the server serves the new files together with the .htaccess.
+          sleep 10
+          check https://genial-tanken.appool.de/ 200 '^content-security-policy:.*connect-src'
+          check https://genial-tanken.appool.de/ 200 '^strict-transport-security:'
+          check http://genial-tanken.appool.de/ 301 '^location: https://genial-tanken\.appool\.de/$'
+          # A client route: the fallback serves index.html.
+          check https://genial-tanken.appool.de/favorites 200 '^content-type: text/html'
+          check https://genial-tanken.appool.de/stations/fr-75012010 200 '^content-type: text/html'
+          check https://genial-tanken.appool.de/datenschutz 200 '^content-type: text/html'
+          check https://genial-tanken.appool.de/impressum 301 '^location: https://appool\.de/impressum$'
+          check https://genial-tanken.appool.de/ngsw.json 200 '^cache-control: no-cache'
+          check https://genial-tanken.appool.de/ngsw-worker.js 200 '^cache-control: no-cache'
+          check https://genial-tanken.appool.de/missing-file.js 404 ''

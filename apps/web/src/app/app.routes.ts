@@ -41,6 +41,12 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'datenschutz',
+    title: `Datenschutzerklärung – ${APPLICATION_NAME}`,
+    loadComponent: () =>
+      import('./pages/privacy-page/privacy-page').then(module => module.PrivacyPage),
+  },
+  {
     path: '**',
     title: `Seite nicht gefunden – ${APPLICATION_NAME}`,
     loadComponent: () =>

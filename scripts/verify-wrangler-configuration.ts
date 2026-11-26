@@ -1,9 +1,9 @@
 /**
- * Checks the trusted apps/web/wrangler.jsonc before deploy-web.yml runs wrangler with the deploy
+ * Checks the trusted apps/web/wrangler.jsonc before deploy-worker.yml runs wrangler with the deploy
  * secrets: a `build` section (top level or per environment) would make wrangler run a shell
  * command, and the Worker name must be the production one.
  *
- * deploy-web.yml checks this script out from the default branch only, never from a pull request.
+ * deploy-worker.yml checks this script out from the default branch only, never from a pull request.
  * It runs without dependencies (Node strips the types natively):
  *
  *   node scripts/verify-wrangler-configuration.ts apps/web/wrangler.jsonc

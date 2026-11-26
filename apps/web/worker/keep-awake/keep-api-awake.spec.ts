@@ -1,13 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { FetchImplementation } from '../api/proxy-api-request.ts';
 import {
   HEALTH_CHECK_TIMEOUT_IN_MILLISECONDS,
   MAXIMUM_DELAY_IN_MILLISECONDS,
   isWithinAwakeHours,
   keepApiAwake,
 } from './keep-api-awake.ts';
-import type { KeepAwakeDependencies } from './keep-api-awake.ts';
+import type { FetchImplementation, KeepAwakeDependencies } from './keep-api-awake.ts';
 
 const API_ORIGIN = 'https://genialtanken-api.onrender.com';
 /** 12:00 in Berlin (winter time, UTC+1). */
