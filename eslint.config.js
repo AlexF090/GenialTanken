@@ -50,6 +50,10 @@ export default tseslint.config(
       '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
       // Angular and Nest classes are configured entirely through decorators
       '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }],
+      // Angular and Nest declare option types as classes (`SwRegistrationOptions`,
+      // `NestApplicationContextOptions`, `Injector`) and document object literals or subclass
+      // instances for them, so the rule flags exactly their intended use.
+      '@typescript-eslint/no-unsafe-class-instance-assignment': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true },
