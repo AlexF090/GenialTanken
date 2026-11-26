@@ -4,6 +4,7 @@ import { ApplicationRef, Injector, runInInjectionContext, signal } from '@angula
 import { TestBed } from '@angular/core/testing';
 import { bastillePlace, lyonPlace } from '../../../testing/place-fixtures';
 import { UnexpectedResponseError } from '../http/unexpected-response-error';
+import { API_BASE_URL } from '../http/api-base-url';
 import { PlacesApi } from './places-api';
 
 describe('PlacesApi', () => {
@@ -77,5 +78,23 @@ describe('PlacesApi', () => {
 
     expect(places.status()).toBe('error');
     expect(places.error()).toBeInstanceOf(UnexpectedResponseError);
+  });
+
+  it('asks the API at its absolute base URL', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: API_BASE_URL, useValue: 'https://api.example/api' },
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    httpTesting = TestBed.inject(HttpTestingController);
+    runInInjectionContext(TestBed.inject(Injector), () =>
+      TestBed.inject(PlacesApi).placesMatching(() => 'Bastille')
+    );
+    TestBed.tick();
+
+    httpTesting.expectOne('https://api.example/api/places?query=Bastille&limit=6').flush([]);
   });
 });

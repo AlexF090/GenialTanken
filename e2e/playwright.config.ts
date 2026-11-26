@@ -92,10 +92,11 @@ export default defineConfig({
     },
     {
       name: 'PWA (production build with service worker)',
-      // `ng build` uses the production configuration, the only one with a service worker. Its
-      // own output path keeps `pnpm build` and deploys apart; no Mapbox token, as above.
+      // The production configuration is the only one with a service worker; `e2e` swaps in the
+      // environment that calls same-origin `/api` instead of Render. Its own output path keeps
+      // `pnpm build` and deploys apart; no Mapbox token, as above.
       command:
-        'pnpm --filter web exec ng build --output-path dist/e2e-pwa && node e2e/pwa-server.ts',
+        'pnpm --filter web exec ng build --configuration production,e2e --output-path dist/e2e-pwa && node e2e/pwa-server.ts',
       cwd: repositoryRoot,
       url: `http://localhost:${String(PWA_PORT)}`,
       env: { E2E_PWA_PORT: String(PWA_PORT), E2E_API_PORT: String(API_PORT) },

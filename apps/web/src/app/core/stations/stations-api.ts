@@ -10,6 +10,7 @@ import {
 import type { FuelType, Station, StationLookup } from '@genialtanken/contracts';
 import { firstValueFrom } from 'rxjs';
 import type { Coordinates } from '@genialtanken/contracts';
+import { API_BASE_URL } from '../http/api-base-url';
 import { parseResponse } from '../http/parse-response';
 import { StationSourceUnavailableError } from './station-source-unavailable-error';
 
@@ -39,10 +40,6 @@ export interface StationsByIdentifiers {
   failures: StationLoadFailure[];
 }
 
-/** Same origin: dev proxy locally, the Cloudflare Worker in production. */
-const STATIONS_URL = '/api/stations';
-const STATIONS_BY_IDENTIFIERS_URL = `${STATIONS_URL}/by-identifiers`;
-
 const parseStations = (body: unknown): Station[] =>
   parseResponse(stationsSchema, body, 'GET /api/stations');
 
@@ -69,6 +66,7 @@ const toChunks = (identifiers: readonly string[]): string[][] => {
 @Injectable({ providedIn: 'root' })
 export class StationsApi {
   private readonly httpClient = inject(HttpClient);
+  private readonly stationsUrl = `${inject(API_BASE_URL)}/stations`;
 
   /** Stations around a position; idle while `search` returns `undefined`. */
   stationsAround(search: () => StationsSearch | undefined): HttpResourceRef<Station[] | undefined> {
@@ -79,7 +77,7 @@ export class StationsApi {
           return undefined;
         }
         return {
-          url: STATIONS_URL,
+          url: this.stationsUrl,
           params: {
             latitude: currentSearch.latitude,
             longitude: currentSearch.longitude,
@@ -101,7 +99,7 @@ export class StationsApi {
         const currentStationIdentifier = stationIdentifier();
         return currentStationIdentifier === undefined
           ? undefined
-          : `${STATIONS_URL}/${encodeURIComponent(currentStationIdentifier)}`;
+          : `${this.stationsUrl}/${encodeURIComponent(currentStationIdentifier)}`;
       },
       { parse: parseStation }
     );
@@ -153,11 +151,12 @@ export class StationsApi {
   }
 
   private async lookUpStations(stationIdentifiers: readonly string[]): Promise<StationLookup> {
+    const byIdentifiersUrl = `${this.stationsUrl}/by-identifiers`;
     const body = await firstValueFrom(
-      this.httpClient.get<unknown>(STATIONS_BY_IDENTIFIERS_URL, {
+      this.httpClient.get<unknown>(byIdentifiersUrl, {
         params: { identifiers: stationIdentifiers.join(',') },
       })
     );
-    return parseResponse(stationLookupSchema, body, `GET ${STATIONS_BY_IDENTIFIERS_URL}`);
+    return parseResponse(stationLookupSchema, body, `GET ${byIdentifiersUrl}`);
   }
 }

@@ -1,6 +1,7 @@
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { API_BASE_URL } from './api-base-url';
 import { bypassServiceWorkerForApi } from './bypass-service-worker';
 
 describe('bypassServiceWorkerForApi', () => {
@@ -26,6 +27,31 @@ describe('bypassServiceWorkerForApi', () => {
     http.get('/api/stations').subscribe();
 
     expect(httpTesting.expectOne('/api/stations').request.headers.get('ngsw-bypass')).toBe('true');
+  });
+
+  it('also recognizes the API at an absolute base URL, but not other origins', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: API_BASE_URL, useValue: 'https://api.example/api' },
+        provideHttpClient(withInterceptors([bypassServiceWorkerForApi])),
+        provideHttpClientTesting(),
+      ],
+    });
+    http = TestBed.inject(HttpClient);
+    httpTesting = TestBed.inject(HttpTestingController);
+
+    http.get('https://api.example/api/stations').subscribe();
+    http.get('https://other.example/api/stations').subscribe();
+    http.get('/api/stations').subscribe();
+
+    expect(
+      httpTesting.expectOne('https://api.example/api/stations').request.headers.get('ngsw-bypass')
+    ).toBe('true');
+    expect(
+      httpTesting.expectOne('https://other.example/api/stations').request.headers.has('ngsw-bypass')
+    ).toBe(false);
+    expect(httpTesting.expectOne('/api/stations').request.headers.has('ngsw-bypass')).toBe(false);
   });
 
   it('leaves other requests to the service worker', () => {
