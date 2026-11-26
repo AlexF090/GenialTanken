@@ -1,17 +1,9 @@
-import { proxyApiRequest } from './api/proxy-api-request.ts';
-import type { ApiProxyEnvironment } from './api/proxy-api-request.ts';
 import { keepApiAwake } from './keep-awake/keep-api-awake.ts';
+import type { KeepAwakeEnvironment } from './keep-awake/keep-api-awake.ts';
+import { redirectToWebApp } from './redirect-to-web-app.ts';
 
-/** Subset of the Workers `Fetcher` type of the static assets binding that this Worker uses. */
-export interface StaticAssetsBinding {
-  fetch(request: Request): Promise<Response>;
-}
-
-/** Bindings, variables and secrets of the Worker (see `wrangler.jsonc` and `.dev.vars`). */
-export interface WorkerEnvironment extends ApiProxyEnvironment {
-  /** The built Angular app from `dist/web/browser`. */
-  ASSETS: StaticAssetsBinding;
-}
+/** Variables of the Worker (see `wrangler.jsonc` and `.dev.vars`). */
+export type WorkerEnvironment = KeepAwakeEnvironment;
 
 /** Subset of the Workers `ScheduledController` that this Worker uses. */
 export interface ScheduledController {
@@ -24,23 +16,15 @@ export interface ExecutionContext {
   waitUntil(promise: Promise<unknown>): void;
 }
 
-const API_PATH = '/api';
-
-const isApiPath = (pathname: string): boolean =>
-  pathname === API_PATH || pathname.startsWith(`${API_PATH}/`);
-
 /**
- * Proxies every `/api/*` request of the web app to the API on Render and serves everything else
- * from the static assets. `run_worker_first` in `wrangler.jsonc` routes only `/api/*` here, so
- * the assets fallback covers requests that reach the Worker anyway. The cron trigger in
- * `wrangler.jsonc` keeps the API awake during the day (`keep-awake/`).
+ * The web app is no longer served from here (it runs on static hosting, see
+ * docs/adr/0001-leave-cloudflare-proxy.md). The Worker keeps two jobs: it redirects every
+ * request of the old `workers.dev` address to the new origin, and the cron trigger in
+ * `wrangler.jsonc` keeps the free API on Render awake during the day (`keep-awake/`).
  */
 export default {
-  fetch(request: Request, environment: WorkerEnvironment): Promise<Response> {
-    if (isApiPath(new URL(request.url).pathname)) {
-      return proxyApiRequest(request, environment, apiRequest => fetch(apiRequest));
-    }
-    return environment.ASSETS.fetch(request);
+  fetch(request: Request): Promise<Response> {
+    return Promise.resolve(redirectToWebApp(request));
   },
   // The awake hours are checked at the time of the call, so `scheduledTime` is not needed.
   scheduled(

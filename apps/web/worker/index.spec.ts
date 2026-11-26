@@ -1,23 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from './index.ts';
-import type { ExecutionContext, StaticAssetsBinding, WorkerEnvironment } from './index.ts';
+import type { ExecutionContext, WorkerEnvironment } from './index.ts';
 
 const API_ORIGIN = 'https://genialtanken-api.onrender.com';
 const WORKER_ORIGIN = 'https://genialtanken.alexf090.workers.dev';
+const WEB_ORIGIN = 'https://genial-tanken.appool.de';
 
-const createEnvironment = (assetsFetch: StaticAssetsBinding['fetch']): WorkerEnvironment => ({
-  API_ORIGIN,
-  PROXY_SHARED_SECRET: 'proxy-secret',
-  ASSETS: { fetch: assetsFetch },
-});
+const environment: WorkerEnvironment = { API_ORIGIN };
 
 describe('worker', () => {
   const apiFetch = vi.fn<typeof fetch>();
-  const assetsFetch = vi.fn<StaticAssetsBinding['fetch']>();
 
   beforeEach(() => {
-    apiFetch.mockResolvedValue(Response.json([], { status: 200 }));
-    assetsFetch.mockResolvedValue(new Response('<!doctype html>', { status: 200 }));
+    apiFetch.mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal('fetch', apiFetch);
   });
 
@@ -28,42 +23,48 @@ describe('worker', () => {
     vi.resetAllMocks();
   });
 
-  it.each(['/api/stations?latitude=48.85', '/api'])(
-    'proxies %s to the API without touching the assets',
-    async pathAndQuery => {
-      const response = await worker.fetch(
-        new Request(`${WORKER_ORIGIN}${pathAndQuery}`, {
-          headers: { 'CF-Connecting-IP': '198.51.100.7' },
-        }),
-        createEnvironment(assetsFetch)
-      );
+  it.each([
+    ['/', `${WEB_ORIGIN}/`],
+    ['/stations/fr-75012010', `${WEB_ORIGIN}/stations/fr-75012010`],
+    ['/favorites', `${WEB_ORIGIN}/favorites`],
+    ['/main.js', `${WEB_ORIGIN}/main.js`],
+    [
+      '/api/stations?latitude=48.85&longitude=2.35&fuel=e10',
+      `${WEB_ORIGIN}/api/stations?latitude=48.85&longitude=2.35&fuel=e10`,
+    ],
+    ['/search?q=a%20b#ignored', `${WEB_ORIGIN}/search?q=a%20b`],
+  ])('redirects %s permanently to %s', async (pathAndQuery, expectedLocation) => {
+    const response = await worker.fetch(new Request(`${WORKER_ORIGIN}${pathAndQuery}`));
 
-      expect(response.status).toBe(200);
-      expect(assetsFetch).not.toHaveBeenCalled();
-      expect(apiFetch).toHaveBeenCalledTimes(1);
-      const [apiRequest] = apiFetch.mock.calls[0] ?? [];
-      if (!(apiRequest instanceof Request)) {
-        throw new Error('Expected the worker to forward a Request.');
-      }
-      expect(apiRequest.url).toBe(`${API_ORIGIN}${pathAndQuery}`);
-      expect(apiRequest.headers.get('X-GenialTanken-Proxy-Secret')).toBe('proxy-secret');
-      expect(apiRequest.headers.get('X-GenialTanken-Client-Address')).toBe('198.51.100.7');
-    }
-  );
+    expect(response.status).toBe(301);
+    expect(response.headers.get('Location')).toBe(expectedLocation);
+    expect(apiFetch).not.toHaveBeenCalled();
+  });
 
-  it.each(['/', '/stations/fr-75012010', '/main.js', '/apix', '/settings/api/stations'])(
-    'delegates %s to the static assets',
-    async path => {
-      const request = new Request(`${WORKER_ORIGIN}${path}`);
+  it.each(['POST', 'PUT', 'DELETE'])('redirects %s requests as well', async method => {
+    const response = await worker.fetch(
+      new Request(`${WORKER_ORIGIN}/api/stations`, { method, body: 'payload' })
+    );
 
-      const response = await worker.fetch(request, createEnvironment(assetsFetch));
+    expect(response.status).toBe(301);
+    expect(response.headers.get('Location')).toBe(`${WEB_ORIGIN}/api/stations`);
+  });
 
-      expect(response.status).toBe(200);
-      await expect(response.text()).resolves.toBe('<!doctype html>');
-      expect(assetsFetch).toHaveBeenCalledWith(request);
-      expect(apiFetch).not.toHaveBeenCalled();
-    }
-  );
+  it('keeps the redirect out of caches that would outlive the move', async () => {
+    const response = await worker.fetch(new Request(`${WORKER_ORIGIN}/`));
+
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=3600');
+  });
+
+  it('answers the manifest of the old service worker with 404, so it unregisters itself', async () => {
+    const response = await worker.fetch(
+      new Request(`${WORKER_ORIGIN}/ngsw.json?ngsw-cache-bust=0.5`)
+    );
+
+    expect(response.status).toBe(404);
+    expect(response.headers.get('Location')).toBeNull();
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+  });
 
   it('wakes the API through the cron trigger within the awake hours', async () => {
     const scheduledTime = Date.parse('2026-07-15T10:00:00Z');
@@ -72,7 +73,7 @@ describe('worker', () => {
     const pending: Promise<unknown>[] = [];
     const context: ExecutionContext = { waitUntil: promise => pending.push(promise) };
 
-    worker.scheduled({ scheduledTime }, createEnvironment(assetsFetch), context);
+    worker.scheduled({ scheduledTime }, environment, context);
     await vi.runAllTimersAsync();
     await Promise.all(pending);
 

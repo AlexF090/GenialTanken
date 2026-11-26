@@ -10,8 +10,8 @@
     "start:dev": "ng serve",
     "test:worker": "vitest run --config vitest.worker.config.ts",
     "start:container": "ng serve --host 0.0.0.0",
-    "deploy": "wrangler deploy",
-    "preview": "wrangler dev"
+    "deploy:worker": "wrangler deploy",
+    "preview:worker": "wrangler dev"
   },
   "private": true,
   "license": "UNLICENSED",
