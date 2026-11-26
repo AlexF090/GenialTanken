@@ -50,6 +50,7 @@ describe('injectViewportGapBottom', () => {
     });
     const environmentInjector = createEnvironmentInjector([], TestBed.inject(EnvironmentInjector));
     injector = environmentInjector;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-class-instance-assignment -- createEnvironmentInjector() is Angular's way to create an injector
     runInInjectionContext(environmentInjector, () => {
       injectViewportGapBottom();
     });

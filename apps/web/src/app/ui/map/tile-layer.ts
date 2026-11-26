@@ -1,5 +1,6 @@
 import type { ResolvedColorScheme } from '../../core/theme/color-scheme-controller';
 import { L } from './leaflet';
+import { MAPBOX_TILE_ORIGIN, OPEN_STREET_MAP_TILE_ORIGIN } from './tile-origins';
 
 const MAPBOX_STYLES: Readonly<Record<ResolvedColorScheme, string>> = {
   light: 'alexf090/cl2uhl8gx008p14qop192uczn',
@@ -7,13 +8,13 @@ const MAPBOX_STYLES: Readonly<Record<ResolvedColorScheme, string>> = {
 };
 const MAPBOX_ATTRIBUTION =
   '© <a href="https://www.mapbox.com/about/maps/">Mapbox</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
-const OPEN_STREET_MAP_TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const OPEN_STREET_MAP_TILE_URL = `${OPEN_STREET_MAP_TILE_ORIGIN}/{z}/{x}/{y}.png`;
 const OPEN_STREET_MAP_ATTRIBUTION =
   '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende';
 export const MAXIMUM_ZOOM = 19;
 
 const mapboxTileUrl = (style: string, accessToken: string): string =>
-  `https://api.mapbox.com/styles/v1/${style}/tiles/256/{z}/{x}/{y}@2x?access_token=${encodeURIComponent(accessToken)}`;
+  `${MAPBOX_TILE_ORIGIN}/styles/v1/${style}/tiles/256/{z}/{x}/{y}@2x?access_token=${encodeURIComponent(accessToken)}`;
 
 /**
  * Mapbox style matching the color scheme when a token is configured, OpenStreetMap otherwise.

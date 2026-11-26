@@ -184,11 +184,23 @@ describe('buildContentSecurityPolicy', () => {
     expect(policy.match(/unsafe-inline/g)).toHaveLength(1);
   });
 
-  it('lets the app call only itself and the API', () => {
+  it('lets the app call only itself, the API and the map tile servers', () => {
     expect(directiveValues(policy, 'connect-src')).toEqual([
       "'self'",
       'https://genialtanken-api.onrender.com',
+      'https://tile.openstreetmap.org',
+      'https://api.mapbox.com',
     ]);
+  });
+
+  it('lets the service worker fetch every image origin the page may load', () => {
+    const remoteImageOrigins = directiveValues(policy, 'img-src').filter(source =>
+      source.startsWith('https://')
+    );
+
+    expect(directiveValues(policy, 'connect-src')).toEqual(
+      expect.arrayContaining(remoteImageOrigins)
+    );
   });
 
   it('loads map tiles from OpenStreetMap and Mapbox only', () => {

@@ -1,5 +1,6 @@
 import { L } from './leaflet';
 import { createTileLayer } from './tile-layer';
+import { MAP_TILE_ORIGINS } from './tile-origins';
 
 const withMap = (callback: (map: L.Map) => void): void => {
   const container = document.createElement('div');
@@ -37,5 +38,18 @@ describe('createTileLayer', () => {
     expect(tileUrl(createTileLayer('token', 'dark'))).toBe(
       'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/3/1/2@2x?access_token=token'
     );
+  });
+
+  // The Content Security Policy allows exactly these origins in `img-src` and `connect-src`.
+  it('loads tiles only from the origins the Content Security Policy allows', () => {
+    const tileUrls = [
+      tileUrl(createTileLayer('', 'light')),
+      tileUrl(createTileLayer('token', 'light')),
+      tileUrl(createTileLayer('token', 'dark')),
+    ];
+
+    for (const url of tileUrls) {
+      expect(MAP_TILE_ORIGINS).toContain(new URL(url).origin);
+    }
   });
 });

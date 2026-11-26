@@ -22,8 +22,7 @@
         @for (card of cards(); track card.stationIdentifier) {
           <li class="favorites-row__item">
             <a class="favorites-row__card" [routerLink]="card.route">
-              <span class="favorites-row__title" translate="no">{{ card.title }}</span
-              >&ngsp;
+              <span class="favorites-row__title" translate="no">{{ card.title }}</span>&ngsp;
               <app-price
                 class="favorites-row__price"
                 size="list"

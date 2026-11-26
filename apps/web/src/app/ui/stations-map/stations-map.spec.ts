@@ -589,6 +589,8 @@ describe('StationsMap', () => {
       container?.focus();
 
       container?.dispatchEvent(
+        // Leaflet 1.9 reads the arrow keys from `keyCode`, so the event needs it.
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
         new KeyboardEvent('keydown', { key: 'ArrowRight', keyCode: 39, bubbles: true })
       );
 

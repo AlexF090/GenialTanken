@@ -56,6 +56,7 @@ export const configurePageTest = (
       provideHttpClientTesting(),
       provideLocalStorageFavorites(),
       // As in app.config.ts, but never registered: the shell injects `SwUpdate`.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-class-instance-assignment -- Angular documents object literals for its option class
       provideServiceWorker('ngsw-worker.js', { enabled: false }),
       { provide: LOCAL_STORAGE, useValue: storage },
       { provide: GEOLOCATION, useValue: geolocation },

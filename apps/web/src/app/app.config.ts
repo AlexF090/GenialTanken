@@ -27,6 +27,7 @@ export const appConfig: ApplicationConfig = {
     provideApiWakeUp(),
     // Registered once the app is idle (at the latest after 30 s), so it never competes with the
     // first stations request. `ng serve` builds without a service worker.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-class-instance-assignment -- Angular documents object literals for its option class
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',
