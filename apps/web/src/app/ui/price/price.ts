@@ -20,13 +20,11 @@ export type PriceSize = 'hero' | 'list' | 'tag';
   },
   template: `
     @if (parts(); as parts) {
-      <span class="visually-hidden">{{ plainPrice() }}</span
-      ><span aria-hidden="true"
+      <span class="visually-hidden">{{ plainPrice() }}</span><span aria-hidden="true"
         >{{ parts.leadingDigits }}<sup>{{ parts.tenthOfCent }}</sup> €</span
       >
     } @else {
-      <span class="visually-hidden">{{ noPriceLabel }}</span
-      ><span aria-hidden="true">–</span>
+      <span class="visually-hidden">{{ noPriceLabel }}</span><span aria-hidden="true">–</span>
     }
   `,
   styleUrl: './price.scss',
