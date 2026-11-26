@@ -82,6 +82,13 @@ describe('PrivacyPage', () => {
     expect(text()).toMatch(/keine Analyse- oder Tracking/);
   });
 
+  it('says that the former workers.dev address only redirects, through Cloudflare', () => {
+    expect(headings()).toContain('Frühere Adresse');
+    expect(text()).toContain('genialtanken.alexf090.workers.dev');
+    expect(text()).toContain('Cloudflare, Inc.');
+    expect(text()).toMatch(/nur auf die neue\s+Adresse umgeleitet/);
+  });
+
   it('lists the rights of the data subject including the complaint to a supervisory authority', () => {
     expect(headings()).toContain('Ihre Rechte');
     for (const right of ['Auskunft', 'Berichtigung', 'Löschung', 'Widerspruch', 'Beschwerde']) {
