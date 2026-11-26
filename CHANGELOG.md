@@ -1,3 +1,9 @@
+## [2.3.0](https://github.com/AlexF090/GenialTanken/compare/v2.2.0...v2.3.0) (2026-11-26)
+
+### Features
+
+* **web:** redirect the genialtanken alias and name Cloudflare in the privacy policy ([#49](https://github.com/AlexF090/GenialTanken/issues/49)) ([fe45dfc](https://github.com/AlexF090/GenialTanken/commit/fe45dfcd7e80286b212c7a3e4c62d1fa1243e7c2))
+
 ## [2.2.0](https://github.com/AlexF090/GenialTanken/compare/v2.1.0...v2.2.0) (2026-11-26)
 
 ### Features
