@@ -63,9 +63,4 @@ export class ApplicationConfiguration {
   get rateLimitRequestsPerMinute(): number {
     return this.environment.RATE_LIMIT_REQUESTS_PER_MINUTE;
   }
-
-  /** `undefined` when the client address header of the Cloudflare Worker is ignored. */
-  get proxySharedSecret(): string | undefined {
-    return this.environment.PROXY_SHARED_SECRET;
-  }
 }

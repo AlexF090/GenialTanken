@@ -7,14 +7,16 @@ describe('Startup configuration', () => {
     await application.close();
   });
 
-  it('treats an empty proxy shared secret as not configured', async () => {
-    const application = await createTestApplication({ PROXY_SHARED_SECRET: ' ' });
+  it('starts with several web origins, as during a move of the web app', async () => {
+    const application = await createTestApplication({
+      WEB_ORIGIN: 'https://genial-tanken.appool.de, https://genialtanken.alexf090.workers.dev',
+    });
 
     await application.close();
   });
 
-  it('starts with a proxy shared secret of 32 characters', async () => {
-    const application = await createTestApplication({ PROXY_SHARED_SECRET: 'x'.repeat(32) });
+  it('ignores the retired proxy secret of the Worker', async () => {
+    const application = await createTestApplication({ PROXY_SHARED_SECRET: 'short' });
 
     await application.close();
   });
@@ -34,7 +36,6 @@ describe('Startup configuration', () => {
     ['UPSTREAM_TIMEOUT_IN_MILLISECONDS', '2147483648'],
     ['CACHE_TIME_TO_LIVE_IN_SECONDS', '-1'],
     ['RATE_LIMIT_REQUESTS_PER_MINUTE', '0'],
-    ['PROXY_SHARED_SECRET', 'shorter-than-32-characters'],
   ])('fails with a message naming %s when it is invalid', async (variable, value) => {
     await expect(createTestApplication({ [variable]: value })).rejects.toThrow(
       new RegExp(`Configuration validation error: ${variable}`)

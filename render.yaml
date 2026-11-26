@@ -23,9 +23,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Same value as the secret PROXY_SHARED_SECRET of the Cloudflare Worker `genialtanken`; lets
-      # the Worker pass the client address on for per-client rate limiting (at least 32 characters)
-      - key: PROXY_SHARED_SECRET
-        sync: false
+      # Origins of the web app that CORS allows, comma-separated: the new static hosting and, until
+      # the move is done, the former Worker address (remove it afterwards).
       - key: WEB_ORIGIN
-        value: https://genialtanken.alexf090.workers.dev
+        value: https://genial-tanken.appool.de,https://genialtanken.alexf090.workers.dev
