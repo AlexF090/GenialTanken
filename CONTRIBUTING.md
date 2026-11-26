@@ -32,7 +32,7 @@ After changing `packages/contracts`, rebuild it (`pnpm --filter @genialtanken/co
 
 - Commit messages and pull request titles follow [Conventional Commits](https://www.conventionalcommits.org/), e.g. `feat(web): sort favorites by price` or `fix(api): retry station pages`.
 - Pull requests are squash-merged, and the squash commit takes the pull request title. The title therefore decides the release: `fix` → patch, `feat` → minor, `!` → major; `chore`, `docs`, `ci`, `test` and `refactor` release nothing. A required check validates the title.
-- Open pull requests as drafts. CI and preview deploys skip drafts; mark the pull request ready for review once it is final, which runs the full pipeline and publishes a preview at `https://pr-<number>-genialtanken.alexf090.workers.dev`.
+- Open pull requests as drafts. CI skips drafts; mark the pull request ready for review once it is final, which runs the full pipeline. There are no preview deploys; the web app is deployed to https://genial-tanken.appool.de after the merge.
 - Never bump versions or create tags by hand; semantic-release does both after CI passed on `main`.
 - Include tests with every change and state in the pull request which checks ran.
 
