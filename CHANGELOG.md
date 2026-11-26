@@ -1,3 +1,9 @@
+## [2.2.0](https://github.com/AlexF090/GenialTanken/compare/v2.1.0...v2.2.0) (2026-11-26)
+
+### Features
+
+* **web:** move hosting from Cloudflare Worker to Hetzner ([#47](https://github.com/AlexF090/GenialTanken/issues/47)) ([a241e33](https://github.com/AlexF090/GenialTanken/commit/a241e33d2d30d3b73424572cf5abcf96af6a231e))
+
 ## [2.1.0](https://github.com/AlexF090/GenialTanken/compare/v2.0.2...v2.1.0) (2026-10-24)
 
 ### Features
