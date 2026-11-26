@@ -54,10 +54,14 @@ describe('PrivacyPage', () => {
     expect(text()).toContain('Auftragsverarbeitungsvertrag');
   });
 
-  it('describes the redirect of the old address through Cloudflare', () => {
+  it('describes the redirect of the old address through Cloudflare with storage and safeguards', () => {
     expect(text()).toContain('Cloudflare, Inc.');
     expect(text()).toContain('workers.dev');
-    expect(text()).toMatch(/weitergeleitet/);
+    expect(text()).toContain('auf die aktuelle Adresse weiter');
+    expect(text()).toContain('ohne Weiterleitung mit einer Fehlermeldung');
+    expect(text()).toContain('keine Protokollierung eingeschaltet');
+    expect(text()).toContain('nennt dafür keine feste Frist');
+    expect(text()).toContain('mit Cloudflare besteht ein Auftragsverarbeitungsvertrag');
   });
 
   it('describes the API on Render as a transfer to a third country with its safeguards', () => {
