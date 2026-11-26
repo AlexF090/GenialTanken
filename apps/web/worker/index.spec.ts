@@ -28,10 +28,6 @@ describe('worker', () => {
     ['/stations/fr-75012010', `${WEB_ORIGIN}/stations/fr-75012010`],
     ['/favorites', `${WEB_ORIGIN}/favorites`],
     ['/main.js', `${WEB_ORIGIN}/main.js`],
-    [
-      '/api/stations?latitude=48.85&longitude=2.35&fuel=e10',
-      `${WEB_ORIGIN}/api/stations?latitude=48.85&longitude=2.35&fuel=e10`,
-    ],
     ['/search?q=a%20b#ignored', `${WEB_ORIGIN}/search?q=a%20b`],
   ])('redirects %s permanently to %s', async (pathAndQuery, expectedLocation) => {
     const response = await worker.fetch(new Request(`${WORKER_ORIGIN}${pathAndQuery}`));
@@ -43,11 +39,30 @@ describe('worker', () => {
 
   it.each(['POST', 'PUT', 'DELETE'])('redirects %s requests as well', async method => {
     const response = await worker.fetch(
-      new Request(`${WORKER_ORIGIN}/api/stations`, { method, body: 'payload' })
+      new Request(`${WORKER_ORIGIN}/stations`, { method, body: 'payload' })
     );
 
     expect(response.status).toBe(301);
-    expect(response.headers.get('Location')).toBe(`${WEB_ORIGIN}/api/stations`);
+    expect(response.headers.get('Location')).toBe(`${WEB_ORIGIN}/stations`);
+  });
+
+  it.each([
+    '/api',
+    '/api/',
+    '/api/stations?latitude=48.85&longitude=2.35&fuel=e10',
+    '/api/wake-up',
+  ])('answers the former API path %s with 410 Gone, not with HTML of the web app', async path => {
+    const response = await worker.fetch(new Request(`${WORKER_ORIGIN}${path}`));
+
+    expect(response.status).toBe(410);
+    expect(response.headers.get('Location')).toBeNull();
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+  });
+
+  it('does not mistake paths that only start with the letters api for the API', async () => {
+    const response = await worker.fetch(new Request(`${WORKER_ORIGIN}/apix`));
+
+    expect(response.status).toBe(301);
   });
 
   it('keeps the redirect out of caches that would outlive the move', async () => {
