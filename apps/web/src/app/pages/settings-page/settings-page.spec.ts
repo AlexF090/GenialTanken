@@ -81,14 +81,14 @@ describe('SettingsPage', () => {
     );
   });
 
-  it('orders the sections fuel, radius, appearance and data source without any button', async () => {
+  it('orders the sections fuel, radius, appearance, data source and legal without any button', async () => {
     context = configurePageTest();
     const { element } = await renderComponent(SettingsPage);
     const content = element.querySelector('.settings');
 
     expect(
       [...(content?.querySelectorAll('legend, label[for], h2') ?? [])].map(title => textOf(title))
-    ).toEqual(['Kraftstoff', 'Radius: 5 km', 'Darstellung', 'Datenquelle']);
+    ).toEqual(['Kraftstoff', 'Radius: 5 km', 'Darstellung', 'Datenquelle', 'Rechtliches']);
     expect(content?.querySelectorAll('button')).toHaveLength(0);
   });
 
@@ -216,6 +216,26 @@ describe('SettingsPage', () => {
       expect(TestBed.inject(Router).url).toBe('/');
       location.back();
       expect(location.path()).not.toBe('/settings');
+    });
+  });
+
+  describe('legal links', () => {
+    it('offers the legal notice, the privacy policy and the support address', async () => {
+      context = configurePageTest();
+      const { element } = await renderComponent(SettingsPage);
+
+      const section = element.querySelector('section[aria-labelledby*="legal"]');
+      const legalNotice = section?.querySelector('a[href="https://appool.de/impressum"]');
+      const privacy = [...(section?.querySelectorAll('a') ?? [])].find(
+        link => textOf(link) === 'Datenschutz'
+      );
+      const support = section?.querySelector('a[href="mailto:genial-tanken@appool.de"]');
+
+      expect(textOf(section?.querySelector('h2'))).toBe('Rechtliches');
+      expect(textOf(legalNotice)).toContain('Impressum');
+      expect(legalNotice?.getAttribute('target')).toBe('_blank');
+      expect(privacy?.getAttribute('href')).toBe('/datenschutz');
+      expect(textOf(support)).toBe('genial-tanken@appool.de');
     });
   });
 });

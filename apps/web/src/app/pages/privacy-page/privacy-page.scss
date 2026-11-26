@@ -1,0 +1,39 @@
+// A page of its own without the map, like the 404 page: grouped background, clear of the rounded
+// corners and the home indicator.
+:host {
+  min-height: 100dvh;
+  padding-inline: var(--safe-area-left) var(--safe-area-right);
+  padding-block-end: var(--safe-area-bottom);
+  background-color: var(--color-canvas);
+}
+
+.privacy {
+  gap: var(--space-xl);
+  padding-block-end: var(--space-2xl);
+}
+
+.privacy__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.privacy__heading {
+  font-size: var(--font-size-title-3);
+}
+
+.privacy__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+  padding-inline-start: var(--space-lg);
+}
+
+.privacy__address {
+  font-style: normal;
+}
+
+.privacy__updated {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-subheadline);
+}

@@ -12,7 +12,7 @@ const RESULT_LANGUAGE = 'de';
  * Ouessant to Alsace and Corsica to Dunkirk.
  */
 const FRANCE_BOUNDING_BOX = '-5.3,41.3,9.7,51.2';
-const CONTACT_URL = 'https://genialtanken.alexf090.workers.dev';
+const CONTACT_URL = 'https://genial-tanken.appool.de';
 
 /** Search requests to the public Photon (komoot) geocoder, cached per URL. */
 @Injectable()

@@ -1,6 +1,7 @@
 import { KilometersPipe } from '../../core/formatting/kilometers-pipe';
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { form, FormField, max, min } from '@angular/forms/signals';
+import { RouterLink } from '@angular/router';
 import {
   COLOR_SCHEME_PREFERENCES,
   MAXIMUM_RADIUS_IN_KILOMETERS,
@@ -34,7 +35,16 @@ const COLOR_SCHEME_LABELS: Record<ColorSchemePreference, string> = {
  */
 @Component({
   selector: 'app-settings-page',
-  imports: [SheetDialog, FormField, Icon, KilometersPipe, ExternalLink, UpdateNotice, Wordmark],
+  imports: [
+    SheetDialog,
+    FormField,
+    Icon,
+    KilometersPipe,
+    ExternalLink,
+    RouterLink,
+    UpdateNotice,
+    Wordmark,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.scss',
@@ -53,6 +63,7 @@ export class SettingsPage {
     }));
   protected readonly radiusIdentifier = uniqueIdentifier('radius');
   protected readonly dataSourceHeadingIdentifier = uniqueIdentifier('data-source-heading');
+  protected readonly legalHeadingIdentifier = uniqueIdentifier('legal-heading');
   protected readonly minimumRadiusInKilometers = MINIMUM_RADIUS_IN_KILOMETERS;
   protected readonly maximumRadiusInKilometers = MAXIMUM_RADIUS_IN_KILOMETERS;
   protected readonly colorScheme = this.settingsStore.colorScheme;
