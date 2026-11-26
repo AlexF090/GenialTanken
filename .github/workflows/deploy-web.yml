@@ -42,7 +42,7 @@ jobs:
       # Download the artifact of the triggering CI run.
       actions: read
     environment:
-      name: production
+      name: Production
       url: https://genial-tanken.appool.de
     steps:
       - name: Download web build from CI run
