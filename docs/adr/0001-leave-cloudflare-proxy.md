@@ -37,8 +37,10 @@ address still has to lead somewhere, and the Worker does both for free.
    former `X-GenialTanken-*` headers, and a spec checks that sending them does not change the
    rate-limit key.
 5. **The Worker shrinks** to the keep-awake cron and a permanent redirect (301, path and query
-   kept) from every `workers.dev` URL to `https://genial-tanken.appool.de`. `ngsw.json` answers
-   404 instead, so service workers installed from the old address unregister themselves rather
+   kept) from every `workers.dev` URL to `https://genial-tanken.appool.de`. `/api` and `/api/*`
+   answer `410 Gone` (`no-store`) instead, because clients from before the move would otherwise
+   get HTML where they expect JSON; `ngsw.json` answers
+   404 as well, so service workers installed from the old address unregister themselves rather
    than keep serving the old app. It serves no assets and proxies nothing, and is deployed by its
    own workflow (`deploy-worker.yml`).
 6. **Pull request previews are dropped.** They depended on Worker versions with aliased URLs and

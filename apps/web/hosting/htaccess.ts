@@ -65,9 +65,10 @@ const escapeForRegularExpression = (value: string): string =>
  * - Scripts only from the own origin plus the inline scripts of `index.html`, by hash. No
  *   `unsafe-inline` or `unsafe-eval`.
  * - `style-src` needs `'unsafe-inline'`: Angular adds the styles of its components as `<style>`
- *   elements at run time, and a static host cannot send a nonce for them. Hashes would not help
- *   (they are ignored next to `unsafe-inline`, and the styles are not known at build time). The
- *   risk stays small because scripts remain locked down.
+ *   elements at run time. A static host can neither send a nonce for them nor know their hashes
+ *   at build time. A hash in `style-src` would not help either: with CSP level 3 a hash or nonce
+ *   makes browsers ignore `'unsafe-inline'`, which would block exactly these styles. So
+ *   `style-src` has no hashes. The risk stays small because scripts remain locked down.
  * - Map tiles come from OpenStreetMap (default) and Mapbox (production token) as images.
  * - The app talks to itself (service worker, manifest) and to the API only.
  */
